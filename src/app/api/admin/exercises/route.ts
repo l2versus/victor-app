@@ -92,3 +92,27 @@ export async function POST(req: NextRequest) {
     )
   }
 }
+
+// PATCH /api/admin/exercises?id=xxx — update exercise media
+export async function PATCH(req: NextRequest) {
+  try {
+    await requireAdmin()
+
+    const id = new URL(req.url).searchParams.get("id")
+    if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 })
+
+    const body = await req.json()
+    const exercise = await prisma.exercise.update({
+      where: { id },
+      data: {
+        gifUrl: body.gifUrl ?? undefined,
+        videoUrl: body.videoUrl ?? undefined,
+      },
+    })
+
+    return NextResponse.json({ exercise })
+  } catch (error) {
+    console.error("PATCH /api/admin/exercises error:", error)
+    return NextResponse.json({ error: "Failed to update exercise" }, { status: 500 })
+  }
+}
