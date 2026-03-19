@@ -12,6 +12,7 @@ type Exercise = {
   muscle: string
   equipment: string
   instructions: string | null
+  gifUrl: string | null
   videoUrl: string | null
   isCustom: boolean
 }
@@ -25,14 +26,14 @@ type ExerciseData = {
 }
 
 const equipmentIcons: Record<string, string> = {
-  Barbell: "🏋️",
-  Dumbbell: "💪",
-  Machine: "⚙️",
-  Cable: "🔗",
-  Bodyweight: "🤸",
+  Barra: "🏋️",
+  Halter: "💪",
+  "Máquina": "⚙️",
+  Cabo: "🔗",
+  "Peso Corporal": "🤸",
   Kettlebell: "🔔",
-  Band: "🎗️",
-  Other: "📦",
+  "Elástico": "🎗️",
+  Outro: "📦",
 }
 
 export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
@@ -250,8 +251,16 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                           {exs.map((ex) => (
                             <div
                               key={ex.id}
-                              className="group/item flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-colors"
+                              className="group/item flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.03] transition-colors"
                             >
+                              {/* Thumbnail */}
+                              <div className="w-10 h-10 rounded-lg bg-neutral-800/50 border border-neutral-700/30 overflow-hidden shrink-0 flex items-center justify-center">
+                                {ex.gifUrl ? (
+                                  <img src={ex.gifUrl} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
+                                ) : (
+                                  <Dumbbell className="w-4 h-4 text-neutral-600" />
+                                )}
+                              </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
                                   <p className="text-neutral-200 text-sm truncate">{ex.name}</p>
