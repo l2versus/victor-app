@@ -289,34 +289,25 @@ function FeatureModal({ feature, onClose }: { feature: NonNullable<FeatureDetail
 }
 
 /* ═══════════════════════════════════════════
-   FAQ with floating shapes + accordion
+   FAQ with floating 3D logos + premium accordion
    ═══════════════════════════════════════════ */
 const faqData = [
-  { q: "Preciso ter experiência com treino?", a: "Não! O treino é montado de acordo com seu nível — do iniciante ao avançado. A IA adapta tudo automaticamente." },
-  { q: "Posso cancelar a qualquer momento?", a: "Sim. Sem multa, sem burocracia. Mas quando você vir os resultados, não vai querer parar." },
-  { q: "Como funciona a correção de postura?", a: "No plano Elite, a câmera do seu celular analisa seus movimentos em tempo real com IA e te corrige durante o exercício." },
-  { q: "Tenho lesão/restrição. Posso treinar?", a: "Com certeza. A IA analisa sua anamnese e todas as restrições são respeitadas na prescrição. Segurança é prioridade #1." },
-  { q: "Preciso ir à academia?", a: "Não necessariamente. Victor monta treinos para academia, home workout ou ao ar livre. Você escolhe." },
+  { q: "Preciso ter experiência com treino?", a: "Não! O treino é montado de acordo com seu nível — do iniciante ao avançado. A IA adapta tudo automaticamente.", icon: Dumbbell },
+  { q: "Posso cancelar a qualquer momento?", a: "Sim. Sem multa, sem burocracia. Mas quando você vir os resultados, não vai querer parar.", icon: Shield },
+  { q: "Como funciona a correção de postura?", a: "No plano Elite, a câmera do seu celular analisa seus movimentos em tempo real com IA e te corrige durante o exercício.", icon: Camera },
+  { q: "Tenho lesão/restrição. Posso treinar?", a: "Com certeza. A IA analisa sua anamnese e todas as restrições são respeitadas na prescrição. Segurança é prioridade #1.", icon: Heart },
+  { q: "Preciso ir à academia?", a: "Não necessariamente. Victor monta treinos para academia, home workout ou ao ar livre. Você escolhe.", icon: Target },
 ]
 
-function FloatingShape({ delay = 0, width = 400, height = 100, rotate = 0, gradient = "from-red-500/[0.12]", className }: {
-  delay?: number; width?: number; height?: number; rotate?: number; gradient?: string; className?: string
-}) {
+function FloatingLogo({ size, className, delay }: { size: number; className?: string; delay: number }) {
   return (
     <div
-      className={cn("absolute opacity-0", className)}
-      style={{
-        animation: `float-slow 12s ease-in-out infinite, fadeIn 1.2s ${delay}s ease-out forwards`,
-        transform: `rotate(${rotate}deg)`,
-      }}
+      className={cn("absolute opacity-0 pointer-events-none", className)}
+      style={{ animation: `float-slow 14s ease-in-out infinite, fadeIn 1.5s ${delay}s ease-out forwards` }}
     >
-      <div style={{ width, height }} className="relative">
-        <div className={cn(
-          "absolute inset-0 rounded-full bg-gradient-to-r to-transparent",
-          gradient,
-          "backdrop-blur-[2px] border border-white/[0.08]",
-          "shadow-[0_8px_32px_0_rgba(220,38,38,0.1)]",
-        )} />
+      <div className="relative" style={{ width: size, height: size }}>
+        <Image src="/img/logo-icon.png" alt="" width={size} height={size} className="rounded-2xl opacity-[0.07]" />
+        <div className="absolute inset-0 bg-red-600/10 blur-xl rounded-full scale-150" />
       </div>
     </div>
   )
@@ -325,67 +316,93 @@ function FloatingShape({ delay = 0, width = 400, height = 100, rotate = 0, gradi
 function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   return (
-    <section className="py-24 sm:py-32 px-5 sm:px-8 relative overflow-hidden">
-      {/* Floating shapes */}
-      <div className="absolute inset-0 pointer-events-none">
-        <FloatingShape delay={0.2} width={500} height={120} rotate={12} gradient="from-red-500/[0.1]" className="left-[-8%] top-[15%]" />
-        <FloatingShape delay={0.4} width={400} height={100} rotate={-15} gradient="from-red-600/[0.08]" className="right-[-5%] top-[65%]" />
-        <FloatingShape delay={0.3} width={250} height={70} rotate={-8} gradient="from-red-400/[0.1]" className="left-[5%] bottom-[8%]" />
-        <FloatingShape delay={0.5} width={180} height={50} rotate={20} gradient="from-orange-500/[0.08]" className="right-[15%] top-[8%]" />
-        <FloatingShape delay={0.6} width={120} height={35} rotate={-20} gradient="from-red-500/[0.06]" className="left-[25%] top-[5%]" />
+    <section className="py-24 sm:py-36 px-5 sm:px-8 relative overflow-hidden">
+      {/* Floating 3D logos */}
+      <div className="absolute inset-0 pointer-events-none hidden sm:block">
+        <FloatingLogo size={120} delay={0.2} className="left-[2%] top-[12%]" />
+        <FloatingLogo size={80} delay={0.5} className="right-[5%] top-[18%]" />
+        <FloatingLogo size={100} delay={0.3} className="right-[8%] bottom-[15%]" />
+        <FloatingLogo size={60} delay={0.7} className="left-[12%] bottom-[20%]" />
+        <FloatingLogo size={50} delay={0.6} className="left-[35%] top-[5%]" />
+        <FloatingLogo size={70} delay={0.8} className="right-[25%] bottom-[5%]" />
       </div>
 
-      {/* Background glow */}
-      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/[0.03] to-transparent pointer-events-none" />
+      {/* Background */}
+      <div className="absolute inset-0 pointer-events-none">
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/[0.03] to-transparent" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-red-600/[0.03] blur-[150px]" />
+      </div>
 
       <div className="max-w-3xl mx-auto relative z-10">
         {/* Logo + Title */}
         <Reveal>
           <div className="text-center mb-14">
             <div className="mx-auto mb-6 relative inline-block">
-              <Image src="/img/logo.png" alt="VO Personal" width={64} height={64} className="rounded-2xl relative z-10" />
-              <div className="absolute inset-0 bg-red-600/20 blur-2xl rounded-full scale-[2.5] -z-0" />
-              <div className="absolute inset-0 bg-red-500/10 blur-xl rounded-full scale-[3.5] -z-0 animate-pulse" />
+              <Image src="/img/logo-icon.png" alt="VO Personal" width={80} height={80} className="rounded-2xl relative z-10 shadow-2xl shadow-red-600/20" />
+              <div className="absolute inset-0 bg-red-600/25 blur-2xl rounded-full scale-[2] -z-0" />
+              <div className="absolute inset-0 bg-red-500/10 blur-3xl rounded-full scale-[3] -z-0 animate-pulse" />
             </div>
             <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-3">Tire suas dúvidas</p>
             <h2 className="text-3xl sm:text-4xl font-black tracking-tight">Dúvidas frequentes</h2>
           </div>
         </Reveal>
 
-        {/* Accordion */}
+        {/* Premium Accordion */}
         <div className="space-y-3">
           {faqData.map((faq, i) => {
             const isOpen = openIndex === i
             return (
               <Reveal key={i} delay={i * 60}>
                 <div className={cn(
-                  "rounded-2xl border transition-all duration-500",
+                  "group rounded-2xl border backdrop-blur-sm transition-all duration-500",
                   isOpen
-                    ? "border-red-500/20 bg-red-600/[0.04]"
-                    : "border-white/[0.04] bg-white/[0.01] hover:border-white/[0.08]"
+                    ? "border-red-500/25 bg-gradient-to-r from-red-600/[0.06] to-red-900/[0.03] shadow-lg shadow-red-600/[0.05]"
+                    : "border-white/[0.05] bg-white/[0.015] hover:border-white/[0.1] hover:bg-white/[0.025]"
                 )}>
                   <button
                     onClick={() => setOpenIndex(isOpen ? null : i)}
-                    className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer"
+                    className="w-full flex items-center gap-4 px-5 sm:px-6 py-5 text-left cursor-pointer"
                   >
+                    {/* Icon */}
+                    <div className={cn(
+                      "shrink-0 w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-500",
+                      isOpen
+                        ? "bg-red-600/20 shadow-lg shadow-red-600/10"
+                        : "bg-white/[0.04] group-hover:bg-white/[0.06]"
+                    )}>
+                      <faq.icon className={cn("w-4.5 h-4.5 transition-colors duration-300", isOpen ? "text-red-400" : "text-neutral-500 group-hover:text-neutral-400")} />
+                    </div>
+
                     <h3 className={cn(
-                      "text-sm font-semibold transition-colors pr-4",
-                      isOpen ? "text-red-300" : "text-white"
+                      "flex-1 text-[15px] font-semibold transition-colors duration-300",
+                      isOpen ? "text-white" : "text-neutral-200 group-hover:text-white"
                     )}>
                       {faq.q}
                     </h3>
+
+                    {/* Chevron */}
                     <div className={cn(
-                      "shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300",
-                      isOpen ? "bg-red-600/20 rotate-45" : "bg-white/[0.04]"
+                      "shrink-0 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-500",
+                      isOpen ? "bg-red-600/20 rotate-180" : "bg-white/[0.04]"
                     )}>
-                      <span className={cn("text-lg font-light transition-colors", isOpen ? "text-red-400" : "text-neutral-500")}>+</span>
+                      <ChevronRight className={cn(
+                        "w-4 h-4 transition-all duration-500",
+                        isOpen ? "text-red-400 rotate-[-90deg]" : "text-neutral-600 rotate-90"
+                      )} />
                     </div>
                   </button>
+
+                  {/* Answer panel */}
                   <div className={cn(
-                    "overflow-hidden transition-all duration-500 ease-in-out",
-                    isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                    "grid transition-all duration-500 ease-in-out",
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
                   )}>
-                    <p className="px-6 pb-5 text-neutral-400 text-sm leading-relaxed">{faq.a}</p>
+                    <div className="overflow-hidden">
+                      <div className="px-5 sm:px-6 pb-5 pl-[4.25rem] sm:pl-[4.5rem]">
+                        <div className="h-px bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent mb-4" />
+                        <p className="text-neutral-400 text-sm leading-relaxed">{faq.a}</p>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </Reveal>
