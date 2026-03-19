@@ -50,6 +50,7 @@ model TrainerProfile {
   user      User              @relation("UserTrainer", fields: [userId], references: [id])
   students  Student[]
   templates WorkoutTemplate[]
+  plans     Plan[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -83,8 +84,9 @@ model Student {
   sessions     WorkoutSession[]
   assessments  Assessment[]
   payments     Payment[]
-  feedbacks    WorkoutFeedback[]
-  workoutPlans StudentWorkoutPlan[]
+  feedbacks      WorkoutFeedback[]
+  workoutPlans   StudentWorkoutPlan[]
+  subscriptions  Subscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -293,6 +295,71 @@ model Assessment {
 
   @@index([studentId])
   @@index([type])
+}
+
+// ═══════════════════════════════════════
+// PLANS & SUBSCRIPTIONS
+// ═══════════════════════════════════════
+
+enum PlanInterval {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  EXPIRED
+  CANCELLED
+  TRIAL
+}
+
+model Plan {
+  id          String       @id @default(cuid())
+  trainerId   String
+  name        String       // ex: "Básico", "Premium", "VIP"
+  interval    PlanInterval @default(MONTHLY)
+  price       Float
+  active      Boolean      @default(true)
+
+  // Feature flags — o que cada plano libera
+  hasAI           Boolean @default(false)
+  hasPostureCamera Boolean @default(false)
+  hasVipGroup     Boolean @default(false)
+  hasNutrition    Boolean @default(false)
+  maxSessionsWeek Int?    // null = ilimitado
+
+  description String?
+
+  trainer       TrainerProfile @relation(fields: [trainerId], references: [id])
+  subscriptions Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+}
+
+model Subscription {
+  id        String             @id @default(cuid())
+  studentId String
+  planId    String
+  status    SubscriptionStatus @default(ACTIVE)
+  startDate DateTime           @default(now())
+  endDate   DateTime
+  autoRenew Boolean            @default(true)
+
+  student Student @relation(fields: [studentId], references: [id])
+  plan    Plan    @relation(fields: [planId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([planId])
+  @@index([status])
+  @@index([endDate])
 }
 
 // ═══════════════════════════════════════

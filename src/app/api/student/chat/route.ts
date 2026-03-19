@@ -30,19 +30,10 @@ export async function POST(req: NextRequest) {
     const workoutSession = await prisma.workoutSession.findUnique({
       where: { id: sessionId },
       include: {
-        template: { select: { name: true, type: true } },
-        sets: {
+        template: {
           include: {
-            session: {
-              include: {
-                template: {
-                  include: {
-                    exercises: {
-                      include: { exercise: { select: { name: true, muscle: true } } },
-                    },
-                  },
-                },
-              },
+            exercises: {
+              include: { exercise: { select: { name: true, muscle: true } } },
             },
           },
         },
@@ -51,10 +42,8 @@ export async function POST(req: NextRequest) {
 
     if (workoutSession) {
       const exerciseNames = workoutSession.template.exercises
-        ? (workoutSession as unknown as { template: { exercises: Array<{ exercise: { name: string; muscle: string } }> } }).template.exercises
-            .map((e) => `${e.exercise.name} (${e.exercise.muscle})`)
-            .join(", ")
-        : ""
+        .map((e) => `${e.exercise.name} (${e.exercise.muscle})`)
+        .join(", ")
 
       workoutContext = `
 Treino realizado: ${workoutSession.template.name} (${workoutSession.template.type})
