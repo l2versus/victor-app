@@ -1,0 +1,6 @@
+                
+Role	Email	          Senha	               Detalhes
+Admin	victor@teste.com  123456	Victor Oliveira (Trainer)
+Aluno	aluno@teste.com	  123456	João Silva — sem restrições
+Aluna	maria@teste.com	  123456	Maria Santos — hérnia disco + tendinite ombro
+Aluno	carlos@teste.com  123456	Carlos Mendes — artrose joelho + hipertenso

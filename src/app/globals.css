@@ -168,6 +168,11 @@
   50% { transform: translate(-10px, 12px); }
 }
 
+@keyframes ember {
+  0%, 100% { opacity: 0.15; transform: scale(1); }
+  50% { opacity: 0.3; transform: scale(1.05); }
+}
+.animate-ember { animation: ember 3s ease-in-out infinite; }
 .animate-set-complete { animation: set-complete 0.4s ease-out forwards; }
 .animate-ember-ripple { animation: ember-ripple 0.6s ease-out forwards; }
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }

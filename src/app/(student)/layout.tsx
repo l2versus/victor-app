@@ -5,6 +5,7 @@ import { StudentNav } from "@/components/student/nav"
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
   if (!session) redirect("/login")
+  if (session.role !== "STUDENT") redirect("/admin/dashboard")
 
   return (
     <div className="min-h-screen bg-[#050505] relative overflow-hidden">

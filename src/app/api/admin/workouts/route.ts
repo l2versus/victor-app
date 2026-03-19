@@ -66,6 +66,45 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "At least one exercise is required" }, { status: 400 })
     }
 
+    // Resolve exerciseName → exerciseId if needed (AI-generated workouts send names)
+    const resolvedExercises = await Promise.all(
+      exercises.map(async (ex: {
+        exerciseId?: string
+        exerciseName?: string
+        sets: number
+        reps: string
+        restSeconds: number
+        loadKg?: number
+        notes?: string
+        order: number
+        supersetGroup?: string
+      }, index: number) => {
+        let exerciseId = ex.exerciseId
+        if (!exerciseId && ex.exerciseName) {
+          const found = await prisma.exercise.findFirst({
+            where: { name: { contains: ex.exerciseName, mode: "insensitive" } },
+          })
+          exerciseId = found?.id
+        }
+        if (!exerciseId) return null
+        return {
+          exerciseId,
+          sets: ex.sets || 3,
+          reps: ex.reps || "10",
+          restSeconds: ex.restSeconds || 60,
+          loadKg: ex.loadKg || null,
+          notes: ex.notes || null,
+          order: ex.order ?? index,
+          supersetGroup: ex.supersetGroup || null,
+        }
+      })
+    )
+
+    const validExercises = resolvedExercises.filter(Boolean)
+    if (validExercises.length === 0) {
+      return NextResponse.json({ error: "No valid exercises found" }, { status: 400 })
+    }
+
     const workout = await prisma.workoutTemplate.create({
       data: {
         name,
@@ -73,25 +112,10 @@ export async function POST(req: NextRequest) {
         notes: notes || null,
         trainerId: trainer.id,
         exercises: {
-          create: exercises.map((ex: {
-            exerciseId: string
-            sets: number
-            reps: string
-            restSeconds: number
-            loadKg?: number
-            notes?: string
-            order: number
-            supersetGroup?: string
-          }, index: number) => ({
-            exerciseId: ex.exerciseId,
-            sets: ex.sets || 3,
-            reps: ex.reps || "10",
-            restSeconds: ex.restSeconds || 60,
-            loadKg: ex.loadKg || null,
-            notes: ex.notes || null,
-            order: ex.order ?? index,
-            supersetGroup: ex.supersetGroup || null,
-          })),
+          create: validExercises as Array<{
+            exerciseId: string; sets: number; reps: string; restSeconds: number;
+            loadKg: number | null; notes: string | null; order: number; supersetGroup: string | null;
+          }>,
         },
       },
       include: {
