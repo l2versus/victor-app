@@ -15,6 +15,7 @@ import ShaderBackground from "@/components/ui/shader-background"
 import { TextEffect } from "@/components/ui/text-effect"
 import { PremiumTestimonials } from "@/components/ui/premium-testimonials"
 import { TypingEffect } from "@/components/ui/typing-effect"
+import { GradientDots } from "@/components/ui/gradient-dots"
 
 /* ═══════════════════════════════════════════
    HOOKS
@@ -445,16 +446,9 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden relative">
-      {/* ═══ GLOBAL AMBIENT BACKGROUND ═══ */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Subtle noise texture */}
-        <div className="absolute inset-0 landing-grain opacity-30" />
-        {/* Ambient red radials */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(220,38,38,0.06),transparent_70%)]" />
-        <div className="absolute bottom-0 left-1/4 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_50%_100%,rgba(220,38,38,0.04),transparent_70%)]" />
-        <div className="absolute top-1/2 right-0 w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_100%_50%,rgba(220,38,38,0.03),transparent_70%)]" />
-        {/* Very subtle grid */}
-        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:80px_80px]" />
+      {/* ═══ GLOBAL AMBIENT BACKGROUND — Animated gradient dots ═══ */}
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-40">
+        <GradientDots duration={35} dotSize={6} spacing={12} />
       </div>
 
       {/* ═══ NAV ═══ */}
