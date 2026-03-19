@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 }
 import {
   Users, Dumbbell, Calendar, DollarSign,
-  ArrowRight, Plus, Activity, Zap, Flame
+  ArrowRight, Plus, Activity, Zap, Flame, Brain
 } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
@@ -103,6 +103,7 @@ export default async function DashboardPage() {
         <AliveAction href="/admin/students" icon={Plus} title="Novo Aluno" desc="Cadastrar um novo aluno" />
         <AliveAction href="/admin/workouts/new" icon={Dumbbell} title="Criar Treino" desc="Montar um plano de treino" />
         <AliveAction href="/admin/exercises" icon={Activity} title="Biblioteca" desc={`${totalExercises} exercícios`} />
+        <AliveAction href="/admin/ai" icon={Brain} title="IA Tools" desc="Treinos, anamnese, engajamento" />
       </div>
 
       {/* ═══ TWO COLUMN — Glass Panels ═══ */}
