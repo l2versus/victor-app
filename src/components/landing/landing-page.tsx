@@ -16,6 +16,7 @@ import { TextEffect } from "@/components/ui/text-effect"
 import { PremiumTestimonials } from "@/components/ui/premium-testimonials"
 import { TypingEffect } from "@/components/ui/typing-effect"
 import { GradientDots } from "@/components/ui/gradient-dots"
+import { CardSpotlight } from "@/components/ui/card-spotlight"
 
 /* ═══════════════════════════════════════════
    HOOKS
@@ -876,17 +877,16 @@ export function LandingPage() {
               const isElite = tier.name === "Elite"
               return (
                 <Reveal key={tier.name} delay={i * 120}>
-                  <div className={cn(
-                    "group/card relative rounded-3xl border p-7 transition-all duration-700 flex flex-col hover:translate-y-[-4px]",
-                    isPro ? "border-red-500/30 bg-gradient-to-b from-red-600/[0.08] to-red-900/[0.02] md:scale-[1.04] shadow-2xl shadow-red-600/15 z-10" :
-                    isElite ? "border-amber-500/15 bg-gradient-to-b from-amber-900/[0.03] to-transparent hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-600/5" :
-                    "border-white/[0.05] bg-white/[0.015] hover:border-white/[0.12] hover:shadow-xl hover:shadow-white/[0.02]"
-                  )}>
-                    {/* Hover glow */}
-                    <div className={cn(
-                      "absolute -inset-px rounded-3xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 -z-10 blur-xl",
-                      isPro ? "bg-red-600/10" : isElite ? "bg-amber-600/10" : "bg-white/[0.02]"
-                    )} />
+                  <CardSpotlight
+                    color={isPro ? "rgba(220, 38, 38, 0.2)" : isElite ? "rgba(245, 158, 11, 0.15)" : "rgba(255, 255, 255, 0.08)"}
+                    radius={isPro ? 400 : 300}
+                    className={cn(
+                      "border p-7 transition-all duration-700 flex flex-col hover:translate-y-[-4px]",
+                      isPro ? "border-red-500/30 bg-gradient-to-b from-red-600/[0.08] to-red-900/[0.02] md:scale-[1.04] shadow-2xl shadow-red-600/15 z-10" :
+                      isElite ? "border-amber-500/15 bg-gradient-to-b from-amber-900/[0.03] to-transparent hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-600/5" :
+                      "border-white/[0.05] bg-white/[0.015] hover:border-white/[0.12] hover:shadow-xl hover:shadow-white/[0.02]"
+                    )}
+                  >
                     {tier.tag && (
                       <div className={cn(
                         "absolute -top-3.5 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-xl whitespace-nowrap",
@@ -945,7 +945,7 @@ export function LandingPage() {
                     )}>
                       {tier.cta}
                     </button>
-                  </div>
+                  </CardSpotlight>
                 </Reveal>
               )
             })}
