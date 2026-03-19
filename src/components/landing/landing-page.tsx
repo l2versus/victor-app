@@ -158,16 +158,19 @@ function TrainerPhoto({ className, hero = false }: { className?: string; hero?: 
 
 function Logo({ size = 44, glow = false }: { size?: number; glow?: boolean }) {
   return (
-    <div className={cn("relative shrink-0", glow && "drop-shadow-[0_0_30px_rgba(220,38,38,0.4)]")}>
+    <div className={cn("relative shrink-0", glow && "drop-shadow-[0_0_30px_rgba(220,38,38,0.5)]")}>
       <Image
         src="/img/logo.png"
         alt="VO Personal"
         width={size}
         height={size}
-        className="rounded-xl relative z-10"
+        className={cn("rounded-xl relative z-10", glow && "ring-1 ring-red-500/20")}
       />
       {glow && (
-        <div className="absolute inset-0 bg-red-600/20 blur-xl rounded-full scale-150 -z-0" />
+        <>
+          <div className="absolute inset-0 bg-red-600/25 blur-xl rounded-full scale-150 -z-0" />
+          <div className="absolute inset-0 bg-red-500/10 blur-2xl rounded-full scale-[2] -z-0 animate-pulse" />
+        </>
       )}
     </div>
   )
@@ -442,6 +445,17 @@ export function LandingPage() {
 
   return (
     <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden relative">
+      {/* ═══ GLOBAL AMBIENT BACKGROUND ═══ */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        {/* Subtle noise texture */}
+        <div className="absolute inset-0 landing-grain opacity-30" />
+        {/* Ambient red radials */}
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] bg-[radial-gradient(ellipse_at_50%_0%,rgba(220,38,38,0.06),transparent_70%)]" />
+        <div className="absolute bottom-0 left-1/4 w-[800px] h-[600px] bg-[radial-gradient(ellipse_at_50%_100%,rgba(220,38,38,0.04),transparent_70%)]" />
+        <div className="absolute top-1/2 right-0 w-[600px] h-[600px] bg-[radial-gradient(ellipse_at_100%_50%,rgba(220,38,38,0.03),transparent_70%)]" />
+        {/* Very subtle grid */}
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.01)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.01)_1px,transparent_1px)] bg-[size:80px_80px]" />
+      </div>
 
       {/* ═══ NAV ═══ */}
       <nav className={cn(
@@ -996,11 +1010,18 @@ export function LandingPage() {
 
       {/* ═══ FOOTER ═══ */}
       <footer id="contato" className="relative pt-20 pb-10 px-5 sm:px-8 overflow-hidden">
-        {/* Animated grid background */}
+        {/* Rich footer background */}
         <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" style={{ animation: "admin-grid-shift 8s ease-in-out infinite" }} />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-red-600/[0.04] blur-[150px]" />
-          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+          {/* Elevated base */}
+          <div className="absolute inset-0 bg-gradient-to-b from-[#030303] via-[#0a0505] to-[#080303]" />
+          {/* Grid with red tint */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.04)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.04)_1px,transparent_1px)] bg-[size:60px_60px]" style={{ animation: "admin-grid-shift 8s ease-in-out infinite" }} />
+          {/* Ambient glows */}
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full bg-red-600/[0.06] blur-[180px]" />
+          <div className="absolute top-1/3 left-[10%] w-[400px] h-[400px] rounded-full bg-red-900/[0.04] blur-[120px]" />
+          {/* Top border glow */}
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-500/25 to-transparent" />
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-20 bg-red-600/[0.06] blur-3xl rounded-full -translate-y-1/2" />
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
