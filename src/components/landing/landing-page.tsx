@@ -152,15 +152,20 @@ function TrainerPhoto({ className, hero = false }: { className?: string; hero?: 
   )
 }
 
-function Logo({ size = 44 }: { size?: number }) {
+function Logo({ size = 44, glow = false }: { size?: number; glow?: boolean }) {
   return (
-    <Image
-      src="/img/logo.png"
-      alt="VO Personal"
-      width={size}
-      height={size}
-      className="rounded-xl"
-    />
+    <div className={cn("relative shrink-0", glow && "drop-shadow-[0_0_30px_rgba(220,38,38,0.4)]")}>
+      <Image
+        src="/img/logo.png"
+        alt="VO Personal"
+        width={size}
+        height={size}
+        className="rounded-xl relative z-10"
+      />
+      {glow && (
+        <div className="absolute inset-0 bg-red-600/20 blur-xl rounded-full scale-150 -z-0" />
+      )}
+    </div>
   )
 }
 
@@ -188,7 +193,7 @@ export function LandingPage() {
       )}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Logo size={44} />
+            <Logo size={48} glow />
             <div className="hidden sm:block">
               <p className="font-bold text-[15px] text-white tracking-tight">Victor Oliveira</p>
               <p className="text-[9px] text-red-400/70 uppercase tracking-[0.25em] font-semibold">Personal Trainer</p>
@@ -246,11 +251,18 @@ export function LandingPage() {
 
       {/* ═══ HERO — Cinematic split ═══ */}
       <section className="relative min-h-screen flex items-center px-5 sm:px-8 pt-24 pb-16">
+        {/* Animated background */}
         <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-20 left-1/3 w-[600px] h-[600px] rounded-full bg-red-600/[0.06] blur-[150px]" style={{ transform: `translateY(${scrollY * -0.15}px)` }} />
-          <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] rounded-full bg-red-900/[0.04] blur-[120px]" style={{ transform: `translateY(${scrollY * -0.1}px)` }} />
-          {/* Diagonal line */}
-          <div className="absolute top-0 right-[30%] w-px h-full bg-gradient-to-b from-transparent via-red-600/10 to-transparent hidden lg:block" />
+          {/* Animated orbs */}
+          <div className="absolute top-20 left-1/4 w-[500px] h-[500px] rounded-full bg-red-600/[0.08] blur-[130px] animate-[float-slow_8s_ease-in-out_infinite]" style={{ transform: `translateY(${scrollY * -0.2}px)` }} />
+          <div className="absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full bg-red-900/[0.06] blur-[100px] animate-[float-slow_12s_ease-in-out_infinite_reverse]" style={{ transform: `translateY(${scrollY * -0.1}px)` }} />
+          <div className="absolute bottom-20 left-1/2 w-[600px] h-[300px] rounded-full bg-orange-600/[0.03] blur-[120px] animate-[float-slow_10s_ease-in-out_infinite]" />
+          {/* Subtle grid */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.02)_1px,transparent_1px)] bg-[size:100px_100px] opacity-40" />
+          {/* Diagonal accent */}
+          <div className="absolute top-0 right-[30%] w-px h-full bg-gradient-to-b from-transparent via-red-600/15 to-transparent hidden lg:block" />
+          {/* Bottom vignette */}
+          <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#030303] to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
@@ -317,9 +329,9 @@ export function LandingPage() {
             </Reveal>
           </div>
 
-          {/* Right — Photo */}
+          {/* Right — Photo with parallax */}
           <Reveal delay={400} direction="scale">
-            <div className="relative">
+            <div className="relative" style={{ transform: `translateY(${scrollY * -0.08}px)` }}>
               <TrainerPhoto className="w-full aspect-[4/5] max-w-md mx-auto lg:ml-auto" hero />
               {/* Floating badge */}
               <div className="absolute -left-4 top-1/3 px-4 py-3 rounded-2xl bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/[0.06] shadow-2xl animate-float-slow">
@@ -698,8 +710,8 @@ export function LandingPage() {
         </div>
         <Reveal>
           <div className="max-w-3xl mx-auto text-center relative z-10">
-            <div className="mx-auto mb-8 w-20 h-20 shadow-2xl shadow-red-600/30 rounded-3xl overflow-hidden">
-              <Logo size={80} />
+            <div className="mx-auto mb-8">
+              <Logo size={80} glow />
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight mb-5 leading-tight">
               Sua transformação
@@ -724,7 +736,7 @@ export function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-3 mb-5">
-                <Logo size={44} />
+                <Logo size={48} glow />
                 <div>
                   <p className="font-bold text-[15px] text-white">Victor Oliveira</p>
                   <p className="text-[9px] text-red-400/60 uppercase tracking-[0.25em] font-semibold">CREF 123456-G/SP</p>
