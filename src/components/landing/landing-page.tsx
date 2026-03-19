@@ -920,9 +920,10 @@ export function LandingPage() {
                       </div>
                     ) : <div className="mb-5" />}
 
-                    <p className="text-[11px] text-neutral-600 mb-6 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.03] text-center">
-                      <span className="text-neutral-400 font-medium">R$ {p.perDay.toFixed(2)}</span> por dia — menos que um café
-                    </p>
+                    <div className="mb-6 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.04] text-center">
+                      <p className="text-sm font-bold text-white mb-0.5">R$ {p.perDay.toFixed(2)}<span className="text-neutral-500 font-normal text-[11px]">/dia</span></p>
+                      <p className="text-[10px] text-neutral-500">Menos que um cafezinho por dia</p>
+                    </div>
 
                     <div className="space-y-2.5 flex-1 mb-7">
                       {tier.features.map(f => (
@@ -937,6 +938,14 @@ export function LandingPage() {
                       ))}
                     </div>
 
+                    {/* Urgency */}
+                    {isPro && (
+                      <div className="flex items-center justify-center gap-2 mb-3 px-3 py-2 rounded-lg bg-red-600/[0.08] border border-red-500/[0.12]">
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                        <span className="text-[11px] text-red-300 font-semibold">Restam poucas vagas este mês</span>
+                      </div>
+                    )}
+
                     <button onClick={() => setSelectedPlan(tier)} className={cn(
                       "w-full py-4 rounded-xl text-[13px] font-bold text-center transition-all duration-500 cursor-pointer",
                       isPro ? "bg-red-600 text-white hover:bg-red-500 shadow-xl shadow-red-600/20 hover:shadow-red-600/40 hover:scale-[1.02]" :
@@ -945,18 +954,38 @@ export function LandingPage() {
                     )}>
                       {tier.cta}
                     </button>
+
+                    {/* Social proof micro */}
+                    <div className="flex items-center justify-center gap-1.5 mt-3">
+                      <div className="flex -space-x-1.5">
+                        {["L", "C", "R"].map((l) => (
+                          <div key={l} className="w-5 h-5 rounded-full bg-gradient-to-br from-red-600/40 to-red-900/30 border border-red-500/20 flex items-center justify-center text-[8px] text-red-200 font-bold">{l}</div>
+                        ))}
+                      </div>
+                      <span className="text-[10px] text-neutral-500">200+ alunos ativos</span>
+                    </div>
                   </CardSpotlight>
                 </Reveal>
               )
             })}
           </div>
 
+          {/* Guarantee banner — high visibility */}
           <Reveal delay={400}>
-            <div className="text-center mt-10 space-y-2">
+            <div className="mt-12 rounded-2xl border border-emerald-500/15 bg-emerald-600/[0.04] p-5 sm:p-6 flex flex-col sm:flex-row items-center gap-4 text-center sm:text-left">
+              <div className="w-14 h-14 rounded-2xl bg-emerald-600/15 flex items-center justify-center shrink-0">
+                <Shield className="w-7 h-7 text-emerald-400" />
+              </div>
+              <div className="flex-1">
+                <p className="text-white font-bold text-sm mb-1">Garantia incondicional de 7 dias</p>
+                <p className="text-neutral-400 text-xs leading-relaxed">Se não gostar por qualquer motivo, devolvemos 100% do seu dinheiro. Sem perguntas, sem burocracia. O risco é zero.</p>
+              </div>
+            </div>
+          </Reveal>
+
+          <Reveal delay={500}>
+            <div className="text-center mt-6">
               <p className="text-neutral-600 text-xs">Pix, cartão (até 12x) ou boleto · Cancele quando quiser</p>
-              <p className="text-neutral-700 text-[11px] flex items-center justify-center gap-1.5">
-                <Shield className="w-3 h-3" /> Pagamento seguro · Garantia de 7 dias
-              </p>
             </div>
           </Reveal>
         </div>
@@ -1159,6 +1188,27 @@ export function LandingPage() {
           </div>
         </div>
       </footer>
+
+      {/* ═══ STICKY CTA — Mobile only ═══ */}
+      <div className={cn(
+        "fixed bottom-0 inset-x-0 z-50 sm:hidden transition-all duration-500 safe-bottom",
+        scrollY > 600 ? "translate-y-0 opacity-100" : "translate-y-full opacity-0"
+      )}>
+        <div className="bg-[#0a0a0a]/95 backdrop-blur-xl border-t border-white/[0.06] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-bold">A partir de R$ 3,99<span className="text-neutral-500 font-normal text-xs">/dia</span></p>
+              <p className="text-neutral-500 text-[10px]">Garantia 7 dias · Cancele quando quiser</p>
+            </div>
+            <a
+              href="#planos"
+              className="shrink-0 px-5 py-2.5 rounded-xl bg-red-600 text-white text-xs font-bold shadow-lg shadow-red-600/25 active:scale-95 transition-transform"
+            >
+              Ver planos
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
