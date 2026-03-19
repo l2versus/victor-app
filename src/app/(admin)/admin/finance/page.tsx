@@ -1,27 +1,46 @@
+import type { Metadata } from "next"
 import { requireAdmin } from "@/lib/auth"
+import { getTrainerProfile } from "@/lib/admin"
+import { prisma } from "@/lib/prisma"
 import { DollarSign } from "lucide-react"
+import { FinanceClient } from "./finance-client"
+
+export const metadata: Metadata = {
+  title: "Financeiro",
+  robots: { index: false, follow: false },
+}
 
 export default async function FinancePage() {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const trainer = await getTrainerProfile(session.userId)
+
+  // Load students for payment registration dropdown
+  const students = await prisma.student.findMany({
+    where: { trainerId: trainer.id, status: "ACTIVE" },
+    include: { user: { select: { name: true } } },
+    orderBy: { user: { name: "asc" } },
+  })
+
+  const studentList = students.map(s => ({
+    id: s.id,
+    name: s.user.name,
+  }))
 
   return (
-    <div className="flex items-center justify-center h-[70vh]">
-      <div className="text-center">
-        <div className="relative inline-block mb-6">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-600/20 to-emerald-800/10 border border-emerald-500/10 flex items-center justify-center mx-auto backdrop-blur-xl">
-            <DollarSign className="w-9 h-9 text-emerald-500" />
-          </div>
-          <div className="absolute inset-0 rounded-3xl bg-emerald-500/10 animate-ping" style={{ animationDuration: '3s' }} />
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Financeiro</h1>
-        <p className="text-neutral-500 text-sm max-w-xs mx-auto mb-6">
-          Controle de pagamentos, cobranças e análise de receita em breve.
-        </p>
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06] text-neutral-400 text-xs">
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          Em desenvolvimento
+    <div className="space-y-6 sm:space-y-8">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+              <DollarSign className="w-5 h-5 text-white" />
+            </div>
+            Financeiro
+          </h1>
+          <p className="text-neutral-500 text-sm mt-1">Receitas, custos e lucro em tempo real</p>
         </div>
       </div>
+
+      <FinanceClient students={studentList} />
     </div>
   )
 }

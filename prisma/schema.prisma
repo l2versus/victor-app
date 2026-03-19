@@ -51,6 +51,7 @@ model TrainerProfile {
   students  Student[]
   templates WorkoutTemplate[]
   plans     Plan[]
+  costs     OperationalCost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -402,6 +403,49 @@ model Payment {
   @@index([studentId])
   @@index([status])
   @@index([dueDate])
+}
+
+// ═══════════════════════════════════════
+// OPERATIONAL COSTS
+// ═══════════════════════════════════════
+
+enum CostCategory {
+  HOSTING        // VPS Coolify
+  AI_TOKENS      // Claude API tokens
+  SOFTWARE       // Manutenção de software
+  GAS            // Gasolina para personal presencial
+  EQUIPMENT      // Equipamentos
+  MARKETING      // Marketing e publicidade
+  OTHER          // Outros custos
+}
+
+enum CostRecurrence {
+  ONE_TIME       // Custo único
+  DAILY          // Diário (ex: tokens IA)
+  MONTHLY        // Mensal (ex: hosting)
+  QUARTERLY      // Trimestral (ex: manutenção software)
+  ANNUAL         // Anual
+}
+
+model OperationalCost {
+  id          String         @id @default(cuid())
+  trainerId   String
+  category    CostCategory
+  name        String         // "VPS Coolify", "Claude API", "Gasolina", etc.
+  amount      Float          // valor em R$
+  recurrence  CostRecurrence @default(MONTHLY)
+  date        DateTime       @default(now()) // data do custo ou referência
+  notes       String?
+  active      Boolean        @default(true)  // custos recorrentes ativos
+
+  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+  @@index([category])
+  @@index([date])
 }
 
 // ═══════════════════════════════════════
