@@ -166,14 +166,24 @@ export function PremiumTestimonials() {
           <TextEffect per="char" preset="blur" delay={0.1} as="p" className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">
             Depoimentos reais
           </TextEffect>
-          <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight text-center mb-4">
-            <TextEffect per="word" preset="slide" as="span" className="inline">
-              {"Quem treina com Victor, "}
-            </TextEffect>
-            <TextEffect per="char" preset="blur" delay={0.4} as="span" className="inline text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
+          <motion.h2
+            className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight text-center mb-4"
+            initial={{ y: 30, filter: "blur(8px)" }}
+            whileInView={{ y: 0, filter: "blur(0px)" }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+          >
+            Quem treina com Victor,{" "}
+            <motion.span
+              className="inline-block text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400"
+              initial={{ y: 20, filter: "blur(8px)" }}
+              whileInView={{ y: 0, filter: "blur(0px)" }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6, delay: 0.6 }}
+            >
               transforma.
-            </TextEffect>
-          </h2>
+            </motion.span>
+          </motion.h2>
           <TextEffect per="word" preset="fade" delay={0.6} as="p" className="text-neutral-500 text-center text-sm">
             Resultados reais de alunos reais.
           </TextEffect>
