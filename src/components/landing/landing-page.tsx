@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Dumbbell, Sparkles, Camera, Users,
   Star, Shield, Zap, Target, TrendingUp,
@@ -123,40 +124,43 @@ function getPrice(m: number, d: Duration) {
 /* ═══════════════════════════════════════════
    PHOTO PLACEHOLDER (silhouette composition)
    ═══════════════════════════════════════════ */
-function TrainerPhoto({ className }: { className?: string }) {
+function TrainerPhoto({ className, hero = false }: { className?: string; hero?: boolean }) {
   return (
-    <div className={cn("photo-placeholder rounded-3xl relative", className)}>
-      {/* Silhouette figure */}
-      <svg viewBox="0 0 400 500" className="w-full h-full" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="bodyGrad" x1="200" y1="0" x2="200" y2="500" gradientUnits="userSpaceOnUse">
-            <stop offset="0" stopColor="#dc2626" stopOpacity="0.3"/>
-            <stop offset="1" stopColor="#dc2626" stopOpacity="0.05"/>
-          </linearGradient>
-        </defs>
-        {/* Abstract fitness silhouette */}
-        <circle cx="200" cy="100" r="45" fill="url(#bodyGrad)" stroke="#dc2626" strokeWidth="0.5" strokeOpacity="0.3"/>
-        <path d="M155 155 Q200 140 245 155 L260 280 Q200 295 140 280 Z" fill="url(#bodyGrad)" stroke="#dc2626" strokeWidth="0.5" strokeOpacity="0.2"/>
-        <rect x="140" y="280" width="40" height="140" rx="12" fill="url(#bodyGrad)" stroke="#dc2626" strokeWidth="0.5" strokeOpacity="0.15"/>
-        <rect x="220" y="280" width="40" height="140" rx="12" fill="url(#bodyGrad)" stroke="#dc2626" strokeWidth="0.5" strokeOpacity="0.15"/>
-        {/* Dumbbell accent */}
-        <rect x="260" y="170" width="80" height="12" rx="6" fill="#dc2626" fillOpacity="0.15"/>
-        <rect x="60" y="190" width="80" height="12" rx="6" fill="#dc2626" fillOpacity="0.1"/>
-        {/* Decorative circles */}
-        <circle cx="320" cy="100" r="30" stroke="#dc2626" strokeWidth="0.5" strokeOpacity="0.1" fill="none"/>
-        <circle cx="80" cy="400" r="50" stroke="#dc2626" strokeWidth="0.5" strokeOpacity="0.08" fill="none"/>
-      </svg>
-      {/* Overlay text */}
-      <div className="absolute bottom-6 left-6 right-6">
-        <p className="text-[10px] text-red-400/60 uppercase tracking-[0.3em] font-medium">Foto do Victor</p>
-        <p className="text-[9px] text-neutral-600 mt-1">Substituir por foto profissional</p>
-      </div>
-      {/* Corner accent */}
-      <div className="absolute top-0 right-0 w-20 h-20">
-        <div className="absolute top-3 right-3 w-8 h-8 rounded-full border border-red-500/20" />
-        <div className="absolute top-5 right-5 w-3 h-3 rounded-full bg-red-600/40" />
-      </div>
+    <div className={cn("relative rounded-3xl overflow-hidden", className)}>
+      {/* Photo */}
+      <Image
+        src="/img/victor-profile.png"
+        alt="Victor Oliveira — Personal Trainer"
+        width={500}
+        height={625}
+        className={cn("w-full h-full object-cover object-top", hero && "scale-110")}
+        priority={hero}
+      />
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-transparent opacity-80" />
+      <div className="absolute inset-0 bg-gradient-to-r from-[#030303]/40 to-transparent" />
+      {/* Red accent glow behind */}
+      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3/4 h-1/2 bg-red-600/10 blur-[80px] rounded-full" />
+      {/* Bottom info */}
+      {!hero && (
+        <div className="absolute bottom-6 left-6 right-6">
+          <p className="text-white font-bold text-lg">Victor Oliveira</p>
+          <p className="text-red-400 text-xs font-medium tracking-wider uppercase">CREF 123456-G/CE</p>
+        </div>
+      )}
     </div>
+  )
+}
+
+function Logo({ size = 44 }: { size?: number }) {
+  return (
+    <Image
+      src="/img/logo.png"
+      alt="VO Personal"
+      width={size}
+      height={size}
+      className="rounded-xl"
+    />
   )
 }
 
@@ -175,7 +179,7 @@ export function LandingPage() {
   }, [])
 
   return (
-    <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden relative landing-grain">
+    <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden relative">
 
       {/* ═══ NAV ═══ */}
       <nav className={cn(
@@ -184,9 +188,7 @@ export function LandingPage() {
       )}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-black text-xl shadow-2xl shadow-red-600/30 tracking-tighter">
-              V
-            </div>
+            <Logo size={44} />
             <div className="hidden sm:block">
               <p className="font-bold text-[15px] text-white tracking-tight">Victor Oliveira</p>
               <p className="text-[9px] text-red-400/70 uppercase tracking-[0.25em] font-semibold">Personal Trainer</p>
@@ -318,7 +320,7 @@ export function LandingPage() {
           {/* Right — Photo */}
           <Reveal delay={400} direction="scale">
             <div className="relative">
-              <TrainerPhoto className="w-full aspect-[4/5] max-w-md mx-auto lg:ml-auto" />
+              <TrainerPhoto className="w-full aspect-[4/5] max-w-md mx-auto lg:ml-auto" hero />
               {/* Floating badge */}
               <div className="absolute -left-4 top-1/3 px-4 py-3 rounded-2xl bg-[#0a0a0a]/90 backdrop-blur-xl border border-white/[0.06] shadow-2xl animate-float-slow">
                 <div className="flex items-center gap-3">
@@ -696,8 +698,8 @@ export function LandingPage() {
         </div>
         <Reveal>
           <div className="max-w-3xl mx-auto text-center relative z-10">
-            <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center mx-auto mb-8 shadow-2xl shadow-red-600/30">
-              <Heart className="w-8 h-8 text-white" />
+            <div className="mx-auto mb-8 w-20 h-20 shadow-2xl shadow-red-600/30 rounded-3xl overflow-hidden">
+              <Logo size={80} />
             </div>
             <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight mb-5 leading-tight">
               Sua transformação
@@ -722,7 +724,7 @@ export function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
             <div className="md:col-span-2">
               <div className="flex items-center gap-3 mb-5">
-                <div className="w-11 h-11 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-red-600/25">V</div>
+                <Logo size={44} />
                 <div>
                   <p className="font-bold text-[15px] text-white">Victor Oliveira</p>
                   <p className="text-[9px] text-red-400/60 uppercase tracking-[0.25em] font-semibold">CREF 123456-G/SP</p>
