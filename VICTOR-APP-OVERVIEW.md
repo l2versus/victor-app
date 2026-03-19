@@ -117,19 +117,33 @@ O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para pe
 - JSON-LD Schema.org (Person — busca Google)
 - robots.txt inteligente (bloqueia /api/, /admin/)
 - sitemap.xml dinamico
-- manifest.json (PWA-ready)
+- manifest.json com icones maskable (192x192, 512x512)
+- Apple Touch Icon para iOS
 - Meta tags por pagina
 - `lang="pt-BR"` nativo
+- **PWA Install Banner** — modal orientando instalacao (Android: botao direto, iOS: instrucoes Safari)
+- Service Worker para cache e funcionamento offline
 
 ### 7. Design & UX
-- **Dark mode premium** — inspiracao Apple/Vercel
-- Glassmorphism com backdrop-blur
+- **Dark mode premium** — tema Ironberg (vermelho #dc2626 + preto #0a0a0a)
+- Logo 3D em todo o site (substituiu flat por volume metalico)
+- GradientDots background animado (pontos hexagonais vermelhos)
 - Ember orbs animados (CSS keyframes custom)
-- Noise texture sutil
-- 10+ animacoes CSS customizadas
+- 15+ animacoes CSS customizadas
 - Responsivo mobile-first
-- Touch gestures (swipe entre fases do treino)
+- Touch gestures (swipe entre fases do treino + carousel de depoimentos)
 - Feedback visual em cada interacao
+
+### 8. Landing Page Premium (Sessao 6)
+- **Hero** com video background cinematografico + parallax
+- **Depoimentos** — carousel interativo com 6 cases brasileiros, swipe mobile, auto-play inteligente
+- **Como Funciona** — 4 passos com TextEffect animado (blur/slide)
+- **FAQ** — accordion premium com icones por pergunta + logos 3D flutuantes
+- **Footer** — typing animation motivacional + CTA WhatsApp + grid animado
+- **Cards de Plano** — CardSpotlight (luz que segue o mouse) + urgencia + social proof
+- **Sticky CTA mobile** — barra fixa com preco/dia + botao "Ver planos"
+- **Banner de garantia** — 7 dias, verde, grande, posicionado estrategicamente
+- **Performance** — scroll throttled, sem WebGL, CSS puro, imagens otimizadas
 
 ---
 
@@ -137,47 +151,53 @@ O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para pe
 
 | Metrica | Valor |
 |---------|-------|
-| Paginas/Telas | 15+ |
+| Paginas/Telas | 18+ |
 | Endpoints API | 24 |
 | Modelos de dados | 14 (User, Student, Exercise, Plan, Subscription...) |
-| Componentes React | 18+ |
+| Componentes React | 30+ |
+| Componentes UI (shadcn) | 12 (button, card, badge, modal, text-effect, etc.) |
 | Exercicios pre-carregados | 203 |
 | Hooks customizados | 2 (useRestTimer, useSwipe) |
 | System prompts IA | 4 (chat, treino, anamnese, engajamento) |
+| Animacoes CSS | 15+ keyframes customizados |
 | Build time | ~3 segundos (Turbopack) |
 
 ---
 
 ## Roadmap — Proximas Entregas
 
-### Fase 6 — Checkout & Monetizacao
-- [ ] Pagina publica de planos com pricing cards
+### Fase 7 — Financeiro + Checkout + Postura (PROXIMA)
+
+**Financeiro do Personal:**
+- [ ] Dashboard financeiro (entradas, saidas, lucro liquido)
+- [ ] Custos do negocio (VPS, API IA, gasolina, equipamentos)
+- [ ] Graficos de receita mensal/anual
+
+**Checkout & Monetizacao:**
 - [ ] Integracao Mercado Pago (Checkout Pro)
 - [ ] Pagamento via Pix, cartao, boleto
 - [ ] Webhook de confirmacao → cria conta + ativa plano automaticamente
-- [ ] Carteira/Wallet no painel admin (saldo, historico, saques)
 - [ ] Cobranca recorrente automatica
 
-### Fase 7 — Correcao de Postura por Camera (Feature Killer)
-- [ ] MediaPipe Pose (Google) rodando no browser
-- [ ] Deteccao de 33 pontos do corpo em tempo real
-- [ ] Comparacao de angulos articulares com padrao correto do exercicio
-- [ ] Feedback visual em tempo real ("Desça mais o quadril", "Cotovelos alinhados")
-- [ ] Historico de correcoes por exercicio
+**Correcao de Postura por Camera (Feature Killer):**
+- [ ] MediaPipe Pose (Google) — gratuito, client-side, offline
+- [ ] Componente isolado com next/dynamic ssr:false
+- [ ] 33 pontos do corpo detectados em tempo real
+- [ ] Regras biomecanicas por exercicio (angulos articulares):
+  - Agachamento: joelho < 90° = ok, tronco ereto, joelhos atras do pe
+  - Rosca Biceps: ombro estatico, extensao > 160°, contracao < 40°
+  - Prancha: corpo em linha reta (165°-180°)
+- [ ] Feedback visual: setas + texto + cor (verde/amarelo/vermelho)
+- [ ] Botao "Analisar Postura nesta Serie" (nao deixar camera sempre ligada)
+- [ ] Feature flag: somente plano Elite
 - **Diferencial: MFIT nao tem isso**
 
-### Fase 8 — PWA Completo & Notificacoes
-- [ ] Service Worker (offline-first)
-- [ ] Push notifications (lembrete de treino, pagamento, motivacao)
-- [ ] Instalar como app nativo no celular
-- [ ] Cache inteligente de exercicios e treinos
-
-### Fase 9 — Grupo VIP & Comunidade
+### Fase 8 — Grupo VIP & Comunidade
 - [ ] Chat em grupo (alunos do mesmo trainer)
 - [ ] Rankings e desafios semanais
 - [ ] Compartilhar progresso com outros alunos
 
-### Fase 10 — Nutricao & Saude
+### Fase 9 — Nutricao & Saude
 - [ ] Plano alimentar basico
 - [ ] Tracking de macros simplificado
 - [ ] Integracao com IA para sugestoes nutricionais
