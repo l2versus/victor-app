@@ -299,15 +299,19 @@ const faqData = [
   { q: "Preciso ir à academia?", a: "Não necessariamente. Victor monta treinos para academia, home workout ou ao ar livre. Você escolhe.", icon: Target },
 ]
 
-function FloatingLogo({ size, className, delay }: { size: number; className?: string; delay: number }) {
+function FloatingLogo({ size, className, delay, duration = 16 }: { size: number; className?: string; delay: number; duration?: number }) {
   return (
     <div
-      className={cn("absolute opacity-0 pointer-events-none", className)}
-      style={{ animation: `float-slow 14s ease-in-out infinite, fadeIn 1.5s ${delay}s ease-out forwards` }}
+      className={cn("absolute pointer-events-none", className)}
+      style={{
+        animation: `faq-logo-float ${duration}s ease-in-out infinite, fadeIn 1.5s ${delay}s ease-out forwards`,
+        opacity: 0,
+        animationDelay: `${delay}s, ${delay}s`,
+      }}
     >
       <div className="relative" style={{ width: size, height: size }}>
-        <Image src="/img/logo-icon-sm.png" alt="" width={size} height={size} className="rounded-2xl opacity-[0.07]" />
-        <div className="absolute inset-0 bg-red-600/10 blur-xl rounded-full scale-150" />
+        <Image src="/img/logo-icon-sm.png" alt="" width={size} height={size} className="rounded-2xl opacity-[0.12] drop-shadow-[0_0_15px_rgba(220,38,38,0.15)]" />
+        <div className="absolute inset-0 bg-red-600/10 blur-xl rounded-full scale-150 animate-pulse" />
       </div>
     </div>
   )
@@ -319,12 +323,12 @@ function FaqSection() {
     <section className="py-24 sm:py-36 px-5 sm:px-8 relative overflow-hidden">
       {/* Floating 3D logos */}
       <div className="absolute inset-0 pointer-events-none hidden sm:block">
-        <FloatingLogo size={120} delay={0.2} className="left-[2%] top-[12%]" />
-        <FloatingLogo size={80} delay={0.5} className="right-[5%] top-[18%]" />
-        <FloatingLogo size={100} delay={0.3} className="right-[8%] bottom-[15%]" />
-        <FloatingLogo size={60} delay={0.7} className="left-[12%] bottom-[20%]" />
-        <FloatingLogo size={50} delay={0.6} className="left-[35%] top-[5%]" />
-        <FloatingLogo size={70} delay={0.8} className="right-[25%] bottom-[5%]" />
+        <FloatingLogo size={120} delay={0.2} duration={14} className="left-[2%] top-[12%]" />
+        <FloatingLogo size={80} delay={0.5} duration={18} className="right-[5%] top-[18%]" />
+        <FloatingLogo size={100} delay={0.3} duration={20} className="right-[8%] bottom-[15%]" />
+        <FloatingLogo size={60} delay={0.7} duration={12} className="left-[12%] bottom-[20%]" />
+        <FloatingLogo size={50} delay={0.6} duration={22} className="left-[35%] top-[5%]" />
+        <FloatingLogo size={70} delay={0.8} duration={16} className="right-[25%] bottom-[5%]" />
       </div>
 
       {/* Background */}
