@@ -833,15 +833,24 @@ export function LandingPage() {
               <Reveal key={feat.title} delay={i * 80}>
                 <button
                   onClick={() => setSelectedFeature(feat)}
-                  className={cn("group relative rounded-2xl border p-7 transition-all duration-700 hover:bg-white/[0.02] text-left w-full cursor-pointer hover:translate-y-[-2px]", feat.bg)}
+                  className={cn("group relative rounded-2xl border p-6 sm:p-8 transition-all duration-700 hover:bg-white/[0.02] text-left w-full cursor-pointer hover:translate-y-[-2px] h-full", feat.bg)}
                 >
-                  <div className={cn("w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-500 shadow-lg", feat.color)}>
-                    <feat.icon className="w-5 h-5 text-white" />
+                  {/* Number + Icon row */}
+                  <div className="flex items-center justify-between mb-5">
+                    <div className={cn("w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center group-hover:scale-110 transition-transform duration-500 shadow-lg", feat.color)}>
+                      <feat.icon className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-[40px] font-black text-white/[0.04] leading-none select-none">0{i + 1}</span>
                   </div>
-                  <h3 className="text-[17px] font-bold text-white mb-2 tracking-tight">{feat.title}</h3>
-                  <p className="text-neutral-500 text-sm leading-relaxed">{feat.desc}</p>
-                  <p className="text-red-400/60 text-[11px] font-medium mt-3 flex items-center gap-1 group-hover:text-red-400 transition-colors">
-                    Saiba mais <ChevronRight className="w-3 h-3" />
+
+                  <h3 className="text-lg sm:text-xl font-bold text-white mb-3 tracking-tight leading-tight">{feat.title}</h3>
+
+                  <div className="h-px w-12 bg-gradient-to-r from-red-500/30 to-transparent mb-3" />
+
+                  <p className="text-neutral-400 text-[13px] sm:text-sm leading-relaxed mb-4">{feat.desc}</p>
+
+                  <p className="text-red-400/60 text-xs font-semibold flex items-center gap-1.5 group-hover:text-red-400 group-hover:gap-2.5 transition-all">
+                    Saiba mais <ChevronRight className="w-3.5 h-3.5" />
                   </p>
                 </button>
               </Reveal>
