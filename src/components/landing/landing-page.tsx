@@ -325,14 +325,18 @@ function FaqSection() {
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   return (
     <section className="py-24 sm:py-36 px-5 sm:px-8 relative overflow-hidden">
-      {/* Floating logos with big movement */}
-      <div className="absolute inset-0 pointer-events-none hidden sm:block overflow-hidden">
-        <FloatingLogo size={110} delay={0} variant={1} className="left-[2%] top-[10%]" />
-        <FloatingLogo size={70} delay={1.5} variant={2} className="right-[4%] top-[15%]" />
-        <FloatingLogo size={90} delay={0.8} variant={3} className="right-[6%] bottom-[12%]" />
-        <FloatingLogo size={50} delay={2} variant={1} className="left-[10%] bottom-[18%]" />
-        <FloatingLogo size={60} delay={1.2} variant={2} className="left-[30%] top-[3%]" />
-        <FloatingLogo size={75} delay={0.5} variant={3} className="right-[22%] bottom-[5%]" />
+      {/* Floating logos — desktop: large, mobile: smaller & fewer */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Desktop only */}
+        <FloatingLogo size={110} delay={0} variant={1} className="left-[2%] top-[10%] hidden sm:block" />
+        <FloatingLogo size={90} delay={0.8} variant={3} className="right-[6%] bottom-[12%] hidden sm:block" />
+        <FloatingLogo size={60} delay={1.2} variant={2} className="left-[30%] top-[3%] hidden sm:block" />
+        <FloatingLogo size={75} delay={0.5} variant={3} className="right-[22%] bottom-[5%] hidden sm:block" />
+        {/* Both mobile + desktop */}
+        <FloatingLogo size={50} delay={0.3} variant={1} className="left-[-3%] top-[5%] sm:left-[10%] sm:bottom-[18%]" />
+        <FloatingLogo size={40} delay={1} variant={2} className="right-[-2%] top-[30%] sm:right-[4%] sm:top-[15%]" />
+        <FloatingLogo size={35} delay={1.8} variant={3} className="left-[5%] bottom-[8%] sm:hidden" />
+        <FloatingLogo size={30} delay={2.2} variant={1} className="right-[8%] bottom-[3%] sm:hidden" />
       </div>
 
       {/* Background */}
