@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils"
 import ShaderBackground from "@/components/ui/shader-background"
 import { TextEffect } from "@/components/ui/text-effect"
+import { PremiumTestimonials } from "@/components/ui/premium-testimonials"
 
 /* ═══════════════════════════════════════════
    HOOKS
@@ -676,56 +677,8 @@ export function LandingPage() {
 
       {/* ═══ RESULTADOS ═══ */}
       <section id="resultados" className="py-24 sm:py-36 px-5 sm:px-8 relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/[0.04] to-transparent" />
-          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-red-600/[0.04] blur-[180px]" />
-        </div>
-        <div className="max-w-7xl mx-auto relative z-10">
-          <Reveal>
-            <TextEffect per="char" preset="blur" delay={0.1} as="p" className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">
-              Depoimentos reais
-            </TextEffect>
-            <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight text-center mb-4">
-              <TextEffect per="word" preset="slide" as="span" className="inline">
-                Quem treina com Victor,{" "}
-              </TextEffect>
-              <TextEffect per="char" preset="blur" delay={0.4} as="span" className="inline text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
-                transforma.
-              </TextEffect>
-            </h2>
-            <TextEffect per="word" preset="fade" delay={0.6} as="p" className="text-neutral-500 text-center text-sm mb-16">
-              Resultados reais de alunos reais.
-            </TextEffect>
-          </Reveal>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {[
-              { name: "Lucas M.", age: "28 anos", result: "-12kg em 4 meses", text: "Nunca pensei que ia conseguir. O treino é na medida certa e o acompanhamento pelo app é absurdo. A IA me cobra quando eu falto!", avatar: "L" },
-              { name: "Camila R.", age: "34 anos", result: "Ganho de massa sem dor", text: "Tenho hérnia e sempre tive medo de treinar pesado. Victor adaptou tudo respeitando minhas restrições. Me sinto segura pela primeira vez.", avatar: "C" },
-              { name: "Roberto S.", age: "41 anos", result: "+8kg de massa magra", text: "O app é outro nível. Vejo minha evolução de carga, timer de descanso, tudo organizado. Parece que tenho um personal do lado 24h.", avatar: "R" },
-            ].map((r, i) => (
-              <Reveal key={r.name} delay={i * 150}>
-                <div className="rounded-2xl border border-white/[0.05] bg-white/[0.015] p-7 hover:border-white/[0.1] transition-all duration-700 group">
-                  <div className="flex items-center gap-1 mb-5">
-                    {Array.from({ length: 5 }).map((_, j) => (
-                      <Star key={j} className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-                    ))}
-                  </div>
-                  <p className="text-neutral-300 text-sm leading-relaxed mb-6">&ldquo;{r.text}&rdquo;</p>
-                  <div className="flex items-center gap-3 pt-5 border-t border-white/[0.04]">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/20 flex items-center justify-center text-red-300 text-sm font-bold border border-red-500/15">
-                      {r.avatar}
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-white text-sm font-semibold">{r.name} <span className="text-neutral-600 font-normal">· {r.age}</span></p>
-                      <p className="text-red-400 text-xs font-semibold">{r.result}</p>
-                    </div>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500/40" />
-                  </div>
-                </div>
-              </Reveal>
-            ))}
-          </div>
+        <div className="max-w-7xl mx-auto">
+          <PremiumTestimonials />
         </div>
       </section>
 
