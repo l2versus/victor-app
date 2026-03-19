@@ -11,6 +11,7 @@ import {
   X, ChevronRight, Menu, XIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import ShaderBackground from "@/components/ui/shader-background"
 
 /* ═══════════════════════════════════════════
    HOOKS
@@ -623,12 +624,15 @@ export function LandingPage() {
       </section>
 
       {/* ═══ COMO FUNCIONA ═══ */}
-      <section className="py-24 sm:py-36 px-5 sm:px-8 relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-red-600/[0.03] blur-[150px]" />
-          <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-orange-900/[0.03] blur-[120px]" />
+      <section className="py-24 sm:py-36 px-5 sm:px-8 relative overflow-hidden">
+        {/* WebGL Shader Background */}
+        <div className="absolute inset-0 opacity-40">
+          <ShaderBackground />
         </div>
-        <div className="max-w-4xl mx-auto">
+        {/* Darkening overlays for readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#030303] via-transparent to-[#030303]" />
+        <div className="absolute inset-0 bg-[#030303]/40" />
+        <div className="max-w-4xl mx-auto relative z-10">
           <Reveal>
             <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">4 passos simples</p>
             <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight text-center mb-16">Como funciona?</h2>
