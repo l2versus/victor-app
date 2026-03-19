@@ -1,0 +1,87 @@
+"use client"
+
+import Link from "next/link"
+import { usePathname } from "next/navigation"
+import { cn } from "@/lib/utils"
+import {
+  LayoutDashboard,
+  Users,
+  Dumbbell,
+  Library,
+  ClipboardList,
+  DollarSign,
+  Settings,
+  LogOut,
+} from "lucide-react"
+
+const navItems = [
+  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/students", label: "Students", icon: Users },
+  { href: "/admin/workouts", label: "Workouts", icon: Dumbbell },
+  { href: "/admin/exercises", label: "Exercises", icon: Library },
+  { href: "/admin/assessments", label: "Assessments", icon: ClipboardList },
+  { href: "/admin/finance", label: "Finance", icon: DollarSign },
+  { href: "/admin/settings", label: "Settings", icon: Settings },
+]
+
+export function AdminSidebar({ userName }: { userName: string }) {
+  const pathname = usePathname()
+
+  async function handleLogout() {
+    await fetch("/api/auth/logout", { method: "POST" })
+    window.location.href = "/login"
+  }
+
+  return (
+    <aside className="w-[260px] border-r border-white/[0.06] bg-[#060606]/80 backdrop-blur-xl flex flex-col shrink-0 relative">
+      {/* Sidebar ember glow */}
+      <div className="absolute top-0 right-0 w-32 h-64 bg-gradient-to-l from-red-600/[0.03] to-transparent pointer-events-none" />
+      {/* Logo — Titanium */}
+      <div className="px-7 py-8 border-b border-white/[0.04]">
+        <div className="flex items-center gap-3.5">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold text-base tracking-tight shadow-lg shadow-red-600/20">
+            V
+          </div>
+          <div>
+            <p className="font-semibold text-[13px] text-white/90 tracking-[-0.01em]">Victor Oliveira</p>
+            <p className="text-[11px] text-neutral-500 tracking-wide uppercase">Personal Trainer</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Nav — surgical spacing */}
+      <nav className="flex-1 px-4 py-6 space-y-0.5">
+        {navItems.map((item) => {
+          const isActive = pathname.startsWith(item.href)
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={cn(
+                "flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium transition-all duration-300",
+                isActive
+                  ? "bg-red-600/10 text-red-400 border border-red-500/15"
+                  : "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.04] border border-transparent hover:border-white/[0.06]"
+              )}
+            >
+              <item.icon className={cn("w-[18px] h-[18px]", isActive ? "text-white/80" : "")} />
+              {item.label}
+            </Link>
+          )
+        })}
+      </nav>
+
+      {/* Footer */}
+      <div className="px-4 py-5 border-t border-white/[0.04]">
+        <p className="text-[11px] text-neutral-600 truncate px-3.5 mb-2 tracking-wide">{userName}</p>
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.03] transition-all duration-300 w-full border border-transparent hover:border-white/[0.06]"
+        >
+          <LogOut className="w-[18px] h-[18px]" />
+          Sign Out
+        </button>
+      </div>
+    </aside>
+  )
+}

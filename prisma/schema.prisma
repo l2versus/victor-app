@@ -1,0 +1,337 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ═══════════════════════════════════════
+// AUTH & USERS
+// ═══════════════════════════════════════
+
+enum Role {
+  ADMIN
+  STUDENT
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STUDENT)
+  phone     String?
+  avatar    String?
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  student        Student?        @relation("UserStudent")
+  trainerProfile TrainerProfile? @relation("UserTrainer")
+  notifications  Notification[]
+}
+
+model TrainerProfile {
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  bio        String?
+  cref       String?
+  logo       String?
+  brandColor String  @default("#dc2626")
+
+  user      User              @relation("UserTrainer", fields: [userId], references: [id])
+  students  Student[]
+  templates WorkoutTemplate[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ═══════════════════════════════════════
+// STUDENTS
+// ═══════════════════════════════════════
+
+enum StudentStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+model Student {
+  id           String        @id @default(cuid())
+  userId       String        @unique
+  trainerId    String
+  birthDate    DateTime?
+  gender       Gender?
+  weight       Float?
+  height       Float?
+  goals        String?
+  restrictions Json?
+  notes        String?
+  status       StudentStatus @default(ACTIVE)
+
+  user      User             @relation("UserStudent", fields: [userId], references: [id])
+  trainer   TrainerProfile   @relation(fields: [trainerId], references: [id])
+  sessions  WorkoutSession[]
+  assessments Assessment[]
+  payments    Payment[]
+  feedbacks   WorkoutFeedback[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+}
+
+// ═══════════════════════════════════════
+// EXERCISES & LIBRARY
+// ═══════════════════════════════════════
+
+model Exercise {
+  id           String  @id @default(cuid())
+  name         String
+  muscle       String
+  equipment    String
+  gifUrl       String?
+  videoUrl     String?
+  instructions String?
+  isCustom     Boolean @default(false)
+
+  workoutExercises WorkoutExercise[]
+
+  createdAt DateTime @default(now())
+
+  @@index([muscle])
+  @@index([equipment])
+}
+
+// ═══════════════════════════════════════
+// WORKOUTS & TEMPLATES
+// ═══════════════════════════════════════
+
+model WorkoutTemplate {
+  id        String  @id @default(cuid())
+  name      String
+  type      String
+  trainerId String
+  notes     String?
+
+  trainer   TrainerProfile    @relation(fields: [trainerId], references: [id])
+  exercises WorkoutExercise[]
+  sessions  WorkoutSession[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+}
+
+model WorkoutExercise {
+  id            String  @id @default(cuid())
+  templateId    String
+  exerciseId    String
+  sets          Int
+  reps          String
+  restSeconds   Int     @default(60)
+  loadKg        Float?
+  notes         String?
+  order         Int
+  supersetGroup String?
+
+  template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  exercise Exercise        @relation(fields: [exerciseId], references: [id])
+
+  @@index([templateId])
+  @@index([exerciseId])
+}
+
+// ═══════════════════════════════════════
+// WORKOUT SESSIONS (execution by student)
+// ═══════════════════════════════════════
+
+model WorkoutSession {
+  id          String    @id @default(cuid())
+  studentId   String
+  templateId  String
+  startedAt   DateTime  @default(now())
+  completedAt DateTime?
+  rpe         Int?
+  notes       String?
+  durationMin Int?
+
+  student  Student         @relation(fields: [studentId], references: [id])
+  template WorkoutTemplate @relation(fields: [templateId], references: [id])
+  sets     SessionSet[]
+  feedback WorkoutFeedback?
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([templateId])
+  @@index([startedAt])
+}
+
+model SessionSet {
+  id         String  @id @default(cuid())
+  sessionId  String
+  exerciseId String
+  setNumber  Int
+  reps       Int
+  loadKg     Float
+  rpe        Int?
+  completed  Boolean @default(true)
+
+  session WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+// ═══════════════════════════════════════
+// AI POST-WORKOUT FEEDBACK
+// ═══════════════════════════════════════
+
+enum FeedbackState {
+  ACTIVE
+  COMPLETED
+  ABANDONED
+}
+
+model WorkoutFeedback {
+  id            String        @id @default(cuid())
+  sessionId     String        @unique
+  studentId     String
+  state         FeedbackState @default(ACTIVE)
+  rpe           Int?
+  loadChanges   Json?
+  painReported  Json?
+  energyLevel   String?
+  sleepHours    Float?
+  nutritionNote String?
+  summary       String?
+  tokensUsed    Int           @default(0)
+
+  session  WorkoutSession    @relation(fields: [sessionId], references: [id])
+  student  Student           @relation(fields: [studentId], references: [id])
+  messages FeedbackMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+}
+
+model FeedbackMessage {
+  id         String @id @default(cuid())
+  feedbackId String
+  role       String
+  content    String
+  channel    String @default("app")
+
+  feedback WorkoutFeedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([feedbackId])
+}
+
+// ═══════════════════════════════════════
+// ASSESSMENTS
+// ═══════════════════════════════════════
+
+enum AssessmentType {
+  ANAMNESE
+  PAR_Q
+  PHYSICAL
+  ONE_RM
+  CUSTOM
+}
+
+model Assessment {
+  id        String         @id @default(cuid())
+  studentId String
+  type      AssessmentType
+  title     String?
+  data      Json
+  photos    Json?
+  notes     String?
+
+  student Student @relation(fields: [studentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([type])
+}
+
+// ═══════════════════════════════════════
+// FINANCIAL
+// ═══════════════════════════════════════
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  PIX
+  CREDIT_CARD
+  CASH
+  BANK_TRANSFER
+  MERCADOPAGO
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  studentId   String
+  amount      Float
+  method      PaymentMethod @default(PIX)
+  status      PaymentStatus @default(PENDING)
+  dueDate     DateTime
+  paidAt      DateTime?
+  gatewayId   String?
+  description String?
+  invoiceUrl  String?
+
+  student Student @relation(fields: [studentId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+// ═══════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════
+
+model Notification {
+  id       String  @id @default(cuid())
+  userId   String
+  type     String
+  title    String
+  body     String
+  read     Boolean @default(false)
+  sentVia  Json    @default("[]")
+  metadata Json?
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+}
