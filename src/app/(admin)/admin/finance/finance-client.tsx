@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import {
   DollarSign, TrendingUp, TrendingDown, Wallet, Users,
   Plus, Fuel, Server, Bot, Wrench, Megaphone, Package,
-  CreditCard, Banknote, QrCode, ArrowUpRight, ArrowDownRight,
+  CreditCard, Banknote, QrCode, ArrowUpRight,
   X, Check, Clock, AlertTriangle, BarChart3, PieChart,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
@@ -495,39 +495,41 @@ export function FinanceClient({ students }: { students: { id: string; name: stri
                 const Icon = methodIcons[pay.method] || DollarSign
                 const st = statusConfig[pay.status] || statusConfig.PENDING
                 return (
-                  <div key={pay.id} className="flex items-center gap-3 p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.03] transition-all">
-                    <Icon className="w-4 h-4 text-neutral-500 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white truncate">{pay.student.user.name}</p>
-                      <p className="text-[10px] text-neutral-500">
-                        {methodLabels[pay.method] || pay.method}
-                        {pay.description && ` · ${pay.description}`}
-                        {` · ${new Date(pay.createdAt).toLocaleDateString("pt-BR")}`}
-                      </p>
+                  <div key={pay.id} className="p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.03] transition-all">
+                    <div className="flex items-center gap-3">
+                      <Icon className="w-4 h-4 text-neutral-500 shrink-0 hidden sm:block" />
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{pay.student.user.name}</p>
+                        <p className="text-[10px] text-neutral-500">
+                          {methodLabels[pay.method] || pay.method}
+                          {pay.description && ` · ${pay.description}`}
+                          {` · ${new Date(pay.createdAt).toLocaleDateString("pt-BR")}`}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        <p className="text-sm font-bold text-white">R$ {fmt(pay.amount)}</p>
+                      </div>
+                      <div className={cn("flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold shrink-0", st.color)}>
+                        <st.icon className="w-3 h-3" />
+                        <span className="hidden sm:inline">{st.label}</span>
+                      </div>
+                      {pay.status !== "PAID" && pay.status !== "CANCELLED" && (
+                        <button
+                          onClick={async () => {
+                            await fetch("/api/admin/finance/payments", {
+                              method: "PATCH",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({ id: pay.id, status: "PAID" }),
+                            })
+                            fetchAll()
+                          }}
+                          className="w-7 h-7 rounded-lg border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/10 transition-all shrink-0"
+                          title="Marcar como pago"
+                        >
+                          <Check className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-white">R$ {fmt(pay.amount)}</p>
-                    </div>
-                    <div className={cn("flex items-center gap-1 px-2 py-1 rounded-lg text-[10px] font-semibold shrink-0", st.color)}>
-                      <st.icon className="w-3 h-3" />
-                      {st.label}
-                    </div>
-                    {pay.status !== "PAID" && pay.status !== "CANCELLED" && (
-                      <button
-                        onClick={async () => {
-                          await fetch("/api/admin/finance/payments", {
-                            method: "PATCH",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ id: pay.id, status: "PAID" }),
-                          })
-                          fetchAll()
-                        }}
-                        className="w-7 h-7 rounded-lg border border-emerald-500/20 flex items-center justify-center text-emerald-400 hover:bg-emerald-500/10 transition-all shrink-0"
-                        title="Marcar como pago"
-                      >
-                        <Check className="w-3.5 h-3.5" />
-                      </button>
-                    )}
                   </div>
                 )
               })}

@@ -9,14 +9,14 @@ export async function GET(req: NextRequest) {
     const trainer = await getTrainerProfile(session.userId)
 
     const { searchParams } = new URL(req.url)
-    const status = searchParams.get("status") // PAID, PENDING, OVERDUE, all
+    const filterStatus = searchParams.get("status") // PAID, PENDING, OVERDUE, all
     const limit = parseInt(searchParams.get("limit") || "50")
 
     const where: Record<string, unknown> = {
       student: { trainerId: trainer.id },
     }
-    if (status && status !== "all") {
-      where.status = status
+    if (filterStatus && filterStatus !== "all") {
+      where.status = filterStatus
     }
 
     const payments = await prisma.payment.findMany({

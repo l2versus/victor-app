@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
 
     // Calculate date ranges
     const now = new Date()
+    // Always fetch 6 months for the chart, regardless of selected period
+    const sixMonthsAgo = new Date(now.getFullYear(), now.getMonth() - 5, 1)
     let startDate: Date
     switch (period) {
       case "quarter":
@@ -27,6 +29,8 @@ export async function GET(req: NextRequest) {
       default: // month
         startDate = new Date(now.getFullYear(), now.getMonth(), 1)
     }
+    // Use the earliest date for fetching payments (chart needs 6 months)
+    const fetchFrom = startDate < sixMonthsAgo ? startDate : sixMonthsAgo
 
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -58,7 +62,7 @@ export async function GET(req: NextRequest) {
         where: {
           student: { trainerId: trainer.id },
           status: "PAID",
-          paidAt: { gte: startDate },
+          paidAt: { gte: fetchFrom },
         },
         select: { amount: true, method: true, paidAt: true },
       }),
@@ -130,9 +134,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const monthlyCostsTotal = recurringCosts.reduce(
+    const recurringMonthly = recurringCosts.reduce(
       (sum, c) => sum + toMonthlyCost(c.amount, c.recurrence), 0
     )
+    // Add one-time costs prorated into the current month view
+    const oneTimeCosts = periodOneTimeCosts._sum.amount || 0
+    const monthlyCostsTotal = recurringMonthly + oneTimeCosts
 
     // Costs breakdown by category
     const costsByCategory: Record<string, number> = {}
@@ -141,8 +148,10 @@ export async function GET(req: NextRequest) {
       costsByCategory[cost.category] = (costsByCategory[cost.category] || 0) + monthly
     }
 
-    // Revenue totals
-    const periodRevenue = periodPayments.reduce((sum, p) => sum + p.amount, 0)
+    // Revenue totals (filter to actual selected period, not the 6-month fetch window)
+    const periodRevenue = periodPayments
+      .filter(p => p.paidAt && p.paidAt >= startDate)
+      .reduce((sum, p) => sum + p.amount, 0)
     const monthRevenue = monthPayments._sum.amount || 0
     const lastMonthRevenue = lastMonthPayments._sum.amount || 0
     const revenueGrowth = lastMonthRevenue > 0
