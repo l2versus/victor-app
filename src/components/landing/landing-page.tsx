@@ -447,7 +447,7 @@ export function LandingPage() {
   return (
     <div className="min-h-screen bg-[#030303] text-white overflow-x-hidden relative">
       {/* ═══ GLOBAL AMBIENT BACKGROUND — Animated gradient dots ═══ */}
-      <div className="fixed inset-0 pointer-events-none z-0 opacity-40">
+      <div className="fixed inset-0 pointer-events-none z-0 opacity-20">
         <GradientDots duration={35} dotSize={6} spacing={12} />
       </div>
 
