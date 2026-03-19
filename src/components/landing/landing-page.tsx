@@ -153,7 +153,7 @@ function TrainerPhoto({ className, hero = false }: { className?: string; hero?: 
       {!hero && (
         <div className="absolute bottom-6 left-6 right-6">
           <p className="text-white font-bold text-lg">Victor Oliveira</p>
-          <p className="text-red-400 text-xs font-medium tracking-wider uppercase">CREF 123456-G/CE</p>
+          <p className="text-red-400 text-xs font-medium tracking-wider uppercase">CREF 016254-G/CE</p>
         </div>
       )}
     </div>
@@ -656,7 +656,7 @@ export function LandingPage() {
                 Consultoria fitness com <span className="text-white font-semibold">acompanhamento inteligente</span>,
                 treinos 100% individualizados e evolução monitorada em tempo real pelo Victor e sua equipe tecnológica.
                 <span className="text-neutral-500 block mt-2 text-sm">
-                  Por Victor Oliveira — CREF 123456-G/CE
+                  Por Victor Oliveira — CREF 016254-G/CE
                 </span>
               </p>
             </Reveal>
@@ -792,7 +792,7 @@ export function LandingPage() {
                 {[
                   { icon: Dumbbell, label: "Especialista em\nhipertrofia", color: "text-red-400 bg-red-600/10 border-red-500/10" },
                   { icon: Brain, label: "Método +\ntecnologia", color: "text-purple-400 bg-purple-600/10 border-purple-500/10" },
-                  { icon: Shield, label: "CREF ativo\n123456-G/SP", color: "text-emerald-400 bg-emerald-600/10 border-emerald-500/10" },
+                  { icon: Shield, label: "CREF ativo\n016254-G/CE", color: "text-emerald-400 bg-emerald-600/10 border-emerald-500/10" },
                 ].map(item => (
                   <div key={item.label} className="p-4 rounded-2xl border border-white/[0.04] bg-white/[0.01] text-center hover:bg-white/[0.03] transition-all duration-500">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3 border", item.color)}>
@@ -1259,7 +1259,7 @@ export function LandingPage() {
           <div className="border-t border-white/[0.04] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-neutral-600 text-xs">© 2026 Victor Oliveira · CREF 123456-G/CE</p>
+              <p className="text-neutral-600 text-xs">© 2026 Victor Oliveira · CREF 016254-G/CE</p>
             </div>
             <div className="flex items-center gap-4">
               <p className="text-neutral-800 text-[10px] tracking-wider uppercase flex items-center gap-2">
