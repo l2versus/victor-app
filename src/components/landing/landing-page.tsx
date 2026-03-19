@@ -11,7 +11,6 @@ import {
   X, ChevronRight, Menu, XIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import ShaderBackground from "@/components/ui/shader-background"
 import { TextEffect } from "@/components/ui/text-effect"
 import { PremiumTestimonials } from "@/components/ui/premium-testimonials"
 import { TypingEffect } from "@/components/ui/typing-effect"
@@ -333,15 +332,11 @@ function FaqSection() {
       {/* Floating logos — desktop: large, mobile: smaller & fewer */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
         {/* Desktop only */}
-        <FloatingLogo size={110} delay={0} variant={1} className="left-[2%] top-[10%] hidden sm:block" />
-        <FloatingLogo size={90} delay={0.8} variant={3} className="right-[6%] bottom-[12%] hidden sm:block" />
-        <FloatingLogo size={60} delay={1.2} variant={2} className="left-[30%] top-[3%] hidden sm:block" />
-        <FloatingLogo size={75} delay={0.5} variant={3} className="right-[22%] bottom-[5%] hidden sm:block" />
-        {/* Both mobile + desktop */}
-        <FloatingLogo size={50} delay={0.3} variant={1} className="left-[-3%] top-[5%] sm:left-[10%] sm:bottom-[18%]" />
-        <FloatingLogo size={40} delay={1} variant={2} className="right-[-2%] top-[30%] sm:right-[4%] sm:top-[15%]" />
-        <FloatingLogo size={35} delay={1.8} variant={3} className="left-[5%] bottom-[8%] sm:hidden" />
-        <FloatingLogo size={30} delay={2.2} variant={1} className="right-[8%] bottom-[3%] sm:hidden" />
+        <FloatingLogo size={100} delay={0} variant={1} className="left-[2%] top-[10%] hidden sm:block" />
+        <FloatingLogo size={80} delay={0.8} variant={3} className="right-[6%] bottom-[12%] hidden sm:block" />
+        {/* Mobile: 2 small logos only */}
+        <FloatingLogo size={45} delay={0.3} variant={1} className="left-[-3%] top-[5%] sm:left-[10%] sm:bottom-[18%]" />
+        <FloatingLogo size={35} delay={1} variant={2} className="right-[-2%] top-[30%] sm:right-[20%] sm:top-[5%]" />
       </div>
 
       {/* Background */}
@@ -440,7 +435,16 @@ export function LandingPage() {
   const [selectedFeature, setSelectedFeature] = useState<FeatureDetail>(null)
 
   useEffect(() => {
-    const h = () => setScrollY(window.scrollY)
+    let ticking = false
+    const h = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          setScrollY(window.scrollY)
+          ticking = false
+        })
+        ticking = true
+      }
+    }
     window.addEventListener("scroll", h, { passive: true })
     return () => window.removeEventListener("scroll", h)
   }, [])
@@ -455,7 +459,7 @@ export function LandingPage() {
       {/* ═══ NAV ═══ */}
       <nav className={cn(
         "fixed top-0 inset-x-0 z-50 transition-all duration-700",
-        scrollY > 80 ? "bg-[#030303]/95 backdrop-blur-2xl border-b border-white/[0.04] py-3" : "bg-transparent py-6"
+        scrollY > 80 ? "bg-[#030303]/95 backdrop-blur-md border-b border-white/[0.04] py-3" : "bg-transparent py-6"
       )}>
         <div className="max-w-7xl mx-auto px-5 sm:px-8 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -776,13 +780,12 @@ export function LandingPage() {
 
       {/* ═══ COMO FUNCIONA ═══ */}
       <section className="py-24 sm:py-36 px-5 sm:px-8 relative overflow-hidden">
-        {/* WebGL Shader Background */}
-        <div className="absolute inset-0 opacity-40">
-          <ShaderBackground />
+        {/* CSS animated background (replaces WebGL shader) */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_50%,rgba(220,38,38,0.08),transparent_70%)]" />
+          <div className="absolute inset-0 opacity-30" style={{ backgroundImage: "repeating-linear-gradient(0deg, transparent, transparent 40px, rgba(220,38,38,0.04) 40px, rgba(220,38,38,0.04) 41px)", animation: "admin-grid-shift 4s ease-in-out infinite" }} />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#030303] via-transparent to-[#030303]" />
         </div>
-        {/* Darkening overlays for readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#030303] via-transparent to-[#030303]" />
-        <div className="absolute inset-0 bg-[#030303]/40" />
         <div className="max-w-4xl mx-auto relative z-10">
           <Reveal>
             <TextEffect per="char" preset="blur" delay={0.1} as="p" className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">

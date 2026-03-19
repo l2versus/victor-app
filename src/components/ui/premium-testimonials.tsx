@@ -1,7 +1,7 @@
 "use client"
 
 import { motion, AnimatePresence, type PanInfo } from "framer-motion"
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { Quote, Star, ArrowLeft, ArrowRight, CheckCircle2 } from "lucide-react"
 import { TextEffect } from "@/components/ui/text-effect"
 
@@ -78,11 +78,21 @@ export function PremiumTestimonials() {
     setCurrentIndex((prev) => (prev - 1 + testimonials.length) % testimonials.length)
   }, [])
 
-  // Auto-play
+  // Auto-play — only when visible
+  const [isVisible, setIsVisible] = useState(false)
+  const sectionRef = useRef<HTMLDivElement>(null)
   useEffect(() => {
+    const el = sectionRef.current
+    if (!el) return
+    const obs = new IntersectionObserver(([e]) => setIsVisible(e.isIntersecting), { threshold: 0.1 })
+    obs.observe(el)
+    return () => obs.disconnect()
+  }, [])
+  useEffect(() => {
+    if (!isVisible) return
     const timer = setInterval(next, 7000)
     return () => clearInterval(timer)
-  }, [next])
+  }, [next, isVisible])
 
   // Swipe handler
   const handleDragEnd = (_: unknown, info: PanInfo) => {
@@ -109,7 +119,7 @@ export function PremiumTestimonials() {
   const t = testimonials[currentIndex]
 
   return (
-    <div className="relative">
+    <div ref={sectionRef} className="relative">
       {/* Lightweight background — static gradients, no animated orbs on mobile */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute inset-0 bg-gradient-to-br from-red-600/[0.05] via-transparent to-red-900/[0.04]" />
@@ -185,6 +195,9 @@ export function PremiumTestimonials() {
                           alt={t.name}
                           className="w-full h-full object-cover"
                           loading="lazy"
+                          decoding="async"
+                          width={72}
+                          height={72}
                         />
                       </div>
                       <h3 className="text-base sm:text-lg font-bold text-white mb-0.5">{t.name}</h3>

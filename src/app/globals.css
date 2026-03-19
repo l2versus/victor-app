@@ -226,6 +226,11 @@
 .animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
 .animate-marquee { animation: marquee 30s linear infinite; }
 
+@keyframes gradient-dots-drift {
+  0% { background-position: 0px 0px, 6px 8.66px, 0% 0%, 0% 0%, 0% 0%, 0% 0%; }
+  100% { background-position: 0px 0px, 6px 8.66px, 800% 400%, 1000% -400%, -1200% -600%, 400% 17.32px; }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(-40px); }
   to { opacity: 1; transform: translateY(0); }
