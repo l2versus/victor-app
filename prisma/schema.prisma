@@ -320,6 +320,7 @@ model Plan {
   id          String       @id @default(cuid())
   trainerId   String
   name        String       // ex: "Básico", "Premium", "VIP"
+  slug        String?      @unique // ex: "essencial_monthly", "pro_quarterly"
   interval    PlanInterval @default(MONTHLY)
   price       Float
   active      Boolean      @default(true)
