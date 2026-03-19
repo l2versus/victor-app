@@ -162,7 +162,7 @@ function Logo({ size = 44, glow = false }: { size?: number; glow?: boolean }) {
   return (
     <div className={cn("relative shrink-0", glow && "drop-shadow-[0_0_30px_rgba(220,38,38,0.5)]")}>
       <Image
-        src="/img/logo.png"
+        src="/img/logo-icon-sm.png"
         alt="VO Personal"
         width={size}
         height={size}
