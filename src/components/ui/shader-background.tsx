@@ -159,8 +159,10 @@ const ShaderBackground = () => {
     const timeLoc = gl.getUniformLocation(shaderProgram, "iTime")
 
     const resizeCanvas = () => {
-      canvas.width = window.innerWidth
-      canvas.height = window.innerHeight
+      const parent = canvas.parentElement
+      if (!parent) return
+      canvas.width = parent.offsetWidth
+      canvas.height = parent.offsetHeight
       gl.viewport(0, 0, canvas.width, canvas.height)
     }
 
@@ -197,7 +199,7 @@ const ShaderBackground = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed top-0 left-0 w-full h-full -z-10"
+      className="absolute inset-0 w-full h-full"
     />
   )
 }

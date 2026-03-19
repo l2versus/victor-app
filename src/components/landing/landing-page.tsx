@@ -12,6 +12,7 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import ShaderBackground from "@/components/ui/shader-background"
+import { TextEffect } from "@/components/ui/text-effect"
 
 /* ═══════════════════════════════════════════
    HOOKS
@@ -634,8 +635,12 @@ export function LandingPage() {
         <div className="absolute inset-0 bg-[#030303]/40" />
         <div className="max-w-4xl mx-auto relative z-10">
           <Reveal>
-            <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">4 passos simples</p>
-            <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight text-center mb-16">Como funciona?</h2>
+            <TextEffect per="char" preset="blur" delay={0.1} as="p" className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">
+              4 passos simples
+            </TextEffect>
+            <TextEffect per="word" preset="slide" as="h2" className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight text-center mb-16">
+              Como funciona?
+            </TextEffect>
           </Reveal>
 
           <div className="relative">
@@ -656,7 +661,9 @@ export function LandingPage() {
                     </div>
                     <div className="pt-1">
                       <span className="text-[11px] font-mono text-red-500/40 tracking-widest">{step.n}</span>
-                      <h3 className="text-xl font-bold text-white mt-0.5 mb-2 tracking-tight">{step.t}</h3>
+                      <TextEffect per="word" preset="blur" delay={0.3 + i * 0.15} as="h3" className="text-xl font-bold text-white mt-0.5 mb-2 tracking-tight">
+                        {step.t}
+                      </TextEffect>
                       <p className="text-neutral-500 text-sm leading-relaxed max-w-md">{step.d}</p>
                     </div>
                   </div>
