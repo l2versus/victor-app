@@ -172,10 +172,124 @@ function Logo({ size = 44, glow = false }: { size?: number; glow?: boolean }) {
 /* ═══════════════════════════════════════════
    MAIN
    ═══════════════════════════════════════════ */
+function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duration: Duration; onClose: () => void }) {
+  const p = getPrice(tier.monthly, duration)
+  const isPro = tier.name === "Pro"
+  const isElite = tier.name === "Elite"
+  const accent = isPro ? "red" : isElite ? "amber" : "neutral"
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+      <div
+        className="relative w-full max-w-lg rounded-3xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Glow top */}
+        <div className={cn(
+          "absolute top-0 left-1/2 -translate-x-1/2 w-2/3 h-1 rounded-b-full blur-sm",
+          isPro ? "bg-red-500" : isElite ? "bg-amber-500" : "bg-white/20"
+        )} />
+        <div className={cn(
+          "absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-32 rounded-full blur-3xl -translate-y-1/2",
+          isPro ? "bg-red-600/20" : isElite ? "bg-amber-600/20" : "bg-white/5"
+        )} />
+
+        <div className="relative p-8">
+          <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.1] transition-all">
+            <X className="w-4 h-4" />
+          </button>
+
+          <p className={cn("text-[11px] font-bold uppercase tracking-[0.25em] mb-2", isPro ? "text-red-400" : isElite ? "text-amber-400" : "text-neutral-500")}>
+            Plano {tier.name}
+          </p>
+
+          <div className="flex items-baseline gap-2 mb-2">
+            {duration !== "MONTHLY" && <span className="text-neutral-600 text-lg line-through">R$ {tier.monthly.toFixed(2)}</span>}
+            <span className="text-5xl font-black text-white">R$ {p.monthly.toFixed(2).split(".")[0]}</span>
+            <span className="text-xl text-neutral-500">,{p.monthly.toFixed(2).split(".")[1]}/mês</span>
+          </div>
+
+          {duration !== "MONTHLY" && (
+            <p className="text-emerald-400 text-sm font-semibold mb-1">Você economiza R$ {p.savings.toFixed(2)}</p>
+          )}
+          <p className="text-neutral-600 text-xs mb-6">R$ {p.perDay.toFixed(2)} por dia · {durations.find(d => d.key === duration)?.label}</p>
+
+          <div className="space-y-3 mb-8">
+            {tier.features.map(f => (
+              <div key={f.t} className={cn("flex items-center gap-3", !f.ok && "opacity-25")}>
+                {f.ok ? (
+                  <div className={cn("w-5 h-5 rounded-full flex items-center justify-center", isPro ? "bg-red-600/20" : isElite ? "bg-amber-600/20" : "bg-emerald-600/20")}>
+                    <CheckCircle2 className={cn("w-3.5 h-3.5", isPro ? "text-red-400" : isElite ? "text-amber-400" : "text-emerald-400")} />
+                  </div>
+                ) : (
+                  <div className="w-5 h-5 rounded-full bg-neutral-800 flex items-center justify-center">
+                    <X className="w-3 h-3 text-neutral-600" />
+                  </div>
+                )}
+                <span className={cn("text-sm", f.ok ? "text-neutral-200" : "text-neutral-700 line-through")}>{f.t}</span>
+              </div>
+            ))}
+          </div>
+
+          <a
+            href={`https://wa.me/5585996985823?text=Olá Victor! Quero assinar o plano ${tier.name} ${durations.find(d => d.key === duration)?.label} por R$ ${p.monthly.toFixed(2)}/mês`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "w-full py-4 rounded-2xl text-sm font-bold text-center transition-all duration-500 block",
+              isPro ? "bg-red-600 text-white hover:bg-red-500 shadow-xl shadow-red-600/25" :
+              isElite ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-xl shadow-amber-600/25 hover:from-amber-500 hover:to-orange-500" :
+              "bg-white/[0.08] text-white hover:bg-white/[0.12]"
+            )}
+          >
+            Assinar via WhatsApp
+          </a>
+          <p className="text-center text-neutral-700 text-[10px] mt-3 flex items-center justify-center gap-1.5">
+            <Shield className="w-3 h-3" /> Pagamento seguro · Garantia de 7 dias
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+type FeatureDetail = { title: string; icon: typeof Brain; desc: string; long: string; color: string } | null
+
+function FeatureModal({ feature, onClose }: { feature: NonNullable<FeatureDetail>; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
+      <div className="relative w-full max-w-lg rounded-3xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+        {/* Top glow */}
+        <div className={cn("absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-32 rounded-full blur-3xl -translate-y-1/2", feature.color.includes("purple") ? "bg-purple-600/20" : feature.color.includes("blue") ? "bg-blue-600/20" : feature.color.includes("red") ? "bg-red-600/20" : feature.color.includes("emerald") ? "bg-emerald-600/20" : feature.color.includes("amber") ? "bg-amber-600/20" : "bg-cyan-600/20")} />
+        <div className="relative p-8">
+          <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.1] transition-all">
+            <X className="w-4 h-4" />
+          </button>
+          <div className={cn("w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-5 shadow-lg", feature.color)}>
+            <feature.icon className="w-6 h-6 text-white" />
+          </div>
+          <h3 className="text-xl font-bold text-white mb-3">{feature.title}</h3>
+          <p className="text-neutral-300 text-sm leading-relaxed mb-4">{feature.desc}</p>
+          <div className="p-4 rounded-xl bg-white/[0.03] border border-white/[0.05]">
+            <p className="text-neutral-400 text-sm leading-relaxed">{feature.long}</p>
+          </div>
+          <a href="#planos" onClick={onClose} className="mt-6 w-full py-3.5 rounded-xl bg-red-600 text-white text-sm font-bold text-center block hover:bg-red-500 transition-all shadow-lg shadow-red-600/20">
+            Ver planos com essa feature
+          </a>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export function LandingPage() {
   const [scrollY, setScrollY] = useState(0)
   const [duration, setDuration] = useState<Duration>("SEMIANNUAL")
   const [mobileMenu, setMobileMenu] = useState(false)
+  const [selectedPlan, setSelectedPlan] = useState<typeof tiers[0] | null>(null)
+  const [selectedFeature, setSelectedFeature] = useState<FeatureDetail>(null)
 
   useEffect(() => {
     const h = () => setScrollY(window.scrollY)
@@ -249,39 +363,44 @@ export function LandingPage() {
         )}
       </nav>
 
-      {/* ═══ HERO — Cinematic split ═══ */}
+      {/* ═══ HERO — Cinematic with ambient video ═══ */}
       <section className="relative min-h-screen flex items-center px-5 sm:px-8 pt-24 pb-16">
-        {/* ═══ PREMIUM ANIMATED BACKGROUND ═══ */}
+        {/* ═══ AMBIENT VIDEO BACKGROUND ═══ */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Deep base gradient */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(220,38,38,0.12),transparent_60%)]" />
+          {/* Video — local gym ambient */}
+          <video
+            autoPlay
+            muted
+            loop
+            playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+          >
+            <source src="/video/hero-bg.mp4" type="video/mp4" />
+          </video>
 
-          {/* Animated ember orbs — breathing effect */}
-          <div className="absolute top-[10%] left-[15%] w-[600px] h-[600px] rounded-full bg-red-600/[0.07] blur-[150px]" style={{ transform: `translateY(${scrollY * -0.25}px)`, animation: "admin-orb-float-1 15s ease-in-out infinite" }} />
-          <div className="absolute top-[40%] right-[10%] w-[500px] h-[500px] rounded-full bg-red-800/[0.05] blur-[120px]" style={{ transform: `translateY(${scrollY * -0.15}px)`, animation: "admin-orb-float-2 18s ease-in-out infinite" }} />
-          <div className="absolute bottom-[5%] left-[40%] w-[700px] h-[400px] rounded-full bg-orange-900/[0.04] blur-[140px]" style={{ animation: "admin-orb-float-3 12s ease-in-out infinite" }} />
+          {/* Heavy cinematic darkening + red glow */}
+          <div className="absolute inset-0 bg-[#030303]/80" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#030303]/60 via-transparent to-[#030303]/90" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_100%_60%_at_50%_30%,rgba(220,38,38,0.12),transparent_70%)]" />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_30%_50%,rgba(220,38,38,0.06),transparent_60%)]" />
 
-          {/* Cinematic light rays */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1px] h-[60%] bg-gradient-to-b from-red-500/20 via-red-500/5 to-transparent" />
-          <div className="absolute top-0 left-[30%] w-[1px] h-[40%] bg-gradient-to-b from-white/[0.04] to-transparent rotate-[15deg] origin-top hidden lg:block" />
-          <div className="absolute top-0 right-[25%] w-[1px] h-[50%] bg-gradient-to-b from-white/[0.03] to-transparent -rotate-[10deg] origin-top hidden lg:block" />
+          {/* Ember orbs — slow breathing */}
+          <div className="absolute top-[10%] left-[15%] w-[600px] h-[600px] rounded-full bg-red-600/[0.08] blur-[150px]" style={{ transform: `translateY(${scrollY * -0.25}px)`, animation: "admin-orb-float-1 15s ease-in-out infinite" }} />
+          <div className="absolute top-[50%] right-[5%] w-[500px] h-[500px] rounded-full bg-red-900/[0.06] blur-[120px]" style={{ transform: `translateY(${scrollY * -0.15}px)`, animation: "admin-orb-float-2 20s ease-in-out infinite" }} />
 
-          {/* Geometric accent lines */}
-          <div className="absolute top-[20%] right-[30%] w-px h-[60%] bg-gradient-to-b from-transparent via-red-600/10 to-transparent hidden lg:block" />
-          <div className="absolute top-[30%] left-[20%] w-32 h-px bg-gradient-to-r from-red-600/15 to-transparent hidden lg:block" />
-          <div className="absolute bottom-[25%] right-[15%] w-24 h-px bg-gradient-to-l from-red-600/10 to-transparent hidden lg:block" />
+          {/* Cinematic light spill */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[2px] h-[50%] bg-gradient-to-b from-red-500/25 via-red-500/5 to-transparent" />
 
           {/* Floating particles */}
-          <div className="absolute top-[15%] right-[20%] w-1 h-1 rounded-full bg-red-500/30 animate-pulse" />
-          <div className="absolute top-[45%] left-[10%] w-1.5 h-1.5 rounded-full bg-red-400/20 animate-pulse" style={{ animationDelay: "1s" }} />
-          <div className="absolute bottom-[35%] right-[35%] w-1 h-1 rounded-full bg-orange-400/25 animate-pulse" style={{ animationDelay: "2s" }} />
-          <div className="absolute top-[70%] left-[25%] w-0.5 h-0.5 rounded-full bg-red-300/30 animate-pulse" style={{ animationDelay: "0.5s" }} />
-          <div className="absolute top-[25%] left-[60%] w-1 h-1 rounded-full bg-white/10 animate-pulse" style={{ animationDelay: "3s" }} />
+          <div className="absolute top-[15%] right-[20%] w-1 h-1 rounded-full bg-red-500/40 animate-pulse" />
+          <div className="absolute top-[45%] left-[8%] w-1.5 h-1.5 rounded-full bg-red-400/25 animate-pulse" style={{ animationDelay: "1.5s" }} />
+          <div className="absolute bottom-[30%] right-[30%] w-1 h-1 rounded-full bg-orange-400/30 animate-pulse" style={{ animationDelay: "2.5s" }} />
+          <div className="absolute top-[25%] left-[55%] w-1 h-1 rounded-full bg-white/15 animate-pulse" style={{ animationDelay: "3.5s" }} />
 
-          {/* Vignette — cinematic darkening */}
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_50%,transparent_30%,rgba(3,3,3,0.6)_100%)]" />
-          <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-[#030303] to-transparent" />
-          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#030303]/50 to-transparent" />
+          {/* Deep vignette */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_70%_70%_at_50%_50%,transparent_20%,rgba(3,3,3,0.8)_100%)]" />
+          <div className="absolute bottom-0 inset-x-0 h-56 bg-gradient-to-t from-[#030303] to-transparent" />
+          <div className="absolute top-0 inset-x-0 h-40 bg-gradient-to-b from-[#030303]/60 to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
@@ -411,7 +530,11 @@ export function LandingPage() {
       </section>
 
       {/* ═══ SOBRE — Trainer section ═══ */}
-      <section id="sobre" className="py-24 sm:py-36 px-5 sm:px-8">
+      <section id="sobre" className="py-24 sm:py-36 px-5 sm:px-8 relative">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/2 left-0 w-[500px] h-[500px] rounded-full bg-red-600/[0.04] blur-[150px] -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] rounded-full bg-red-900/[0.03] blur-[120px]" />
+        </div>
         <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <Reveal direction="left">
             <TrainerPhoto className="w-full aspect-square max-w-lg rounded-3xl" />
@@ -472,21 +595,27 @@ export function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {[
-              { icon: Brain, title: "IA que entende seu corpo", desc: "Treinos gerados considerando histórico, restrições, objetivos e feedback. Análise de anamnese automática com classificação de riscos.", color: "from-purple-500 to-violet-600", bg: "bg-purple-500/5 border-purple-500/10 hover:border-purple-500/25" },
-              { icon: Camera, title: "Correção em tempo real", desc: "A câmera do celular analisa seus movimentos durante o exercício e corrige postura instantaneamente. Exclusivo.", color: "from-blue-500 to-cyan-500", bg: "bg-blue-500/5 border-blue-500/10 hover:border-blue-500/25" },
-              { icon: Target, title: "Treino sob medida", desc: "Cada série, carga e descanso calculados para o SEU corpo. Nada genérico, nada copiado. 100% individual.", color: "from-red-500 to-red-600", bg: "bg-red-500/5 border-red-500/10 hover:border-red-500/25" },
-              { icon: TrendingUp, title: "Evolução visível", desc: "Dashboard pessoal com gráficos de carga, frequência, streaks e histórico. Você VÊ o progresso acontecendo.", color: "from-emerald-500 to-green-500", bg: "bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/25" },
-              { icon: MessageCircle, title: "Feedback inteligente", desc: "Após cada treino, a IA coleta feedback (energia, dor, sono) e ajusta automaticamente a próxima sessão.", color: "from-amber-500 to-orange-500", bg: "bg-amber-500/5 border-amber-500/10 hover:border-amber-500/25" },
-              { icon: Shield, title: "Segurança clínica", desc: "Lesões, medicamentos e restrições analisados pela IA antes de qualquer prescrição. Seu treino respeita seu corpo.", color: "from-teal-400 to-cyan-500", bg: "bg-teal-500/5 border-teal-500/10 hover:border-teal-500/25" },
+              { icon: Brain, title: "IA que entende seu corpo", desc: "Treinos gerados considerando histórico, restrições, objetivos e feedback. Análise de anamnese automática com classificação de riscos.", long: "Nossa inteligência artificial analisa mais de 15 variáveis do seu perfil: histórico de lesões, nível de condicionamento, objetivos, equipamentos disponíveis, feedback das sessões anteriores e padrões de sono/nutrição. O resultado é um treino que evolui junto com você — cada semana mais preciso.", color: "from-purple-500 to-violet-600", bg: "bg-purple-500/5 border-purple-500/10 hover:border-purple-500/25" },
+              { icon: Camera, title: "Correção em tempo real", desc: "A câmera do celular analisa seus movimentos durante o exercício e corrige postura instantaneamente. Exclusivo.", long: "Usando MediaPipe Pose (tecnologia do Google), a câmera do seu celular detecta 33 pontos do corpo em tempo real. O sistema compara os ângulos das suas articulações com o padrão correto do exercício e dá feedback visual instantâneo: 'Desça mais o quadril', 'Cotovelos mais próximos'. Disponível no plano Elite.", color: "from-blue-500 to-cyan-500", bg: "bg-blue-500/5 border-blue-500/10 hover:border-blue-500/25" },
+              { icon: Target, title: "Treino sob medida", desc: "Cada série, carga e descanso calculados para o SEU corpo. Nada genérico, nada copiado. 100% individual.", long: "Victor utiliza periodização inteligente baseada nos seus objetivos. Cada exercício, número de séries, repetições, tempo de descanso e progressão de carga são pensados para maximizar seus resultados. O app registra tudo e ajusta automaticamente conforme sua evolução.", color: "from-red-500 to-red-600", bg: "bg-red-500/5 border-red-500/10 hover:border-red-500/25" },
+              { icon: TrendingUp, title: "Evolução visível", desc: "Dashboard pessoal com gráficos de carga, frequência, streaks e histórico. Você VÊ o progresso acontecendo.", long: "Acompanhe sua evolução em tempo real: gráficos de carga por exercício, frequência semanal, streaks de treino consecutivos, calendar heatmap e comparativo mensal. Tudo automatizado — você treina e o app faz o resto.", color: "from-emerald-500 to-green-500", bg: "bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/25" },
+              { icon: MessageCircle, title: "Feedback inteligente", desc: "Após cada treino, a IA coleta feedback (energia, dor, sono) e ajusta automaticamente a próxima sessão.", long: "Ao finalizar o treino, o chat com IA coleta informações sobre como você se sentiu: nível de energia (RPE), dores, qualidade do sono, alimentação. Esses dados alimentam o algoritmo que ajusta seu próximo treino — mais carga se dormiu bem, exercícios alternativos se reportou dor.", color: "from-amber-500 to-orange-500", bg: "bg-amber-500/5 border-amber-500/10 hover:border-amber-500/25" },
+              { icon: Shield, title: "Segurança clínica", desc: "Lesões, medicamentos e restrições analisados pela IA antes de qualquer prescrição. Seu treino respeita seu corpo.", long: "Antes de prescrever qualquer exercício, a IA analisa sua ficha completa: lesões ativas, cirurgias anteriores, medicamentos em uso (ex: anti-hipertensivos que contraindicam isométricos), restrições ortopédicas e cardiológicas. Exercícios proibidos são automaticamente removidos da prescrição.", color: "from-teal-400 to-cyan-500", bg: "bg-teal-500/5 border-teal-500/10 hover:border-teal-500/25" },
             ].map((feat, i) => (
               <Reveal key={feat.title} delay={i * 80}>
-                <div className={cn("group relative rounded-2xl border p-7 transition-all duration-700 hover:bg-white/[0.02]", feat.bg)}>
+                <button
+                  onClick={() => setSelectedFeature(feat)}
+                  className={cn("group relative rounded-2xl border p-7 transition-all duration-700 hover:bg-white/[0.02] text-left w-full cursor-pointer hover:translate-y-[-2px]", feat.bg)}
+                >
                   <div className={cn("w-12 h-12 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-5 group-hover:scale-110 transition-transform duration-500 shadow-lg", feat.color)}>
                     <feat.icon className="w-5 h-5 text-white" />
                   </div>
                   <h3 className="text-[17px] font-bold text-white mb-2 tracking-tight">{feat.title}</h3>
                   <p className="text-neutral-500 text-sm leading-relaxed">{feat.desc}</p>
-                </div>
+                  <p className="text-red-400/60 text-[11px] font-medium mt-3 flex items-center gap-1 group-hover:text-red-400 transition-colors">
+                    Saiba mais <ChevronRight className="w-3 h-3" />
+                  </p>
+                </button>
               </Reveal>
             ))}
           </div>
@@ -494,7 +623,11 @@ export function LandingPage() {
       </section>
 
       {/* ═══ COMO FUNCIONA ═══ */}
-      <section className="py-24 sm:py-36 px-5 sm:px-8">
+      <section className="py-24 sm:py-36 px-5 sm:px-8 relative">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute top-0 right-0 w-[500px] h-[500px] rounded-full bg-red-600/[0.03] blur-[150px]" />
+          <div className="absolute bottom-1/4 left-1/4 w-[400px] h-[400px] rounded-full bg-orange-900/[0.03] blur-[120px]" />
+        </div>
         <div className="max-w-4xl mx-auto">
           <Reveal>
             <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">4 passos simples</p>
@@ -532,7 +665,10 @@ export function LandingPage() {
 
       {/* ═══ RESULTADOS ═══ */}
       <section id="resultados" className="py-24 sm:py-36 px-5 sm:px-8 relative">
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/[0.03] to-transparent" />
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/[0.04] to-transparent" />
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[600px] rounded-full bg-red-600/[0.04] blur-[180px]" />
+        </div>
         <div className="max-w-7xl mx-auto relative z-10">
           <Reveal>
             <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">Depoimentos reais</p>
@@ -621,11 +757,16 @@ export function LandingPage() {
               return (
                 <Reveal key={tier.name} delay={i * 120}>
                   <div className={cn(
-                    "relative rounded-3xl border p-7 transition-all duration-700 flex flex-col",
-                    isPro ? "border-red-500/25 bg-gradient-to-b from-red-600/[0.05] to-transparent md:scale-[1.04] shadow-2xl shadow-red-600/10 z-10" :
-                    isElite ? "border-amber-500/15 bg-white/[0.015] hover:border-amber-500/25" :
-                    "border-white/[0.05] bg-white/[0.015] hover:border-white/[0.1]"
+                    "group/card relative rounded-3xl border p-7 transition-all duration-700 flex flex-col hover:translate-y-[-4px]",
+                    isPro ? "border-red-500/30 bg-gradient-to-b from-red-600/[0.08] to-red-900/[0.02] md:scale-[1.04] shadow-2xl shadow-red-600/15 z-10" :
+                    isElite ? "border-amber-500/15 bg-gradient-to-b from-amber-900/[0.03] to-transparent hover:border-amber-500/30 hover:shadow-xl hover:shadow-amber-600/5" :
+                    "border-white/[0.05] bg-white/[0.015] hover:border-white/[0.12] hover:shadow-xl hover:shadow-white/[0.02]"
                   )}>
+                    {/* Hover glow */}
+                    <div className={cn(
+                      "absolute -inset-px rounded-3xl opacity-0 group-hover/card:opacity-100 transition-opacity duration-700 -z-10 blur-xl",
+                      isPro ? "bg-red-600/10" : isElite ? "bg-amber-600/10" : "bg-white/[0.02]"
+                    )} />
                     {tier.tag && (
                       <div className={cn(
                         "absolute -top-3.5 left-1/2 -translate-x-1/2 px-5 py-1.5 rounded-full text-[10px] font-black uppercase tracking-wider shadow-xl whitespace-nowrap",
@@ -676,14 +817,14 @@ export function LandingPage() {
                       ))}
                     </div>
 
-                    <a href="#contato" className={cn(
-                      "w-full py-4 rounded-xl text-[13px] font-bold text-center transition-all duration-500 block",
-                      isPro ? "bg-red-600 text-white hover:bg-red-500 shadow-xl shadow-red-600/20 hover:shadow-red-600/40" :
-                      isElite ? "border border-amber-500/20 text-amber-300 hover:bg-amber-500/10" :
-                      "border border-white/[0.06] text-neutral-400 hover:bg-white/[0.04] hover:text-white"
+                    <button onClick={() => setSelectedPlan(tier)} className={cn(
+                      "w-full py-4 rounded-xl text-[13px] font-bold text-center transition-all duration-500 cursor-pointer",
+                      isPro ? "bg-red-600 text-white hover:bg-red-500 shadow-xl shadow-red-600/20 hover:shadow-red-600/40 hover:scale-[1.02]" :
+                      isElite ? "border border-amber-500/20 text-amber-300 hover:bg-amber-500/10 hover:scale-[1.02]" :
+                      "border border-white/[0.06] text-neutral-400 hover:bg-white/[0.04] hover:text-white hover:scale-[1.02]"
                     )}>
                       {tier.cta}
-                    </a>
+                    </button>
                   </div>
                 </Reveal>
               )
@@ -748,6 +889,16 @@ export function LandingPage() {
           </div>
         </Reveal>
       </section>
+
+      {/* ═══ FEATURE MODAL ═══ */}
+      {selectedFeature && (
+        <FeatureModal feature={selectedFeature} onClose={() => setSelectedFeature(null)} />
+      )}
+
+      {/* ═══ PLAN MODAL ═══ */}
+      {selectedPlan && (
+        <PlanModal tier={selectedPlan} duration={duration} onClose={() => setSelectedPlan(null)} />
+      )}
 
       {/* ═══ FOOTER ═══ */}
       <footer id="contato" className="py-16 px-5 sm:px-8 border-t border-white/[0.03]">
