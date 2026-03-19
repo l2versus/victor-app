@@ -313,9 +313,9 @@ function FloatingLogo({ size, className, delay, variant = 1 }: {
       <div className="relative" style={{ width: size, height: size }}>
         <Image src="/img/logo-icon-sm.png" alt="" width={size} height={size}
           className="rounded-2xl drop-shadow-[0_0_20px_rgba(220,38,38,0.2)]"
-          style={{ opacity: 0.12 }}
+          style={{ opacity: 0.25 }}
         />
-        <div className="absolute inset-0 bg-red-600/10 blur-xl rounded-full scale-150 animate-pulse" />
+        <div className="absolute inset-0 bg-red-600/15 blur-xl rounded-full scale-150 animate-pulse" />
       </div>
     </div>
   )
