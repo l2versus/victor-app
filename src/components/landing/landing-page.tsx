@@ -251,18 +251,37 @@ export function LandingPage() {
 
       {/* ═══ HERO — Cinematic split ═══ */}
       <section className="relative min-h-screen flex items-center px-5 sm:px-8 pt-24 pb-16">
-        {/* Animated background */}
+        {/* ═══ PREMIUM ANIMATED BACKGROUND ═══ */}
         <div className="absolute inset-0 overflow-hidden">
-          {/* Animated orbs */}
-          <div className="absolute top-20 left-1/4 w-[500px] h-[500px] rounded-full bg-red-600/[0.08] blur-[130px] animate-[float-slow_8s_ease-in-out_infinite]" style={{ transform: `translateY(${scrollY * -0.2}px)` }} />
-          <div className="absolute top-1/2 right-1/4 w-[400px] h-[400px] rounded-full bg-red-900/[0.06] blur-[100px] animate-[float-slow_12s_ease-in-out_infinite_reverse]" style={{ transform: `translateY(${scrollY * -0.1}px)` }} />
-          <div className="absolute bottom-20 left-1/2 w-[600px] h-[300px] rounded-full bg-orange-600/[0.03] blur-[120px] animate-[float-slow_10s_ease-in-out_infinite]" />
-          {/* Subtle grid */}
-          <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.02)_1px,transparent_1px)] bg-[size:100px_100px] opacity-40" />
-          {/* Diagonal accent */}
-          <div className="absolute top-0 right-[30%] w-px h-full bg-gradient-to-b from-transparent via-red-600/15 to-transparent hidden lg:block" />
-          {/* Bottom vignette */}
-          <div className="absolute bottom-0 inset-x-0 h-40 bg-gradient-to-t from-[#030303] to-transparent" />
+          {/* Deep base gradient */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(220,38,38,0.12),transparent_60%)]" />
+
+          {/* Animated ember orbs — breathing effect */}
+          <div className="absolute top-[10%] left-[15%] w-[600px] h-[600px] rounded-full bg-red-600/[0.07] blur-[150px]" style={{ transform: `translateY(${scrollY * -0.25}px)`, animation: "admin-orb-float-1 15s ease-in-out infinite" }} />
+          <div className="absolute top-[40%] right-[10%] w-[500px] h-[500px] rounded-full bg-red-800/[0.05] blur-[120px]" style={{ transform: `translateY(${scrollY * -0.15}px)`, animation: "admin-orb-float-2 18s ease-in-out infinite" }} />
+          <div className="absolute bottom-[5%] left-[40%] w-[700px] h-[400px] rounded-full bg-orange-900/[0.04] blur-[140px]" style={{ animation: "admin-orb-float-3 12s ease-in-out infinite" }} />
+
+          {/* Cinematic light rays */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1px] h-[60%] bg-gradient-to-b from-red-500/20 via-red-500/5 to-transparent" />
+          <div className="absolute top-0 left-[30%] w-[1px] h-[40%] bg-gradient-to-b from-white/[0.04] to-transparent rotate-[15deg] origin-top hidden lg:block" />
+          <div className="absolute top-0 right-[25%] w-[1px] h-[50%] bg-gradient-to-b from-white/[0.03] to-transparent -rotate-[10deg] origin-top hidden lg:block" />
+
+          {/* Geometric accent lines */}
+          <div className="absolute top-[20%] right-[30%] w-px h-[60%] bg-gradient-to-b from-transparent via-red-600/10 to-transparent hidden lg:block" />
+          <div className="absolute top-[30%] left-[20%] w-32 h-px bg-gradient-to-r from-red-600/15 to-transparent hidden lg:block" />
+          <div className="absolute bottom-[25%] right-[15%] w-24 h-px bg-gradient-to-l from-red-600/10 to-transparent hidden lg:block" />
+
+          {/* Floating particles */}
+          <div className="absolute top-[15%] right-[20%] w-1 h-1 rounded-full bg-red-500/30 animate-pulse" />
+          <div className="absolute top-[45%] left-[10%] w-1.5 h-1.5 rounded-full bg-red-400/20 animate-pulse" style={{ animationDelay: "1s" }} />
+          <div className="absolute bottom-[35%] right-[35%] w-1 h-1 rounded-full bg-orange-400/25 animate-pulse" style={{ animationDelay: "2s" }} />
+          <div className="absolute top-[70%] left-[25%] w-0.5 h-0.5 rounded-full bg-red-300/30 animate-pulse" style={{ animationDelay: "0.5s" }} />
+          <div className="absolute top-[25%] left-[60%] w-1 h-1 rounded-full bg-white/10 animate-pulse" style={{ animationDelay: "3s" }} />
+
+          {/* Vignette — cinematic darkening */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_50%,transparent_30%,rgba(3,3,3,0.6)_100%)]" />
+          <div className="absolute bottom-0 inset-x-0 h-48 bg-gradient-to-t from-[#030303] to-transparent" />
+          <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#030303]/50 to-transparent" />
         </div>
 
         <div className="relative z-10 max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-8 items-center">
