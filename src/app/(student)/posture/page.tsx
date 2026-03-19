@@ -2,8 +2,9 @@ import { requireAuth } from "@/lib/auth"
 import { getStudentProfile } from "@/lib/student"
 import { checkFeature } from "@/lib/subscription"
 import { redirect } from "next/navigation"
-import { Camera, Lock, Crown } from "lucide-react"
+import { Camera, Lock, Crown, Zap, Shield, Eye, Activity } from "lucide-react"
 import { PostureLoader } from "@/components/student/posture-loader"
+import { TOTAL_EXERCISES_WITH_POSTURE, EXERCISE_GROUPS } from "@/lib/posture-rules"
 import Link from "next/link"
 
 export default async function PosturePage() {
@@ -16,36 +17,63 @@ export default async function PosturePage() {
   if (!hasPosture) {
     return (
       <div className="p-4 max-w-lg mx-auto">
-        <div className="text-center space-y-6 py-12">
+        <div className="text-center space-y-6 py-8">
           <div className="w-20 h-20 rounded-2xl bg-amber-600/20 flex items-center justify-center mx-auto">
             <Lock className="w-10 h-10 text-amber-400" />
           </div>
 
           <div>
-            <h1 className="text-xl font-bold text-white mb-2">Correcao de Postura</h1>
+            <h1 className="text-xl font-bold text-white mb-2">Correcao de Postura por IA</h1>
             <p className="text-neutral-400 text-sm leading-relaxed">
-              A analise de postura em tempo real por camera e uma feature exclusiva do
-              <span className="text-amber-400 font-semibold"> plano Elite</span>.
+              Analise biomecanica em tempo real com inteligencia artificial.
+              Exclusivo do <span className="text-amber-400 font-semibold">plano Elite</span>.
             </p>
           </div>
 
           <div className="bg-amber-600/10 border border-amber-500/20 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-amber-300 text-sm font-semibold">
               <Crown className="w-4 h-4" />
-              Plano Elite inclui:
+              O que voce ganha no Elite:
             </div>
-            <ul className="text-sm text-neutral-400 space-y-1.5 text-left">
-              <li>• Correcao de postura por camera em tempo real</li>
-              <li>• 33 pontos do corpo detectados pela IA</li>
-              <li>• Feedback visual instantaneo (verde/amarelo/vermelho)</li>
-              <li>• 3 exercicios: Agachamento, Rosca, Prancha</li>
-              <li>• Mais exercicios em breve!</li>
+            <ul className="text-sm text-neutral-400 space-y-2 text-left">
+              <li className="flex items-start gap-2">
+                <Eye className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
+                <span>33 pontos do corpo detectados em tempo real pela IA</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Activity className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
+                <span><strong className="text-amber-300">{TOTAL_EXERCISES_WITH_POSTURE} exercicios</strong> com regras biomecanicas profissionais</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Zap className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
+                <span>Feedback visual instantaneo (verde / amarelo / vermelho)</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Shield className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
+                <span>Prevencao de lesoes — correcao baseada em fisiologia do exercicio</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Camera className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
+                <span>100% offline apos carregar — nenhuma imagem sai do seu celular</span>
+              </li>
             </ul>
+          </div>
+
+          {/* Muscle groups preview */}
+          <div className="flex flex-wrap justify-center gap-1.5">
+            {EXERCISE_GROUPS.map(g => (
+              <span
+                key={g.id}
+                className="text-[10px] px-2 py-1 rounded-full bg-white/5 text-neutral-500 border border-white/5"
+              >
+                {g.icon} {g.label} ({g.exercises.length})
+              </span>
+            ))}
           </div>
 
           <Link
             href="/#planos"
-            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 text-white font-semibold text-sm hover:bg-amber-500 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 text-white font-semibold text-sm hover:bg-amber-500 active:scale-[0.97] transition-all shadow-lg shadow-amber-600/20"
           >
             <Crown className="w-4 h-4" />
             Fazer upgrade para Elite
@@ -56,14 +84,14 @@ export default async function PosturePage() {
   }
 
   return (
-    <div className="p-4 max-w-lg mx-auto space-y-4">
+    <div className="p-4 max-w-lg mx-auto space-y-3">
       <div>
         <h1 className="text-lg font-bold text-white flex items-center gap-2">
           <Camera className="w-5 h-5 text-red-400" />
           Correcao de Postura
         </h1>
-        <p className="text-xs text-neutral-500 mt-1">
-          Selecione o exercicio, posicione-se de lado e clique para analisar.
+        <p className="text-[11px] text-neutral-500 mt-1">
+          {TOTAL_EXERCISES_WITH_POSTURE} exercicios • Selecione, posicione-se e clique para analisar.
         </p>
       </div>
 

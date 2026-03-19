@@ -13,7 +13,7 @@
     "@ai-sdk/anthropic": "^3.0.58",
     "@ai-sdk/google": "^3.0.43",
     "@ai-sdk/openai": "^3.0.41",
-    "@mediapipe/tasks-vision": "^0.10.33",
+    "@mediapipe/tasks-vision": "0.10.18",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
     "ai": "^6.0.116",
