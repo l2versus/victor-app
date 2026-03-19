@@ -47,4 +47,4 @@ next-env.d.ts
 
 .vercel
 .env*.local
-public/video/
+public/video/hero-bg-original.mp4
