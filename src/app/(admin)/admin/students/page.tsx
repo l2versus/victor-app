@@ -12,7 +12,7 @@ export default async function StudentsPage() {
   } catch {
     return (
       <div className="flex items-center justify-center h-[60vh]">
-        <p className="text-neutral-400 text-sm">Trainer profile not found.</p>
+        <p className="text-neutral-400 text-sm">Perfil de treinador não encontrado.</p>
       </div>
     )
   }

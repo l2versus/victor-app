@@ -12,11 +12,11 @@ import {
 } from "lucide-react"
 
 const navItems = [
-  { href: "/admin/dashboard", label: "Home", icon: LayoutDashboard },
-  { href: "/admin/students", label: "Students", icon: Users },
-  { href: "/admin/workouts", label: "Workouts", icon: Dumbbell },
-  { href: "/admin/exercises", label: "Library", icon: Library },
-  { href: "/admin/settings", label: "More", icon: MoreHorizontal },
+  { href: "/admin/dashboard", label: "Início", icon: LayoutDashboard },
+  { href: "/admin/students", label: "Alunos", icon: Users },
+  { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
+  { href: "/admin/exercises", label: "Exercícios", icon: Library },
+  { href: "/admin/settings", label: "Mais", icon: MoreHorizontal },
 ]
 
 export function AdminMobileNav() {

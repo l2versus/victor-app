@@ -132,7 +132,6 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
   }, {})
 
   const allExpanded = Object.keys(grouped).length > 0 && expandedGroups.size === Object.keys(grouped).length
-  const someExpanded = expandedGroups.size > 0
 
   return (
     <div>
@@ -141,7 +140,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
           <Input
-            placeholder="Search exercises..."
+            placeholder="Buscar exercícios..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -164,7 +163,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
               onChange={(e) => setMuscle(e.target.value)}
               className="pl-10 min-w-[180px]"
             >
-              <option value="">All Muscles</option>
+              <option value="">Todos os Músculos</option>
               {muscles.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
@@ -173,7 +172,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
 
           <Button onClick={() => setShowForm(true)} className="whitespace-nowrap">
             <Plus className="w-4 h-4 mr-1.5" />
-            Custom
+            Personalizado
           </Button>
         </div>
       </div>
@@ -181,7 +180,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
       {/* Results count + expand/collapse toggle */}
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm text-neutral-500">
-          {total} exercise{total !== 1 ? "s" : ""} found
+          {total} exercício{total !== 1 ? "s" : ""} encontrado{total !== 1 ? "s" : ""}
           {muscle && <span className="text-red-400 ml-1">&middot; {muscle}</span>}
         </p>
         {Object.keys(grouped).length > 1 && (
@@ -189,7 +188,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
             onClick={allExpanded ? collapseAll : expandAll}
             className="text-xs text-neutral-500 hover:text-neutral-300 transition-colors"
           >
-            {allExpanded ? "Collapse All" : "Expand All"}
+            {allExpanded ? "Recolher Tudo" : "Expandir Tudo"}
           </button>
         )}
       </div>
@@ -206,8 +205,8 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
       ) : exercises.length === 0 ? (
         <div className="text-center py-16">
           <Dumbbell className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
-          <p className="text-neutral-400 font-medium">No exercises found</p>
-          <p className="text-neutral-600 text-sm mt-1">Try a different search or filter</p>
+          <p className="text-neutral-400 font-medium">Nenhum exercício encontrado</p>
+          <p className="text-neutral-600 text-sm mt-1">Tente uma busca ou filtro diferente</p>
         </div>
       ) : (
         <div className="space-y-2">
@@ -235,7 +234,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                       {muscleGroup}
                     </span>
                     <span className="text-neutral-600 text-xs tabular-nums">
-                      {exs.length} exercise{exs.length !== 1 ? "s" : ""}
+                      {exs.length} exercício{exs.length !== 1 ? "s" : ""}
                     </span>
                   </button>
 
@@ -258,7 +257,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                                   <p className="text-neutral-200 text-sm truncate">{ex.name}</p>
                                   {ex.isCustom && (
                                     <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 shrink-0">
-                                      Custom
+                                      Personalizado
                                     </span>
                                   )}
                                   {ex.videoUrl && (
@@ -290,7 +289,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
             onClick={() => { setPage(page - 1); fetchExercises(search, muscle, page - 1) }}
             disabled={page <= 1}
           >
-            Previous
+            Anterior
           </Button>
           <span className="text-neutral-500 text-sm px-3">
             {page} / {pages}
@@ -301,7 +300,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
             onClick={() => { setPage(page + 1); fetchExercises(search, muscle, page + 1) }}
             disabled={page >= pages}
           >
-            Next
+            Próximo
           </Button>
         </div>
       )}
@@ -343,26 +342,26 @@ function CreateExerciseModal({
   }
 
   return (
-    <Modal title="Add Custom Exercise" onClose={onClose}>
+    <Modal title="Adicionar Exercício Personalizado" onClose={onClose}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1.5">Exercise Name *</label>
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Cable Y-Raise" required />
+          <label className="block text-sm font-medium text-neutral-300 mb-1.5">Nome do Exercício *</label>
+          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Elevação Lateral com Cabo" required />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-1.5">Muscle Group *</label>
+            <label className="block text-sm font-medium text-neutral-300 mb-1.5">Grupo Muscular *</label>
             <Select value={muscleGroup} onChange={(e) => setMuscleGroup(e.target.value)} required>
-              <option value="">Select...</option>
+              <option value="">Selecionar...</option>
               {muscles.map((m) => (
                 <option key={m} value={m}>{m}</option>
               ))}
-              <option value="Other">Other</option>
+              <option value="Other">Outro</option>
             </Select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-neutral-300 mb-1.5">Equipment *</label>
+            <label className="block text-sm font-medium text-neutral-300 mb-1.5">Equipamento *</label>
             <Select value={equipment} onChange={(e) => setEquipment(e.target.value)} required>
               {Object.keys(equipmentIcons).map((eq) => (
                 <option key={eq} value={eq}>{equipmentIcons[eq]} {eq}</option>
@@ -372,18 +371,18 @@ function CreateExerciseModal({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-neutral-300 mb-1.5">Instructions</label>
+          <label className="block text-sm font-medium text-neutral-300 mb-1.5">Instruções</label>
           <Textarea
             value={instructions}
             onChange={(e) => setInstructions(e.target.value)}
-            placeholder="Brief description of how to perform this exercise..."
+            placeholder="Breve descrição de como executar este exercício..."
             rows={3}
           />
         </div>
 
         <div className="flex gap-3 pt-2">
-          <Button type="button" variant="ghost" onClick={onClose} className="flex-1">Cancel</Button>
-          <Button type="submit" loading={submitting} className="flex-1">Create Exercise</Button>
+          <Button type="button" variant="ghost" onClick={onClose} className="flex-1">Cancelar</Button>
+          <Button type="submit" loading={submitting} className="flex-1">Criar Exercício</Button>
         </div>
       </form>
     </Modal>

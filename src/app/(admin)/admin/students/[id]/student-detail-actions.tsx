@@ -62,7 +62,7 @@ export function StudentDetailActions({ studentId, status }: StudentDetailActions
       <div className="flex items-center gap-2 shrink-0">
         <Button variant="ghost" size="sm" onClick={handleEditClick}>
           <Pencil className="w-3.5 h-3.5" />
-          Edit
+          Editar
         </Button>
         <button
           onClick={handleToggle}
@@ -80,7 +80,7 @@ export function StudentDetailActions({ studentId, status }: StudentDetailActions
           ) : (
             <ToggleLeft className="w-3.5 h-3.5" />
           )}
-          {isActive ? "Deactivate" : "Activate"}
+          {isActive ? "Desativar" : "Ativar"}
         </button>
       </div>
 

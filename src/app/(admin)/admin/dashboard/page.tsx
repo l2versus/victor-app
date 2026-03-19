@@ -1,12 +1,19 @@
+import type { Metadata } from "next"
 import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getTrainerProfile } from "@/lib/admin"
+
+export const metadata: Metadata = {
+  title: "Painel",
+  robots: { index: false, follow: false },
+}
 import {
   Users, Dumbbell, Calendar, DollarSign,
   ArrowRight, Plus, Activity, Zap, Flame
 } from "lucide-react"
 import Link from "next/link"
-import { format, startOfWeek } from "date-fns"
+import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 
 export default async function DashboardPage() {
   const session = await getSession()
@@ -20,15 +27,17 @@ export default async function DashboardPage() {
       <div className="flex items-center justify-center h-[60vh]">
         <div className="text-center">
           <Zap className="w-10 h-10 text-red-600/50 mx-auto mb-4" />
-          <h2 className="text-lg font-medium text-white/80 mb-2">Setting up your profile...</h2>
-          <p className="text-neutral-500 text-sm">Refresh the page in a moment.</p>
+          <h2 className="text-lg font-medium text-white/80 mb-2">Configurando seu perfil...</h2>
+          <p className="text-neutral-500 text-sm">Atualize a página em instantes.</p>
         </div>
       </div>
     )
   }
 
   const now = new Date()
-  const weekStart = startOfWeek(now, { weekStartsOn: 1 })
+  const weekStart = new Date(now)
+  weekStart.setDate(now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1))
+  weekStart.setHours(0, 0, 0, 0)
 
   const [
     totalStudents, activeStudents, sessionsThisWeek, pendingPayments,
@@ -53,6 +62,12 @@ export default async function DashboardPage() {
 
   const firstName = session.email.split("@")[0]
 
+  const statusLabels: Record<string, string> = {
+    ACTIVE: "Ativo",
+    INACTIVE: "Inativo",
+    PENDING: "Pendente",
+  }
+
   return (
     <div className="space-y-6 sm:space-y-8">
       {/* ═══ HEADER — Warm greeting with ember icon ═══ */}
@@ -66,10 +81,10 @@ export default async function DashboardPage() {
           </div>
           <div>
             <h1 className="text-xl sm:text-[28px] font-bold text-white tracking-[-0.02em]">
-              Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-red-300">{firstName}</span>
+              Bem-vindo, <span className="text-transparent bg-clip-text bg-gradient-to-r from-white to-red-300">{firstName}</span>
             </h1>
             <p className="text-[10px] sm:text-[11px] text-neutral-500 uppercase tracking-[0.15em]">
-              {format(now, "EEEE, dd MMMM yyyy")}
+              {format(now, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
             </p>
           </div>
         </div>
@@ -77,17 +92,17 @@ export default async function DashboardPage() {
 
       {/* ═══ STAT CARDS — Glass with colored accents ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        <AliveStatCard icon={Users} label="Total Students" value={totalStudents} detail={`${activeStudents} active`} accent="red" />
-        <AliveStatCard icon={Calendar} label="Sessions" value={sessionsThisWeek} detail="this week" accent="orange" />
-        <AliveStatCard icon={Dumbbell} label="Exercises" value={totalExercises} detail="in library" accent="red" />
-        <AliveStatCard icon={DollarSign} label="Payments" value={pendingPayments} detail="pending" accent="orange" />
+        <AliveStatCard icon={Users} label="Total de Alunos" value={totalStudents} detail={`${activeStudents} ativos`} accent="red" />
+        <AliveStatCard icon={Calendar} label="Sessões" value={sessionsThisWeek} detail="esta semana" accent="orange" />
+        <AliveStatCard icon={Dumbbell} label="Exercícios" value={totalExercises} detail="na biblioteca" accent="red" />
+        <AliveStatCard icon={DollarSign} label="Pagamentos" value={pendingPayments} detail="pendentes" accent="orange" />
       </div>
 
       {/* ═══ QUICK ACTIONS — Alive hover ═══ */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <AliveAction href="/admin/students" icon={Plus} title="Add Student" desc="Register a new student" />
-        <AliveAction href="/admin/workouts/new" icon={Dumbbell} title="Create Workout" desc="Build a training plan" />
-        <AliveAction href="/admin/exercises" icon={Activity} title="Exercise Library" desc={`${totalExercises} exercises`} />
+        <AliveAction href="/admin/students" icon={Plus} title="Novo Aluno" desc="Cadastrar um novo aluno" />
+        <AliveAction href="/admin/workouts/new" icon={Dumbbell} title="Criar Treino" desc="Montar um plano de treino" />
+        <AliveAction href="/admin/exercises" icon={Activity} title="Biblioteca" desc={`${totalExercises} exercícios`} />
       </div>
 
       {/* ═══ TWO COLUMN — Glass Panels ═══ */}
@@ -99,10 +114,10 @@ export default async function DashboardPage() {
               <div className="w-6 h-6 rounded-lg bg-red-600/10 flex items-center justify-center">
                 <Users className="w-3 h-3 text-red-500" />
               </div>
-              Recent Students
+              Alunos Recentes
             </h3>
             <Link href="/admin/students" className="text-[10px] text-neutral-500 hover:text-red-400 flex items-center gap-1 transition-colors duration-300">
-              View all <ArrowRight className="w-3 h-3" />
+              Ver todos <ArrowRight className="w-3 h-3" />
             </Link>
           </div>
           {recentStudents.length === 0 ? (
@@ -110,14 +125,14 @@ export default async function DashboardPage() {
               <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
                 <Users className="w-5 h-5 text-neutral-600" />
               </div>
-              <p className="text-neutral-400 text-sm">No students yet</p>
+              <p className="text-neutral-400 text-sm">Nenhum aluno ainda</p>
               <Link href="/admin/students" className="text-neutral-500 text-xs hover:text-red-400 mt-2 inline-block transition-colors">
-                Add your first student →
+                Adicione seu primeiro aluno →
               </Link>
             </div>
           ) : (
             <div className="space-y-1.5">
-              {recentStudents.map((s) => (
+              {recentStudents.map((s: typeof recentStudents[0]) => (
                 <Link key={s.id} href={`/admin/students/${s.id}`} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.04] transition-all duration-300 group">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-red-600/20 to-red-900/10 flex items-center justify-center text-red-400/80 text-sm font-medium border border-red-500/10 group-hover:border-red-500/30 group-hover:shadow-md group-hover:shadow-red-600/10 transition-all duration-300">
                     {s.user.name.charAt(0).toUpperCase()}
@@ -130,7 +145,7 @@ export default async function DashboardPage() {
                     s.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-400/80 border border-emerald-500/15"
                     : s.status === "PENDING" ? "bg-amber-500/10 text-amber-400/80 border border-amber-500/15"
                     : "bg-neutral-500/10 text-neutral-500 border border-neutral-500/15"
-                  }`}>{s.status}</span>
+                  }`}>{statusLabels[s.status] || s.status}</span>
                 </Link>
               ))}
             </div>
@@ -144,7 +159,7 @@ export default async function DashboardPage() {
               <div className="w-6 h-6 rounded-lg bg-orange-600/10 flex items-center justify-center">
                 <Dumbbell className="w-3 h-3 text-orange-500" />
               </div>
-              Recent Sessions
+              Sessões Recentes
             </h3>
           </div>
           {recentSessions.length === 0 ? (
@@ -152,12 +167,12 @@ export default async function DashboardPage() {
               <div className="w-12 h-12 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-3">
                 <Dumbbell className="w-5 h-5 text-neutral-600" />
               </div>
-              <p className="text-neutral-400 text-sm">No sessions yet</p>
-              <p className="text-neutral-600 text-xs mt-1">Sessions appear when students train</p>
+              <p className="text-neutral-400 text-sm">Nenhuma sessão ainda</p>
+              <p className="text-neutral-600 text-xs mt-1">As sessões aparecem quando os alunos treinam</p>
             </div>
           ) : (
             <div className="space-y-1.5">
-              {recentSessions.map((sess) => (
+              {recentSessions.map((sess: typeof recentSessions[0]) => (
                 <div key={sess.id} className="flex items-center gap-3 p-3 rounded-xl hover:bg-white/[0.04] transition-all duration-300">
                   <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-600/15 to-orange-900/5 flex items-center justify-center text-orange-400/70 border border-orange-500/10">
                     <Dumbbell className="w-4 h-4" />
@@ -169,7 +184,7 @@ export default async function DashboardPage() {
                   <div className="text-right">
                     <p className="text-neutral-500 text-[11px]">{format(sess.startedAt, "dd/MM")}</p>
                     <p className={`text-[9px] ${sess.completedAt ? "text-emerald-400/70" : "text-amber-400/70"}`}>
-                      {sess.completedAt ? "Done" : "Active"}
+                      {sess.completedAt ? "Concluído" : "Em andamento"}
                     </p>
                   </div>
                 </div>

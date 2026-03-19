@@ -29,8 +29,8 @@ export default async function ExercisesPage() {
             <Dumbbell className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Exercise Library</h1>
-            <p className="text-neutral-500 text-sm">{total} exercises available</p>
+            <h1 className="text-2xl font-bold text-white">Biblioteca de Exercícios</h1>
+            <p className="text-neutral-500 text-sm">{total} exercícios disponíveis</p>
           </div>
         </div>
       </div>
@@ -41,7 +41,7 @@ export default async function ExercisesPage() {
           total,
           page: 1,
           pages: Math.ceil(total / 50),
-          muscles: muscleGroups.map((m) => m.muscle),
+          muscles: muscleGroups.map((m: { muscle: string }) => m.muscle),
         }}
       />
     </div>

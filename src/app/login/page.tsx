@@ -4,6 +4,9 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { AuthLayout } from "@/components/auth/auth-layout"
 
+// SEO metadata is set via generateMetadata in a separate file since this is a client component
+// For client components, metadata is inherited from the parent layout
+
 export default function LoginPage() {
   const router = useRouter()
   const [email, setEmail] = useState("")
@@ -36,7 +39,7 @@ export default function LoginPage() {
         router.push("/today")
       }
     } catch {
-      setError("Erro de conexao")
+      setError("Erro de conexão")
     } finally {
       setLoading(false)
     }
@@ -74,7 +77,7 @@ export default function LoginPage() {
       </form>
 
       <p className="text-center text-xs text-neutral-500 mt-6">
-        Nao tem conta?{" "}
+        Não tem conta?{" "}
         <a href="/register" className="text-red-400 hover:text-red-300 transition-colors">Cadastre-se</a>
       </p>
     </AuthLayout>

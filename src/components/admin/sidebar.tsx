@@ -15,13 +15,13 @@ import {
 } from "lucide-react"
 
 const navItems = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/admin/students", label: "Students", icon: Users },
-  { href: "/admin/workouts", label: "Workouts", icon: Dumbbell },
-  { href: "/admin/exercises", label: "Exercises", icon: Library },
-  { href: "/admin/assessments", label: "Assessments", icon: ClipboardList },
-  { href: "/admin/finance", label: "Finance", icon: DollarSign },
-  { href: "/admin/settings", label: "Settings", icon: Settings },
+  { href: "/admin/dashboard", label: "Painel", icon: LayoutDashboard },
+  { href: "/admin/students", label: "Alunos", icon: Users },
+  { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
+  { href: "/admin/exercises", label: "Exercícios", icon: Library },
+  { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
+  { href: "/admin/finance", label: "Financeiro", icon: DollarSign },
+  { href: "/admin/settings", label: "Configurações", icon: Settings },
 ]
 
 export function AdminSidebar({ userName }: { userName: string }) {
@@ -45,6 +45,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
           <div>
             <p className="font-semibold text-[13px] text-white/90 tracking-[-0.01em]">Victor Oliveira</p>
             <p className="text-[11px] text-neutral-500 tracking-wide uppercase">Personal Trainer</p>
+
           </div>
         </div>
       </div>
@@ -79,7 +80,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
           className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.03] transition-all duration-300 w-full border border-transparent hover:border-white/[0.06]"
         >
           <LogOut className="w-[18px] h-[18px]" />
-          Sign Out
+          Sair
         </button>
       </div>
     </aside>

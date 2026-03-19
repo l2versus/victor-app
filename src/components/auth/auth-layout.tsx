@@ -63,15 +63,15 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           <div className={`flex gap-3 transition-all duration-700 delay-300 ${mounted ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-3'}`}>
             <div className="flex-1 bg-white/5 backdrop-blur-lg rounded-xl px-3 py-2.5 border border-white/10 active:scale-95 transition-transform">
               <p className="text-white text-lg font-bold">500+</p>
-              <p className="text-neutral-500 text-[9px] uppercase tracking-wider">Exercicios</p>
+              <p className="text-neutral-500 text-[9px] uppercase tracking-wider">Exercícios</p>
             </div>
             <div className="flex-1 bg-white/5 backdrop-blur-lg rounded-xl px-3 py-2.5 border border-white/10 active:scale-95 transition-transform">
               <p className="text-white text-lg font-bold">100%</p>
-              <p className="text-neutral-500 text-[9px] uppercase tracking-wider">Offline</p>
+              <p className="text-neutral-500 text-[9px] uppercase tracking-wider">Modo Offline</p>
             </div>
             <div className="flex-1 bg-white/5 backdrop-blur-lg rounded-xl px-3 py-2.5 border border-white/10 active:scale-95 transition-transform">
               <p className="text-red-500 text-lg font-bold">Live</p>
-              <p className="text-neutral-500 text-[9px] uppercase tracking-wider">Feedback</p>
+              <p className="text-neutral-500 text-[9px] uppercase tracking-wider">Feedback IA</p>
             </div>
           </div>
         </div>
@@ -145,15 +145,15 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
           <div className="flex gap-4">
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl px-5 py-4 border border-white/10 hover:border-red-500/30 hover:bg-white/10 transition-all duration-300">
               <p className="text-white text-2xl font-bold">500+</p>
-              <p className="text-neutral-500 text-[10px] uppercase tracking-[0.15em] mt-0.5">Exercicios</p>
+              <p className="text-neutral-500 text-[10px] uppercase tracking-[0.15em] mt-0.5">Exercícios</p>
             </div>
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl px-5 py-4 border border-white/10 hover:border-red-500/30 hover:bg-white/10 transition-all duration-300">
               <p className="text-white text-2xl font-bold">100%</p>
-              <p className="text-neutral-500 text-[10px] uppercase tracking-[0.15em] mt-0.5">Offline</p>
+              <p className="text-neutral-500 text-[10px] uppercase tracking-[0.15em] mt-0.5">Modo Offline</p>
             </div>
             <div className="bg-white/5 backdrop-blur-xl rounded-2xl px-5 py-4 border border-white/10 hover:border-red-500/30 hover:bg-white/10 transition-all duration-300">
               <p className="text-red-500 text-2xl font-bold">Live</p>
-              <p className="text-neutral-500 text-[10px] uppercase tracking-[0.15em] mt-0.5">Feedback</p>
+              <p className="text-neutral-500 text-[10px] uppercase tracking-[0.15em] mt-0.5">Feedback IA</p>
             </div>
           </div>
         </div>

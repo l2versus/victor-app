@@ -114,3 +114,79 @@
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ═══ STUDENT PREMIUM ANIMATIONS ═══ */
+@keyframes set-complete {
+  0% { transform: scale(0); opacity: 0; }
+  50% { transform: scale(1.3); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes ember-ripple {
+  0% { transform: scale(0.8); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.3); }
+  50% { box-shadow: 0 0 20px 5px rgba(220, 38, 38, 0.15); }
+}
+
+@keyframes streak-fire {
+  0%, 100% { transform: translateY(0) scale(1); }
+  50% { transform: translateY(-2px) scale(1.1); }
+}
+
+@keyframes slide-up {
+  from { transform: translateY(100%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes progress-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes timer-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+}
+
+@keyframes sparkle {
+  0% { opacity: 0; transform: scale(0) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1) rotate(180deg); }
+  100% { opacity: 0; transform: scale(0) rotate(360deg); }
+}
+
+@keyframes student-orb-1 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(15px, -10px); }
+}
+
+@keyframes student-orb-2 {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-10px, 12px); }
+}
+
+.animate-set-complete { animation: set-complete 0.4s ease-out forwards; }
+.animate-ember-ripple { animation: ember-ripple 0.6s ease-out forwards; }
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-streak-fire { animation: streak-fire 1.5s ease-in-out infinite; }
+.animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+.animate-sparkle { animation: sparkle 0.8s ease-in-out forwards; }
+.animate-timer-pulse { animation: timer-pulse 1s ease-in-out infinite; }
+
+/* ═══ STUDENT SAFE BOTTOM ═══ */
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* ═══ TIMER CIRCLE ═══ */
+.timer-circle {
+  transform: rotate(-90deg);
+  transform-origin: 50% 50%;
+}
+
+/* ═══ SWIPE CONTAINER ═══ */
+.swipe-container {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}

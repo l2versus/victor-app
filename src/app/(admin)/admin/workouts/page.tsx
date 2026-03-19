@@ -22,8 +22,8 @@ export default async function WorkoutsPage() {
   })
 
   // Get unique muscle groups per workout
-  function getWorkoutMuscles(exercises: typeof workouts[0]["exercises"]) {
-    const muscles = [...new Set(exercises.map((e) => e.exercise.muscle))]
+  function getWorkoutMuscles(exercises: typeof workouts[0]["exercises"]): string[] {
+    const muscles = [...new Set(exercises.map((e: typeof exercises[0]) => e.exercise.muscle))] as string[]
     return muscles.slice(0, 3)
   }
 
@@ -36,8 +36,8 @@ export default async function WorkoutsPage() {
             <ClipboardList className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Workouts</h1>
-            <p className="text-neutral-500 text-sm">{workouts.length} templates created</p>
+            <h1 className="text-2xl font-bold text-white">Treinos</h1>
+            <p className="text-neutral-500 text-sm">{workouts.length} modelo{workouts.length !== 1 ? "s" : ""} criado{workouts.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
 
@@ -46,7 +46,7 @@ export default async function WorkoutsPage() {
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 transition-colors shadow-lg shadow-red-600/20"
         >
           <Plus className="w-4 h-4" />
-          New Workout
+          Novo Treino
         </Link>
       </div>
 
@@ -56,19 +56,19 @@ export default async function WorkoutsPage() {
           <div className="w-16 h-16 rounded-2xl bg-white/5 flex items-center justify-center mx-auto mb-4">
             <Dumbbell className="w-8 h-8 text-neutral-700" />
           </div>
-          <p className="text-neutral-400 font-medium mb-1">No workouts yet</p>
-          <p className="text-neutral-600 text-sm mb-6">Create your first workout template to assign to students</p>
+          <p className="text-neutral-400 font-medium mb-1">Nenhum treino ainda</p>
+          <p className="text-neutral-600 text-sm mb-6">Crie seu primeiro modelo de treino para atribuir aos alunos</p>
           <Link
             href="/admin/workouts/new"
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 transition-colors"
           >
             <Plus className="w-4 h-4" />
-            Create Workout
+            Criar Treino
           </Link>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {workouts.map((w) => {
+          {workouts.map((w: typeof workouts[0]) => {
             const muscles = getWorkoutMuscles(w.exercises)
             return (
               <Link
@@ -86,7 +86,7 @@ export default async function WorkoutsPage() {
                       {w.type}
                     </span>
                     <span className="text-[10px] text-neutral-600">
-                      {w._count.sessions} session{w._count.sessions !== 1 ? "s" : ""}
+                      {w._count.sessions} sessão{w._count.sessions !== 1 ? "es" : ""}
                     </span>
                   </div>
 
@@ -98,11 +98,11 @@ export default async function WorkoutsPage() {
                   {/* Exercise count + muscles */}
                   <div className="flex items-center gap-2 mb-3">
                     <span className="text-xs text-neutral-500">
-                      {w.exercises.length} exercise{w.exercises.length !== 1 ? "s" : ""}
+                      {w.exercises.length} exercício{w.exercises.length !== 1 ? "s" : ""}
                     </span>
                     <span className="text-neutral-700">·</span>
                     <div className="flex gap-1">
-                      {muscles.map((m) => (
+                      {muscles.map((m: string) => (
                         <span key={m} className="text-[10px] px-1.5 py-0.5 rounded bg-white/5 text-neutral-500">
                           {m}
                         </span>
@@ -112,14 +112,14 @@ export default async function WorkoutsPage() {
 
                   {/* Exercise preview */}
                   <div className="space-y-1 mb-3">
-                    {w.exercises.slice(0, 3).map((ex) => (
+                    {w.exercises.slice(0, 3).map((ex: typeof w.exercises[0]) => (
                       <p key={ex.id} className="text-neutral-500 text-xs truncate">
                         • {ex.exercise.name} — {ex.sets}×{ex.reps}
                       </p>
                     ))}
                     {w.exercises.length > 3 && (
                       <p className="text-neutral-600 text-xs">
-                        +{w.exercises.length - 3} more
+                        +{w.exercises.length - 3} mais
                       </p>
                     )}
                   </div>
@@ -127,7 +127,7 @@ export default async function WorkoutsPage() {
                   {/* Footer */}
                   <div className="flex items-center justify-between pt-3 border-t border-neutral-800/50">
                     <span className="text-[10px] text-neutral-600">
-                      Updated {format(w.updatedAt, "dd/MM/yyyy")}
+                      Atualizado em {format(w.updatedAt, "dd/MM/yyyy")}
                     </span>
                     <ArrowRight className="w-4 h-4 text-neutral-700 group-hover:text-neutral-400 group-hover:translate-x-1 transition-all" />
                   </div>

@@ -73,7 +73,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     if (!form.name.trim() || !form.email.trim()) {
-      setError("Name and email are required")
+      setError("Nome e email são obrigatórios")
       return
     }
 
@@ -96,7 +96,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
       })
 
       const data = await res.json()
-      if (!res.ok) throw new Error(data.error || "Something went wrong")
+      if (!res.ok) throw new Error(data.error || "Algo deu errado")
 
       if (data.generatedPassword) {
         setGeneratedPassword(data.generatedPassword)
@@ -105,7 +105,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
         handleClose()
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong")
+      setError(err instanceof Error ? err.message : "Algo deu errado")
     } finally {
       setLoading(false)
     }
@@ -133,7 +133,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
   // Success state — show generated password
   if (generatedPassword) {
     return (
-      <Modal open={open} onClose={handlePasswordDone} title="Student Created">
+      <Modal open={open} onClose={handlePasswordDone} title="Aluno Criado">
         <div className="space-y-5">
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
             <div className="flex items-center gap-2 mb-3">
@@ -141,8 +141,8 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
                 <KeyRound className="w-4 h-4 text-emerald-400" />
               </div>
               <div>
-                <p className="text-sm font-medium text-emerald-300">Auto-generated password</p>
-                <p className="text-xs text-neutral-500">Share this with the student</p>
+                <p className="text-sm font-medium text-emerald-300">Senha gerada automaticamente</p>
+                <p className="text-xs text-neutral-500">Compartilhe com o aluno</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -158,7 +158,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
             </div>
           </div>
           <Button fullWidth onClick={handlePasswordDone}>
-            Done
+            Pronto
           </Button>
         </div>
       </Modal>
@@ -169,7 +169,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
     <Modal
       open={open}
       onClose={handleClose}
-      title={isEdit ? "Edit Student" : "Add New Student"}
+      title={isEdit ? "Editar Aluno" : "Novo Aluno"}
       className="max-w-2xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto pr-1">
@@ -177,14 +177,14 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1 h-4 rounded-full bg-red-500" />
-            <h3 className="text-sm font-medium text-neutral-300">Personal Information</h3>
+            <h3 className="text-sm font-medium text-neutral-300">Informações Pessoais</h3>
           </div>
           <div className="rounded-xl border border-neutral-800/50 bg-white/[0.02] p-4 space-y-3 backdrop-blur-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-neutral-500 mb-1.5">Name *</label>
+                <label className="block text-xs text-neutral-500 mb-1.5">Nome *</label>
                 <Input
-                  placeholder="Full name"
+                  placeholder="Nome completo"
                   value={form.name}
                   onChange={(e) => handleChange("name", e.target.value)}
                   required
@@ -194,7 +194,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
                 <label className="block text-xs text-neutral-500 mb-1.5">Email *</label>
                 <Input
                   type="email"
-                  placeholder="email@example.com"
+                  placeholder="email@exemplo.com"
                   value={form.email}
                   onChange={(e) => handleChange("email", e.target.value)}
                   required
@@ -203,20 +203,20 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-neutral-500 mb-1.5">Phone</label>
+                <label className="block text-xs text-neutral-500 mb-1.5">Telefone</label>
                 <Input
-                  placeholder="+55 11 99999-9999"
+                  placeholder="(85) 99999-9999"
                   value={form.phone}
                   onChange={(e) => handleChange("phone", e.target.value)}
                 />
               </div>
               <div>
                 <label className="block text-xs text-neutral-500 mb-1.5">
-                  {isEdit ? "New Password" : "Password"}
+                  {isEdit ? "Nova Senha" : "Senha"}
                 </label>
                 <Input
                   type="password"
-                  placeholder={isEdit ? "Leave blank to keep" : "Auto-generate if empty"}
+                  placeholder={isEdit ? "Deixe em branco para manter" : "Auto-gerar se vazio"}
                   value={form.password}
                   onChange={(e) => handleChange("password", e.target.value)}
                 />
@@ -224,7 +224,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-neutral-500 mb-1.5">Birth Date</label>
+                <label className="block text-xs text-neutral-500 mb-1.5">Data de Nascimento</label>
                 <Input
                   type="date"
                   value={form.birthDate}
@@ -233,15 +233,15 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
                 />
               </div>
               <div>
-                <label className="block text-xs text-neutral-500 mb-1.5">Gender</label>
+                <label className="block text-xs text-neutral-500 mb-1.5">Sexo</label>
                 <Select
                   value={form.gender}
                   onChange={(e) => handleChange("gender", e.target.value)}
                 >
-                  <option value="" className="bg-[#111]">Select...</option>
-                  <option value="MALE" className="bg-[#111]">Male</option>
-                  <option value="FEMALE" className="bg-[#111]">Female</option>
-                  <option value="OTHER" className="bg-[#111]">Other</option>
+                  <option value="" className="bg-[#111]">Selecionar...</option>
+                  <option value="MALE" className="bg-[#111]">Masculino</option>
+                  <option value="FEMALE" className="bg-[#111]">Feminino</option>
+                  <option value="OTHER" className="bg-[#111]">Outro</option>
                 </Select>
               </div>
             </div>
@@ -252,12 +252,12 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1 h-4 rounded-full bg-blue-500" />
-            <h3 className="text-sm font-medium text-neutral-300">Physical Information</h3>
+            <h3 className="text-sm font-medium text-neutral-300">Informações Físicas</h3>
           </div>
           <div className="rounded-xl border border-neutral-800/50 bg-white/[0.02] p-4 backdrop-blur-sm">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs text-neutral-500 mb-1.5">Weight (kg)</label>
+                <label className="block text-xs text-neutral-500 mb-1.5">Peso (kg)</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -267,7 +267,7 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
                 />
               </div>
               <div>
-                <label className="block text-xs text-neutral-500 mb-1.5">Height (cm)</label>
+                <label className="block text-xs text-neutral-500 mb-1.5">Altura (cm)</label>
                 <Input
                   type="number"
                   step="0.1"
@@ -284,31 +284,31 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
         <div className="space-y-4">
           <div className="flex items-center gap-2 mb-1">
             <div className="w-1 h-4 rounded-full bg-purple-500" />
-            <h3 className="text-sm font-medium text-neutral-300">Training Information</h3>
+            <h3 className="text-sm font-medium text-neutral-300">Informações de Treino</h3>
           </div>
           <div className="rounded-xl border border-neutral-800/50 bg-white/[0.02] p-4 space-y-3 backdrop-blur-sm">
             <div>
-              <label className="block text-xs text-neutral-500 mb-1.5">Goals</label>
+              <label className="block text-xs text-neutral-500 mb-1.5">Objetivos</label>
               <Textarea
-                placeholder="e.g., Lose weight, gain muscle, improve endurance..."
+                placeholder="Ex: Perder peso, ganhar massa muscular, melhorar resistência..."
                 value={form.goals}
                 onChange={(e) => handleChange("goals", e.target.value)}
                 className="min-h-[80px]"
               />
             </div>
             <div>
-              <label className="block text-xs text-neutral-500 mb-1.5">Restrictions / Injuries</label>
+              <label className="block text-xs text-neutral-500 mb-1.5">Restrições / Lesões</label>
               <Textarea
-                placeholder="e.g., Knee injury, lower back pain..."
+                placeholder="Ex: Lesão no joelho, dor lombar..."
                 value={form.restrictions}
                 onChange={(e) => handleChange("restrictions", e.target.value)}
                 className="min-h-[80px]"
               />
             </div>
             <div>
-              <label className="block text-xs text-neutral-500 mb-1.5">Notes</label>
+              <label className="block text-xs text-neutral-500 mb-1.5">Observações</label>
               <Textarea
-                placeholder="Additional observations..."
+                placeholder="Observações adicionais..."
                 value={form.notes}
                 onChange={(e) => handleChange("notes", e.target.value)}
                 className="min-h-[60px]"
@@ -327,10 +327,10 @@ export function StudentForm({ open, onClose, onSuccess, editData }: StudentFormP
         {/* Actions */}
         <div className="flex gap-3 pt-2">
           <Button type="button" variant="ghost" onClick={handleClose} className="flex-1">
-            Cancel
+            Cancelar
           </Button>
           <Button type="submit" loading={loading} className="flex-1">
-            {isEdit ? "Save Changes" : "Create Student"}
+            {isEdit ? "Salvar Alterações" : "Criar Aluno"}
           </Button>
         </div>
       </form>

@@ -3,6 +3,7 @@ import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { notFound } from "next/navigation"
 import { format } from "date-fns"
+import { ptBR } from "date-fns/locale"
 import Link from "next/link"
 import {
   ArrowLeft, Mail, Phone, Calendar, Ruler,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { StudentDetailActions } from "./student-detail-actions"
+import { WorkoutPlans } from "./workout-plans"
 
 export default async function StudentDetailPage({
   params,
@@ -45,7 +47,7 @@ export default async function StudentDetailPage({
 
   if (!student) return notFound()
 
-  const genderLabel = student.gender === "MALE" ? "Male" : student.gender === "FEMALE" ? "Female" : student.gender === "OTHER" ? "Other" : null
+  const genderLabel = student.gender === "MALE" ? "Masculino" : student.gender === "FEMALE" ? "Feminino" : student.gender === "OTHER" ? "Outro" : null
 
   return (
     <div className="space-y-6 pb-20">
@@ -55,7 +57,7 @@ export default async function StudentDetailPage({
         className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-white transition-colors group"
       >
         <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
-        Back to Students
+        Voltar para Alunos
       </Link>
 
       {/* Hero Section */}
@@ -88,7 +90,7 @@ export default async function StudentDetailPage({
               )}
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-3.5 h-3.5" />
-                Member since {format(student.user.createdAt, "MMM yyyy")}
+                Membro desde {format(student.user.createdAt, "MMM yyyy", { locale: ptBR })}
               </span>
             </div>
           </div>
@@ -106,28 +108,28 @@ export default async function StudentDetailPage({
           <div className="rounded-2xl border border-neutral-800 bg-[#111] p-6">
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               <Activity className="w-4 h-4 text-red-500" />
-              Overview
+              Visão Geral
             </h3>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <InfoTile
                 icon={Calendar}
-                label="Birth Date"
+                label="Nascimento"
                 value={student.birthDate ? format(student.birthDate, "dd/MM/yyyy") : "---"}
               />
               <InfoTile
                 icon={Activity}
-                label="Gender"
+                label="Sexo"
                 value={genderLabel || "---"}
               />
               <InfoTile
                 icon={Weight}
-                label="Weight"
+                label="Peso"
                 value={student.weight ? `${student.weight} kg` : "---"}
               />
               <InfoTile
                 icon={Ruler}
-                label="Height"
+                label="Altura"
                 value={student.height ? `${student.height} cm` : "---"}
               />
             </div>
@@ -138,24 +140,24 @@ export default async function StudentDetailPage({
             <div className="rounded-2xl border border-neutral-800 bg-[#111] p-5">
               <h4 className="text-sm font-medium text-neutral-300 flex items-center gap-2 mb-3">
                 <Target className="w-3.5 h-3.5 text-emerald-400" />
-                Goals
+                Objetivos
               </h4>
               <p className="text-sm text-neutral-400 leading-relaxed">
-                {student.goals || "No goals defined yet."}
+                {student.goals || "Nenhum objetivo definido ainda."}
               </p>
             </div>
 
             <div className="rounded-2xl border border-neutral-800 bg-[#111] p-5">
               <h4 className="text-sm font-medium text-neutral-300 flex items-center gap-2 mb-3">
                 <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />
-                Restrictions
+                Restrições
               </h4>
               <p className="text-sm text-neutral-400 leading-relaxed">
                 {student.restrictions
                   ? typeof student.restrictions === "string"
                     ? student.restrictions
                     : JSON.stringify(student.restrictions)
-                  : "No restrictions listed."}
+                  : "Nenhuma restrição listada."}
               </p>
             </div>
           </div>
@@ -165,7 +167,7 @@ export default async function StudentDetailPage({
             <div className="rounded-2xl border border-neutral-800 bg-[#111] p-5">
               <h4 className="text-sm font-medium text-neutral-300 flex items-center gap-2 mb-3">
                 <FileText className="w-3.5 h-3.5 text-blue-400" />
-                Notes
+                Observações
               </h4>
               <p className="text-sm text-neutral-400 leading-relaxed whitespace-pre-wrap">
                 {student.notes}
@@ -174,25 +176,28 @@ export default async function StudentDetailPage({
           )}
         </div>
 
-        {/* Right Column — Sessions */}
+        {/* Right Column — Plans + Sessions */}
         <div className="space-y-6">
+          {/* Workout Plans */}
+          <WorkoutPlans studentId={student.id} />
+
           <div className="rounded-2xl border border-neutral-800 bg-[#111] p-6">
             <h3 className="text-white font-semibold mb-4 flex items-center gap-2">
               <Dumbbell className="w-4 h-4 text-blue-500" />
-              Recent Sessions
+              Sessões Recentes
             </h3>
 
             {student.sessions.length === 0 ? (
               <div className="text-center py-8">
                 <Dumbbell className="w-8 h-8 text-neutral-700 mx-auto mb-2" />
-                <p className="text-neutral-500 text-sm">No sessions yet</p>
+                <p className="text-neutral-500 text-sm">Nenhuma sessão ainda</p>
                 <p className="text-neutral-600 text-xs mt-1">
-                  Sessions appear when workouts are completed
+                  As sessões aparecem quando os treinos são concluídos
                 </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {student.sessions.map((sess) => (
+                {student.sessions.map((sess: typeof student.sessions[0]) => (
                   <div
                     key={sess.id}
                     className="group rounded-xl bg-white/[0.02] hover:bg-white/[0.05] border border-transparent hover:border-neutral-800 p-3 transition-all duration-200"
@@ -207,7 +212,7 @@ export default async function StudentDetailPage({
                         </p>
                         <div className="flex items-center gap-2 mt-0.5">
                           <span className="text-xs text-neutral-500">
-                            {format(sess.startedAt, "dd MMM, HH:mm")}
+                            {format(sess.startedAt, "dd MMM, HH:mm", { locale: ptBR })}
                           </span>
                           {sess.durationMin && (
                             <span className="flex items-center gap-0.5 text-xs text-neutral-600">
@@ -220,11 +225,11 @@ export default async function StudentDetailPage({
                       <div className="text-right shrink-0">
                         {sess.completedAt ? (
                           <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400">
-                            Done
+                            Concluído
                           </span>
                         ) : (
                           <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-yellow-500/10 text-yellow-400">
-                            In Progress
+                            Em Andamento
                           </span>
                         )}
                         {sess.rpe && (

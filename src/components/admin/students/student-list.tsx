@@ -36,10 +36,10 @@ interface StudentsResponse {
 }
 
 const STATUS_OPTIONS = [
-  { value: "", label: "All Students" },
-  { value: "ACTIVE", label: "Active" },
-  { value: "INACTIVE", label: "Inactive" },
-  { value: "PENDING", label: "Pending" },
+  { value: "", label: "Todos os Alunos" },
+  { value: "ACTIVE", label: "Ativos" },
+  { value: "INACTIVE", label: "Inativos" },
+  { value: "PENDING", label: "Pendentes" },
 ]
 
 export function StudentList() {
@@ -93,14 +93,14 @@ export function StudentList() {
   }
 
   const formatLastSession = (sessions: StudentSession[]) => {
-    if (!sessions || sessions.length === 0) return "No sessions"
+    if (!sessions || sessions.length === 0) return "Sem sessões"
     const date = new Date(sessions[0].startedAt)
     const now = new Date()
     const diffDays = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24))
-    if (diffDays === 0) return "Today"
-    if (diffDays === 1) return "Yesterday"
-    if (diffDays < 7) return `${diffDays}d ago`
-    return date.toLocaleDateString("en-US", { month: "short", day: "numeric" })
+    if (diffDays === 0) return "Hoje"
+    if (diffDays === 1) return "Ontem"
+    if (diffDays < 7) return `${diffDays}d atrás`
+    return date.toLocaleDateString("pt-BR", { month: "short", day: "numeric" })
   }
 
   return (
@@ -110,7 +110,7 @@ export function StudentList() {
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500" />
           <Input
-            placeholder="Search by name or email..."
+            placeholder="Buscar por nome ou email..."
             value={search}
             onChange={(e) => handleSearchChange(e.target.value)}
             className="pl-10 bg-white/[0.03] border-neutral-800 hover:border-neutral-700 focus:border-red-500/50 transition-all duration-300"
@@ -135,7 +135,7 @@ export function StudentList() {
       {/* Results count */}
       {!loading && (
         <p className="text-xs text-neutral-500">
-          {total} student{total !== 1 ? "s" : ""} found
+          {total} aluno{total !== 1 ? "s" : ""} encontrado{total !== 1 ? "s" : ""}
           {status && ` (${STATUS_OPTIONS.find(o => o.value === status)?.label})`}
         </p>
       )}
@@ -151,11 +151,11 @@ export function StudentList() {
       {!loading && students.length === 0 && (
         <EmptyState
           icon={Users}
-          title={search ? "No students found" : "No students yet"}
+          title={search ? "Nenhum aluno encontrado" : "Nenhum aluno ainda"}
           description={
             search
-              ? "Try adjusting your search or filters."
-              : "Add your first student to start building training plans."
+              ? "Tente ajustar sua busca ou filtros."
+              : "Adicione seu primeiro aluno para começar a montar planos de treino."
           }
         />
       )}
@@ -219,17 +219,17 @@ export function StudentList() {
             disabled={page === 1}
             className="px-3 py-1.5 text-xs rounded-lg border border-neutral-800 bg-white/[0.03] text-neutral-400 hover:bg-white/[0.06] hover:border-neutral-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >
-            Previous
+            Anterior
           </button>
           <span className="text-xs text-neutral-500 px-3">
-            Page {page} of {pages}
+            Página {page} de {pages}
           </span>
           <button
             onClick={() => setPage((p) => Math.min(pages, p + 1))}
             disabled={page === pages}
             className="px-3 py-1.5 text-xs rounded-lg border border-neutral-800 bg-white/[0.03] text-neutral-400 hover:bg-white/[0.06] hover:border-neutral-700 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all duration-200"
           >
-            Next
+            Próximo
           </button>
         </div>
       )}

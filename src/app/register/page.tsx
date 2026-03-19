@@ -34,7 +34,7 @@ export default function RegisterPage() {
 
       router.push("/today")
     } catch {
-      setError("Erro de conexao")
+      setError("Erro de conexão")
     } finally {
       setLoading(false)
     }
@@ -46,7 +46,7 @@ export default function RegisterPage() {
     <AuthLayout>
       <div className="text-center mb-8 lg:text-left">
         <h1 className="text-2xl font-bold text-white mb-1">Criar Conta</h1>
-        <p className="text-sm text-neutral-400">Comece sua transformacao com Victor</p>
+        <p className="text-sm text-neutral-400">Comece sua transformação com Victor</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3.5">
@@ -64,7 +64,7 @@ export default function RegisterPage() {
         </div>
         <div>
           <label htmlFor="password" className="block text-sm font-medium text-neutral-300 mb-1.5">Senha</label>
-          <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" minLength={6} className={inputClass} placeholder="Minimo 6 caracteres" />
+          <input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="new-password" minLength={6} className={inputClass} placeholder="Mínimo 6 caracteres" />
         </div>
 
         {error && (
@@ -78,7 +78,7 @@ export default function RegisterPage() {
       </form>
 
       <p className="text-center text-xs text-neutral-500 mt-6">
-        Ja tem conta?{" "}
+        Já tem conta?{" "}
         <a href="/login" className="text-red-400 hover:text-red-300 transition-colors">Fazer login</a>
       </p>
     </AuthLayout>

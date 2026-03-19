@@ -78,12 +78,13 @@ model Student {
   notes        String?
   status       StudentStatus @default(ACTIVE)
 
-  user      User             @relation("UserStudent", fields: [userId], references: [id])
-  trainer   TrainerProfile   @relation(fields: [trainerId], references: [id])
-  sessions  WorkoutSession[]
-  assessments Assessment[]
-  payments    Payment[]
-  feedbacks   WorkoutFeedback[]
+  user         User                @relation("UserStudent", fields: [userId], references: [id])
+  trainer      TrainerProfile      @relation(fields: [trainerId], references: [id])
+  sessions     WorkoutSession[]
+  assessments  Assessment[]
+  payments     Payment[]
+  feedbacks    WorkoutFeedback[]
+  workoutPlans StudentWorkoutPlan[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -124,9 +125,10 @@ model WorkoutTemplate {
   trainerId String
   notes     String?
 
-  trainer   TrainerProfile    @relation(fields: [trainerId], references: [id])
-  exercises WorkoutExercise[]
-  sessions  WorkoutSession[]
+  trainer      TrainerProfile      @relation(fields: [trainerId], references: [id])
+  exercises    WorkoutExercise[]
+  sessions     WorkoutSession[]
+  workoutPlans StudentWorkoutPlan[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -151,6 +153,27 @@ model WorkoutExercise {
 
   @@index([templateId])
   @@index([exerciseId])
+}
+
+// ═══════════════════════════════════════
+// WORKOUT PLANS (assign templates to weekdays)
+// ═══════════════════════════════════════
+
+model StudentWorkoutPlan {
+  id         String  @id @default(cuid())
+  studentId  String
+  templateId String
+  dayOfWeek  Int     // 0=Domingo, 1=Segunda, ..., 6=Sábado
+  active     Boolean @default(true)
+
+  student  Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, dayOfWeek])
+  @@index([studentId])
 }
 
 // ═══════════════════════════════════════

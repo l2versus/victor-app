@@ -18,12 +18,12 @@ export function StudentsPageClient() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Students"
-        description="Manage your students and their training profiles."
+        title="Alunos"
+        description="Gerencie seus alunos e seus perfis de treino."
         action={
           <Button onClick={() => setFormOpen(true)} size="md">
             <Plus className="h-4 w-4" />
-            Add Student
+            Novo Aluno
           </Button>
         }
       />

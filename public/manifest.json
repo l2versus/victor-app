@@ -1,0 +1,18 @@
+{
+  "name": "Victor App — Personal Trainer",
+  "short_name": "Victor App",
+  "description": "Plataforma de treinos personalizados por Victor Oliveira",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#000000",
+  "theme_color": "#dc2626",
+  "orientation": "portrait",
+  "lang": "pt-BR",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "any",
+      "type": "image/x-icon"
+    }
+  ]
+}

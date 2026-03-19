@@ -125,8 +125,8 @@ export default function NewWorkoutPage() {
           <ArrowLeft className="w-4 h-4" />
         </Link>
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white">Create Workout</h1>
-          <p className="text-neutral-500 text-xs sm:text-sm">Build a new training template</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-white">Criar Treino</h1>
+          <p className="text-neutral-500 text-xs sm:text-sm">Monte um novo modelo de treino</p>
         </div>
       </div>
 
@@ -134,42 +134,42 @@ export default function NewWorkoutPage() {
       <div className="rounded-2xl border border-neutral-800 bg-[#111] p-4 sm:p-6 mb-4 sm:mb-6 backdrop-blur-sm">
         <h2 className="text-white font-semibold mb-3 sm:mb-4 flex items-center gap-2 text-sm sm:text-base">
           <Dumbbell className="w-4 h-4 text-red-500" />
-          Workout Details
+          Detalhes do Treino
         </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-3 sm:mb-4">
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5">Name *</label>
+            <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5">Nome *</label>
             <Input
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Upper Body A"
+              placeholder="Ex: Superior A"
             />
           </div>
           <div>
-            <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5">Type *</label>
+            <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5">Tipo *</label>
             <Select value={type} onChange={(e) => setType(e.target.value)}>
-              <option value="">Select type...</option>
-              <option value="Upper A">Upper A</option>
-              <option value="Upper B">Upper B</option>
-              <option value="Lower A">Lower A</option>
-              <option value="Lower B">Lower B</option>
+              <option value="">Selecionar tipo...</option>
+              <option value="Superior A">Superior A</option>
+              <option value="Superior B">Superior B</option>
+              <option value="Inferior A">Inferior A</option>
+              <option value="Inferior B">Inferior B</option>
               <option value="Push">Push</option>
               <option value="Pull">Pull</option>
-              <option value="Legs">Legs</option>
+              <option value="Pernas">Pernas</option>
               <option value="Full Body">Full Body</option>
               <option value="Cardio">Cardio</option>
-              <option value="Custom">Custom</option>
+              <option value="Personalizado">Personalizado</option>
             </Select>
           </div>
         </div>
 
         <div>
-          <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5">Notes</label>
+          <label className="block text-xs sm:text-sm font-medium text-neutral-300 mb-1.5">Observações</label>
           <Textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
-            placeholder="Optional notes about this workout..."
+            placeholder="Observações opcionais sobre este treino..."
             rows={2}
           />
         </div>
@@ -180,23 +180,23 @@ export default function NewWorkoutPage() {
         <div className="flex items-center justify-between mb-3 sm:mb-4">
           <h2 className="text-white font-semibold flex items-center gap-2 text-sm sm:text-base">
             <Dumbbell className="w-4 h-4 text-red-500" />
-            Exercises ({exercises.length})
+            Exercícios ({exercises.length})
           </h2>
           <Button size="sm" onClick={() => setShowPicker(true)}>
             <Plus className="w-4 h-4 mr-1" />
-            Add
+            Adicionar
           </Button>
         </div>
 
         {exercises.length === 0 ? (
           <div className="text-center py-10 sm:py-12 border-2 border-dashed border-neutral-800 rounded-xl">
             <Dumbbell className="w-8 h-8 sm:w-10 sm:h-10 text-neutral-700 mx-auto mb-2 sm:mb-3" />
-            <p className="text-neutral-500 text-xs sm:text-sm mb-1">No exercises added yet</p>
+            <p className="text-neutral-500 text-xs sm:text-sm mb-1">Nenhum exercício adicionado</p>
             <button
               onClick={() => setShowPicker(true)}
               className="text-red-400 text-xs sm:text-sm hover:text-red-300 transition-colors"
             >
-              Add your first exercise
+              Adicione seu primeiro exercício
             </button>
           </div>
         ) : (
@@ -245,7 +245,7 @@ export default function NewWorkoutPage() {
                 {/* Exercise Params — 4 columns even on mobile */}
                 <div className="grid grid-cols-4 gap-1.5 sm:gap-3">
                   <div>
-                    <label className="block text-[9px] sm:text-[10px] text-neutral-500 uppercase tracking-wider mb-0.5 sm:mb-1 text-center">Sets</label>
+                    <label className="block text-[9px] sm:text-[10px] text-neutral-500 uppercase tracking-wider mb-0.5 sm:mb-1 text-center">Séries</label>
                     <Input
                       type="number"
                       value={ex.sets}
@@ -263,7 +263,7 @@ export default function NewWorkoutPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] sm:text-[10px] text-neutral-500 uppercase tracking-wider mb-0.5 sm:mb-1 text-center">Rest</label>
+                    <label className="block text-[9px] sm:text-[10px] text-neutral-500 uppercase tracking-wider mb-0.5 sm:mb-1 text-center">Descanso</label>
                     <Input
                       type="number"
                       value={ex.restSeconds}
@@ -290,7 +290,7 @@ export default function NewWorkoutPage() {
       {/* Save Button */}
       <div className="flex gap-3">
         <Link href="/admin/workouts" className="flex-1">
-          <Button variant="ghost" fullWidth>Cancel</Button>
+          <Button variant="ghost" fullWidth>Cancelar</Button>
         </Link>
         <div className="flex-1">
           <Button
@@ -300,7 +300,7 @@ export default function NewWorkoutPage() {
             fullWidth
           >
             <Save className="w-4 h-4 mr-1.5" />
-            Save Workout
+            Salvar Treino
           </Button>
         </div>
       </div>
@@ -360,13 +360,13 @@ function ExercisePicker({
   }, {})
 
   return (
-    <Modal title="Add Exercise" onClose={onClose} className="mx-4 sm:mx-auto max-h-[90vh]">
+    <Modal title="Adicionar Exercício" onClose={onClose} className="mx-4 sm:mx-auto max-h-[90vh]">
       <div className="space-y-3">
         {/* Search */}
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500" />
           <Input
-            placeholder="Search exercises..."
+            placeholder="Buscar exercícios..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -392,7 +392,7 @@ function ExercisePicker({
                 : "bg-white/5 border-neutral-800 text-neutral-400 hover:border-neutral-700"
             }`}
           >
-            All
+            Todos
           </button>
           {muscles.map((m) => (
             <button
@@ -416,7 +416,7 @@ function ExercisePicker({
               <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin mx-auto" />
             </div>
           ) : exercises.length === 0 ? (
-            <p className="text-neutral-500 text-sm text-center py-8">No exercises found</p>
+            <p className="text-neutral-500 text-sm text-center py-8">Nenhum exercício encontrado</p>
           ) : (
             Object.entries(grouped).map(([muscleGroup, exs]) => (
               <div key={muscleGroup}>
