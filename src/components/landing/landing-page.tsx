@@ -873,48 +873,142 @@ export function LandingPage() {
       )}
 
       {/* ═══ FOOTER ═══ */}
-      <footer id="contato" className="py-16 px-5 sm:px-8 border-t border-white/[0.03]">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-10 mb-12">
-            <div className="md:col-span-2">
+      <footer id="contato" className="relative pt-20 pb-10 px-5 sm:px-8 overflow-hidden">
+        {/* Animated grid background */}
+        <div className="absolute inset-0">
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(220,38,38,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(220,38,38,0.03)_1px,transparent_1px)] bg-[size:60px_60px]" style={{ animation: "admin-grid-shift 8s ease-in-out infinite" }} />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-red-600/[0.04] blur-[150px]" />
+          <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-500/20 to-transparent" />
+        </div>
+
+        <div className="max-w-7xl mx-auto relative z-10">
+          {/* Top CTA band */}
+          <div className="relative rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8 sm:p-12 mb-16 overflow-hidden group">
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/3 h-32 bg-red-600/[0.06] blur-3xl rounded-full -translate-y-1/2 group-hover:bg-red-600/[0.1] transition-all duration-700" />
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-6">
+              <div>
+                <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight mb-2">
+                  Pronto para transformar seu corpo?
+                </h3>
+                <p className="text-neutral-500 text-sm">Entre em contato e comece sua jornada hoje mesmo.</p>
+              </div>
+              <a
+                href="https://wa.me/5585996985823?text=Olá Victor! Quero começar minha transformação!"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shrink-0 inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-red-600 text-white font-bold text-sm shadow-xl shadow-red-600/20 hover:bg-red-500 hover:shadow-red-600/40 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <Phone className="w-4 h-4" />
+                Falar com Victor
+                <ArrowRight className="w-4 h-4" />
+              </a>
+            </div>
+          </div>
+
+          {/* Main grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-14">
+            {/* Brand */}
+            <div className="sm:col-span-2 lg:col-span-1">
               <div className="flex items-center gap-3 mb-5">
-                <Logo size={48} glow />
+                <Logo size={44} glow />
                 <div>
-                  <p className="font-bold text-[15px] text-white">Victor Oliveira</p>
-                  <p className="text-[9px] text-red-400/60 uppercase tracking-[0.25em] font-semibold">CREF 123456-G/SP</p>
+                  <p className="font-bold text-[15px] text-white tracking-tight">Victor Oliveira</p>
+                  <p className="text-[9px] text-red-400/60 uppercase tracking-[0.25em] font-semibold">Personal Trainer</p>
                 </div>
               </div>
-              <p className="text-neutral-500 text-sm leading-relaxed max-w-sm">
-                Personal Trainer especializado em hipertrofia e emagrecimento. Tecnologia de ponta + ciência aplicada ao treino.
+              <p className="text-neutral-500 text-sm leading-relaxed max-w-xs mb-6">
+                Especialista em hipertrofia e emagrecimento. Treinos 100% individualizados com IA integrada.
               </p>
+              {/* Social icons */}
+              <div className="flex items-center gap-3">
+                <a href="https://instagram.com/victoroliveiraapersonal_" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-pink-400 hover:border-pink-500/20 hover:bg-pink-500/[0.08] transition-all duration-300">
+                  <Instagram className="w-4 h-4" />
+                </a>
+                <a href="https://wa.me/5585996985823" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-emerald-400 hover:border-emerald-500/20 hover:bg-emerald-500/[0.08] transition-all duration-300">
+                  <Phone className="w-4 h-4" />
+                </a>
+                <a href="mailto:contato@victoroliveiraapersonal_.com" className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-white hover:border-white/[0.15] hover:bg-white/[0.06] transition-all duration-300">
+                  <Mail className="w-4 h-4" />
+                </a>
+              </div>
             </div>
+
+            {/* Navegação */}
             <div>
               <h4 className="text-[11px] font-bold text-white uppercase tracking-[0.2em] mb-5">Navegação</h4>
               <div className="space-y-3">
                 {[["Método", "#metodo"], ["Sobre", "#sobre"], ["Resultados", "#resultados"], ["Planos", "#planos"]].map(([l, h]) => (
-                  <a key={l} href={h} className="block text-neutral-500 text-sm hover:text-white transition-colors">{l}</a>
+                  <a key={l} href={h} className="group flex items-center gap-2 text-neutral-500 text-sm hover:text-white transition-colors">
+                    <span className="w-0 group-hover:w-3 h-px bg-red-500 transition-all duration-300" />
+                    {l}
+                  </a>
                 ))}
-                <Link href="/login" className="block text-neutral-500 text-sm hover:text-white transition-colors">Área do Aluno</Link>
               </div>
             </div>
+
+            {/* Plataforma */}
+            <div>
+              <h4 className="text-[11px] font-bold text-white uppercase tracking-[0.2em] mb-5">Plataforma</h4>
+              <div className="space-y-3">
+                <Link href="/login" className="group flex items-center gap-2 text-neutral-500 text-sm hover:text-white transition-colors">
+                  <span className="w-0 group-hover:w-3 h-px bg-red-500 transition-all duration-300" />
+                  Área do Aluno
+                </Link>
+                <Link href="/register" className="group flex items-center gap-2 text-neutral-500 text-sm hover:text-white transition-colors">
+                  <span className="w-0 group-hover:w-3 h-px bg-red-500 transition-all duration-300" />
+                  Criar conta
+                </Link>
+                <a href="#planos" className="group flex items-center gap-2 text-neutral-500 text-sm hover:text-white transition-colors">
+                  <span className="w-0 group-hover:w-3 h-px bg-red-500 transition-all duration-300" />
+                  Ver planos
+                </a>
+              </div>
+            </div>
+
+            {/* Contato */}
             <div>
               <h4 className="text-[11px] font-bold text-white uppercase tracking-[0.2em] mb-5">Contato</h4>
-              <div className="space-y-3">
-                <a href="https://wa.me/5585996985823" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-neutral-500 text-sm hover:text-emerald-400 transition-colors">
-                  <Phone className="w-4 h-4" /> WhatsApp
+              <div className="space-y-4">
+                <a href="https://wa.me/5585996985823" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-neutral-500 text-sm hover:text-emerald-400 transition-colors group">
+                  <Phone className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="group-hover:text-emerald-400 transition-colors">(85) 99698-5823</p>
+                    <p className="text-neutral-700 text-xs mt-0.5">WhatsApp</p>
+                  </div>
                 </a>
-                <a href="https://instagram.com/victoroliveiraapersonal_" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 text-neutral-500 text-sm hover:text-pink-400 transition-colors">
-                  <Instagram className="w-4 h-4" /> @victoroliveiraapersonal_
+                <a href="https://instagram.com/victoroliveiraapersonal_" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-neutral-500 text-sm hover:text-pink-400 transition-colors group">
+                  <Instagram className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="group-hover:text-pink-400 transition-colors">@victoroliveiraapersonal_</p>
+                    <p className="text-neutral-700 text-xs mt-0.5">Instagram</p>
+                  </div>
                 </a>
-                <a href="mailto:contato@victoroliveiraapersonal_.com" className="flex items-center gap-2.5 text-neutral-500 text-sm hover:text-white transition-colors">
-                  <Mail className="w-4 h-4" /> contato@victoroliveiraapersonal_.com
+                <a href="mailto:contato@victoroliveiraapersonal_.com" className="flex items-start gap-3 text-neutral-500 text-sm hover:text-white transition-colors group">
+                  <Mail className="w-4 h-4 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="group-hover:text-white transition-colors">contato@victor...</p>
+                    <p className="text-neutral-700 text-xs mt-0.5">E-mail</p>
+                  </div>
                 </a>
               </div>
             </div>
           </div>
-          <div className="border-t border-white/[0.03] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <p className="text-neutral-700 text-xs">© 2026 Victor Oliveira. Todos os direitos reservados.</p>
-            <p className="text-neutral-800 text-[10px] tracking-wider uppercase">Next.js · AI SDK · Prisma</p>
+
+          {/* Bottom bar */}
+          <div className="border-t border-white/[0.04] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <p className="text-neutral-600 text-xs">© 2026 Victor Oliveira · CREF 123456-G/SP</p>
+            </div>
+            <div className="flex items-center gap-4">
+              <p className="text-neutral-800 text-[10px] tracking-wider uppercase flex items-center gap-2">
+                <Shield className="w-3 h-3 text-emerald-500/40" />
+                Pagamento seguro
+              </p>
+              <span className="text-neutral-800">·</span>
+              <p className="text-neutral-800 text-[10px] tracking-wider uppercase">Garantia 7 dias</p>
+            </div>
           </div>
         </div>
       </footer>
