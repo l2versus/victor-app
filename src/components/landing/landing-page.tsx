@@ -682,12 +682,20 @@ export function LandingPage() {
         </div>
         <div className="max-w-7xl mx-auto relative z-10">
           <Reveal>
-            <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">Depoimentos reais</p>
+            <TextEffect per="char" preset="blur" delay={0.1} as="p" className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4 text-center">
+              Depoimentos reais
+            </TextEffect>
             <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight text-center mb-4">
-              Quem treina com Victor,{" "}
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">transforma.</span>
+              <TextEffect per="word" preset="slide" as="span" className="inline">
+                Quem treina com Victor,{" "}
+              </TextEffect>
+              <TextEffect per="char" preset="blur" delay={0.4} as="span" className="inline text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
+                transforma.
+              </TextEffect>
             </h2>
-            <p className="text-neutral-500 text-center text-sm mb-16">Resultados reais de alunos reais.</p>
+            <TextEffect per="word" preset="fade" delay={0.6} as="p" className="text-neutral-500 text-center text-sm mb-16">
+              Resultados reais de alunos reais.
+            </TextEffect>
           </Reveal>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
