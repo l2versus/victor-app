@@ -12,8 +12,8 @@ const testimonials = [
     company: "Fortaleza - CE",
     avatar: "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&h=150&fit=crop&crop=face",
     rating: 5,
-    text: "Perdi 12kg em 4 meses com o acompanhamento do Victor. O app é absurdo — timer, registro de carga, tudo automático. A IA me cobra quando falto e ajusta o treino quando durmo mal.",
-    results: ["-12kg em 4 meses", "Treino adaptativo por IA", "Acompanhamento 24/7"],
+    text: "Perdi 12kg em 4 meses com o acompanhamento do Victor. O app é absurdo — timer, registro de carga, tudo automático. O sistema me cobra quando falto e Victor ajusta o treino conforme meu progresso.",
+    results: ["-12kg em 4 meses", "Treino adaptativo", "Acompanhamento 24/7"],
   },
   {
     name: "Camila Rocha",
@@ -21,7 +21,7 @@ const testimonials = [
     company: "São Paulo - SP",
     avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face",
     rating: 5,
-    text: "Tenho hérnia de disco e sempre tive medo de treinar pesado. Victor adaptou tudo respeitando minhas restrições — a IA analisa minha ficha e bloqueia exercícios contraindicados. Me sinto segura pela primeira vez.",
+    text: "Tenho hérnia de disco e sempre tive medo de treinar pesado. Victor adaptou tudo respeitando minhas restrições — o sistema analisa minha ficha e bloqueia exercícios contraindicados. Me sinto segura pela primeira vez.",
     results: ["Treino sem dor", "Restrições respeitadas", "Ganho de massa seguro"],
   },
   {
@@ -40,7 +40,7 @@ const testimonials = [
     avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&h=150&fit=crop&crop=face",
     rating: 5,
     text: "Como profissional de saúde, sou exigente com método. O Victor combina ciência com tecnologia de um jeito que nunca vi. A correção de postura por câmera é genial — meus pacientes amam.",
-    results: ["Método científico", "Postura corrigida por IA", "Resultados comprovados"],
+    results: ["Método científico", "Postura corrigida por câmera", "Resultados comprovados"],
   },
   {
     name: "Thiago Santos",
@@ -48,8 +48,8 @@ const testimonials = [
     company: "Curitiba - PR",
     avatar: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face",
     rating: 5,
-    text: "Eu era sedentário total. Em 3 meses, já estava levantando carga que achava impossível. O chat com IA pós-treino pergunta como me senti e ajusta tudo automaticamente. Viciei.",
-    results: ["Sedentário → ativo", "3 meses de evolução", "Chat IA personalizado"],
+    text: "Eu era sedentário total. Em 3 meses, já estava levantando carga que achava impossível. O assistente pós-treino pergunta como me senti e o Victor ajusta tudo. Viciei.",
+    results: ["Sedentário → ativo", "3 meses de evolução", "Acompanhamento personalizado"],
   },
   {
     name: "Ana Beatriz Costa",
@@ -57,7 +57,7 @@ const testimonials = [
     company: "Brasília - DF",
     avatar: "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&h=150&fit=crop&crop=face",
     rating: 5,
-    text: "Com plantões de 24h, preciso de um treino que se adapte à minha rotina caótica. A IA do Victor entende quando estou cansada e ajusta a intensidade. Perdi 7kg mesmo com a rotina pesada.",
+    text: "Com plantões de 24h, preciso de um treino que se adapte à minha rotina caótica. O método do Victor entende quando estou cansada e ajusta a intensidade. Perdi 7kg mesmo com a rotina pesada.",
     results: ["-7kg com rotina pesada", "Treino adaptativo", "Respeita seu ritmo"],
   },
 ]
