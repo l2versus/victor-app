@@ -83,22 +83,38 @@ export function PostureAnalyzer() {
         await videoRef.current.play()
       }
 
-      // Load MediaPipe PoseLandmarker
+      // Load MediaPipe PoseLandmarker (100% client-side, no API key needed)
       const vision = await import("@mediapipe/tasks-vision")
       const { PoseLandmarker, FilesetResolver, DrawingUtils } = vision
 
+      // WASM version must match npm package version
       const filesetResolver = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm"
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
       )
 
-      const poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
-        baseOptions: {
-          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-          delegate: "GPU",
-        },
-        runningMode: "VIDEO",
-        numPoses: 1,
-      })
+      // Use full model for better accuracy on joint angles (pose correction needs it)
+      // Try GPU first, fall back to CPU for older devices
+      let poseLandmarker: InstanceType<typeof PoseLandmarker>
+      try {
+        poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+            delegate: "GPU",
+          },
+          runningMode: "VIDEO",
+          numPoses: 1,
+        })
+      } catch {
+        // GPU not available (older iPhones, some Android) — fallback to CPU
+        poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
+          baseOptions: {
+            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+            delegate: "CPU",
+          },
+          runningMode: "VIDEO",
+          numPoses: 1,
+        })
+      }
 
       poseLandmarkerRef.current = poseLandmarker
       setState("analyzing")
@@ -116,7 +132,7 @@ export function PostureAnalyzer() {
 
       function detect() {
         if (!video || !canvas || !ctx || !poseLandmarkerRef.current) return
-        const landmarker = poseLandmarkerRef.current as InstanceType<typeof PoseLandmarker>
+        const landmarker = poseLandmarkerRef.current as typeof poseLandmarker
 
         canvas.width = video.videoWidth
         canvas.height = video.videoHeight
