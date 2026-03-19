@@ -14,6 +14,7 @@ import {
   Crosshair,
   Zap,
   Info,
+  SwitchCamera,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -47,20 +48,26 @@ export function PostureAnalyzer() {
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
   const [showPositionGuide, setShowPositionGuide] = useState(false)
   const [fps, setFps] = useState(0)
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("user")
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const poseLandmarkerRef = useRef<unknown>(null)
   const animFrameRef = useRef<number>(0)
   const streamRef = useRef<MediaStream | null>(null)
+  const facingModeRef = useRef<"user" | "environment">("user")
   const mountedRef = useRef(true)
   const selectedExerciseRef = useRef<ExerciseRule>(defaultExercise)
   const fpsCounterRef = useRef({ frames: 0, lastTime: performance.now() })
 
-  // Keep ref in sync with state
+  // Keep refs in sync with state
   useEffect(() => {
     selectedExerciseRef.current = selectedExercise
   }, [selectedExercise])
+
+  useEffect(() => {
+    facingModeRef.current = facingMode
+  }, [facingMode])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -99,16 +106,31 @@ export function PostureAnalyzer() {
     }
   }, [])
 
+  async function switchCamera() {
+    const newMode = facingMode === "user" ? "environment" : "user"
+    setFacingMode(newMode)
+    facingModeRef.current = newMode
+
+    // If currently analyzing, restart with new camera
+    if (state === "analyzing") {
+      stopCamera()
+      // Small delay to let cleanup finish before restarting
+      setTimeout(() => {
+        startAnalysis()
+      }, 300)
+    }
+  }
+
   async function startAnalysis() {
     setState("loading")
     setErrorMsg("")
     setShowPositionGuide(false)
 
     try {
-      // Request camera — prefer back camera on mobile
+      // Request camera — frontal (user) by default so the student sees the corrections live
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          facingMode: { ideal: "environment" },
+          facingMode: { ideal: facingModeRef.current },
           width: { ideal: 640 },
           height: { ideal: 480 },
         },
@@ -459,10 +481,21 @@ export function PostureAnalyzer() {
           )}
         />
 
-        {/* FPS badge */}
-        {state === "analyzing" && fps > 0 && (
-          <div className="absolute top-2 right-2 px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-neutral-400 font-mono z-10">
-            {fps} FPS
+        {/* Camera switch + FPS badge */}
+        {state === "analyzing" && (
+          <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+            <button
+              onClick={switchCamera}
+              className="p-1.5 rounded-lg bg-black/60 text-neutral-300 hover:text-white hover:bg-black/80 active:scale-90 transition-all"
+              title={facingMode === "user" ? "Trocar para camera traseira" : "Trocar para camera frontal"}
+            >
+              <SwitchCamera className="w-4 h-4" />
+            </button>
+            {fps > 0 && (
+              <span className="px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-neutral-400 font-mono">
+                {fps} FPS
+              </span>
+            )}
           </div>
         )}
 
@@ -476,6 +509,14 @@ export function PostureAnalyzer() {
               <p className="text-sm text-neutral-300 font-medium">{selectedExercise.name}</p>
               <p className="text-xs text-neutral-500 mt-1">{selectedExercise.positioningTip}</p>
             </div>
+            {/* Camera toggle in idle */}
+            <button
+              onClick={switchCamera}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-xs text-neutral-400 hover:text-white transition-colors active:scale-95"
+            >
+              <SwitchCamera className="w-3.5 h-3.5" />
+              {facingMode === "user" ? "Camera frontal" : "Camera traseira"}
+            </button>
           </div>
         )}
 
