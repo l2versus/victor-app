@@ -100,7 +100,7 @@ export function PremiumTestimonials() {
     visible: {
       opacity: 1,
       y: 0,
-      transition: { duration: 0.8, ease: [0.23, 0.86, 0.39, 0.96] },
+      transition: { duration: 0.8, ease: "easeOut" as const },
     },
   }
 
@@ -168,7 +168,7 @@ export function PremiumTestimonials() {
           </TextEffect>
           <h2 className="text-3xl sm:text-4xl md:text-[3.5rem] font-black tracking-tight text-center mb-4">
             <TextEffect per="word" preset="slide" as="span" className="inline">
-              Quem treina com Victor,{" "}
+              {"Quem treina com Victor, "}
             </TextEffect>
             <TextEffect per="char" preset="blur" delay={0.4} as="span" className="inline text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
               transforma.
