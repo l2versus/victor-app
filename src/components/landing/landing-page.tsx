@@ -306,7 +306,7 @@ function FloatingLogo({ size, className, delay }: { size: number; className?: st
       style={{ animation: `float-slow 14s ease-in-out infinite, fadeIn 1.5s ${delay}s ease-out forwards` }}
     >
       <div className="relative" style={{ width: size, height: size }}>
-        <Image src="/img/logo-icon.png" alt="" width={size} height={size} className="rounded-2xl opacity-[0.07]" />
+        <Image src="/img/logo-icon-sm.png" alt="" width={size} height={size} className="rounded-2xl opacity-[0.07]" />
         <div className="absolute inset-0 bg-red-600/10 blur-xl rounded-full scale-150" />
       </div>
     </div>
@@ -338,7 +338,7 @@ function FaqSection() {
         <Reveal>
           <div className="text-center mb-14">
             <div className="mx-auto mb-6 relative inline-block">
-              <Image src="/img/logo-icon.png" alt="VO Personal" width={80} height={80} className="rounded-2xl relative z-10 shadow-2xl shadow-red-600/20" />
+              <Image src="/img/logo-icon-sm.png" alt="VO Personal" width={80} height={80} className="rounded-2xl relative z-10 shadow-2xl shadow-red-600/20" />
               <div className="absolute inset-0 bg-red-600/25 blur-2xl rounded-full scale-[2] -z-0" />
               <div className="absolute inset-0 bg-red-500/10 blur-3xl rounded-full scale-[3] -z-0 animate-pulse" />
             </div>
@@ -393,15 +393,16 @@ function FaqSection() {
                   </button>
 
                   {/* Answer panel */}
-                  <div className={cn(
-                    "grid transition-all duration-500 ease-in-out",
-                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"
-                  )}>
-                    <div className="overflow-hidden">
-                      <div className="px-5 sm:px-6 pb-5 pl-[4.25rem] sm:pl-[4.5rem]">
-                        <div className="h-px bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent mb-4" />
-                        <p className="text-neutral-400 text-sm leading-relaxed">{faq.a}</p>
-                      </div>
+                  <div
+                    className="overflow-hidden transition-[max-height,opacity] duration-300 ease-out"
+                    style={{
+                      maxHeight: isOpen ? "200px" : "0px",
+                      opacity: isOpen ? 1 : 0,
+                    }}
+                  >
+                    <div className="px-5 sm:px-6 pb-5 pl-[4.25rem] sm:pl-[4.5rem]">
+                      <div className="h-px bg-gradient-to-r from-red-500/10 via-red-500/5 to-transparent mb-4" />
+                      <p className="text-neutral-400 text-sm leading-relaxed">{faq.a}</p>
                     </div>
                   </div>
                 </div>
