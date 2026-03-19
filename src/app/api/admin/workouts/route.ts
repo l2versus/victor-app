@@ -44,6 +44,9 @@ export async function GET(req: NextRequest) {
       pages: Math.ceil(total / limit),
     })
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to fetch workouts"
+    if (message === "Unauthorized") return NextResponse.json({ error: message }, { status: 401 })
+    if (message === "Forbidden") return NextResponse.json({ error: message }, { status: 403 })
     console.error("GET /api/admin/workouts error:", error)
     return NextResponse.json({ error: "Failed to fetch workouts" }, { status: 500 })
   }
@@ -128,6 +131,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ workout }, { status: 201 })
   } catch (error) {
+    const message = error instanceof Error ? error.message : "Failed to create workout"
+    if (message === "Unauthorized") return NextResponse.json({ error: message }, { status: 401 })
+    if (message === "Forbidden") return NextResponse.json({ error: message }, { status: 403 })
     console.error("POST /api/admin/workouts error:", error)
     return NextResponse.json({ error: "Failed to create workout" }, { status: 500 })
   }

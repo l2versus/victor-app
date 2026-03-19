@@ -27,12 +27,18 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   const session = await requireAdmin()
-  await getTrainerProfile(session.userId)
+  const trainer = await getTrainerProfile(session.userId)
   const body = await req.json()
 
   const { studentId, planId, startDate } = body
 
-  const plan = await prisma.plan.findUnique({ where: { id: planId } })
+  // Verify student belongs to this trainer
+  const studentCheck = await prisma.student.findUnique({ where: { id: studentId } })
+  if (!studentCheck || studentCheck.trainerId !== trainer.id) {
+    return Response.json({ error: "Aluno não encontrado" }, { status: 404 })
+  }
+
+  const plan = await prisma.plan.findUnique({ where: { id: planId, trainerId: trainer.id } })
   if (!plan) return Response.json({ error: "Plano não encontrado" }, { status: 404 })
 
   // Calculate end date based on plan interval
@@ -53,9 +59,9 @@ export async function POST(req: NextRequest) {
       break
   }
 
-  // Cancel any existing active subscription
+  // Cancel any existing active subscription for this student under this trainer
   await prisma.subscription.updateMany({
-    where: { studentId, status: "ACTIVE" },
+    where: { studentId, status: "ACTIVE", student: { trainerId: trainer.id } },
     data: { status: "CANCELLED" },
   })
 

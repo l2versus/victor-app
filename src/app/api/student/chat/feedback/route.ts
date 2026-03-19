@@ -21,6 +21,16 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Student not found" }, { status: 404 })
   }
 
+  // Verify session belongs to this student
+  if (sessionId) {
+    const workoutSession = await prisma.workoutSession.findUnique({
+      where: { id: sessionId, studentId: student.id },
+    })
+    if (!workoutSession) {
+      return Response.json({ error: "Sessão não encontrada" }, { status: 404 })
+    }
+  }
+
   // Use AI to extract structured data from conversation
   const extractionResult = await generateText({
     model: aiModel,

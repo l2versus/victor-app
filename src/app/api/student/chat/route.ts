@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
   let workoutContext = ""
   if (sessionId) {
     const workoutSession = await prisma.workoutSession.findUnique({
-      where: { id: sessionId },
+      where: { id: sessionId, studentId: student.id },
       include: {
         template: {
           include: {

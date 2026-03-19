@@ -11,9 +11,11 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "templateId obrigatório" }, { status: 400 })
     }
 
-    // Verify template exists
-    const template = await prisma.workoutTemplate.findUnique({ where: { id: templateId } })
-    if (!template) {
+    // Verify template exists and belongs to student's trainer
+    const template = await prisma.workoutTemplate.findUnique({
+      where: { id: templateId },
+    })
+    if (!template || template.trainerId !== student.trainerId) {
       return NextResponse.json({ error: "Treino não encontrado" }, { status: 404 })
     }
 

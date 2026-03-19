@@ -4,7 +4,7 @@ import { hashPassword, generateToken } from "@/lib/auth"
 
 export async function POST(req: NextRequest) {
   try {
-    const { name, email, password, phone, role } = await req.json()
+    const { name, email, password, phone } = await req.json()
 
     if (!name || !email || !password) {
       return NextResponse.json({ error: "Nome, email e senha sao obrigatorios" }, { status: 400 })
@@ -23,16 +23,9 @@ export async function POST(req: NextRequest) {
         email,
         password: hashedPassword,
         phone: phone || null,
-        role: role === "ADMIN" ? "ADMIN" : "STUDENT",
+        role: "STUDENT",
       },
     })
-
-    // If admin, create trainer profile
-    if (user.role === "ADMIN") {
-      await prisma.trainerProfile.create({
-        data: { userId: user.id },
-      })
-    }
 
     const token = generateToken({
       userId: user.id,

@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
 
 export async function POST(req: NextRequest) {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const trainer = await prisma.trainerProfile.findUnique({ where: { userId: session.userId } })
+  if (!trainer) return Response.json({ error: "Trainer not found" }, { status: 404 })
 
   const { studentId, assessmentId, rawText } = await req.json()
 
@@ -30,6 +32,9 @@ export async function POST(req: NextRequest) {
       where: { id: studentId },
       include: { user: { select: { name: true } } },
     })
+    if (!student || student.trainerId !== trainer.id) {
+      return Response.json({ error: "Aluno não encontrado" }, { status: 404 })
+    }
     if (student) {
       studentContext = `Aluno: ${student.user.name}, ${student.weight || "?"}kg, ${student.height || "?"}cm, Objetivo: ${student.goals || "?"}`
     }

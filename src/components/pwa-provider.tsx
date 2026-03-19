@@ -77,8 +77,7 @@ export default function PWAProvider() {
 
       {/* Modal */}
       <div
-        className={`fixed z-[10000] left-1/2 top-1/2 w-[calc(100%-32px)] max-w-[400px] transition-all duration-300 ${closing ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
-        style={{ transform: "translate(-50%, -50%)" }}
+        className={`fixed z-[10000] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-32px)] max-w-[400px] transition-all duration-300 ${closing ? "opacity-0 scale-95" : "opacity-100 scale-100"}`}
       >
         <div className="rounded-3xl overflow-hidden bg-[#0a0a0a] border border-white/[0.08] shadow-2xl shadow-red-600/10">
           {/* Header */}

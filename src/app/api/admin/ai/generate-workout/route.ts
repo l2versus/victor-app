@@ -5,7 +5,9 @@ import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
 
 export async function POST(req: NextRequest) {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const trainer = await prisma.trainerProfile.findUnique({ where: { userId: session.userId } })
+  if (!trainer) return Response.json({ error: "Trainer not found" }, { status: 404 })
 
   const { studentId, objective, level, restrictions, equipment, days, focus } = await req.json()
 
@@ -13,7 +15,7 @@ export async function POST(req: NextRequest) {
   let studentContext = ""
   if (studentId) {
     const student = await prisma.student.findUnique({
-      where: { id: studentId },
+      where: { id: studentId, trainerId: trainer.id },
       include: {
         user: { select: { name: true } },
         sessions: {

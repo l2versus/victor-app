@@ -5,83 +5,112 @@ import { requireStudent } from "@/lib/student"
 export async function GET() {
   try {
     const { student } = await requireStudent()
-
-    // Total sessions
-    const totalSessions = await prisma.workoutSession.count({
-      where: { studentId: student.id, completedAt: { not: null } },
-    })
-
-    // Average RPE
-    const rpeAgg = await prisma.workoutSession.aggregate({
-      where: { studentId: student.id, completedAt: { not: null }, rpe: { not: null } },
-      _avg: { rpe: true },
-    })
-
-    // Heatmap: sessions per day (last 90 days)
+    const now = new Date()
     const ninetyDaysAgo = new Date()
-    ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
+    ninetyDaysAgo.setDate(now.getDate() - 90)
+    const twelveWeeksAgo = new Date()
+    twelveWeeksAgo.setDate(now.getDate() - 84)
+    const oneYearAgo = new Date()
+    oneYearAgo.setDate(now.getDate() - 364)
 
-    const recentSessions = await prisma.workoutSession.findMany({
-      where: {
-        studentId: student.id,
-        completedAt: { not: null },
-        startedAt: { gte: ninetyDaysAgo },
-      },
-      select: { startedAt: true },
-      orderBy: { startedAt: "asc" },
-    })
+    // Run independent queries in parallel
+    const [
+      totalSessions,
+      rpeAgg,
+      recentSessions,
+      streakSessions,
+      allSets,
+    ] = await Promise.all([
+      // Total sessions
+      prisma.workoutSession.count({
+        where: { studentId: student.id, completedAt: { not: null } },
+      }),
 
-    // Build heatmap data: { date: "YYYY-MM-DD", count: N }
+      // Average RPE
+      prisma.workoutSession.aggregate({
+        where: { studentId: student.id, completedAt: { not: null }, rpe: { not: null } },
+        _avg: { rpe: true },
+      }),
+
+      // Heatmap: sessions per day (last 90 days)
+      prisma.workoutSession.findMany({
+        where: {
+          studentId: student.id,
+          completedAt: { not: null },
+          startedAt: { gte: ninetyDaysAgo },
+        },
+        select: { startedAt: true },
+        orderBy: { startedAt: "asc" },
+      }),
+
+      // Streak: all sessions in last year (for weekly streak calc)
+      prisma.workoutSession.findMany({
+        where: {
+          studentId: student.id,
+          completedAt: { not: null },
+          startedAt: { gte: oneYearAgo },
+        },
+        select: { startedAt: true },
+        orderBy: { startedAt: "desc" },
+      }),
+
+      // All sets with session info (for PRs and volume)
+      prisma.sessionSet.findMany({
+        where: {
+          session: { studentId: student.id, startedAt: { gte: twelveWeeksAgo } },
+        },
+        select: {
+          exerciseId: true,
+          reps: true,
+          loadKg: true,
+          session: { select: { startedAt: true } },
+        },
+      }),
+    ])
+
+    // Build heatmap data
     const heatmap: Record<string, number> = {}
     for (const s of recentSessions) {
       const key = s.startedAt.toISOString().split("T")[0]
       heatmap[key] = (heatmap[key] || 0) + 1
     }
 
-    // Streak: consecutive weeks with at least 1 session
+    // Streak: consecutive weeks with at least 1 session (computed in-memory)
+    const weekSet = new Set<number>()
+    for (const s of streakSessions) {
+      const diffMs = now.getTime() - s.startedAt.getTime()
+      const weekIndex = Math.floor(diffMs / (7 * 24 * 60 * 60 * 1000))
+      weekSet.add(weekIndex)
+    }
     let streak = 0
-    const now = new Date()
     for (let w = 0; w < 52; w++) {
-      const weekEnd = new Date(now)
-      weekEnd.setDate(now.getDate() - w * 7)
-      const weekStart = new Date(weekEnd)
-      weekStart.setDate(weekEnd.getDate() - 7)
-
-      const count = await prisma.workoutSession.count({
-        where: {
-          studentId: student.id,
-          completedAt: { not: null },
-          startedAt: { gte: weekStart, lt: weekEnd },
-        },
-      })
-
-      if (count > 0) {
+      if (weekSet.has(w)) {
         streak++
       } else {
         break
       }
     }
 
-    // Personal Records (max load per exercise)
-    const allSets = await prisma.sessionSet.findMany({
+    // PRs: fetch all sets for this student (not just last 12 weeks)
+    const allPrSets = await prisma.sessionSet.findMany({
       where: { session: { studentId: student.id } },
-      orderBy: { loadKg: "desc" },
-      include: {
+      select: {
+        exerciseId: true,
+        loadKg: true,
         session: { select: { startedAt: true } },
       },
+      orderBy: { loadKg: "desc" },
     })
 
-    // Get unique exercise IDs
-    const exerciseIds = [...new Set(allSets.map((s) => s.exerciseId))]
+    const exerciseIds = [...new Set(allPrSets.map((s) => s.exerciseId))]
     const exercises = await prisma.exercise.findMany({
       where: { id: { in: exerciseIds } },
       select: { id: true, name: true, muscle: true },
     })
     const exerciseMap = new Map(exercises.map((e) => [e.id, e]))
 
-    // Build PR per exercise
     const prMap = new Map<string, { loadKg: number; date: Date }>()
-    for (const set of allSets) {
+    for (const set of allPrSets) {
       const existing = prMap.get(set.exerciseId)
       if (!existing || set.loadKg > existing.loadKg) {
         prMap.set(set.exerciseId, { loadKg: set.loadKg, date: set.session.startedAt })
@@ -99,7 +128,7 @@ export async function GET() {
       .sort((a, b) => b.loadKg - a.loadKg)
       .slice(0, 10)
 
-    // Volume by week (last 12 weeks)
+    // Volume by week (last 12 weeks) — computed in-memory from allSets
     const volumeByWeek: { week: string; volume: number }[] = []
     for (let w = 11; w >= 0; w--) {
       const weekEnd = new Date(now)
@@ -107,17 +136,14 @@ export async function GET() {
       const weekStart = new Date(weekEnd)
       weekStart.setDate(weekEnd.getDate() - 7)
 
-      const weekSets = await prisma.sessionSet.findMany({
-        where: {
-          session: {
-            studentId: student.id,
-            startedAt: { gte: weekStart, lt: weekEnd },
-          },
-        },
-        select: { reps: true, loadKg: true },
-      })
+      let volume = 0
+      for (const set of allSets) {
+        const t = set.session.startedAt.getTime()
+        if (t >= weekStart.getTime() && t < weekEnd.getTime()) {
+          volume += set.reps * set.loadKg
+        }
+      }
 
-      const volume = weekSets.reduce((sum, s) => sum + s.reps * s.loadKg, 0)
       const label = `${weekStart.getDate().toString().padStart(2, "0")}/${(weekStart.getMonth() + 1).toString().padStart(2, "0")}`
       volumeByWeek.push({ week: label, volume: Math.round(volume) })
     }

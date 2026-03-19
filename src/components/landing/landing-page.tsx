@@ -56,12 +56,14 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
   useEffect(() => {
     if (!visible) return
     const start = Date.now()
+    let rafId: number
     const tick = () => {
       const p = Math.min((Date.now() - start) / 2000, 1)
       setCount(Math.floor((1 - Math.pow(1 - p, 3)) * value))
-      if (p < 1) requestAnimationFrame(tick)
+      if (p < 1) rafId = requestAnimationFrame(tick)
     }
-    requestAnimationFrame(tick)
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
   }, [visible, value])
   return <span ref={ref as React.RefObject<HTMLSpanElement>}>{count}{suffix}</span>
 }
@@ -187,7 +189,7 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
   const accent = isPro ? "red" : isElite ? "amber" : "neutral"
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
       <div
         className="relative w-full max-w-lg rounded-3xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden"
@@ -204,7 +206,7 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
         )} />
 
         <div className="relative p-8">
-          <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.1] transition-all">
+          <button onClick={onClose} aria-label="Fechar" className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.1] transition-all">
             <X className="w-4 h-4" />
           </button>
 
@@ -241,7 +243,7 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
           </div>
 
           <a
-            href={`https://wa.me/5585996985823?text=Olá Victor! Quero assinar o plano ${tier.name} ${durations.find(d => d.key === duration)?.label} por R$ ${p.monthly.toFixed(2)}/mês`}
+            href={`https://wa.me/5585996985823?text=${encodeURIComponent(`Olá Victor! Quero assinar o plano ${tier.name} ${durations.find(d => d.key === duration)?.label} por R$ ${p.monthly.toFixed(2)}/mês`)}`}
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
@@ -266,13 +268,13 @@ type FeatureDetail = { title: string; icon: typeof Brain; desc: string; long: st
 
 function FeatureModal({ feature, onClose }: { feature: NonNullable<FeatureDetail>; onClose: () => void }) {
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
       <div className="relative w-full max-w-lg rounded-3xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
         {/* Top glow */}
         <div className={cn("absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-32 rounded-full blur-3xl -translate-y-1/2", feature.color.includes("purple") ? "bg-purple-600/20" : feature.color.includes("blue") ? "bg-blue-600/20" : feature.color.includes("red") ? "bg-red-600/20" : feature.color.includes("emerald") ? "bg-emerald-600/20" : feature.color.includes("amber") ? "bg-amber-600/20" : "bg-cyan-600/20")} />
         <div className="relative p-8">
-          <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.1] transition-all">
+          <button onClick={onClose} aria-label="Fechar" className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.1] transition-all">
             <X className="w-4 h-4" />
           </button>
           <div className={cn("w-14 h-14 rounded-2xl bg-gradient-to-br flex items-center justify-center mb-5 shadow-lg", feature.color)}>
@@ -373,6 +375,7 @@ function FaqSection() {
                 )}>
                   <button
                     onClick={() => setOpenIndex(isOpen ? null : i)}
+                    aria-expanded={isOpen}
                     className="w-full flex items-center gap-4 px-5 sm:px-6 py-5 text-left cursor-pointer"
                   >
                     {/* Icon */}
@@ -385,12 +388,12 @@ function FaqSection() {
                       <faq.icon className={cn("w-4.5 h-4.5 transition-colors duration-300", isOpen ? "text-red-400" : "text-neutral-500 group-hover:text-neutral-400")} />
                     </div>
 
-                    <h3 className={cn(
+                    <span className={cn(
                       "flex-1 text-[15px] font-semibold transition-colors duration-300",
                       isOpen ? "text-white" : "text-neutral-200 group-hover:text-white"
                     )}>
                       {faq.q}
-                    </h3>
+                    </span>
 
                     {/* Chevron */}
                     <div className={cn(
@@ -497,7 +500,7 @@ export function LandingPage() {
               Começar
               <ArrowRight className="w-3.5 h-3.5" />
             </a>
-            <button onClick={() => setMobileMenu(!mobileMenu)} className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/[0.05] transition-colors">
+            <button onClick={() => setMobileMenu(!mobileMenu)} aria-label={mobileMenu ? "Fechar menu" : "Abrir menu"} className="lg:hidden w-10 h-10 flex items-center justify-center rounded-xl hover:bg-white/[0.05] transition-colors">
               {mobileMenu ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
@@ -584,7 +587,7 @@ export function LandingPage() {
                 Consultoria fitness com <span className="text-white font-semibold">inteligência artificial integrada</span>,
                 treinos 100% individualizados e acompanhamento de evolução em tempo real.
                 <span className="text-neutral-500 block mt-2 text-sm">
-                  Por Victor Oliveira — CREF 123456-G/SP
+                  Por Victor Oliveira — CREF 123456-G/CE
                 </span>
               </p>
             </Reveal>
@@ -1073,7 +1076,7 @@ export function LandingPage() {
                 <p className="text-neutral-500 text-sm">Entre em contato e comece sua jornada hoje mesmo.</p>
               </div>
               <a
-                href="https://wa.me/5585996985823?text=Olá Victor! Quero começar minha transformação!"
+                href={`https://wa.me/5585996985823?text=${encodeURIComponent("Olá Victor! Quero começar minha transformação!")}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-red-600 text-white font-bold text-sm shadow-xl shadow-red-600/20 hover:bg-red-500 hover:shadow-red-600/40 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98]"
@@ -1178,7 +1181,7 @@ export function LandingPage() {
           <div className="border-t border-white/[0.04] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-neutral-600 text-xs">© 2026 Victor Oliveira · CREF 123456-G/SP</p>
+              <p className="text-neutral-600 text-xs">© 2026 Victor Oliveira · CREF 123456-G/CE</p>
             </div>
             <div className="flex items-center gap-4">
               <p className="text-neutral-800 text-[10px] tracking-wider uppercase flex items-center gap-2">
