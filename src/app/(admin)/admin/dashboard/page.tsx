@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getTrainerProfile } from "@/lib/admin"
 import {
   Users, Dumbbell, Calendar, DollarSign,
-  ArrowRight, Plus, Activity, Zap, Flame
+  ArrowRight, Plus, Activity, Zap, Flame, Brain
 } from "lucide-react"
 import Link from "next/link"
 import { format, startOfWeek } from "date-fns"
@@ -88,6 +88,7 @@ export default async function DashboardPage() {
         <AliveAction href="/admin/students" icon={Plus} title="Add Student" desc="Register a new student" />
         <AliveAction href="/admin/workouts/new" icon={Dumbbell} title="Create Workout" desc="Build a training plan" />
         <AliveAction href="/admin/exercises" icon={Activity} title="Exercise Library" desc={`${totalExercises} exercises`} />
+        <AliveAction href="/admin/ai" icon={Brain} title="IA Tools" desc="Treinos, anamnese, engajamento" />
       </div>
 
       {/* ═══ TWO COLUMN — Glass Panels ═══ */}

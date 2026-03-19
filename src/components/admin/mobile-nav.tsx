@@ -7,7 +7,7 @@ import {
   LayoutDashboard,
   Users,
   Dumbbell,
-  Library,
+  Brain,
   MoreHorizontal,
 } from "lucide-react"
 
@@ -15,7 +15,7 @@ const navItems = [
   { href: "/admin/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/admin/students", label: "Students", icon: Users },
   { href: "/admin/workouts", label: "Workouts", icon: Dumbbell },
-  { href: "/admin/exercises", label: "Library", icon: Library },
+  { href: "/admin/ai", label: "IA", icon: Brain },
   { href: "/admin/settings", label: "More", icon: MoreHorizontal },
 ]
 

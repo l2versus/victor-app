@@ -12,6 +12,7 @@ import {
   DollarSign,
   Settings,
   LogOut,
+  Brain,
 } from "lucide-react"
 
 const navItems = [
@@ -19,6 +20,7 @@ const navItems = [
   { href: "/admin/students", label: "Students", icon: Users },
   { href: "/admin/workouts", label: "Workouts", icon: Dumbbell },
   { href: "/admin/exercises", label: "Exercises", icon: Library },
+  { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/assessments", label: "Assessments", icon: ClipboardList },
   { href: "/admin/finance", label: "Finance", icon: DollarSign },
   { href: "/admin/settings", label: "Settings", icon: Settings },
