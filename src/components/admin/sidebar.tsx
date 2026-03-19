@@ -14,6 +14,7 @@ import {
   LogOut,
   Brain,
   Crown,
+  ExternalLink,
 } from "lucide-react"
 
 const navItems = [
@@ -79,6 +80,13 @@ export function AdminSidebar({ userName }: { userName: string }) {
       {/* Footer */}
       <div className="px-4 py-5 border-t border-white/[0.04]">
         <p className="text-[11px] text-neutral-600 truncate px-3.5 mb-2 tracking-wide">{userName}</p>
+        <Link
+          href="/site"
+          className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.03] transition-all duration-300 w-full border border-transparent hover:border-white/[0.06] mb-1"
+        >
+          <ExternalLink className="w-[18px] h-[18px]" />
+          Ver Site
+        </Link>
         <button
           onClick={handleLogout}
           className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.03] transition-all duration-300 w-full border border-transparent hover:border-white/[0.06]"
