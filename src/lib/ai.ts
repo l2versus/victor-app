@@ -1,11 +1,16 @@
+import { createAnthropic } from "@ai-sdk/anthropic"
 import { createOpenAI } from "@ai-sdk/openai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 
-export type AIProvider = "openai" | "google"
+export type AIProvider = "anthropic" | "openai" | "google"
 
-const PROVIDER = (process.env.AI_PROVIDER as AIProvider) || "google"
+const PROVIDER = (process.env.AI_PROVIDER as AIProvider) || "anthropic"
 
 function getModel() {
+  if (PROVIDER === "anthropic") {
+    const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+    return anthropic(process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250514")
+  }
   if (PROVIDER === "openai") {
     const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
     return openai(process.env.OPENAI_MODEL || "gpt-4o-mini")
