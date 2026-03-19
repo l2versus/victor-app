@@ -288,6 +288,115 @@ function FeatureModal({ feature, onClose }: { feature: NonNullable<FeatureDetail
   )
 }
 
+/* ═══════════════════════════════════════════
+   FAQ with floating shapes + accordion
+   ═══════════════════════════════════════════ */
+const faqData = [
+  { q: "Preciso ter experiência com treino?", a: "Não! O treino é montado de acordo com seu nível — do iniciante ao avançado. A IA adapta tudo automaticamente." },
+  { q: "Posso cancelar a qualquer momento?", a: "Sim. Sem multa, sem burocracia. Mas quando você vir os resultados, não vai querer parar." },
+  { q: "Como funciona a correção de postura?", a: "No plano Elite, a câmera do seu celular analisa seus movimentos em tempo real com IA e te corrige durante o exercício." },
+  { q: "Tenho lesão/restrição. Posso treinar?", a: "Com certeza. A IA analisa sua anamnese e todas as restrições são respeitadas na prescrição. Segurança é prioridade #1." },
+  { q: "Preciso ir à academia?", a: "Não necessariamente. Victor monta treinos para academia, home workout ou ao ar livre. Você escolhe." },
+]
+
+function FloatingShape({ delay = 0, width = 400, height = 100, rotate = 0, gradient = "from-red-500/[0.12]", className }: {
+  delay?: number; width?: number; height?: number; rotate?: number; gradient?: string; className?: string
+}) {
+  return (
+    <div
+      className={cn("absolute opacity-0", className)}
+      style={{
+        animation: `float-slow 12s ease-in-out infinite, fadeIn 1.2s ${delay}s ease-out forwards`,
+        transform: `rotate(${rotate}deg)`,
+      }}
+    >
+      <div style={{ width, height }} className="relative">
+        <div className={cn(
+          "absolute inset-0 rounded-full bg-gradient-to-r to-transparent",
+          gradient,
+          "backdrop-blur-[2px] border border-white/[0.08]",
+          "shadow-[0_8px_32px_0_rgba(220,38,38,0.1)]",
+        )} />
+      </div>
+    </div>
+  )
+}
+
+function FaqSection() {
+  const [openIndex, setOpenIndex] = useState<number | null>(null)
+  return (
+    <section className="py-24 sm:py-32 px-5 sm:px-8 relative overflow-hidden">
+      {/* Floating shapes */}
+      <div className="absolute inset-0 pointer-events-none">
+        <FloatingShape delay={0.2} width={500} height={120} rotate={12} gradient="from-red-500/[0.1]" className="left-[-8%] top-[15%]" />
+        <FloatingShape delay={0.4} width={400} height={100} rotate={-15} gradient="from-red-600/[0.08]" className="right-[-5%] top-[65%]" />
+        <FloatingShape delay={0.3} width={250} height={70} rotate={-8} gradient="from-red-400/[0.1]" className="left-[5%] bottom-[8%]" />
+        <FloatingShape delay={0.5} width={180} height={50} rotate={20} gradient="from-orange-500/[0.08]" className="right-[15%] top-[8%]" />
+        <FloatingShape delay={0.6} width={120} height={35} rotate={-20} gradient="from-red-500/[0.06]" className="left-[25%] top-[5%]" />
+      </div>
+
+      {/* Background glow */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-red-950/[0.03] to-transparent pointer-events-none" />
+
+      <div className="max-w-3xl mx-auto relative z-10">
+        {/* Logo + Title */}
+        <Reveal>
+          <div className="text-center mb-14">
+            <div className="mx-auto mb-6 relative inline-block">
+              <Image src="/img/logo.png" alt="VO Personal" width={64} height={64} className="rounded-2xl relative z-10" />
+              <div className="absolute inset-0 bg-red-600/20 blur-2xl rounded-full scale-[2.5] -z-0" />
+              <div className="absolute inset-0 bg-red-500/10 blur-xl rounded-full scale-[3.5] -z-0 animate-pulse" />
+            </div>
+            <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-3">Tire suas dúvidas</p>
+            <h2 className="text-3xl sm:text-4xl font-black tracking-tight">Dúvidas frequentes</h2>
+          </div>
+        </Reveal>
+
+        {/* Accordion */}
+        <div className="space-y-3">
+          {faqData.map((faq, i) => {
+            const isOpen = openIndex === i
+            return (
+              <Reveal key={i} delay={i * 60}>
+                <div className={cn(
+                  "rounded-2xl border transition-all duration-500",
+                  isOpen
+                    ? "border-red-500/20 bg-red-600/[0.04]"
+                    : "border-white/[0.04] bg-white/[0.01] hover:border-white/[0.08]"
+                )}>
+                  <button
+                    onClick={() => setOpenIndex(isOpen ? null : i)}
+                    className="w-full flex items-center justify-between px-6 py-5 text-left cursor-pointer"
+                  >
+                    <h3 className={cn(
+                      "text-sm font-semibold transition-colors pr-4",
+                      isOpen ? "text-red-300" : "text-white"
+                    )}>
+                      {faq.q}
+                    </h3>
+                    <div className={cn(
+                      "shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-all duration-300",
+                      isOpen ? "bg-red-600/20 rotate-45" : "bg-white/[0.04]"
+                    )}>
+                      <span className={cn("text-lg font-light transition-colors", isOpen ? "text-red-400" : "text-neutral-500")}>+</span>
+                    </div>
+                  </button>
+                  <div className={cn(
+                    "overflow-hidden transition-all duration-500 ease-in-out",
+                    isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0"
+                  )}>
+                    <p className="px-6 pb-5 text-neutral-400 text-sm leading-relaxed">{faq.a}</p>
+                  </div>
+                </div>
+              </Reveal>
+            )
+          })}
+        </div>
+      </div>
+    </section>
+  )
+}
+
 export function LandingPage() {
   const [scrollY, setScrollY] = useState(0)
   const [duration, setDuration] = useState<Duration>("SEMIANNUAL")
@@ -816,25 +925,7 @@ export function LandingPage() {
       </section>
 
       {/* ═══ FAQ ═══ */}
-      <section className="py-20 px-5 sm:px-8">
-        <div className="max-w-3xl mx-auto">
-          <Reveal><h2 className="text-2xl font-black text-center mb-12 tracking-tight">Dúvidas frequentes</h2></Reveal>
-          {[
-            { q: "Preciso ter experiência com treino?", a: "Não! O treino é montado de acordo com seu nível — do iniciante ao avançado. A IA adapta tudo automaticamente." },
-            { q: "Posso cancelar a qualquer momento?", a: "Sim. Sem multa, sem burocracia. Mas quando você vir os resultados, não vai querer parar." },
-            { q: "Como funciona a correção de postura?", a: "No plano Elite, a câmera do seu celular analisa seus movimentos em tempo real com IA e te corrige durante o exercício." },
-            { q: "Tenho lesão/restrição. Posso treinar?", a: "Com certeza. A IA analisa sua anamnese e todas as restrições são respeitadas na prescrição. Segurança é prioridade #1." },
-            { q: "Preciso ir à academia?", a: "Não necessariamente. Victor monta treinos para academia, home workout ou ao ar livre. Você escolhe." },
-          ].map((faq, i) => (
-            <Reveal key={i} delay={i * 60}>
-              <div className="border-b border-white/[0.03] py-6 group">
-                <h3 className="text-sm font-semibold text-white mb-2 group-hover:text-red-300 transition-colors">{faq.q}</h3>
-                <p className="text-neutral-500 text-sm leading-relaxed">{faq.a}</p>
-              </div>
-            </Reveal>
-          ))}
-        </div>
-      </section>
+      <FaqSection />
 
       {/* ═══ CTA FINAL ═══ */}
       <section className="py-24 sm:py-36 px-5 sm:px-8 relative">

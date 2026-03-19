@@ -226,6 +226,11 @@
 .animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
 .animate-marquee { animation: marquee 30s linear infinite; }
 
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(-40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
 /* Photo placeholder with dramatic gradient */
 .photo-placeholder {
   background: linear-gradient(135deg, #1a0505 0%, #0a0a0a 40%, #1a0505 60%, #dc2626 200%);
