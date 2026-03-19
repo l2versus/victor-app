@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils"
 import ShaderBackground from "@/components/ui/shader-background"
 import { TextEffect } from "@/components/ui/text-effect"
 import { PremiumTestimonials } from "@/components/ui/premium-testimonials"
+import { TypingEffect } from "@/components/ui/typing-effect"
 
 /* ═══════════════════════════════════════════
    HOOKS
@@ -882,6 +883,16 @@ export function LandingPage() {
         </div>
 
         <div className="max-w-7xl mx-auto relative z-10">
+          {/* Typing animation */}
+          <div className="text-center mb-12">
+            <p className="text-neutral-700 text-[10px] uppercase tracking-[0.3em] mb-4 font-medium">VO Personal</p>
+            <div className="h-16 sm:h-20 flex items-center justify-center">
+              <p className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tight text-white/90">
+                <TypingEffect />
+              </p>
+            </div>
+          </div>
+
           {/* Top CTA band */}
           <div className="relative rounded-3xl border border-white/[0.06] bg-white/[0.02] p-8 sm:p-12 mb-16 overflow-hidden group">
             <div className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-red-500/30 to-transparent" />
