@@ -51,6 +51,10 @@ export function PostureAnalyzer() {
   const [showPositionGuide, setShowPositionGuide] = useState(false)
   const [fps, setFps] = useState(0)
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user")
+  // ═══ Feedback history for post-exercise replay ═══
+  const [feedbackHistory, setFeedbackHistory] = useState<{ time: number; items: PostureFeedback[] }[]>([])
+  const [showReplay, setShowReplay] = useState(false)
+  const analysisStartRef = useRef<number>(0)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -105,6 +109,10 @@ export function PostureAnalyzer() {
       setState("idle")
       setFeedback([])
       setFps(0)
+      // Show replay button if there were errors during the session
+      if (feedbackHistory.length > 0) {
+        setShowReplay(true)
+      }
     }
   }, [])
 
@@ -127,6 +135,9 @@ export function PostureAnalyzer() {
     setState("loading")
     setErrorMsg("")
     setShowPositionGuide(false)
+    setFeedbackHistory([])
+    setShowReplay(false)
+    analysisStartRef.current = Date.now()
 
     try {
       // Request camera — frontal (user) by default so the student sees the corrections live
@@ -234,7 +245,19 @@ export function PostureAnalyzer() {
 
             // Run exercise-specific biomechanical analysis
             const exerciseFeedback = selectedExerciseRef.current.analyze(landmarks)
-            if (mountedRef.current) setFeedback(exerciseFeedback)
+            if (mountedRef.current) {
+              setFeedback(exerciseFeedback)
+              // Record errors/warnings for post-exercise replay (every 2s to save memory)
+              const hasIssues = exerciseFeedback.some(f => f.status !== "correct")
+              if (hasIssues) {
+                const elapsed = Math.round((Date.now() - analysisStartRef.current) / 1000)
+                setFeedbackHistory(prev => {
+                  // Only record if last entry was >2s ago
+                  if (prev.length > 0 && elapsed - prev[prev.length - 1].time < 2) return prev
+                  return [...prev, { time: elapsed, items: exerciseFeedback.filter(f => f.status !== "correct") }]
+                })
+              }
+            }
 
             // Draw feedback on canvas overlay
             drawFeedbackOnCanvas(ctx, exerciseFeedback, canvas.width, canvas.height)
@@ -275,62 +298,66 @@ export function PostureAnalyzer() {
     w: number,
     h: number,
   ) {
-    // Scale font size based on canvas width — bigger on mobile for readability
-    // iPhone 11 canvas ~640px wide, this gives ~18px. iPhone SE ~375px → ~16px
-    const fontSize = Math.max(15, Math.min(20, w * 0.032))
-    const lineHeight = fontSize + 12
-    const dotRadius = Math.max(5, fontSize * 0.3)
-    const paddingTop = 16
-    const paddingLeft = 14
+    // ═══ LARGE TEXT MODE — readable from 2-3 meters away ═══
+    // Only show warnings and errors on canvas (correct = no distraction)
+    const importantFb = fb.filter(f => f.status !== "correct")
+    if (importantFb.length === 0) {
+      // All correct — show big green checkmark at top
+      ctx.fillStyle = "rgba(0, 0, 0, 0.6)"
+      ctx.fillRect(0, 0, w, 60)
+      ctx.font = `bold ${Math.max(28, w * 0.045)}px -apple-system, sans-serif`
+      ctx.fillStyle = "#22c55e"
+      ctx.fillText("✓ Postura correta", 16, 42)
+      return
+    }
 
-    const panelHeight = Math.min(paddingTop + fb.length * lineHeight + 10, h * 0.45)
+    // Scale: 30-44px — MUCH bigger for distance readability
+    const fontSize = Math.max(28, Math.min(44, w * 0.055))
+    const lineHeight = fontSize + 16
+    const paddingTop = 20
+    const paddingLeft = 16
 
-    // Semi-transparent panel at top
-    ctx.fillStyle = "rgba(0, 0, 0, 0.78)"
+    // Show max 3 items to avoid covering the whole screen
+    const visibleFb = importantFb.slice(0, 3)
+    const panelHeight = paddingTop + visibleFb.length * lineHeight + 12
+
+    // Dark panel at top — high contrast
+    ctx.fillStyle = "rgba(0, 0, 0, 0.85)"
     ctx.fillRect(0, 0, w, panelHeight)
 
-    // Gradient bottom edge for smooth fade
-    const grad = ctx.createLinearGradient(0, panelHeight - 12, 0, panelHeight)
-    grad.addColorStop(0, "rgba(0, 0, 0, 0.78)")
+    // Color bar at top (red if error, yellow if warning)
+    const hasError = visibleFb.some(f => f.status === "error")
+    ctx.fillStyle = hasError ? "rgba(239, 68, 68, 0.9)" : "rgba(234, 179, 8, 0.8)"
+    ctx.fillRect(0, 0, w, 4)
+
+    visibleFb.forEach((item, i) => {
+      const y = paddingTop + i * lineHeight + lineHeight * 0.65
+
+      const isError = item.status === "error"
+      const emoji = isError ? "✗" : "⚠"
+      const color = isError ? "#ef4444" : "#eab308"
+
+      // Emoji indicator (large)
+      ctx.fillStyle = color
+      ctx.font = `bold ${fontSize}px -apple-system, sans-serif`
+      ctx.fillText(emoji, paddingLeft, y)
+
+      // Message text — BOLD WHITE, big enough to read from 3m
+      ctx.fillStyle = "#ffffff"
+      ctx.font = `bold ${fontSize}px -apple-system, sans-serif`
+      const textX = paddingLeft + fontSize + 8
+      const maxTextWidth = w - textX - 16
+      const maxChars = Math.floor(maxTextWidth / (fontSize * 0.52))
+      const text = item.message.length > maxChars ? item.message.slice(0, maxChars - 1) + "…" : item.message
+      ctx.fillText(text, textX, y, maxTextWidth)
+    })
+
+    // Bottom gradient fade
+    const grad = ctx.createLinearGradient(0, panelHeight - 10, 0, panelHeight)
+    grad.addColorStop(0, "rgba(0, 0, 0, 0.85)")
     grad.addColorStop(1, "rgba(0, 0, 0, 0)")
     ctx.fillStyle = grad
-    ctx.fillRect(0, panelHeight - 12, w, 12)
-
-    fb.forEach((item, i) => {
-      const y = paddingTop + i * lineHeight + lineHeight * 0.6
-      if (y > panelHeight - 8) return
-
-      const color =
-        item.status === "correct"
-          ? "#22c55e"
-          : item.status === "warning"
-            ? "#eab308"
-            : "#ef4444"
-
-      // Status dot (bigger for visibility)
-      ctx.beginPath()
-      ctx.arc(paddingLeft + dotRadius, y, dotRadius, 0, Math.PI * 2)
-      ctx.fillStyle = color
-      ctx.fill()
-
-      // Message text — bold, bigger, readable from arm's length
-      ctx.fillStyle = "#ffffff"
-      ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
-      const textX = paddingLeft + dotRadius * 2 + 10
-      const maxTextWidth = w - textX - 60
-      const maxChars = Math.floor(maxTextWidth / (fontSize * 0.55))
-      const text = item.message.length > maxChars ? item.message.slice(0, maxChars - 2) + ".." : item.message
-      ctx.fillText(text, textX, y + fontSize * 0.35, maxTextWidth)
-
-      // Angle badge (right side, with color)
-      if (item.angle !== undefined) {
-        const angleText = `${Math.round(item.angle)}°`
-        ctx.fillStyle = color
-        ctx.font = `bold ${fontSize - 2}px -apple-system, BlinkMacSystemFont, sans-serif`
-        const angleWidth = ctx.measureText(angleText).width
-        ctx.fillText(angleText, w - angleWidth - 12, y + fontSize * 0.35)
-      }
-    })
+    ctx.fillRect(0, panelHeight - 10, w, 10)
   }
 
   // ─── Filtered exercise groups for search ────────────────────────────────
@@ -573,14 +600,14 @@ export function PostureAnalyzer() {
         </button>
       ) : null}
 
-      {/* ─── Feedback cards (below canvas, mobile-friendly) ─── */}
+      {/* ─── Feedback cards (below canvas, LARGER for readability) ─── */}
       {feedback.length > 0 && state === "analyzing" && (
-        <div className="space-y-1.5">
+        <div className="space-y-2">
           {feedback.map((fb, i) => (
             <div
               key={`${fb.message}-${i}`}
               className={cn(
-                "flex items-start gap-2.5 px-3 py-2.5 rounded-xl border text-sm",
+                "flex items-start gap-3 px-4 py-3 rounded-2xl border",
                 fb.status === "correct"
                   ? "bg-emerald-600/10 border-emerald-500/20 text-emerald-300"
                   : fb.status === "warning"
@@ -589,22 +616,67 @@ export function PostureAnalyzer() {
               )}
             >
               {fb.status === "correct" ? (
-                <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
               ) : fb.status === "warning" ? (
-                <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                <AlertTriangle className="w-5 h-5 shrink-0 mt-0.5" />
               ) : (
-                <XCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <XCircle className="w-5 h-5 shrink-0 mt-0.5" />
               )}
               <div className="min-w-0">
-                <p className="text-[13px] leading-tight">{fb.message}</p>
+                <p className="text-sm font-medium leading-tight">{fb.message}</p>
                 {fb.angle !== undefined && (
-                  <p className="text-[10px] opacity-60 mt-0.5">
+                  <p className="text-[11px] opacity-60 mt-0.5">
                     Angulo: {Math.round(fb.angle)}°{fb.targetAngle && ` (ideal: ${fb.targetAngle})`}
                   </p>
                 )}
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ─── REPLAY — Post-exercise feedback summary ─── */}
+      {showReplay && feedbackHistory.length > 0 && state === "idle" && (
+        <div className="rounded-2xl border border-amber-500/20 bg-amber-600/[0.06] overflow-hidden">
+          <div className="px-4 py-3 flex items-center justify-between border-b border-amber-500/10">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-400" />
+              <span className="text-sm font-semibold text-amber-300">Correções da sessão</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
+                {feedbackHistory.length} momentos
+              </span>
+            </div>
+            <button
+              onClick={() => setShowReplay(false)}
+              className="text-[10px] text-neutral-500 hover:text-white px-2 py-1 rounded-lg hover:bg-white/[0.04] transition-all"
+            >
+              Fechar
+            </button>
+          </div>
+          <div className="max-h-64 overflow-y-auto divide-y divide-amber-500/10">
+            {feedbackHistory.map((entry, i) => (
+              <div key={i} className="px-4 py-2.5">
+                <p className="text-[10px] text-amber-400/60 font-mono mb-1">
+                  ⏱ {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, "0")}
+                </p>
+                {entry.items.map((fb, j) => (
+                  <div key={j} className="flex items-start gap-2 mt-1">
+                    {fb.status === "error" ? (
+                      <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
+                    )}
+                    <p className="text-xs text-neutral-300">{fb.message}</p>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+          <div className="px-4 py-2.5 border-t border-amber-500/10 bg-amber-600/[0.03]">
+            <p className="text-[10px] text-neutral-500 text-center">
+              Revise os pontos acima antes da proxima serie • Nao salvo automaticamente
+            </p>
+          </div>
         </div>
       )}
 
