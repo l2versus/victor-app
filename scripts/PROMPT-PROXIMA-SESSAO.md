@@ -89,18 +89,21 @@ Fluxo:
 - Comprar victoroliveiraapersonal.com.br
 - Configurar DNS no Coolify/Vercel
 
-### 3.3 Feedback postura com vídeo
-- Gravar vídeo durante análise (MediaRecorder API)
-- Ao parar, permitir replay do vídeo com overlay dos erros
-- Botão "Salvar" pra enviar pro Victor
+### 3.3 Feedback postura com VÍDEO gravado (diferente do replay de texto que já existe)
+- O replay de erros por texto/timeline ✅ JÁ FOI FEITO (sessão 17)
+- O que falta: gravar o VÍDEO da câmera (MediaRecorder API)
+- Ao parar, permitir dar play no vídeo de si mesmo + overlay dos erros
+- Botão "Salvar" pra enviar pro Victor ver remotamente
 
-### 3.4 Mais modelos 3D
+### 3.4 Expandir modelos 3D (30/235 cobertos hoje)
 - Buscar novos modelos no Sketchfab pra exercícios sem 3D
-- Integrar coleção Alexdubob Fitness completa
+- Integrar coleção Alexdubob Fitness completa (23+ modelos)
+- Meta: 60+ exercícios com 3D
 
-### 3.5 GIFs animados
-- ExerciseDB RapidAPI pra GIFs de execução
-- Fallback se não tiver 3D nem GIF
+### 3.5 GIFs animados (complementar ao 3D)
+- ExerciseDB RapidAPI pra GIFs 2D de execução
+- Diferente dos modelos 3D: GIF mostra a pessoa fazendo, 3D mostra os músculos
+- Fallback hierárquico: 3D > GIF > instruções texto
 
 ---
 
