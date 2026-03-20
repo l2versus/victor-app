@@ -1,37 +1,44 @@
-# Prompt — Sessao 11: Deploy Producao + Email Transacional + QA Final
+# Prompt — Sessao 11: Finalizar Deploy + Keys do Victor + Testes E2E
 
 ## Contexto obrigatorio
-Voce e um Senior Software Engineer + QA Lead + UI/UX Designer nivel Vale do Silicio. Voce esta trabalhando no **Victor App**, uma plataforma SaaS completa para personal trainers. O projeto esta na versao mais avancada possivel — 10 sessoes de desenvolvimento ja foram concluidas com ZERO bugs em producao.
+Voce e um Senior Software Engineer + QA Lead + UI/UX Designer nivel Vale do Silicio. Voce esta trabalhando no **Victor App**, uma plataforma SaaS completa para personal trainers. O projeto tem 10 sessoes completas com ZERO bugs em producao.
 
-## Estado atual do projeto (Sessao 10 concluida)
+## Estado atual do projeto (Sessao 10 concluida — 2026-03-20)
 - **Framework**: Next.js 16.2.0 + React 19.2 + TypeScript + Prisma 7.5 + PostgreSQL
-- **Deploy**: Coolify (VPS 187.77.226.144) + GitHub (l2versus/victor-app)
-- **Branch**: main (commit `953bc5f`)
-- **Build**: Limpo, 0 erros, 52 paginas, ~4 segundos
+- **Deploy**: Coolify (VPS 187.77.226.144) + GitHub (l2versus/victor-app) + Vercel
+- **Branch**: main (commit `f46ba03`)
+- **Build**: Limpo, 0 erros, 52 paginas, ~4-5 segundos
+- **Coolify**: Deploy concluido, app rodando em http://dogkkc0ogsc0sw048w0g0sso.187.77.226.144.sslip.io
 
-### O que ja funciona (COMPLETO):
-1. Auth JWT + bcrypt + roles (ADMIN/STUDENT) + protecao sessao unica por dispositivo
+### O que ja funciona (COMPLETO — 12 modulos):
+1. Auth JWT + bcrypt + roles (ADMIN/STUDENT) + protecao sessao unica
 2. Admin dashboard completo (alunos, treinos, exercicios, planos, financeiro, IA)
-3. App do aluno (treino de hoje com player 5 fases, historico com heatmap + stats, perfil, chat IA)
+3. App do aluno (treino player 5 fases, historico heatmap + stats, perfil, chat IA)
 4. 203 exercicios pre-carregados (13 grupos musculares)
 5. IA completa (5 system prompts: chat, treino, anamnese, engajamento, Victor Virtual)
-6. Sistema de planos (3 tiers x 4 duracoes) + feature flags (IA, postura, VIP, nutricao)
+6. Sistema de planos (3 tiers x 4 duracoes) + feature flags
 7. Checkout Mercado Pago (webhook IPN, auto user creation, idempotente)
-8. **Correcao de postura MediaPipe — 50 exercicios, 13 padroes biomecanicos, dual camera, GPU/CPU fallback, feature gate Elite**
-9. Landing page premium (hero video, depoimentos, FAQ, cards spotlight, CTA sticky, Victor Virtual chat)
-10. PWA (manifest, service worker, install banner)
-11. SEO (OG, JSON-LD, sitemap, robots.txt)
-12. **UX Premium** (Sessao 10):
-    - Dia de descanso: Moon icon, grid semanal, proximo treino, dicas recuperacao, session count
-    - Treino concluido: 3 stat cards (duracao/series/RPE), lista exercicios realizados
-    - Historico: quick stats row (sessoes, series, media duracao)
+8. Correcao de postura MediaPipe (50 exercicios, 13 padroes, dual camera, Elite only)
+9. Landing page premium + Victor Virtual chatbot
+10. PWA + SEO
+11. UX Premium (rest day redesign, workout done stats, history stats)
+12. **Email transacional (Resend)** — envia login + senha ao aluno criado via checkout MP
 
-### Contas de teste no banco:
+### O que ja esta configurado no Coolify:
+- DATABASE_URL ✓ | JWT_SECRET ✓ | NIXPACKS_NODE_VERSION=22 ✓
+- MERCADOPAGO_ACCESS_TOKEN ✓ (TESTE) | NEXT_PUBLIC_MERCADOPAGO_PUBLIC_KEY ✓ (TESTE)
+- AI_PROVIDER=google ✓ | APP_URL ✓ | NEXT_PUBLIC_APP_URL ✓
+
+### Contas de teste:
 - `victor@teste.com` / `123456` → Admin (trainer)
-- `emmanuel@teste.com` / `admin123` → Aluno Elite (todas features)
-- `victoradmin@teste.com` / `admin123` → Aluno Elite (todas features)
+- `emmanuel@teste.com` / `admin123` → Aluno Elite
+- `victoradmin@teste.com` / `admin123` → Aluno Elite
 - `aluno@teste.com` / `123456` → Aluno sem plano
-- Mais 2 alunos com restricoes medicas (maria, carlos)
+- maria, carlos → alunos com restricoes medicas
+
+### Credenciais MP TESTE (sandbox):
+- Access Token: `APP_USR-5652218543804582-031922-d45d293d7b00a24a2b17b84f9192cabf-3279102003`
+- Comprador teste: `TESTUSER7056113908042921725` / `JsNwK0x8vI`
 
 ## REGRAS DE CONDUTA (OBRIGATORIO):
 
@@ -39,77 +46,75 @@ Voce e um Senior Software Engineer + QA Lead + UI/UX Designer nivel Vale do Sili
 - LEIA todo arquivo antes de editar — nunca adivinhe
 - Rode `npx next build` apos cada mudanca significativa
 - Se o build quebrar, corrija ANTES de continuar
-- Verifique imports, tipos, e exports de cada arquivo modificado
-- Teste mobile-first (iPhone SE, iPhone 11, iPhone 15, Android mid-range)
-- Nao introduza bugs — voce e a ultima linha de defesa
-
-### Como UI/UX Designer:
-- Dark mode premium (bg #050505, accent red-600, glassmorphism)
-- Mobile-first SEMPRE — bottom nav fixo, safe-area, touch targets 44px+
-- Feedback visual em TODA interacao (hover, active, loading, error, success)
-- Animacoes sutis (scale, opacity) — nunca pesadas (WebGL, 3D)
-- Tipografia: sans-serif, hierarquia clara, sem texto menor que 10px
-- Cores de status: emerald (sucesso), yellow (aviso), red (erro)
 
 ### Como Engineer:
-- Next.js 16 App Router — Server Components por padrao, 'use client' so quando necessario
-- NUNCA usar APIs deprecated (middleware.ts → proxy.ts, etc)
-- Prisma queries otimizadas (select, include so o necessario)
-- Nao over-engineer — faca o minimo necessario, sem abstrair cedo demais
+- Next.js 16 App Router — Server Components por padrao
+- NUNCA usar APIs deprecated
 - Commits atomicos com mensagem clara em ingles
 
 ## TAREFAS DA SESSAO 11:
 
-### 1. Deploy Producao no Coolify (PRIORIDADE MAXIMA)
-O app precisa funcionar em producao. O Coolify ja esta configurado mas precisa dos env vars corretos.
-- Verificar quais env vars estao faltando no Coolify (MP, IA, APP_URL, DATABASE_URL, JWT_SECRET)
-- Configurar `APP_URL` para o dominio correto
-- Verificar se Coolify faz build corretamente com o Dockerfile/Nixpacks
-- Testar todos os fluxos no deploy real: login, treino, historico, perfil, chat, postura, landing
+### 1. Configurar as 3 keys que faltam (PRIORIDADE MAXIMA)
+O Victor vai mandar 3 chaves. Assim que receber:
+- **MERCADOPAGO_WEBHOOK_SECRET** → adicionar no .env local + pedir pro Emmanuel colocar no Coolify
+- **GOOGLE_AI_API_KEY** (ou ANTHROPIC_API_KEY) → idem
+- **RESEND_API_KEY** → idem
+- Fazer redeploy no Coolify apos adicionar
 
-### 2. Email Transacional (PRIORIDADE ALTA)
-Quando o webhook do Mercado Pago cria um usuario automaticamente, precisamos enviar email com credenciais.
-- Instalar Resend (`npm install resend`) ou usar Nodemailer com SMTP
-- Criar template de email simples: "Bem-vindo ao Victor App! Seu login: X, Senha temporaria: Y"
-- Integrar no webhook `/api/webhooks/mercadopago` apos auto user creation
-- Adicionar env var `RESEND_API_KEY` ou `SMTP_HOST/USER/PASS`
-- Testar envio real
+### 2. Testar o app em producao (PRIORIDADE ALTA)
+Acessar http://dogkkc0ogsc0sw048w0g0sso.187.77.226.144.sslip.io e testar:
+- [ ] Landing page carrega corretamente (hero, depoimentos, FAQ, planos)
+- [ ] Login com `victor@teste.com` → admin dashboard carrega
+- [ ] Login com `emmanuel@teste.com` → app do aluno carrega
+- [ ] Pagina /today (treino ou dia de descanso)
+- [ ] Pagina /history (heatmap + stats)
+- [ ] Pagina /profile (dados + medidas)
+- [ ] Pagina /chat (so funciona com key de IA)
+- [ ] Pagina /posture (so Elite — verificar se carrega)
+- [ ] Victor Virtual na landing (so funciona com key de IA)
+- [ ] Checkout: clicar em um plano → checkout MP sandbox funciona?
 
-### 3. Pre-launch Checklist (PRIORIDADE ALTA)
-- [ ] Testar login/logout em 2 dispositivos (sessao unica funciona?)
-- [ ] Testar camera postura no celular real (pelo menos 3 exercicios)
-- [ ] Verificar se todas as 52 paginas carregam sem erro
-- [ ] Verificar se landing page carrega rapido (< 3s)
-- [ ] Verificar se PWA install funciona no Android e iOS
-- [ ] Testar checkout Mercado Pago sandbox end-to-end
-- [ ] Verificar se Victor Virtual responde na landing
-- [ ] Rodar `npx next build` uma ultima vez — build limpo
+### 3. Testar checkout sandbox end-to-end
+- Clicar "Assinar" em um plano na landing page
+- Preencher dados e ir pro checkout do MP
+- Logar com usuario teste: TESTUSER7056113908042921725 / JsNwK0x8vI
+- Simular pagamento aprovado
+- Verificar: usuario criado no banco? Subscription ativa? Email enviado?
 
-### 4. Limpeza Pre-launch (se tudo estiver ok)
-- [ ] Apagar contas de teste (emmanuel@teste.com, victoradmin@teste.com) — ou manter e apagar no launch dia
-- [ ] Remover `PROMPT-SESSAO-*.md` do repo (sao docs internos)
-- [ ] Verificar .env nao esta no git
+### 4. Migrar para credenciais de PRODUCAO (quando Victor quiser)
+- No MP Developers → Credenciais de producao → copiar Access Token
+- Trocar MERCADOPAGO_ACCESS_TOKEN no Coolify (remover o de teste)
+- Webhook no MP: configurar URL de producao + copiar novo secret
+- Redeploy
+
+### 5. Pre-launch final
+- [ ] Verificar se PWA install funciona (Android + iOS)
 - [ ] Verificar robots.txt bloqueia /admin/ e /api/
+- [ ] Verificar .env NAO esta no git (esta no .gitignore)
+- [ ] Apagar contas de teste (emmanuel, victoradmin) antes do launch real
+- [ ] Rodar build limpo uma ultima vez
 
 ## CUIDADOS ESPECIAIS:
-- O arquivo `src/lib/posture-rules.ts` tem 1600+ linhas — NAO reescrever inteiro, so editar o necessario
-- O `posture-analyzer.tsx` tem 570+ linhas — mesmo cuidado
-- MediaPipe npm DEVE ser v0.10.18 (pinado, NAO usar ^)
-- Campo `sessionVersion` no User e novo — garantir que nao quebra logins existentes (tokens sem `sv` sao aceitos)
-- O webhook Mercado Pago cria usuario com senha aleatoria — essa senha precisa ir no email
-- Coolify deploy URL: http://dogkkc0ogsc0sw048w0g0sso.187.77.226.144.sslip.io
-- GitHub: https://github.com/l2versus/victor-app
+- `src/lib/posture-rules.ts` tem 1600+ linhas — NAO reescrever
+- `posture-analyzer.tsx` tem 570+ linhas — mesmo cuidado
+- MediaPipe npm DEVE ser v0.10.18 (pinado)
+- Campo `sessionVersion` — tokens antigos sem `sv` sao aceitos
+- Email transacional ja esta implementado (`src/lib/email.ts`) — so precisa da RESEND_API_KEY
 
-## BLOQUEIOS (Victor precisa fornecer):
-- **Conta Mercado Pago producao** → `MERCADOPAGO_ACCESS_TOKEN` + `MERCADOPAGO_WEBHOOK_SECRET`
-- **Chave Google Gemini** → `GOOGLE_AI_API_KEY` (Victor paga, ~$5/mes)
-- **Resend API Key** ou credenciais SMTP para email transacional
-- **Dominio** → victoroliveiraapersonal.com.br (Victor precisa comprar)
+## PARA O VICTOR FAZER (mandar pro Emmanuel):
+Mande estas 3 coisas pro Emmanuel:
+
+1. **Webhook Secret do Mercado Pago**:
+   - Va em mercadopago.com.br/developers → Suas integracoes → Victor-app → Webhooks
+   - Clique no icone de recarregar (setinha) ao lado da "Assinatura secreta"
+   - Copie e mande
+
+2. **Chave de IA** (escolha UMA):
+   - Google Gemini (GRATIS): Va em ai.google.dev → "Get API key" → copie
+   - OU Anthropic Claude (pago): Va em console.anthropic.com → API Keys → crie uma
+
+3. **Chave do Resend** (email):
+   - Va em resend.com → crie conta (login com Google) → copie a API Key
 
 ## RESULTADO ESPERADO:
-Ao final desta sessao, o app deve estar rodando em producao com:
-- Todos os env vars configurados
-- Email transacional funcionando (webhook MP → email com credenciais)
-- Landing page acessivel pelo dominio ou URL Coolify
-- Todos os fluxos testados end-to-end
-- Build limpo, 0 erros, pronto para o Victor mostrar aos alunos
+App 100% funcional em producao. Victor pode mostrar para alunos reais.
