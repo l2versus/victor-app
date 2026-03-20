@@ -118,6 +118,14 @@ export function WorkoutPlans({ studentId }: { studentId: string }) {
                   </div>
                 ) : isSelected ? (
                   <div className="flex-1 flex items-center gap-2">
+                    {templates.length === 0 ? (
+                      <a
+                        href="/admin/workouts"
+                        className="flex-1 h-8 flex items-center px-3 rounded-lg border border-amber-500/20 bg-amber-500/5 text-xs text-amber-400 hover:bg-amber-500/10 transition-colors"
+                      >
+                        Nenhum treino criado — clique para criar
+                      </a>
+                    ) : (
                     <select
                       value={selectedTemplate}
                       onChange={(e) => setSelectedTemplate(e.target.value)}
@@ -130,6 +138,7 @@ export function WorkoutPlans({ studentId }: { studentId: string }) {
                         </option>
                       ))}
                     </select>
+                    )}
                     <button
                       onClick={handleAssign}
                       disabled={!selectedTemplate || saving}
