@@ -104,8 +104,10 @@ export function calculateAngle(a: Point, b: Point, c: Point): number {
   return angle
 }
 
-/** Check if a landmark is visible enough for analysis */
-function isVisible(p: Point, threshold = 0.5): boolean {
+/** Check if a landmark is visible enough for analysis.
+ *  Floor exercises (push-up, plank) use lower threshold (0.3) because
+ *  camera angle from floor level reduces landmark confidence. */
+function isVisible(p: Point, threshold = 0.3): boolean {
   return (p.visibility ?? 0) >= threshold
 }
 
@@ -381,6 +383,13 @@ function analyzeHingePattern(landmarks: Point[], opts?: {
 // ══════════════════════════════════════════════════════════════════════════════
 // PADRAO 4: FLEXAO / PUSH-UP Pattern
 // Aplica-se a: Push-Up, Incline, Deficit, Diamond Push-Up
+//
+// Suporta 2 angulos de camera:
+//   LATERAL  — camera no chao, de lado (ve alinhamento do corpo)
+//   FRONTAL  — camera no chao, de frente (ve abertura dos cotovelos, simetria)
+//
+// Deteccao automatica: se ambos ombros sao visiveis E estao proximos em X
+// (distancia X < 0.15), a camera esta LATERAL. Se distantes, esta FRONTAL.
 // ══════════════════════════════════════════════════════════════════════════════
 
 function analyzePushUpPattern(landmarks: Point[], opts?: {
@@ -388,11 +397,26 @@ function analyzePushUpPattern(landmarks: Point[], opts?: {
 }): PostureFeedback[] {
   const feedback: PostureFeedback[] = []
 
-  const side = bestSide(landmarks, LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER)
+  const L = LANDMARKS
+  const lShoulder = landmarks[L.LEFT_SHOULDER]
+  const rShoulder = landmarks[L.RIGHT_SHOULDER]
+
+  // Auto-detect camera angle based on shoulder separation
+  const bothShouldersVisible = isVisible(lShoulder) && isVisible(rShoulder)
+  const shoulderXDist = bothShouldersVisible ? Math.abs(lShoulder.x - rShoulder.x) : 0
+  const isFrontalView = bothShouldersVisible && shoulderXDist > 0.15
+
+  if (isFrontalView) {
+    // ═══ FRONTAL VIEW — camera de frente, cabeca apontando pra camera ═══
+    return analyzePushUpFrontal(landmarks, opts)
+  }
+
+  // ═══ LATERAL VIEW — camera de lado ═══
+  const side = bestSide(landmarks, L.LEFT_SHOULDER, L.RIGHT_SHOULDER)
   const { shoulder, elbow, wrist, hip, ankle } = getSideLandmarks(landmarks, side)
 
   if (!isVisible(shoulder) || !isVisible(hip) || !isVisible(ankle)) {
-    return [{ status: "warning", message: "Posicione-se de lado para a camera" }]
+    return [{ status: "warning", message: "Camera no chao, de lado ou de frente" }]
   }
 
   // 1. Body alignment (shoulder-hip-ankle) — corpo reto como prancha
@@ -407,37 +431,110 @@ function analyzePushUpPattern(landmarks: Point[], opts?: {
     feedback.push({ status: "error", message: "Quadril caindo! Contraia o core", angle: bodyAngle })
   }
 
-  // 2. Elbow angle (shoulder-elbow-wrist) — profundidade da flexao
+  // 2. Elbow angle — profundidade
   if (isVisible(elbow) && isVisible(wrist)) {
     const elbowAngle = calculateAngle(shoulder, elbow, wrist)
     if (elbowAngle <= 90) {
-      feedback.push({
-        status: "correct",
-        message: "Profundidade excelente!",
-        angle: elbowAngle,
-        targetAngle: "70-90°",
-      })
+      feedback.push({ status: "correct", message: "Profundidade excelente!", angle: elbowAngle, targetAngle: "70-90°" })
     } else if (elbowAngle <= 120) {
-      feedback.push({
-        status: "warning",
-        message: "Desca mais — peito deve chegar perto do chao",
-        angle: elbowAngle,
-        targetAngle: "70-90°",
-      })
+      feedback.push({ status: "warning", message: "Desca mais — peito perto do chao", angle: elbowAngle, targetAngle: "70-90°" })
     } else {
-      feedback.push({
-        status: "correct",
-        message: "Fase de subida — empurre com forca!",
-        angle: elbowAngle,
-      })
+      feedback.push({ status: "correct", message: "Fase de subida — empurre!", angle: elbowAngle })
     }
   }
 
-  // 3. Cabeca alinhada (nao olhar para cima nem para baixo excessivamente)
+  // 3. Cabeca alinhada
   const nose = landmarks[LANDMARKS.NOSE]
   if (isVisible(nose) && isVisible(shoulder)) {
     if (nose.y < shoulder.y - 0.1) {
       feedback.push({ status: "warning", message: "Pescoco neutro — nao olhe para cima" })
+    }
+  }
+
+  return feedback
+}
+
+/** Push-up analysis from FRONTAL camera (head pointing toward camera) */
+function analyzePushUpFrontal(landmarks: Point[], opts?: { narrow?: boolean }): PostureFeedback[] {
+  const feedback: PostureFeedback[] = []
+  const L = LANDMARKS
+
+  const lShoulder = landmarks[L.LEFT_SHOULDER]
+  const rShoulder = landmarks[L.RIGHT_SHOULDER]
+  const lElbow = landmarks[L.LEFT_ELBOW]
+  const rElbow = landmarks[L.RIGHT_ELBOW]
+  const lWrist = landmarks[L.LEFT_WRIST]
+  const rWrist = landmarks[L.RIGHT_WRIST]
+  const lHip = landmarks[L.LEFT_HIP]
+  const rHip = landmarks[L.RIGHT_HIP]
+
+  // 1. Simetria dos ombros — devem estar nivelados
+  if (isVisible(lShoulder) && isVisible(rShoulder)) {
+    const shoulderTilt = Math.abs(lShoulder.y - rShoulder.y)
+    if (shoulderTilt > 0.06) {
+      feedback.push({ status: "warning", message: "Ombros desnivelados! Equilibre o peso" })
+    } else {
+      feedback.push({ status: "correct", message: "Ombros nivelados — simetria!" })
+    }
+  }
+
+  // 2. Abertura dos cotovelos — nao abrir a 90° (risco de impacto no ombro)
+  // Na vista frontal, cotovelo muito afastado do tronco = angulo aberto
+  if (isVisible(lElbow) && isVisible(lShoulder) && isVisible(lHip)) {
+    // Distancia horizontal do cotovelo em relacao ao tronco
+    const elbowFlare = Math.abs(lElbow.x - lShoulder.x)
+    const torsoWidth = Math.abs(lShoulder.x - lHip.x)
+
+    if (elbowFlare > torsoWidth * 1.5) {
+      feedback.push({
+        status: "error",
+        message: opts?.narrow
+          ? "Cotovelos muito abertos! Na diamante, mantenha grudados"
+          : "Cotovelos abrindo demais! Mantenha a 45° — proteja o ombro",
+      })
+    } else if (elbowFlare > torsoWidth * 1.1) {
+      feedback.push({
+        status: "warning",
+        message: "Cotovelos um pouco abertos — traga mais pro corpo",
+      })
+    } else {
+      feedback.push({
+        status: "correct",
+        message: opts?.narrow
+          ? "Cotovelos grudados — perfeito para triceps!"
+          : "Cotovelos a 45° — angulo seguro!",
+      })
+    }
+  }
+
+  // 3. Profundidade — usando a posicao Y do ombro vs pulso
+  if (isVisible(lShoulder) && isVisible(lWrist)) {
+    const depth = lShoulder.y - lWrist.y
+    if (depth > 0.02) {
+      feedback.push({ status: "correct", message: "Boa profundidade — peito perto do chao!" })
+    } else if (depth > -0.05) {
+      feedback.push({ status: "correct", message: "Fase de subida — empurre!" })
+    } else {
+      feedback.push({ status: "warning", message: "Desca mais — amplitude completa!" })
+    }
+  }
+
+  // 4. Maos alinhadas com ombros (largura correta)
+  if (isVisible(lWrist) && isVisible(rWrist) && isVisible(lShoulder) && isVisible(rShoulder)) {
+    const handWidth = Math.abs(lWrist.x - rWrist.x)
+    const shoulderWidth = Math.abs(lShoulder.x - rShoulder.x)
+    const ratio = handWidth / shoulderWidth
+
+    if (opts?.narrow) {
+      if (ratio > 0.6) {
+        feedback.push({ status: "warning", message: "Maos mais juntas! Diamante = maos proximas" })
+      }
+    } else {
+      if (ratio < 0.7) {
+        feedback.push({ status: "warning", message: "Maos muito juntas — abra na largura dos ombros" })
+      } else if (ratio > 1.5) {
+        feedback.push({ status: "warning", message: "Maos muito abertas — alinhe com os ombros" })
+      }
     }
   }
 
@@ -1207,8 +1304,8 @@ const exerciseRules: ExerciseRule[] = [
     name: "Flexao de Bracos",
     nameEn: "Push-Up",
     muscleGroup: "chest",
-    cameraPosition: "side",
-    positioningTip: "Camera no chao, de lado, corpo inteiro visivel",
+    cameraPosition: "side-or-front",
+    positioningTip: "Camera no chao: de LADO (ve alinhamento) ou de FRENTE (ve cotovelos). Ambos funcionam!",
     analyze: (lm) => analyzePushUpPattern(lm),
   },
   {
@@ -1216,8 +1313,8 @@ const exerciseRules: ExerciseRule[] = [
     name: "Flexao Inclinada",
     nameEn: "Incline Push-Up",
     muscleGroup: "chest",
-    cameraPosition: "side",
-    positioningTip: "Camera no chao, de lado",
+    cameraPosition: "side-or-front",
+    positioningTip: "Camera no chao: de lado ou de frente — ambos funcionam!",
     analyze: (lm) => analyzePushUpPattern(lm),
   },
   {
@@ -1225,8 +1322,8 @@ const exerciseRules: ExerciseRule[] = [
     name: "Flexao Deficit",
     nameEn: "Deficit Push-Up",
     muscleGroup: "chest",
-    cameraPosition: "side",
-    positioningTip: "Camera no chao, de lado",
+    cameraPosition: "side-or-front",
+    positioningTip: "Camera no chao: de lado ou de frente — ambos funcionam!",
     analyze: (lm) => analyzePushUpPattern(lm),
   },
   {
@@ -1440,8 +1537,8 @@ const exerciseRules: ExerciseRule[] = [
     name: "Flexao Diamante",
     nameEn: "Diamond Push-Up",
     muscleGroup: "triceps",
-    cameraPosition: "side",
-    positioningTip: "Camera no chao, de lado",
+    cameraPosition: "side-or-front",
+    positioningTip: "Camera no chao: de frente (melhor — ve cotovelos grudados) ou de lado",
     analyze: (lm) => analyzePushUpPattern(lm, { narrow: true }),
   },
   {
