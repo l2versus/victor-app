@@ -60,6 +60,66 @@ const PIE_COLORS = ["#ef4444", "#f97316", "#3b82f6", "#22c55e", "#8b5cf6", "#eab
 
 type TabId = "dashboard" | "exercises" | "history"
 
+/* ═══ 3D Anatomy Viewer — Sketchfab Embed ═══ */
+function Anatomy3DViewer() {
+  const [loaded, setLoaded] = useState(false)
+  const [expanded, setExpanded] = useState(false)
+
+  return (
+    <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden">
+      <div className="px-4 pt-3.5 pb-2 flex items-center justify-between">
+        <div>
+          <h3 className="text-xs font-semibold text-white/90 flex items-center gap-2">
+            Anatomia 3D
+            <span className="text-[8px] px-1.5 py-0.5 rounded bg-red-600/15 text-red-400 border border-red-500/20 font-bold uppercase tracking-wider">3D</span>
+          </h3>
+          <p className="text-[9px] text-neutral-600 mt-0.5">Rotacione e explore os musculos</p>
+        </div>
+        <button
+          onClick={() => setExpanded(!expanded)}
+          className="text-[10px] text-neutral-500 hover:text-white px-2 py-1 rounded-lg hover:bg-white/[0.04] transition-all"
+        >
+          {expanded ? "Minimizar" : "Expandir"}
+        </button>
+      </div>
+
+      <div className={cn(
+        "relative w-full transition-all duration-500 overflow-hidden",
+        expanded ? "h-[480px]" : "h-[300px]"
+      )}>
+        {/* Loading skeleton */}
+        {!loaded && (
+          <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
+            <div className="text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto animate-pulse">
+                <svg className="w-6 h-6 text-neutral-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z" /></svg>
+              </div>
+              <p className="text-[10px] text-neutral-600">Carregando modelo 3D...</p>
+            </div>
+          </div>
+        )}
+
+        <iframe
+          title="Anatomia 3D — Musculos"
+          src="https://sketchfab.com/models/33162ec759e04d2985dbbdf4ec908d66/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark_link=0&ui_watermark=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=1&ui_stop=0&preload=1&transparent=1&camera=0"
+          className="w-full h-full border-0"
+          allow="autoplay; fullscreen; xr-spatial-tracking"
+          onLoad={() => setLoaded(true)}
+          loading="lazy"
+        />
+      </div>
+
+      {/* Hint */}
+      <div className="px-4 py-2 border-t border-white/[0.04]">
+        <p className="text-[9px] text-neutral-600 text-center flex items-center justify-center gap-1.5">
+          <span className="inline-block w-4 h-4 rounded bg-white/[0.04] text-neutral-500 text-[8px] flex items-center justify-center">↻</span>
+          Arraste para rotacionar · Pinch para zoom · Toque nos nomes
+        </p>
+      </div>
+    </div>
+  )
+}
+
 /* ═══ Tooltip ═══ */
 function ChartTooltip({ active, payload, label, unit }: {
   active?: boolean; payload?: Array<{ value: number }>; label?: string; unit?: string
@@ -370,6 +430,9 @@ export function EvolutionClient() {
             </Section>
           )}
 
+          {/* ═══ 3D ANATOMY VIEWER — Sketchfab embed ═══ */}
+          <Anatomy3DViewer />
+
           {/* ═══ BODY MAP — Muscle Distribution Visual ═══ */}
           {evo.muscleDistribution.length > 0 && (() => {
             const total = evo.muscleDistribution.reduce((a, b) => a + b.volume, 0)
@@ -379,7 +442,7 @@ export function EvolutionClient() {
               percentage: total > 0 ? (m.volume / total) * 100 : 0,
             }))
             return (
-              <Section title="Mapa corporal" subtitle="Toque para ver detalhes">
+              <Section title="Seus musculos treinados" subtitle="Toque para ver detalhes">
                 <div className="px-3 pb-3">
                   <BodyMap data={bodyMapData} className="h-[280px]" />
                   <BodyMapLegend />
