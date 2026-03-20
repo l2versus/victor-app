@@ -151,56 +151,80 @@ O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para pe
 
 | Metrica | Valor |
 |---------|-------|
-| Paginas/Telas | 18+ |
-| Endpoints API | 24 |
-| Modelos de dados | 14 (User, Student, Exercise, Plan, Subscription...) |
-| Componentes React | 30+ |
+| Paginas/Telas | 20+ |
+| Endpoints API | 28 |
+| Modelos de dados | 15 (User, Student, Exercise, Plan, Subscription, Payment...) |
+| Componentes React | 40+ |
 | Componentes UI (shadcn) | 12 (button, card, badge, modal, text-effect, etc.) |
 | Exercicios pre-carregados | 203 |
+| Exercicios com analise de postura IA | 50 |
+| Padroes biomecanicos | 13 |
 | Hooks customizados | 2 (useRestTimer, useSwipe) |
-| System prompts IA | 4 (chat, treino, anamnese, engajamento) |
+| System prompts IA | 5 (chat, treino, anamnese, engajamento, Victor Virtual) |
 | Animacoes CSS | 15+ keyframes customizados |
-| Build time | ~3 segundos (Turbopack) |
+| Build time | ~4 segundos (Turbopack) |
+
+---
+
+### 9. Checkout Mercado Pago (Sessao 8)
+- SDK `mercadopago` v2.12, lazy init
+- `POST /api/checkout` — cria preferencia (slug + CUID lookup)
+- `POST /api/webhooks/mercadopago` — IPN completo (HMAC-SHA256, auto user creation, idempotente)
+- 3 paginas retorno (success/failure/pending)
+- PlanModal com form checkout + fallback WhatsApp
+
+### 10. IA Victor Virtual (Sessao 8)
+- Chatbot publico na landing page com streaming
+- System prompt com planos, precos, metodo, contatos, CREF real
+- Rate limit 30 msgs/hora por IP
+- Feature gate: Chat do aluno so Pro/Elite
+
+### 11. Correcao de Postura por IA (Sessoes 8-9) — FEATURE KILLER
+- **MediaPipe Pose (Google)** — gratuito, 100% client-side, offline, sem API key
+- **50 exercicios** com regras biomecanicas profissionais
+- **13 padroes de movimento**: squat, lunge, hinge, push-up, overhead press, curl, tricep extension, raise, row, plank, hip thrust, dip, calf raise
+- **11 grupos musculares** com seletor agrupado e busca
+- **Dual camera (push-up)**: detecta automaticamente se a camera esta lateral ou frontal
+- Camera frontal como padrao (aluno se ve) + botao SwitchCamera
+- Canvas overlay: esqueleto 33 pontos + feedback em tempo real (verde/amarelo/vermelho)
+- Texto grande legivel a distancia no canvas (15-20px dinamico)
+- Aspect ratio retrato (3:4) no mobile
+- GPU primeiro, fallback CPU automatico (dispositivos antigos)
+- Feature gate: somente plano Elite
+- **Diferencial absoluto: NENHUM concorrente tem isso**
+
+### 12. Protecao de Sessao Unica (Sessao 9)
+- Campo `sessionVersion` no JWT + banco de dados
+- Cada login incrementa versao → invalida sessoes anteriores
+- Se logar em 2 dispositivos, o primeiro e kickado com mensagem
+- Previne compartilhamento de conta
 
 ---
 
 ## Roadmap — Proximas Entregas
 
-### Fase 7 — Financeiro + Checkout + Postura (PROXIMA)
+### Fase 10 — Deploy Producao + Pre-launch
+- [ ] Configurar env vars producao (Mercado Pago, IA, APP_URL)
+- [ ] Testar checkout end-to-end (sandbox MP)
+- [ ] Integrar email transacional (Resend/Nodemailer)
+- [ ] GIFs animados de exercicios (ExerciseDB RapidAPI)
+- [ ] Comprar dominio (victoroliveiraapersonal.com.br)
+- [ ] Auditoria QA pre-launch final
 
-**Financeiro do Personal:**
-- [ ] Dashboard financeiro (entradas, saidas, lucro liquido)
-- [ ] Custos do negocio (VPS, API IA, gasolina, equipamentos)
-- [ ] Graficos de receita mensal/anual
-
-**Checkout & Monetizacao:**
-- [ ] Integracao Mercado Pago (Checkout Pro)
-- [ ] Pagamento via Pix, cartao, boleto
-- [ ] Webhook de confirmacao → cria conta + ativa plano automaticamente
-- [ ] Cobranca recorrente automatica
-
-**Correcao de Postura por Camera (Feature Killer):**
-- [ ] MediaPipe Pose (Google) — gratuito, client-side, offline
-- [ ] Componente isolado com next/dynamic ssr:false
-- [ ] 33 pontos do corpo detectados em tempo real
-- [ ] Regras biomecanicas por exercicio (angulos articulares):
-  - Agachamento: joelho < 90° = ok, tronco ereto, joelhos atras do pe
-  - Rosca Biceps: ombro estatico, extensao > 160°, contracao < 40°
-  - Prancha: corpo em linha reta (165°-180°)
-- [ ] Feedback visual: setas + texto + cor (verde/amarelo/vermelho)
-- [ ] Botao "Analisar Postura nesta Serie" (nao deixar camera sempre ligada)
-- [ ] Feature flag: somente plano Elite
-- **Diferencial: MFIT nao tem isso**
-
-### Fase 8 — Grupo VIP & Comunidade
+### Fase 11 — Grupo VIP & Comunidade
 - [ ] Chat em grupo (alunos do mesmo trainer)
 - [ ] Rankings e desafios semanais
 - [ ] Compartilhar progresso com outros alunos
 
-### Fase 9 — Nutricao & Saude
+### Fase 12 — Nutricao & Saude
 - [ ] Plano alimentar basico
 - [ ] Tracking de macros simplificado
 - [ ] Integracao com IA para sugestoes nutricionais
+
+### Fase 13 — Maquinas de Academia (Projeto Separado)
+- [ ] Regras biomecanicas por equipamento especifico
+- [ ] QR Code por maquina → abre exercicio correto no app
+- [ ] Suporte a marcas: Life Fitness, Hammer Strength, Cybex, Panatta
 
 ---
 
@@ -208,15 +232,16 @@ O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para pe
 
 | Feature | MFIT | Victor App |
 |---------|------|-----------|
-| Geracao de treino por IA | Nao | Sim — usa biblioteca real de exercicios |
+| Geracao de treino por IA | Nao | Sim — usa biblioteca real de 203 exercicios |
 | Chat IA pos-treino | Nao | Sim — streaming real-time |
 | Analise de anamnese por IA | Nao | Sim — classifica riscos automaticamente |
-| Correcao de postura por camera | Nao | Em desenvolvimento (MediaPipe) |
+| **Correcao de postura por camera** | **Nao** | **Sim — 50 exercicios, 13 padroes biomecanicos, tempo real** |
 | Engajamento automatico | Basico | IA gera mensagens personalizadas |
 | Design/UX | Generico | Dark mode premium, animacoes custom |
 | Planos com feature gates | Basico | Completo — IA, camera, grupo, nutricao |
-| PWA / App nativo | Sim | Em desenvolvimento |
-| Checkout integrado | Sim | Em desenvolvimento (Mercado Pago) |
+| PWA / App nativo | Sim | Sim — PWA com manifest, icons, service worker |
+| Checkout integrado | Sim | Sim — Mercado Pago (Pix, cartao, boleto) |
+| Protecao de conta | Basico | Sessao unica por dispositivo |
 | Custo mensal para o trainer | ~R$150/mes | Proprio — sem mensalidade |
 
 ---
@@ -225,6 +250,7 @@ O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para pe
 
 - Senhas nunca armazenadas em texto — bcrypt com salt de 12 rounds
 - Tokens JWT com expiracao de 7 dias
+- Protecao de sessao unica (sessionVersion no JWT)
 - Rotas protegidas por middleware (admin e student separados)
 - robots.txt bloqueia indexacao de areas privadas
 - Variaveis sensiveis via .env (nunca commitadas)
