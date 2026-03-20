@@ -246,6 +246,8 @@ export function ProfileClient({ student, stats }: ProfileProps) {
         </Link>
         <a
           href="/?site=true"
+          target="_blank"
+          rel="noopener noreferrer"
           className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/10 bg-white/[0.03] text-neutral-400 text-sm font-medium hover:bg-white/[0.06] hover:text-neutral-300 transition-all duration-300 active:scale-[0.98]"
         >
           <Globe className="w-4 h-4" />
