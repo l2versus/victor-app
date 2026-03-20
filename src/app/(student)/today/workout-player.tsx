@@ -202,17 +202,63 @@ export function WorkoutPlayer({
 
   // ═══ DONE STATE ═══
   if (phase === "done") {
+    const rpeLabel = completedToday?.rpe
+      ? completedToday.rpe <= 3 ? "Leve" : completedToday.rpe <= 6 ? "Moderado" : completedToday.rpe <= 8 ? "Intenso" : "Máximo"
+      : null
+    const rpeColor = completedToday?.rpe
+      ? completedToday.rpe <= 3 ? "text-emerald-400" : completedToday.rpe <= 6 ? "text-amber-400" : completedToday.rpe <= 8 ? "text-orange-400" : "text-red-400"
+      : ""
+
     return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
-        <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-600/20 to-emerald-800/10 border border-emerald-500/15 flex items-center justify-center mb-6 animate-pulse-glow" style={{ "--tw-shadow-color": "rgba(16,185,129,0.3)" } as React.CSSProperties}>
-          <Check className="w-9 h-9 text-emerald-400" />
+      <div className="space-y-5 pt-4">
+        {/* Hero */}
+        <div className="flex flex-col items-center text-center pb-2">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-600/20 to-emerald-800/10 border border-emerald-500/15 flex items-center justify-center mb-5 animate-pulse-glow" style={{ "--tw-shadow-color": "rgba(16,185,129,0.3)" } as React.CSSProperties}>
+            <Check className="w-9 h-9 text-emerald-400" />
+          </div>
+          <h2 className="text-xl font-bold text-white mb-1">Treino Concluído</h2>
+          <p className="text-neutral-500 text-sm">{templateName}</p>
         </div>
-        <h2 className="text-xl font-bold text-white mb-2">Treino Concluído!</h2>
-        <p className="text-neutral-500 text-sm">
-          {completedToday?.durationMin ? `${completedToday.durationMin} minutos` : "Bom trabalho!"}
-          {completedToday?.rpe ? ` · RPE ${completedToday.rpe}/10` : ""}
+
+        {/* Stats row */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4 text-center">
+            <Clock className="w-4 h-4 text-blue-400 mx-auto mb-2" />
+            <p className="text-lg font-bold text-white">{completedToday?.durationMin || "—"}</p>
+            <p className="text-[9px] text-neutral-500 uppercase tracking-wider">Minutos</p>
+          </div>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4 text-center">
+            <Dumbbell className="w-4 h-4 text-red-400 mx-auto mb-2" />
+            <p className="text-lg font-bold text-white">{totalSets}</p>
+            <p className="text-[9px] text-neutral-500 uppercase tracking-wider">Séries</p>
+          </div>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4 text-center">
+            <Flame className="w-4 h-4 text-orange-400 mx-auto mb-2" />
+            <p className={`text-lg font-bold ${rpeColor || "text-neutral-600"}`}>{completedToday?.rpe || "—"}</p>
+            <p className="text-[9px] text-neutral-500 uppercase tracking-wider">{rpeLabel || "RPE"}</p>
+          </div>
+        </div>
+
+        {/* Exercises completed list */}
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5">
+          <h3 className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-3">Exercícios realizados</h3>
+          <div className="space-y-2">
+            {exercises.map((ex, i) => (
+              <div key={ex.id} className="flex items-center gap-3 py-1.5">
+                <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/15 flex items-center justify-center shrink-0">
+                  <Check className="w-3 h-3 text-emerald-400" />
+                </div>
+                <span className="text-sm text-neutral-300 truncate flex-1">{ex.name}</span>
+                <span className="text-[10px] text-neutral-600">{ex.sets}x{ex.reps}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Footer message */}
+        <p className="text-center text-xs text-neutral-600 pb-2">
+          Descanse bem e volte amanha para o proximo treino
         </p>
-        <p className="text-neutral-600 text-xs mt-2">Volte amanhã para o próximo treino 💪</p>
       </div>
     )
   }

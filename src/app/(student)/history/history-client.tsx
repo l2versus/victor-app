@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Calendar, List, TrendingUp, Flame, Dumbbell, Clock, Activity } from "lucide-react"
+import { Calendar, List, TrendingUp, Flame, Dumbbell, Clock, Activity, Zap } from "lucide-react"
 import { format, subDays, startOfWeek, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -37,6 +37,12 @@ type TabId = typeof TABS[number]["id"]
 export function HistoryClient({ sessions, heatmap, streak }: HistoryProps) {
   const [activeTab, setActiveTab] = useState<TabId>("calendar")
 
+  // Computed stats from sessions
+  const totalSets = sessions.reduce((sum, s) => sum + s.setsCount, 0)
+  const avgDuration = sessions.length > 0
+    ? Math.round(sessions.filter((s) => s.durationMin).reduce((sum, s) => sum + (s.durationMin || 0), 0) / sessions.filter((s) => s.durationMin).length)
+    : 0
+
   return (
     <div className="space-y-5">
       {/* ═══ HEADER ═══ */}
@@ -57,6 +63,27 @@ export function HistoryClient({ sessions, heatmap, streak }: HistoryProps) {
           </div>
         )}
       </div>
+
+      {/* ═══ QUICK STATS ═══ */}
+      {sessions.length > 0 && (
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-3 text-center">
+            <Dumbbell className="w-3.5 h-3.5 text-red-400 mx-auto mb-1.5" />
+            <p className="text-base font-bold text-white">{sessions.length}</p>
+            <p className="text-[8px] text-neutral-500 uppercase tracking-wider">Sessões</p>
+          </div>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-3 text-center">
+            <Zap className="w-3.5 h-3.5 text-amber-400 mx-auto mb-1.5" />
+            <p className="text-base font-bold text-white">{totalSets}</p>
+            <p className="text-[8px] text-neutral-500 uppercase tracking-wider">Séries</p>
+          </div>
+          <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-3 text-center">
+            <Clock className="w-3.5 h-3.5 text-blue-400 mx-auto mb-1.5" />
+            <p className="text-base font-bold text-white">{avgDuration || "—"}</p>
+            <p className="text-[8px] text-neutral-500 uppercase tracking-wider">Min/sessão</p>
+          </div>
+        </div>
+      )}
 
       {/* ═══ TABS ═══ */}
       <div className="flex gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.06]">
