@@ -303,6 +303,24 @@ export function WorkoutPlayer({
           </p>
         </div>
 
+        {/* Body Focus Area — muscle badges */}
+        {(() => {
+          const muscles = [...new Set(exercises.map(e => e.muscle))]
+          return muscles.length > 0 ? (
+            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4">
+              <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-2.5">Foco de hoje</p>
+              <div className="flex flex-wrap gap-2">
+                {muscles.map(m => (
+                  <span key={m} className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-600/10 border border-red-500/15 text-[11px] font-medium text-red-400">
+                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    {m}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ) : null
+        })()}
+
         {/* Exercise List Preview */}
         <div className="space-y-2">
           {exercises.map((ex, i) => (

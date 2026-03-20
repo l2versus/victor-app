@@ -12,6 +12,7 @@ import {
   ResponsiveContainer, BarChart, Bar, Cell,
   PieChart, Pie, LineChart, Line,
 } from "recharts"
+import { BodyMap, BodyMapLegend } from "@/components/student/body-map"
 import { format, subDays, startOfWeek, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -204,12 +205,46 @@ export function EvolutionClient() {
 
   if (!evo || !stats || evo.summary.totalSessions === 0) {
     return (
-      <div className="text-center py-16 space-y-4">
-        <div className="w-16 h-16 rounded-2xl bg-white/[0.04] flex items-center justify-center mx-auto">
-          <BarChart3 className="w-8 h-8 text-neutral-600" />
+      <div className="space-y-6 pt-4">
+        {/* Hero */}
+        <div className="text-center space-y-4">
+          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-red-600/15 to-red-900/10 border border-red-500/15 flex items-center justify-center mx-auto">
+            <TrendingUp className="w-9 h-9 text-red-400" />
+          </div>
+          <div>
+            <h2 className="text-xl font-bold text-white mb-1">Sua evolucao comeca aqui</h2>
+            <p className="text-neutral-500 text-sm max-w-xs mx-auto leading-relaxed">
+              Complete seus primeiros treinos e veja graficos de volume, forca e frequencia.
+            </p>
+          </div>
         </div>
-        <h2 className="text-lg font-bold text-white">Sem dados ainda</h2>
-        <p className="text-neutral-500 text-sm max-w-xs mx-auto">Complete seus primeiros treinos para ver seus graficos de evolucao aqui.</p>
+
+        {/* Preview cards — show what they'll unlock */}
+        <div className="grid grid-cols-2 gap-2.5">
+          {[
+            { icon: Flame, label: "Volume total", desc: "kg levantados", color: "text-orange-400 bg-orange-600/10" },
+            { icon: Target, label: "Mapa corporal", desc: "musculos treinados", color: "text-red-400 bg-red-600/10" },
+            { icon: TrendingUp, label: "Progressao", desc: "carga por exercicio", color: "text-blue-400 bg-blue-600/10" },
+            { icon: Trophy, label: "Records", desc: "seus PRs pessoais", color: "text-amber-400 bg-amber-600/10" },
+          ].map((item) => (
+            <div key={item.label} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3.5 opacity-50">
+              <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center mb-2", item.color.split(" ")[1])}>
+                <item.icon className={cn("w-4 h-4", item.color.split(" ")[0])} />
+              </div>
+              <p className="text-xs font-medium text-white">{item.label}</p>
+              <p className="text-[9px] text-neutral-600">{item.desc}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="text-center">
+          <a href="/today" className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 transition-all shadow-lg shadow-red-600/20 active:scale-[0.97]">
+            <Dumbbell className="w-4 h-4" />
+            Ir para o treino
+          </a>
+          <p className="text-[10px] text-neutral-600 mt-3">Cada treino conta. Comece hoje.</p>
+        </div>
       </div>
     )
   }
@@ -334,40 +369,40 @@ export function EvolutionClient() {
             </Section>
           )}
 
-          {/* ═══ MUSCLE DISTRIBUTION ═══ */}
-          {evo.muscleDistribution.length > 0 && (
-            <Section title="Distribuicao muscular" subtitle="Volume por grupo">
-              <div className="flex items-center gap-3 px-3 pb-3">
-                <div className="w-32 h-32 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={evo.muscleDistribution.slice(0, 8)} dataKey="volume" nameKey="muscle" cx="50%" cy="50%" innerRadius={28} outerRadius={52} paddingAngle={2} strokeWidth={0}>
-                        {evo.muscleDistribution.slice(0, 8).map((e, i) => (
-                          <Cell key={e.muscle} fill={MUSCLE_COLORS[e.muscle] || PIE_COLORS[i % PIE_COLORS.length]} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  {evo.muscleDistribution.slice(0, 7).map((m, i) => {
-                    const total = evo.muscleDistribution.reduce((a, b) => a + b.volume, 0)
-                    const pct = total > 0 ? Math.round((m.volume / total) * 100) : 0
-                    return (
-                      <div key={m.muscle} className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: MUSCLE_COLORS[m.muscle] || PIE_COLORS[i % PIE_COLORS.length] }} />
-                        <span className="text-[10px] text-neutral-400 flex-1 truncate">{m.muscle}</span>
-                        <div className="w-16 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                          <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: MUSCLE_COLORS[m.muscle] || PIE_COLORS[i % PIE_COLORS.length] }} />
+          {/* ═══ BODY MAP — Muscle Distribution Visual ═══ */}
+          {evo.muscleDistribution.length > 0 && (() => {
+            const total = evo.muscleDistribution.reduce((a, b) => a + b.volume, 0)
+            const bodyMapData = evo.muscleDistribution.map(m => ({
+              muscle: m.muscle,
+              volume: m.volume,
+              percentage: total > 0 ? (m.volume / total) * 100 : 0,
+            }))
+            return (
+              <Section title="Mapa corporal" subtitle="Toque para ver detalhes">
+                <div className="px-3 pb-3">
+                  <BodyMap data={bodyMapData} className="h-[280px]" />
+                  <BodyMapLegend />
+
+                  {/* Muscle bars below map */}
+                  <div className="mt-4 space-y-1.5">
+                    {evo.muscleDistribution.slice(0, 8).map((m, i) => {
+                      const pct = total > 0 ? Math.round((m.volume / total) * 100) : 0
+                      return (
+                        <div key={m.muscle} className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: MUSCLE_COLORS[m.muscle] || PIE_COLORS[i % PIE_COLORS.length] }} />
+                          <span className="text-[10px] text-neutral-400 flex-1 truncate">{m.muscle}</span>
+                          <div className="w-20 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: `rgba(239, 68, 68, ${0.3 + pct / 100 * 0.7})` }} />
+                          </div>
+                          <span className="text-[10px] text-white font-semibold w-7 text-right">{pct}%</span>
                         </div>
-                        <span className="text-[10px] text-white font-semibold w-7 text-right">{pct}%</span>
-                      </div>
-                    )
-                  })}
+                      )
+                    })}
+                  </div>
                 </div>
-              </div>
-            </Section>
-          )}
+              </Section>
+            )
+          })()}
 
           {/* ═══ PERSONAL RECORDS ═══ */}
           {stats.prs.length > 0 && (
