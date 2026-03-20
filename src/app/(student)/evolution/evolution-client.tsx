@@ -13,6 +13,7 @@ import {
   PieChart, Pie, LineChart, Line,
 } from "recharts"
 import { BodyMap, BodyMapLegend } from "@/components/student/body-map"
+import { MuscleBadge } from "@/components/student/muscle-info-card"
 import { format, subDays, startOfWeek, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -383,21 +384,20 @@ export function EvolutionClient() {
                   <BodyMap data={bodyMapData} className="h-[280px]" />
                   <BodyMapLegend />
 
-                  {/* Muscle bars below map */}
-                  <div className="mt-4 space-y-1.5">
-                    {evo.muscleDistribution.slice(0, 8).map((m, i) => {
-                      const pct = total > 0 ? Math.round((m.volume / total) * 100) : 0
-                      return (
-                        <div key={m.muscle} className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: MUSCLE_COLORS[m.muscle] || PIE_COLORS[i % PIE_COLORS.length] }} />
-                          <span className="text-[10px] text-neutral-400 flex-1 truncate">{m.muscle}</span>
-                          <div className="w-20 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
-                            <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: `rgba(239, 68, 68, ${0.3 + pct / 100 * 0.7})` }} />
+                  {/* Muscle badges below map — tap for educational info */}
+                  <div className="mt-4 space-y-2">
+                    <p className="text-[9px] text-neutral-600 uppercase tracking-wider">Toque no musculo para saber mais</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {evo.muscleDistribution.slice(0, 8).map((m) => {
+                        const pct = total > 0 ? Math.round((m.volume / total) * 100) : 0
+                        return (
+                          <div key={m.muscle} className="flex items-center gap-1">
+                            <MuscleBadge muscle={m.muscle} />
+                            <span className="text-[9px] text-neutral-600 font-medium">{pct}%</span>
                           </div>
-                          <span className="text-[10px] text-white font-semibold w-7 text-right">{pct}%</span>
-                        </div>
-                      )
-                    })}
+                        )
+                      })}
+                    </div>
                   </div>
                 </div>
               </Section>
