@@ -8,6 +8,7 @@ import {
 import { useRestTimer } from "@/hooks/use-rest-timer"
 import { useSwipe } from "@/hooks/use-swipe"
 import { BodyFocusBadges } from "@/components/student/muscle-info-card"
+import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
 
 interface ExerciseData {
   id: string
@@ -322,7 +323,10 @@ export function WorkoutPlayer({
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{ex.name}</p>
-                <p className="text-[11px] text-neutral-500">{ex.muscle} · {ex.sets}×{ex.reps}</p>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[11px] text-neutral-500">{ex.muscle} · {ex.sets}×{ex.reps}</p>
+                  <Exercise3DButton exerciseName={ex.name} />
+                </div>
               </div>
               {ex.loadKg && (
                 <span className="text-[10px] text-neutral-600 px-2 py-0.5 rounded-full bg-white/[0.04]">
