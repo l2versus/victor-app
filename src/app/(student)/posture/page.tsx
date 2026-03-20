@@ -4,7 +4,7 @@ import { checkFeature } from "@/lib/subscription"
 import { redirect } from "next/navigation"
 import { Camera, Lock, Crown, Zap, Shield, Eye, Activity, Scan } from "lucide-react"
 import { PostureLoader } from "@/components/student/posture-loader"
-import { TOTAL_EXERCISES_WITH_POSTURE, EXERCISE_GROUPS } from "@/lib/posture-rules"
+import { TOTAL_EXERCISES_WITH_POSTURE, ALL_EXERCISE_GROUPS as EXERCISE_GROUPS } from "@/lib/posture-rules-all"
 import Link from "next/link"
 
 export default async function PosturePage() {

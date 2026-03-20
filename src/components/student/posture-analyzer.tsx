@@ -18,13 +18,15 @@ import {
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
-  EXERCISE_GROUPS,
-  EXERCISE_RULES,
   type ExerciseRule,
   type PostureFeedback,
   type Point,
-  TOTAL_EXERCISES_WITH_POSTURE,
 } from "@/lib/posture-rules"
+import {
+  ALL_EXERCISE_GROUPS as EXERCISE_GROUPS,
+  ALL_EXERCISE_RULES as EXERCISE_RULES,
+  TOTAL_EXERCISES_WITH_POSTURE,
+} from "@/lib/posture-rules-all"
 
 type AnalyzerState = "idle" | "loading" | "ready" | "analyzing" | "error"
 
