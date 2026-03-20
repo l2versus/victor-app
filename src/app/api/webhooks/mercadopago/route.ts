@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getPaymentClient, calculateEndDate } from "@/lib/mercadopago"
 import { hashPassword } from "@/lib/auth"
+import { sendWelcomeEmail } from "@/lib/email"
 import crypto from "crypto"
 
 // Verify Mercado Pago webhook signature (HMAC-SHA256)
@@ -135,10 +136,12 @@ export async function POST(req: NextRequest) {
 
     // Check if user already exists before hashing (bcrypt is expensive)
     let isNewUser = false
+    let newUserTempPassword: string | null = null
     let user = await prisma.user.findUnique({ where: { email: buyerEmail } })
 
     if (!user) {
       const tempPassword = generateTempPassword()
+      newUserTempPassword = tempPassword
       const hashedPwd = await hashPassword(tempPassword)
       isNewUser = true
 
@@ -238,10 +241,14 @@ export async function POST(req: NextRequest) {
       },
     })
 
-    // TODO: Send transactional email with tempPassword to buyerEmail
-    // For now, Victor must manually send credentials via WhatsApp
-    if (isNewUser) {
-      console.log(`[MP Webhook] New user ${buyerEmail} — Victor must send credentials`)
+    // Send welcome email with credentials to new users
+    if (isNewUser && newUserTempPassword) {
+      await sendWelcomeEmail({
+        to: buyerEmail,
+        name: buyerName,
+        tempPassword: newUserTempPassword,
+        planName: `${plan.name} (${plan.interval})`,
+      })
     }
 
     return NextResponse.json({ received: true, processed: true })
