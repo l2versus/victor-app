@@ -16,6 +16,8 @@ import {
   Crown,
   ExternalLink,
   Upload,
+  MessageCircle,
+  Target,
 } from "lucide-react"
 
 const navItems = [
@@ -24,6 +26,8 @@ const navItems = [
   { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
   { href: "/admin/exercises", label: "Exercícios", icon: Library },
   { href: "/admin/plans", label: "Planos", icon: Crown },
+  { href: "/admin/messages", label: "Mensagens", icon: MessageCircle },
+  { href: "/admin/challenges", label: "Desafios", icon: Target },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },

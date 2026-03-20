@@ -18,17 +18,21 @@ import {
   Globe,
   LogOut,
   X,
+  MessageCircle,
+  Target,
 } from "lucide-react"
 
 const mainItems = [
   { href: "/admin/dashboard", label: "Início", icon: LayoutDashboard },
   { href: "/admin/students", label: "Alunos", icon: Users },
+  { href: "/admin/messages", label: "Chat", icon: MessageCircle },
   { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
-  { href: "/admin/ai", label: "IA", icon: Brain },
 ]
 
 const moreItems = [
+  { href: "/admin/challenges", label: "Desafios", icon: Target },
   { href: "/admin/plans", label: "Planos", icon: Crown },
+  { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },
   { href: "/admin/finance", label: "Financeiro", icon: DollarSign },
