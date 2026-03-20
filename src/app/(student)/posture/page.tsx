@@ -2,7 +2,7 @@ import { requireAuth } from "@/lib/auth"
 import { getStudentProfile } from "@/lib/student"
 import { checkFeature } from "@/lib/subscription"
 import { redirect } from "next/navigation"
-import { Camera, Lock, Crown, Zap, Shield, Eye, Activity } from "lucide-react"
+import { Camera, Lock, Crown, Zap, Shield, Eye, Activity, Scan } from "lucide-react"
 import { PostureLoader } from "@/components/student/posture-loader"
 import { TOTAL_EXERCISES_WITH_POSTURE, EXERCISE_GROUPS } from "@/lib/posture-rules"
 import Link from "next/link"
@@ -94,6 +94,23 @@ export default async function PosturePage() {
           {TOTAL_EXERCISES_WITH_POSTURE} exercicios • Selecione, posicione-se e clique para analisar.
         </p>
       </div>
+
+      {/* Body Scan link */}
+      <Link
+        href="/posture/body-scan"
+        className="flex items-center justify-between p-3 rounded-xl bg-red-600/[0.06] border border-red-500/15 hover:bg-red-600/[0.10] active:scale-[0.98] transition-all"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-red-600/20 flex items-center justify-center">
+            <Scan className="w-4 h-4 text-red-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">Avaliacao Corporal IA</p>
+            <p className="text-[10px] text-neutral-500">Analise de proporcoes por camera</p>
+          </div>
+        </div>
+        <Activity className="w-4 h-4 text-neutral-600" />
+      </Link>
 
       <PostureLoader />
     </div>

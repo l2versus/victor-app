@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireStudent } from "@/lib/student"
+import { checkAndCreateAchievements } from "@/lib/achievements"
 
 export async function PATCH(
   req: NextRequest,
@@ -33,6 +34,9 @@ export async function PATCH(
         durationMin: body.durationMin ?? durationMin,
       },
     })
+
+    // Fire-and-forget: check achievements after session completion
+    checkAndCreateAchievements(student.id, id).catch(() => {})
 
     return NextResponse.json({ session: updated })
   } catch (error) {

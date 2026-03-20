@@ -16,6 +16,7 @@
     "@mediapipe/tasks-vision": "0.10.18",
     "@prisma/adapter-pg": "^7.5.0",
     "@prisma/client": "^7.5.0",
+    "@types/web-push": "^3.6.4",
     "ai": "^6.0.116",
     "bcryptjs": "^3.0.3",
     "class-variance-authority": "^0.7.1",
@@ -33,7 +34,8 @@
     "react-dom": "19.2.4",
     "recharts": "^3.8.0",
     "resend": "^6.9.4",
-    "tailwind-merge": "^3.5.0"
+    "tailwind-merge": "^3.5.0",
+    "web-push": "^3.6.7"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

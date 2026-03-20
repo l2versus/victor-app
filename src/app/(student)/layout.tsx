@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { prisma } from "@/lib/prisma"
 import { StudentNav } from "@/components/student/nav"
 import { HomeHeader } from "@/components/student/home-header"
+import { getStudentFeatures } from "@/lib/subscription"
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -19,12 +20,12 @@ export default async function StudentLayout({ children }: { children: React.Reac
     include: { user: { select: { name: true, avatar: true } } },
   })
 
-  // Weekly stats
+  // Weekly stats + feature flags (parallel)
   const weekStart = new Date()
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + (weekStart.getDay() === 0 ? -6 : 1))
   weekStart.setHours(0, 0, 0, 0)
 
-  const [weekSessions, streak, weekPlansCount] = await Promise.all([
+  const [weekSessions, streak, weekPlansCount, features] = await Promise.all([
     student ? prisma.workoutSession.count({
       where: { studentId: student.id, startedAt: { gte: weekStart }, completedAt: { not: null } },
     }) : 0,
@@ -46,6 +47,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
     student ? prisma.studentWorkoutPlan.count({
       where: { studentId: student.id, active: true },
     }) : 0,
+    student ? getStudentFeatures(student.id) : null,
   ])
 
   const userName = student?.user.name || session.email.split("@")[0]
@@ -57,11 +59,11 @@ export default async function StudentLayout({ children }: { children: React.Reac
       <div className="fixed inset-0 pointer-events-none z-0">
         {/* Ember orbs */}
         <div
-          className="absolute top-[-5%] right-[-10%] w-[300px] h-[300px] bg-red-600/[0.04] rounded-full blur-[100px]"
+          className="absolute top-[-5%] right-[-10%] w-75 h-75 bg-red-600/4 rounded-full blur-[100px]"
           style={{ animation: "student-orb-1 8s ease-in-out infinite" }}
         />
         <div
-          className="absolute bottom-[20%] left-[-5%] w-[250px] h-[250px] bg-red-800/[0.03] rounded-full blur-[80px]"
+          className="absolute bottom-[20%] left-[-5%] w-62.5 h-62.5 bg-red-800/3 rounded-full blur-[80px]"
           style={{ animation: "student-orb-2 10s ease-in-out infinite 2s" }}
         />
 
@@ -71,7 +73,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
         }} />
 
         {/* Top accent line */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/20 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-red-600/20 to-transparent" />
       </div>
 
       {/* ═══ Social Header ═══ */}
@@ -91,7 +93,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
       </main>
 
       {/* ═══ Navigation ═══ */}
-      <StudentNav />
+      <StudentNav hasNutrition={features?.hasNutrition ?? false} />
     </div>
   )
 }

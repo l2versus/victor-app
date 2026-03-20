@@ -10,6 +10,7 @@ import {
 import Link from "next/link"
 import { format, formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { PushNotificationToggle } from "@/components/student/push-notification-toggle"
 
 interface ProfileProps {
   student: {
@@ -235,8 +236,9 @@ export function ProfileClient({ student, stats }: ProfileProps) {
         )}
       </div>
 
-      {/* ═══ UPGRADE + SITE + LOGOUT ═══ */}
+      {/* ═══ NOTIFICAÇÕES + UPGRADE + SITE + LOGOUT ═══ */}
       <div className="space-y-2">
+        <PushNotificationToggle />
         <Link
           href="/upgrade"
           className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-amber-500/20 bg-amber-600/[0.06] text-amber-300 text-sm font-semibold hover:bg-amber-600/[0.1] hover:border-amber-500/30 transition-all duration-300 active:scale-[0.98]"

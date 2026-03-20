@@ -1,8 +1,9 @@
 "use client"
 
-import { Flame, Bell, ChevronRight } from "lucide-react"
+import { Flame } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { NotificationBell } from "@/components/student/notification-bell"
 
 interface HomeHeaderProps {
   name: string
@@ -61,6 +62,9 @@ export function HomeHeader({ name, avatar, streak, weekSessions, weekTarget }: H
           <span className="text-[11px] font-bold text-orange-300">{streak}</span>
         </div>
       )}
+
+      {/* Notifications */}
+      <NotificationBell />
     </div>
   )
 }

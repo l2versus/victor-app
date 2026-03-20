@@ -94,6 +94,9 @@ model Student {
   communityPosts    CommunityPost[]
   communityReactions CommunityReaction[]
   challengeEntries  ChallengeEntry[]
+  bodyScans         BodyScan[]
+  nutritionLogs     NutritionLog[]
+  pushSubscriptions PushSubscription[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -547,6 +550,27 @@ model DirectMessage {
 }
 
 // ═══════════════════════════════════════
+// BODY SCAN — Avaliação corporal IA
+// ═══════════════════════════════════════
+
+model BodyScan {
+  id           String  @id @default(cuid())
+  studentId    String
+  measurements Json    // { shoulderPx, waistPx, hipPx, legPx, torsoPx }
+  ratios       Json    // { shoulderWaist, shoulderHip, waistHip, legTorso }
+  bodyShape    String? // "V_SHAPE" | "X_SHAPE" | "TRAPEZOID" | "RECTANGLE" | "PEAR"
+  aiAnalysis   String?
+  notes        String?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════
 // CHALLENGES — Desafios semanais
 // ═══════════════════════════════════════
 
@@ -589,4 +613,49 @@ model ChallengeEntry {
 
   @@unique([challengeId, studentId])
   @@index([challengeId])
+}
+
+// ═══════════════════════════════════════
+// NUTRITION — Registro diário de refeições
+// ═══════════════════════════════════════
+
+model NutritionLog {
+  id            String   @id @default(cuid())
+  studentId     String
+  date          DateTime @db.Date // um log por dia
+  meals         Json     // Meal[] — refeições do dia
+  totalCalories Int      @default(0)
+  protein       Float    @default(0)
+  carbs         Float    @default(0)
+  fat           Float    @default(0)
+  waterMl       Int      @default(0)
+  aiSuggestion  String?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, date])
+  @@index([studentId])
+  @@index([date])
+}
+
+// ═══════════════════════════════════════
+// PUSH NOTIFICATIONS — Web Push subscriptions
+// ═══════════════════════════════════════
+
+model PushSubscription {
+  id        String @id @default(cuid())
+  studentId String
+  endpoint  String @unique
+  p256dh    String
+  auth      String
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
 }
