@@ -15,6 +15,7 @@ import {
   Brain,
   Crown,
   ExternalLink,
+  Upload,
 } from "lucide-react"
 
 const navItems = [
@@ -25,6 +26,7 @@ const navItems = [
   { href: "/admin/plans", label: "Planos", icon: Crown },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
+  { href: "/admin/import", label: "Importar MFIT", icon: Upload },
   { href: "/admin/finance", label: "Financeiro", icon: DollarSign },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ]

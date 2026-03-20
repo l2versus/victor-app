@@ -38,6 +38,8 @@ model User {
   student        Student?        @relation("UserStudent")
   trainerProfile TrainerProfile? @relation("UserTrainer")
   notifications  Notification[]
+  sentMessages     DirectMessage[] @relation("MessageSender")
+  receivedMessages DirectMessage[] @relation("MessageReceiver")
 }
 
 model TrainerProfile {
@@ -89,6 +91,9 @@ model Student {
   feedbacks      WorkoutFeedback[]
   workoutPlans   StudentWorkoutPlan[]
   subscriptions  Subscription[]
+  communityPosts    CommunityPost[]
+  communityReactions CommunityReaction[]
+  challengeEntries  ChallengeEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -470,4 +475,118 @@ model Notification {
 
   @@index([userId])
   @@index([read])
+}
+
+// ═══════════════════════════════════════
+// COMMUNITY — Posts, Reactions, Ranking
+// ═══════════════════════════════════════
+
+enum PostType {
+  ACHIEVEMENT  // Auto: PR, streak, sessões
+  ANNOUNCEMENT // Victor broadcast
+  MILESTONE    // Auto: 100 sessões, 1 ano, etc
+}
+
+model CommunityPost {
+  id        String   @id @default(cuid())
+  studentId String?  // null = post do admin/sistema
+  type      PostType
+  content   String
+  metadata  Json?    // { exerciseName, oldPR, newPR, streakDays, etc }
+
+  student   Student?           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  reactions CommunityReaction[]
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([type])
+  @@index([createdAt])
+}
+
+enum ReactionType {
+  CLAP
+  FIRE
+  MUSCLE
+}
+
+model CommunityReaction {
+  id        String       @id @default(cuid())
+  postId    String
+  studentId String
+  type      ReactionType
+
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  student Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, studentId, type])
+  @@index([postId])
+}
+
+// ═══════════════════════════════════════
+// DIRECT MESSAGES — Victor ↔ Aluno
+// ═══════════════════════════════════════
+
+model DirectMessage {
+  id         String    @id @default(cuid())
+  senderId   String
+  receiverId String
+  content    String
+  readAt     DateTime?
+
+  sender   User @relation("MessageSender", fields: [senderId], references: [id])
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════
+// CHALLENGES — Desafios semanais
+// ═══════════════════════════════════════
+
+enum ChallengeStatus {
+  ACTIVE
+  COMPLETED
+  CANCELLED
+}
+
+model Challenge {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  metric      String          // "volume_agachamento", "sessoes_semana", "streak_dias"
+  targetValue Float?          // meta opcional
+  status      ChallengeStatus @default(ACTIVE)
+  startDate   DateTime
+  endDate     DateTime
+
+  entries ChallengeEntry[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([endDate])
+}
+
+model ChallengeEntry {
+  id          String @id @default(cuid())
+  challengeId String
+  studentId   String
+  value       Float  @default(0) // valor acumulado na métrica
+
+  challenge Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([challengeId, studentId])
+  @@index([challengeId])
 }
