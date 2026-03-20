@@ -37,6 +37,27 @@ const intervalLabels: Record<string, string> = {
   ANNUAL: "Anual",
 }
 
+const intervalOrder: Record<string, number> = {
+  MONTHLY: 0,
+  QUARTERLY: 1,
+  SEMIANNUAL: 2,
+  ANNUAL: 3,
+}
+
+const tierOrder: Record<string, number> = {
+  Essencial: 0,
+  Pro: 1,
+  Elite: 2,
+}
+
+function sortPlans(plans: Plan[]): Plan[] {
+  return [...plans].sort((a, b) => {
+    const intervalDiff = (intervalOrder[a.interval] ?? 99) - (intervalOrder[b.interval] ?? 99)
+    if (intervalDiff !== 0) return intervalDiff
+    return (tierOrder[a.name] ?? 99) - (tierOrder[b.name] ?? 99)
+  })
+}
+
 const featureConfig = [
   { key: "hasAI" as const, label: "Chat IA", icon: Sparkles, color: "text-purple-400" },
   { key: "hasPostureCamera" as const, label: "Câmera Postura", icon: Camera, color: "text-blue-400" },
@@ -114,9 +135,9 @@ export function PlansClient({
 
   return (
     <div className="space-y-6">
-      {/* Plans Grid */}
+      {/* Plans Grid — sorted by duration then tier (Essencial → Pro → Elite) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {plans.map((plan) => (
+        {sortPlans(plans).map((plan) => (
           <div
             key={plan.id}
             className="group relative rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5 hover:border-white/[0.12] transition-all duration-500"
