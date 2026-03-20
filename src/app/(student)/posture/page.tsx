@@ -72,7 +72,7 @@ export default async function PosturePage() {
           </div>
 
           <Link
-            href="/#planos"
+            href="/upgrade"
             className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-amber-600 text-white font-semibold text-sm hover:bg-amber-500 active:scale-[0.97] transition-all shadow-lg shadow-amber-600/20"
           >
             <Crown className="w-4 h-4" />

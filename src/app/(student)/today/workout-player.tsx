@@ -78,6 +78,7 @@ export function WorkoutPlayer({
     }
   )
   const [rpe, setRpe] = useState<number | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [elapsed, setElapsed] = useState(0)
   const [nextExName, setNextExName] = useState("")
   const startTimeRef = useRef<Date | null>(
@@ -106,6 +107,14 @@ export function WorkoutPlayer({
     setPhase("active")
   })
 
+  // Auto-clear error after 5s
+  useEffect(() => {
+    if (error) {
+      const t = setTimeout(() => setError(null), 5000)
+      return () => clearTimeout(t)
+    }
+  }, [error])
+
   // Swipe
   const swipe = useSwipe({
     onSwipeLeft: () => {
@@ -130,7 +139,9 @@ export function WorkoutPlayer({
         startTimeRef.current = new Date()
         setPhase("active")
       }
-    } catch { /* ignore */ }
+    } catch {
+      setError("Não foi possível iniciar o treino. Tente novamente.")
+    }
   }
 
   // Complete a set
@@ -149,18 +160,22 @@ export function WorkoutPlayer({
         body: JSON.stringify({ exerciseId, setNumber, reps, loadKg }),
       })
 
+      let newExSetsCount = 0
+      let newTotalCount = 0
+
       setCompletedSets((prev) => {
         const next = new Map(prev)
         const existing = next.get(exerciseId) || []
         next.set(exerciseId, [...existing, { exerciseId, setNumber, reps, loadKg }])
+        newExSetsCount = existing.length + 1
+        newTotalCount = Array.from(next.values()).reduce((sum, arr) => sum + arr.length, 0)
         return next
       })
 
-      // Check if all sets for this exercise are done
-      const exerciseSets = (completedSets.get(exerciseId) || []).length + 1
+      // Check if all sets for this exercise are done (counts from updater)
       const prescribedSets = exercises.find((e) => e.id === exerciseId)?.sets || 0
 
-      if (exerciseSets >= prescribedSets) {
+      if (newExSetsCount >= prescribedSets) {
         // Move to next exercise or summary
         if (currentExIdx < exercises.length - 1) {
           setNextExName(exercises[currentExIdx + 1].name)
@@ -168,8 +183,7 @@ export function WorkoutPlayer({
           restTimer.start(currentEx.restSeconds)
         } else {
           // Check if ALL sets done
-          const newTotal = totalCompleted + 1
-          if (newTotal >= totalSets) {
+          if (newTotalCount >= totalSets) {
             setPhase("summary")
           }
         }
@@ -178,7 +192,9 @@ export function WorkoutPlayer({
         setPhase("rest")
         restTimer.start(currentEx.restSeconds)
       }
-    } catch { /* ignore */ }
+    } catch {
+      setError("Erro ao salvar série. Tente novamente.")
+    }
   }, [sessionId, completedSets, exercises, currentExIdx, currentEx, totalCompleted, totalSets, restTimer])
 
   // Finish workout
@@ -191,7 +207,9 @@ export function WorkoutPlayer({
         body: JSON.stringify({ completedAt: new Date().toISOString(), rpe }),
       })
       setPhase("done")
-    } catch { /* ignore */ }
+    } catch {
+      setError("Erro ao finalizar treino. Tente novamente.")
+    }
   }
 
   const formatTime = (seconds: number) => {
@@ -267,6 +285,12 @@ export function WorkoutPlayer({
   if (phase === "preview") {
     return (
       <div className="space-y-5">
+        {error && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-sm animate-slide-up">
+            <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setError(null)} />
+            <span>{error}</span>
+          </div>
+        )}
         {/* Header */}
         <div className="text-center pt-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 mb-3">
@@ -372,6 +396,12 @@ export function WorkoutPlayer({
   if (phase === "summary") {
     return (
       <div className="space-y-6 pt-4">
+        {error && (
+          <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-sm animate-slide-up">
+            <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setError(null)} />
+            <span>{error}</span>
+          </div>
+        )}
         <div className="text-center">
           <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-600/20 to-emerald-800/10 border border-emerald-500/15 flex items-center justify-center mx-auto mb-4">
             <Trophy className="w-7 h-7 text-emerald-400" />
@@ -410,10 +440,15 @@ export function WorkoutPlayer({
         {/* Finish Button */}
         <button
           onClick={handleFinish}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold text-base shadow-xl shadow-emerald-600/25 hover:from-emerald-500 hover:to-emerald-600 active:scale-[0.98] transition-all duration-300"
+          disabled={rpe === null}
+          className={`w-full flex items-center justify-center gap-2 py-4 rounded-2xl font-bold text-base transition-all duration-300 ${
+            rpe !== null
+              ? "bg-gradient-to-r from-emerald-600 to-emerald-700 text-white shadow-xl shadow-emerald-600/25 hover:from-emerald-500 hover:to-emerald-600 active:scale-[0.98]"
+              : "bg-neutral-800 text-neutral-500 cursor-not-allowed"
+          }`}
         >
           <Check className="w-5 h-5" />
-          Concluir Treino
+          {rpe === null ? "Selecione o RPE acima" : "Concluir Treino"}
         </button>
       </div>
     )
@@ -426,6 +461,12 @@ export function WorkoutPlayer({
 
   return (
     <div className="space-y-4" {...swipe}>
+      {error && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-sm animate-slide-up">
+          <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setError(null)} />
+          <span>{error}</span>
+        </div>
+      )}
       {/* ═══ FLOATING PROGRESS PILL ═══ */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -600,7 +641,7 @@ function SetRow({
         <button
           onClick={() => onComplete(reps, loadKg)}
           disabled={!isCurrent}
-          className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-90 ${
+          className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-90 ${
             isCurrent
               ? "bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30"
               : "bg-white/[0.03] border border-white/[0.06] text-neutral-700"

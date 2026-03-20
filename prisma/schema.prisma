@@ -194,7 +194,7 @@ model WorkoutSession {
   notes       String?
   durationMin Int?
 
-  student  Student         @relation(fields: [studentId], references: [id])
+  student  Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
   template WorkoutTemplate @relation(fields: [templateId], references: [id])
   sets     SessionSet[]
   feedback WorkoutFeedback?
@@ -246,7 +246,7 @@ model WorkoutFeedback {
   tokensUsed    Int           @default(0)
 
   session  WorkoutSession    @relation(fields: [sessionId], references: [id])
-  student  Student           @relation(fields: [studentId], references: [id])
+  student  Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
   messages FeedbackMessage[]
 
   createdAt DateTime @default(now())
@@ -290,7 +290,7 @@ model Assessment {
   photos    Json?
   notes     String?
 
-  student Student @relation(fields: [studentId], references: [id])
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -353,7 +353,7 @@ model Subscription {
   endDate   DateTime
   autoRenew Boolean            @default(true)
 
-  student Student @relation(fields: [studentId], references: [id])
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   plan    Plan    @relation(fields: [planId], references: [id])
 
   createdAt DateTime @default(now())
@@ -397,7 +397,7 @@ model Payment {
   description String?
   invoiceUrl  String?
 
-  student Student @relation(fields: [studentId], references: [id])
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

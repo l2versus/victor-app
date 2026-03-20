@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getTrainerProfile } from "@/lib/admin"
@@ -17,7 +18,9 @@ import { ptBR } from "date-fns/locale"
 
 export default async function DashboardPage() {
   const session = await getSession()
-  if (!session) return null
+  if (!session || session.role !== "ADMIN") {
+    redirect("/login")
+  }
 
   let trainer
   try {

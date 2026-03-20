@@ -39,8 +39,9 @@ export function HistoryClient({ sessions, heatmap, streak }: HistoryProps) {
 
   // Computed stats from sessions
   const totalSets = sessions.reduce((sum, s) => sum + s.setsCount, 0)
-  const avgDuration = sessions.length > 0
-    ? Math.round(sessions.filter((s) => s.durationMin).reduce((sum, s) => sum + (s.durationMin || 0), 0) / sessions.filter((s) => s.durationMin).length)
+  const sessionsWithDuration = sessions.filter((s) => s.durationMin)
+  const avgDuration = sessionsWithDuration.length > 0
+    ? Math.round(sessionsWithDuration.reduce((sum, s) => sum + (s.durationMin || 0), 0) / sessionsWithDuration.length)
     : 0
 
   return (

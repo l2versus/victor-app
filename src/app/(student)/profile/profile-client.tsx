@@ -5,7 +5,9 @@ import { useRouter } from "next/navigation"
 import {
   User, Mail, Phone, Calendar, Ruler, Weight, Target, Globe,
   AlertTriangle, LogOut, Dumbbell, Activity, Clock, Edit3, Check, X,
+  Crown,
 } from "lucide-react"
+import Link from "next/link"
 import { format, formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
 
@@ -55,16 +57,22 @@ export function ProfileClient({ student, stats }: ProfileProps) {
     OTHER: "Outro",
   }
 
+  const [saveError, setSaveError] = useState<string | null>(null)
+
   async function handleSave() {
     setSaving(true)
+    setSaveError(null)
     try {
-      await fetch("/api/student/profile", {
+      const res = await fetch("/api/student/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phone, weight, height }),
       })
+      if (!res.ok) throw new Error("Erro ao salvar")
       setEditing(false)
       router.refresh()
+    } catch {
+      setSaveError("Erro ao salvar perfil. Tente novamente.")
     } finally {
       setSaving(false)
     }
@@ -109,6 +117,14 @@ export function ProfileClient({ student, stats }: ProfileProps) {
           accent="blue"
         />
       </div>
+
+      {/* ═══ SAVE ERROR ═══ */}
+      {saveError && (
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-sm">
+          <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setSaveError(null)} />
+          <span>{saveError}</span>
+        </div>
+      )}
 
       {/* ═══ MEASUREMENTS ═══ */}
       <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5">
@@ -219,10 +235,17 @@ export function ProfileClient({ student, stats }: ProfileProps) {
         )}
       </div>
 
-      {/* ═══ SITE + LOGOUT ═══ */}
+      {/* ═══ UPGRADE + SITE + LOGOUT ═══ */}
       <div className="space-y-2">
+        <Link
+          href="/upgrade"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-amber-500/20 bg-amber-600/[0.06] text-amber-300 text-sm font-semibold hover:bg-amber-600/[0.1] hover:border-amber-500/30 transition-all duration-300 active:scale-[0.98]"
+        >
+          <Crown className="w-4 h-4" />
+          Ver Planos / Upgrade
+        </Link>
         <a
-          href="/"
+          href="/?site=true"
           className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/10 bg-white/[0.03] text-neutral-400 text-sm font-medium hover:bg-white/[0.06] hover:text-neutral-300 transition-all duration-300 active:scale-[0.98]"
         >
           <Globe className="w-4 h-4" />

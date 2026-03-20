@@ -9,6 +9,15 @@ function getResend(): Resend | null {
   return _resend
 }
 
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;")
+}
+
 /**
  * Send welcome email with temporary credentials to a new student
  * created automatically via Mercado Pago webhook.
@@ -46,11 +55,11 @@ export async function sendWelcomeEmail({
           </div>
 
           <p style="font-size: 15px; line-height: 1.6; color: #d4d4d4;">
-            Ola <strong style="color: #fff;">${firstName}</strong>! 👋
+            Ola <strong style="color: #fff;">${escapeHtml(firstName)}</strong>! 👋
           </p>
 
           <p style="font-size: 15px; line-height: 1.6; color: #d4d4d4;">
-            Sua assinatura do plano <strong style="color: #dc2626;">${planName}</strong> foi confirmada com sucesso!
+            Sua assinatura do plano <strong style="color: #dc2626;">${escapeHtml(planName)}</strong> foi confirmada com sucesso!
           </p>
 
           <p style="font-size: 15px; line-height: 1.6; color: #d4d4d4;">
@@ -61,11 +70,11 @@ export async function sendWelcomeEmail({
             <p style="margin: 0 0 12px 0; font-size: 13px; color: #737373;">SEU LOGIN</p>
             <p style="margin: 0 0 4px 0; font-size: 14px;">
               <span style="color: #a3a3a3;">Email:</span>
-              <strong style="color: #fff;"> ${to}</strong>
+              <strong style="color: #fff;"> ${escapeHtml(to)}</strong>
             </p>
             <p style="margin: 0; font-size: 14px;">
               <span style="color: #a3a3a3;">Senha temporaria:</span>
-              <strong style="color: #dc2626;"> ${tempPassword}</strong>
+              <strong style="color: #dc2626;"> ${escapeHtml(tempPassword)}</strong>
             </p>
           </div>
 

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { verifyToken } from "@/lib/auth"
+import { verifyToken, validateSession } from "@/lib/auth"
 
-export function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl
   const token = request.cookies.get("token")?.value
 
@@ -20,6 +20,11 @@ export function proxy(request: NextRequest) {
     if (!payload) {
       return NextResponse.json({ error: "Invalid token" }, { status: 401 })
     }
+    // Validate session version
+    const apiSessionValid = await validateSession(payload)
+    if (!apiSessionValid) {
+      return NextResponse.json({ error: "Session expired" }, { status: 401 })
+    }
     // Admin-only routes
     if (pathname.startsWith("/api/admin") && payload.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
@@ -37,6 +42,14 @@ export function proxy(request: NextRequest) {
     const response = NextResponse.redirect(new URL("/login", request.url))
     response.cookies.set("token", "", { maxAge: 0, path: "/" })
     return response
+  }
+
+  // Validate session version
+  const pageSessionValid = await validateSession(payload)
+  if (!pageSessionValid) {
+    const expiredResponse = NextResponse.redirect(new URL("/login?expired=1", request.url))
+    expiredResponse.cookies.set("token", "", { maxAge: 0, path: "/" })
+    return expiredResponse
   }
 
   // Role-based routing

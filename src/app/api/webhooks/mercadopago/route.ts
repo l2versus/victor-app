@@ -9,8 +9,11 @@ import crypto from "crypto"
 function verifyMpSignature(req: NextRequest): boolean {
   const secret = process.env.MERCADOPAGO_WEBHOOK_SECRET
   if (!secret) {
-    // If no secret configured, skip verification (dev mode only)
-    console.warn("[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not set — skipping signature check")
+    if (process.env.NODE_ENV === "production") {
+      console.error("[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not set in production — rejecting")
+      return false
+    }
+    console.warn("[MP Webhook] MERCADOPAGO_WEBHOOK_SECRET not set — skipping signature check (dev only)")
     return true
   }
 
@@ -168,77 +171,80 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Find or create student profile
-    const existingStudent = await prisma.student.findUnique({ where: { userId: user.id } })
-
-    let resolvedStudent: NonNullable<typeof existingStudent>
-
-    if (!existingStudent) {
-      isNewUser = true
-      resolvedStudent = await prisma.student.create({
-        data: {
-          userId: user.id,
-          trainerId: trainer.id,
-          status: "ACTIVE",
-          goals: "Definido via checkout online",
-        },
-      })
-
-      // Notify trainer about new student (NO password in notification)
-      await prisma.notification.create({
-        data: {
-          userId: trainer.userId,
-          type: "NEW_STUDENT",
-          title: "Novo aluno via Mercado Pago!",
-          body: `${buyerName} (${buyerEmail}) assinou o plano ${plan.name}.`,
-          sentVia: JSON.stringify(["app"]),
-          metadata: JSON.stringify({ planName: plan.name, planId: plan.id }),
-        },
-      })
-    } else {
-      resolvedStudent = existingStudent
-      if (resolvedStudent.status !== "ACTIVE") {
-        await prisma.student.update({
-          where: { id: resolvedStudent.id },
-          data: { status: "ACTIVE" },
-        })
-      }
-    }
-
-    // Cancel existing active subscriptions
-    await prisma.subscription.updateMany({
-      where: { studentId: resolvedStudent.id, status: "ACTIVE" },
-      data: { status: "CANCELLED" },
-    })
-
-    // Create new subscription
+    // All student + financial operations in a single transaction
     const startDate = new Date()
     const endDate = calculateEndDate(startDate, plan.interval)
 
-    await prisma.subscription.create({
-      data: {
-        studentId: resolvedStudent.id,
-        planId: plan.id,
-        status: "ACTIVE",
-        startDate,
-        endDate,
-        autoRenew: true,
-      },
-    })
+    await prisma.$transaction(async (tx) => {
+      // Find or create student profile
+      const existingStudent = await tx.student.findUnique({ where: { userId: user.id } })
 
-    // Register payment
-    await prisma.payment.create({
-      data: {
-        studentId: resolvedStudent.id,
-        amount: mpPayment.transaction_amount || plan.price,
-        method: mapMpPaymentMethod(mpPayment.payment_type_id),
-        status: "PAID",
-        dueDate: startDate,
-        paidAt: new Date(),
-        gatewayId: String(paymentId),
-        description: `Plano ${plan.name} (${plan.interval}) — MP #${paymentId}`,
-        invoiceUrl: mpPayment.transaction_details?.external_resource_url || null,
-      },
+      let resolvedStudent: NonNullable<typeof existingStudent>
+
+      if (!existingStudent) {
+        isNewUser = true
+        resolvedStudent = await tx.student.create({
+          data: {
+            userId: user.id,
+            trainerId: trainer.id,
+            status: "ACTIVE",
+            goals: "Definido via checkout online",
+          },
+        })
+
+        // Notify trainer about new student (NO password in notification)
+        await tx.notification.create({
+          data: {
+            userId: trainer.userId,
+            type: "NEW_STUDENT",
+            title: "Novo aluno via Mercado Pago!",
+            body: `${buyerName} (${buyerEmail}) assinou o plano ${plan.name}.`,
+            sentVia: JSON.stringify(["app"]),
+            metadata: JSON.stringify({ planName: plan.name, planId: plan.id }),
+          },
+        })
+      } else {
+        resolvedStudent = existingStudent
+        if (resolvedStudent.status !== "ACTIVE") {
+          await tx.student.update({
+            where: { id: resolvedStudent.id },
+            data: { status: "ACTIVE" },
+          })
+        }
+      }
+
+      // Register payment FIRST (prevents orphaned state if subscription ops fail)
+      await tx.payment.create({
+        data: {
+          studentId: resolvedStudent.id,
+          amount: mpPayment.transaction_amount || plan.price,
+          method: mapMpPaymentMethod(mpPayment.payment_type_id),
+          status: "PAID",
+          dueDate: startDate,
+          paidAt: new Date(),
+          gatewayId: String(paymentId),
+          description: `Plano ${plan.name} (${plan.interval}) — MP #${paymentId}`,
+          invoiceUrl: mpPayment.transaction_details?.external_resource_url || null,
+        },
+      })
+
+      // Cancel existing active subscriptions AFTER payment is registered
+      await tx.subscription.updateMany({
+        where: { studentId: resolvedStudent.id, status: "ACTIVE" },
+        data: { status: "CANCELLED" },
+      })
+
+      // Create new subscription
+      await tx.subscription.create({
+        data: {
+          studentId: resolvedStudent.id,
+          planId: plan.id,
+          status: "ACTIVE",
+          startDate,
+          endDate,
+          autoRenew: true,
+        },
+      })
     })
 
     // Send welcome email with credentials to new users
