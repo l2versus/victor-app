@@ -157,8 +157,10 @@ model WorkoutExercise {
   restSeconds   Int     @default(60)
   loadKg        Float?
   notes         String?
-  order         Int
-  supersetGroup String?
+  order            Int
+  supersetGroup    String?
+  /// Máquina sugerida na academia (ex: "Hammer Strength vermelho, 2ª fileira")
+  suggestedMachine String?
 
   template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   exercise Exercise        @relation(fields: [exerciseId], references: [id])

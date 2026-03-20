@@ -22,6 +22,7 @@ interface ExerciseData {
   loadKg: number | null
   notes: string | null
   supersetGroup: string | null
+  suggestedMachine: string | null
   lastSets: { setNumber: number; reps: number; loadKg: number }[]
 }
 
@@ -327,6 +328,9 @@ export function WorkoutPlayer({
                   <p className="text-[11px] text-neutral-500">{ex.muscle} · {ex.sets}×{ex.reps}</p>
                   <Exercise3DButton exerciseName={ex.name} />
                 </div>
+                {ex.suggestedMachine && (
+                  <p className="text-[10px] text-amber-400/70 mt-0.5 truncate">📍 {ex.suggestedMachine}</p>
+                )}
               </div>
               {ex.loadKg && (
                 <span className="text-[10px] text-neutral-600 px-2 py-0.5 rounded-full bg-white/[0.04]">

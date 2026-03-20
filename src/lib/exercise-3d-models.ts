@@ -24,9 +24,209 @@ export interface Exercise3DModel {
 }
 
 export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
+  // ═══ PEITO ═══
+  {
+    sketchfabId: "53319e9420994a3890ce3c8c76077a8b",
+    title: "Supino Reto com Barra",
+    titleEn: "The Barbell Bench Press Anatomy",
+    matchExercises: [
+      "Supino Reto com Barra", "Supino Reto com Halter", "Supino na Máquina",
+      "Hoist Chest Press (ROC-IT)", "Nautilus Chest Press",
+      "Life Fitness Insignia Chest Press",
+      "Hammer Strength Iso-Lateral Chest Press (Flat)",
+    ],
+    muscles: ["Peito", "Tríceps", "Deltóide Anterior"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "ab33b95eaa4d451a96e9a409aaa18b69",
+    title: "Voador Peitoral (Pec Deck)",
+    titleEn: "Plate Loaded Pec Fly Machine",
+    matchExercises: [
+      "Peck Deck", "Hammer Strength Super Fly", "Hoist Pec Fly (ROC-IT)",
+      "Nautilus Pec Deck", "Crucifixo com Halter", "Crucifixo Inclinado",
+    ],
+    muscles: ["Peito"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "62dumbbell-flys-id",
+    title: "Crucifixo com Halter",
+    titleEn: "Dumbbell Flys",
+    matchExercises: [
+      "Crucifixo com Halter", "Crucifixo Inclinado", "Crucifixo Declinado",
+    ],
+    muscles: ["Peito"],
+    credit: "Mike - Modelo Muscular 3D (coleção Fitness)",
+  },
+  {
+    sketchfabId: "60cable-crossover-id",
+    title: "Crossover no Cabo",
+    titleEn: "Cable Crossover",
+    matchExercises: [
+      "Crossover no Cabo", "Crossover Baixo",
+    ],
+    muscles: ["Peito"],
+    credit: "Mike - Modelo Muscular 3D (coleção Fitness)",
+  },
+
+  // ═══ COSTAS ═══
+  {
+    sketchfabId: "956d42dfd57d4a2cb8daf0454f361996",
+    title: "Puxada na Máquina (Lat Pulldown)",
+    titleEn: "Cable Lat Pull Down Machine",
+    matchExercises: [
+      "Puxada Aberta", "Puxada Fechada", "Puxada Supinada",
+      "Hoist Lat Pulldown (ROC-IT)", "Nautilus Lat Pulldown",
+      "Life Fitness Insignia Lat Pulldown",
+    ],
+    muscles: ["Costas", "Bíceps"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "c51f5ca053f548b1880a5a461d27ec16",
+    title: "Remada no Cabo (Seated Row)",
+    titleEn: "Close Cable Row",
+    matchExercises: [
+      "Remada Sentada no Cabo", "Remada na Máquina",
+      "Hammer Strength Iso-Lateral Row", "Hammer Strength D.Y. Row",
+    ],
+    muscles: ["Costas", "Bíceps"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "c6fccd943ec14d5db22e679beed7bef1",
+    title: "Remada T-Bar com Apoio",
+    titleEn: "Chest Supported T-Bar Row",
+    matchExercises: [
+      "Remada Cavalinho", "Remada com Apoio no Peito",
+    ],
+    muscles: ["Costas", "Bíceps", "Trapézio"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "43592d585f694f9aae975b5ba2435500",
+    title: "Barra Fixa Assistida (Pull-Up)",
+    titleEn: "Assisted Pull Ups",
+    matchExercises: [
+      "Barra Fixa (Pronada)", "Barra Fixa (Supinada)", "Barra Fixa (Neutra)",
+    ],
+    muscles: ["Costas", "Bíceps"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "c1c72e01eee241ac8fb19f7804d5b4c9",
+    title: "Extensão Lombar (Hiperextensão)",
+    titleEn: "Back Extension Cable Machine",
+    matchExercises: ["Hiperextensão", "Good Morning"],
+    muscles: ["Lombar", "Glúteos", "Posterior"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "6bd2fd7eab314514954acf6bd45a5fa0",
+    title: "Remada para Deltóide Posterior",
+    titleEn: "Rear Delt Row Variation",
+    matchExercises: [
+      "Crucifixo Inverso com Halter", "Crucifixo Inverso no Cabo",
+      "Peck Deck Inverso", "Face Pull no Cabo",
+    ],
+    muscles: ["Deltóide Posterior", "Trapézio"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "e4888851bb4e4d83bc0544994100b869",
+    title: "Máquina Remada / Deltóide Posterior",
+    titleEn: "Row / Rear Delt Machine",
+    matchExercises: [
+      "Remada na Máquina", "Hoist Lat Pulldown (ROC-IT)",
+    ],
+    muscles: ["Costas", "Deltóide Posterior"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ OMBROS ═══
+  {
+    sketchfabId: "01ece82aae8b478a9bb89eff41f59648",
+    title: "Desenvolvimento na Máquina (Shoulder Press)",
+    titleEn: "Cable Loaded Seated Shoulder Press Machine",
+    matchExercises: [
+      "Desenvolvimento na Máquina", "Desenvolvimento com Barra",
+      "Desenvolvimento com Halter", "Hoist Shoulder Press (ROC-IT)",
+      "Hammer Strength Iso-Lateral Shoulder Press",
+      "Life Fitness Insignia Shoulder Press",
+    ],
+    muscles: ["Ombros", "Tríceps"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "2834cffa04c64ade81619f486e707f57",
+    title: "Remada Alta no Cabo",
+    titleEn: "Cable Loaded Upright Row",
+    matchExercises: ["Remada Alta"],
+    muscles: ["Ombros", "Trapézio"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "c4e8d6d990914c139b9d7e82f52b0a46",
+    title: "Remada Alta com Barra W",
+    titleEn: "Upright Row Ez Barbell",
+    matchExercises: ["Remada Alta", "Encolhimento com Barra"],
+    muscles: ["Ombros", "Trapézio"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ BÍCEPS ═══
+  {
+    sketchfabId: "5cfadaec9d7a45e9abaa995c307f6f5e",
+    title: "Rosca no Cabo",
+    titleEn: "Cable Loaded Bicep Curl",
+    matchExercises: [
+      "Rosca no Cabo", "Rosca Martelo no Cabo (Corda)",
+      "Hoist Biceps Curl (ROC-IT)",
+    ],
+    muscles: ["Bíceps"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+  {
+    sketchfabId: "445d64d93cd340d384288929b21a682e",
+    title: "Rosca com Barra W",
+    titleEn: "EZ Barbell Curls",
+    matchExercises: [
+      "Rosca com Barra W", "Rosca Direta com Barra",
+    ],
+    muscles: ["Bíceps", "Antebraço"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ TRÍCEPS ═══
+  {
+    sketchfabId: "4ad529fe1de94359b3025b422333e7e5",
+    title: "Mergulho no Cabo (Triceps Dip)",
+    titleEn: "Cable Loaded Tricep Dip",
+    matchExercises: [
+      "Paralela (Tríceps)", "Paralela (Peito)", "Mergulho no Banco",
+      "Hoist Seated Dip (ROC-IT)",
+    ],
+    muscles: ["Tríceps", "Peito"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ PERNAS ═══
+  {
+    sketchfabId: "26c4af65dba94694b623c105c464b739",
+    title: "Agachamento com Cinto (Belt Squat)",
+    titleEn: "Belt Squat Exercise Working Glutes",
+    matchExercises: [
+      "Hammer Strength Belt Squat", "Agachamento Livre",
+      "Agachamento Frontal", "Agachamento Goblet", "Agachamento Sumô",
+      "Hammer Strength Pendulum Squat", "Hammer Strength V-Squat",
+    ],
+    muscles: ["Quadríceps", "Glúteos", "Core"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
   {
     sketchfabId: "bc1dd40071da4bbcb16947da6bc2b6c4",
-    title: "Leg Press Pivot",
+    title: "Leg Press",
     titleEn: "The Pivot Leg Press",
     matchExercises: [
       "Leg Press (Pés Juntos)", "Life Fitness Insignia Leg Press",
@@ -36,48 +236,140 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
     credit: "Mike - Modelo Muscular 3D",
   },
   {
-    sketchfabId: "26c4af65db9d694b623c105c464b739b",
-    title: "Agachamento com Cinto",
-    titleEn: "Belt Squat Exercise",
+    sketchfabId: "plate-loaded-leg-extension-id",
+    title: "Cadeira Extensora",
+    titleEn: "Plate Loaded Leg Extension",
     matchExercises: [
-      "Hammer Strength Belt Squat", "Agachamento Livre",
-      "Agachamento Frontal", "Agachamento Goblet",
+      "Cadeira Extensora", "Hammer Strength Iso-Lateral Leg Extension",
+      "Hoist Leg Extension", "Cybex Prestige VRS Leg Extension",
     ],
-    muscles: ["Quadríceps", "Glúteos", "Core"],
+    muscles: ["Quadríceps"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ GLÚTEOS ═══
+  {
+    sketchfabId: "24a2f90f299c456b8668d4b0b0855fb9",
+    title: "Hip Thrust (Elevação Pélvica)",
+    titleEn: "Hip Thrust Glute Drive Machine",
+    matchExercises: [
+      "Hip Thrust com Barra", "Hip Thrust no Smith", "Hip Thrust Unilateral",
+      "Elevação de Quadril", "Elevação de Quadril com Elástico",
+      "Hoist Glute Master (ROC-IT)",
+    ],
+    muscles: ["Glúteos", "Posterior"],
     credit: "Mike - Modelo Muscular 3D",
   },
   {
-    sketchfabId: "af3da5ae5b6c4dfc8d3c0f283082c43c",
-    title: "Máquina de Voador Peitoral",
-    titleEn: "Plate Loaded Pec Fly Machine",
-    matchExercises: [
-      "Peck Deck", "Hammer Strength Super Fly",
-      "Hoist Pec Fly (ROC-IT)", "Nautilus Pec Deck",
-    ],
-    muscles: ["Peito"],
+    sketchfabId: "hip-hyperextension-id",
+    title: "Hiperextensão para Glúteos",
+    titleEn: "Hip Hyperextension",
+    matchExercises: ["Glute-Ham Raise", "Hiperextensão"],
+    muscles: ["Glúteos", "Posterior", "Lombar"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ ADUTORES / ABDUTORES ═══
+  {
+    sketchfabId: "ce660cb48c45472dbd9a8f5b6122a2ac",
+    title: "Abdutora (Hip Abduction)",
+    titleEn: "Cable Loaded Abductors",
+    matchExercises: ["Abdutora", "Caminhada Lateral com Elástico"],
+    muscles: ["Glúteos (médio)", "Abdutores"],
     credit: "Mike - Modelo Muscular 3D",
   },
   {
-    sketchfabId: "2c8cc3e6b3af4e7485c0ac49e5d4f4c4",
-    title: "Máquina de Agachamento com Cinto",
-    titleEn: "Belt Squat Machine (HD)",
+    sketchfabId: "36d8bb3a7a4f41f9bd568f436747dcb0",
+    title: "Adutora (Hip Adduction)",
+    titleEn: "Cable Loaded Adductors",
+    matchExercises: ["Adutora"],
+    muscles: ["Adutores"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ POSTERIOR ═══
+  {
+    sketchfabId: "aa88db6006274f71bebb9741b07d430d",
+    title: "Stiff com Kettlebell (RDL)",
+    titleEn: "Kettlebell RDL",
     matchExercises: [
-      "Hammer Strength Belt Squat", "Hammer Strength Pendulum Squat",
+      "Stiff (Romeno)", "Stiff com Halter", "Stiff Unilateral",
+      "Stiff com Pernas Retas",
     ],
-    muscles: ["Quadríceps", "Glúteos"],
+    muscles: ["Posterior", "Glúteos", "Lombar"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ CORE ═══
+  {
+    sketchfabId: "9d9210a007034674a822d8f1fe547244",
+    title: "Abdominal na Máquina (Crunch)",
+    titleEn: "Abdominal Crunch Machine",
+    matchExercises: [
+      "Abdominal Crunch", "Abdominal no Cabo", "Abdominal Declinado",
+      "Hoist Abdominal (ROC-IT)", "Nautilus Abdominal Crunch",
+    ],
+    muscles: ["Abdômen"],
     credit: "Mike - Modelo Muscular 3D",
   },
   {
-    sketchfabId: "d1e85d7b9d5e4e3f877b83d0af1c3d9e",
-    title: "Supino Reto com Barra",
-    titleEn: "Bench Press Exercise",
+    sketchfabId: "b70eb4054ba946ad91eeec0a63145d02",
+    title: "Abdominal no Chão (Crunch)",
+    titleEn: "Bodyweight Crunch",
     matchExercises: [
-      "Supino Reto com Barra", "Supino Reto com Halter",
-      "Supino na Máquina", "Hoist Chest Press (ROC-IT)",
-      "Hammer Strength Iso-Lateral Chest Press (Flat)",
+      "Abdominal Crunch", "Abdominal Bicicleta",
+    ],
+    muscles: ["Abdômen"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ FLEXÃO ═══
+  {
+    sketchfabId: "close-grip-pushup-id",
+    title: "Flexão Fechada",
+    titleEn: "Close Grip Push Up",
+    matchExercises: [
+      "Flexão de Braço", "Flexão Diamante", "Flexão Inclinada", "Flexão com Déficit",
+    ],
+    muscles: ["Peito", "Tríceps"],
+    credit: "Mike - Modelo Muscular 3D (coleção Fitness)",
+  },
+
+  // ═══ PARALELAS ═══
+  {
+    sketchfabId: "10bfcd1fdc7845a1b8e90d0ed6c23879",
+    title: "Paralela Assistida (Dips)",
+    titleEn: "Assisted Dips",
+    matchExercises: [
+      "Paralela (Peito)", "Paralela (Tríceps)",
     ],
     muscles: ["Peito", "Tríceps", "Ombros"],
     credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ FUNCIONAL ═══
+  {
+    sketchfabId: "21bc1760bef745f7b4b966727a3733e6",
+    title: "Functional Trainer (Cabo Duplo)",
+    titleEn: "Dual Functional Trainer",
+    matchExercises: [
+      "Crossover no Cabo", "Rosca no Cabo", "Tríceps Corda",
+      "Face Pull no Cabo", "Woodchop no Cabo",
+    ],
+    muscles: ["Variado"],
+    credit: "Mike - Modelo Muscular 3D",
+  },
+
+  // ═══ REMADA UNILATERAL ═══
+  {
+    sketchfabId: "single-arm-row-id",
+    title: "Remada Unilateral",
+    titleEn: "Single Arm Row",
+    matchExercises: [
+      "Remada Unilateral com Halter", "Meadows Row",
+    ],
+    muscles: ["Costas", "Bíceps"],
+    credit: "Mike - Modelo Muscular 3D (coleção Fitness)",
   },
 ]
 

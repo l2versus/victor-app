@@ -140,6 +140,7 @@ export default async function TodayPage() {
     loadKg: we.loadKg,
     notes: we.notes,
     supersetGroup: we.supersetGroup,
+    suggestedMachine: we.suggestedMachine,
     lastSets: lastSetsMap[we.exercise.id] || [],
   }))
 
