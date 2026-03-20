@@ -3,11 +3,17 @@ import { prisma } from "@/lib/prisma"
 import { requireAuth } from "@/lib/auth"
 import webpush from "web-push"
 
-webpush.setVapidDetails(
-  process.env.VAPID_SUBJECT ?? "mailto:app@victoroliveira.com.br",
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "",
-  process.env.VAPID_PRIVATE_KEY ?? ""
-)
+function getWebPush() {
+  const publicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const privateKey = process.env.VAPID_PRIVATE_KEY
+  if (!publicKey || !privateKey) return null
+  webpush.setVapidDetails(
+    process.env.VAPID_SUBJECT ?? "mailto:app@victoroliveira.com.br",
+    publicKey,
+    privateKey
+  )
+  return webpush
+}
 
 // POST /api/admin/push/broadcast
 // Body: { title, body, url?, studentId? }
@@ -17,6 +23,11 @@ export async function POST(req: NextRequest) {
     const session = await requireAuth()
     if (session.role !== "ADMIN") {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
+
+    const wp = getWebPush()
+    if (!wp) {
+      return NextResponse.json({ error: "VAPID keys not configured" }, { status: 503 })
     }
 
     const body = await req.json()
@@ -43,7 +54,7 @@ export async function POST(req: NextRequest) {
 
     const results = await Promise.allSettled(
       subscriptions.map((sub) =>
-        webpush.sendNotification(
+        wp.sendNotification(
           { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
           payload
         ).catch((err: { statusCode?: number }) => {
