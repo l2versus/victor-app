@@ -1,8 +1,8 @@
 # Victor App — Personal Trainer Platform
 
-**Plataforma completa de gestao para personal trainers e seus alunos**
+**Plataforma SaaS completa para personal trainers e seus alunos**
 
-Documento tecnico para apresentacao ao cliente.
+Documento tecnico atualizado — Sessao 17 (2026-03-20)
 
 ---
 
@@ -10,7 +10,7 @@ Documento tecnico para apresentacao ao cliente.
 
 O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para personal trainers gerenciarem seus alunos, prescreverem treinos, acompanharem evolucao e monetizarem seus servicos — tudo em um unico sistema com inteligencia artificial integrada.
 
-**Objetivo:** Ser superior ao MFIT e concorrentes do mercado fitness, com diferenciais como IA nativa, correcao de postura por camera e design premium dark mode.
+**Objetivo:** Ser superior ao MFIT, Hevy e concorrentes do mercado fitness, com diferenciais como IA nativa, correcao de postura por camera com replay, corpo 3D anatomico, enciclopedia muscular, e design premium dark mode.
 
 ---
 
@@ -18,132 +18,21 @@ O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para pe
 
 | Camada | Tecnologia | Versao | Por que |
 |--------|-----------|--------|---------|
-| **Framework** | Next.js (App Router) | 16.2.0 | O framework React mais avancado do mercado, usado por Netflix, TikTok, Uber |
-| **Linguagem** | TypeScript | 5.x | Tipagem estatica, menos bugs, codigo mais robusto |
-| **Runtime** | React | 19.2 | Ultima versao com Server Components e streaming |
-| **Bundler** | Turbopack | Nativo | Substituto do Webpack, 10x mais rapido (Rust) |
-| **Banco de Dados** | PostgreSQL | Via Prisma 7.5 | Banco relacional enterprise-grade |
-| **ORM** | Prisma | 7.5.0 | Type-safe, migrations, schema declarativo |
-| **Inteligencia Artificial** | Vercel AI SDK | 6.x | Streaming real-time, multi-provider (Google Gemini / OpenAI) |
-| **Autenticacao** | JWT + bcrypt | Custom | Sessoes seguras, senhas com hash bcrypt-12 |
-| **UI Framework** | Tailwind CSS | 4.x | Design system utilitario, responsivo, dark mode |
-| **Icones** | Lucide React | 0.577 | 1500+ icones consistentes |
-| **Graficos** | Recharts | 3.8 | Graficos interativos para dashboards |
-| **Deploy** | Vercel | Edge Network | CDN global, SSL, CI/CD automatico |
-
----
-
-## Arquitetura do Sistema
-
-```
-                    ┌──────────────────────────────┐
-                    │      VERCEL EDGE NETWORK      │
-                    │   CDN Global · SSL · CI/CD    │
-                    └──────────┬───────────────────┘
-                               │
-                    ┌──────────▼───────────────────┐
-                    │     NEXT.JS 16 APP ROUTER     │
-                    │   Server Components · SSR     │
-                    │   Streaming · Turbopack       │
-                    └──────────┬───────────────────┘
-                               │
-              ┌────────────────┼────────────────┐
-              │                │                │
-    ┌─────────▼──────┐ ┌──────▼──────┐ ┌───────▼───────┐
-    │  PAINEL ADMIN  │ │ APP ALUNO   │ │  APIs REST    │
-    │  Dashboard     │ │ Treino Hoje │ │  24 endpoints │
-    │  Alunos CRUD   │ │ Historico   │ │  Auth · CRUD  │
-    │  Treinos       │ │ Perfil      │ │  AI · Plans   │
-    │  Exercicios    │ │ Chat IA     │ │  Student      │
-    │  Planos        │ │ Postura*    │ │  Webhooks*    │
-    │  IA Tools      │ └─────────────┘ └───────────────┘
-    │  Financeiro    │         │                │
-    └────────────────┘         │                │
-              │        ┌───────▼────────────────▼──┐
-              └────────▶   POSTGRESQL + PRISMA ORM  │
-                       │   14 modelos · 20+ tabelas │
-                       └──────────┬─────────────────┘
-                                  │
-                       ┌──────────▼─────────────────┐
-                       │   GOOGLE GEMINI / OPENAI    │
-                       │   IA Streaming · 4 prompts  │
-                       └────────────────────────────┘
-```
-
-*Itens marcados com * estao no roadmap proximo.
-
----
-
-## O Que Ja Esta Pronto
-
-### 1. Sistema de Autenticacao
-- Login/Registro com JWT seguro
-- Senhas com hash bcrypt (12 rounds)
-- Middleware de protecao de rotas
-- Roles separadas: ADMIN e STUDENT
-- Sessoes de 7 dias com renovacao
-
-### 2. Painel Administrativo (Personal Trainer)
-- **Dashboard** com metricas em tempo real (alunos, sessoes, pagamentos, exercicios)
-- **CRUD completo de alunos** — cadastro, status (ativo/inativo/pendente), detalhes
-- **Workout Builder** — montagem de treinos com drag-to-reorder, supersets, notas por exercicio
-- **Biblioteca de 203 exercicios** — busca, filtro por musculo, exercicios customizados
-- **Plano semanal** — atribuir treinos a dias da semana por aluno
-- **Pagina de Planos** — criar planos (Mensal/Trimestral/Anual), definir features por plano, atribuir alunos
-- **Navegacao** — sidebar desktop + bottom nav mobile, ambos responsivos
-
-### 3. Hub de Inteligencia Artificial
-- **Geracao de treinos por IA** — formulario completo (objetivo, nivel, equipamentos, restricoes, dias/semana) usando a biblioteca real de 203 exercicios como contexto
-- **Analise de anamnese** — identifica restricoes absolutas/relativas, pontos de atencao, recomendacoes clinicas
-- **Mensagens de engajamento** — gera mensagens motivacionais automaticas para alunos inativos (3+ dias), com opcao de copiar e regenerar
-
-### 4. App do Aluno
-- **Treino de Hoje** — workout player interativo com 5 fases (preview → active → rest → summary → done)
-- **Timer circular de descanso** — animacao requestAnimationFrame, configuravel por exercicio
-- **Registro de series** — marcar reps, carga, RPE por serie
-- **Historico** — calendar heatmap, lista de sessoes, streak badge
-- **Perfil** — avatar, medidas corporais, IMC automatico, stats, modo edicao
-- **Chat com IA** — streaming real-time, bolhas de conversa, typing indicator, auto-scroll, welcome message
-
-### 5. Sistema de Planos & Assinaturas
-- **4 intervalos**: Mensal, Trimestral, Semestral, Anual
-- **Feature flags por plano**: Chat IA, Camera de Postura, Grupo VIP, Nutricao
-- **Limite de sessoes/semana** configuravel por plano
-- **API de verificacao** — checa features liberadas do aluno em tempo real
-- **Cancelamento automatico** da assinatura anterior ao atribuir nova
-
-### 6. SEO & PWA
-- Open Graph + Twitter Cards (compartilhamento rich)
-- JSON-LD Schema.org (Person — busca Google)
-- robots.txt inteligente (bloqueia /api/, /admin/)
-- sitemap.xml dinamico
-- manifest.json com icones maskable (192x192, 512x512)
-- Apple Touch Icon para iOS
-- Meta tags por pagina
-- `lang="pt-BR"` nativo
-- **PWA Install Banner** — modal orientando instalacao (Android: botao direto, iOS: instrucoes Safari)
-- Service Worker para cache e funcionamento offline
-
-### 7. Design & UX
-- **Dark mode premium** — tema Ironberg (vermelho #dc2626 + preto #0a0a0a)
-- Logo 3D em todo o site (substituiu flat por volume metalico)
-- GradientDots background animado (pontos hexagonais vermelhos)
-- Ember orbs animados (CSS keyframes custom)
-- 15+ animacoes CSS customizadas
-- Responsivo mobile-first
-- Touch gestures (swipe entre fases do treino + carousel de depoimentos)
-- Feedback visual em cada interacao
-
-### 8. Landing Page Premium (Sessao 6)
-- **Hero** com video background cinematografico + parallax
-- **Depoimentos** — carousel interativo com 6 cases brasileiros, swipe mobile, auto-play inteligente
-- **Como Funciona** — 4 passos com TextEffect animado (blur/slide)
-- **FAQ** — accordion premium com icones por pergunta + logos 3D flutuantes
-- **Footer** — typing animation motivacional + CTA WhatsApp + grid animado
-- **Cards de Plano** — CardSpotlight (luz que segue o mouse) + urgencia + social proof
-- **Sticky CTA mobile** — barra fixa com preco/dia + botao "Ver planos"
-- **Banner de garantia** — 7 dias, verde, grande, posicionado estrategicamente
-- **Performance** — scroll throttled, sem WebGL, CSS puro, imagens otimizadas
+| **Framework** | Next.js (App Router) | 16.2.0 | O framework React mais avancado do mercado |
+| **Linguagem** | TypeScript | 5.x | Tipagem estatica, menos bugs |
+| **Runtime** | React | 19.2 | Server Components e streaming |
+| **Bundler** | Turbopack | Nativo | 10x mais rapido (Rust) |
+| **Banco de Dados** | PostgreSQL | Via Prisma 7.5 | Enterprise-grade |
+| **ORM** | Prisma | 7.5.0 | Type-safe, migrations |
+| **IA** | Vercel AI SDK | 6.x | Streaming, multi-provider |
+| **Postura** | MediaPipe Pose | 0.10.18 | 33 landmarks, client-side |
+| **3D** | Sketchfab Embed | iframe | Zero bundle, premium |
+| **Auth** | JWT + bcrypt | Custom | Sessoes seguras |
+| **UI** | Tailwind CSS | 4.x | Dark mode, responsivo |
+| **Graficos** | Recharts | 3.8 | Interativos, mobile-first |
+| **Email** | Resend | 6.9 | Transacional, welcome email |
+| **Pagamento** | Mercado Pago | 2.12 | Pix, cartao, boleto |
+| **Deploy** | Coolify + Vercel | VPS + Edge | Auto-deploy |
 
 ---
 
@@ -151,141 +40,218 @@ O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para pe
 
 | Metrica | Valor |
 |---------|-------|
-| Paginas/Telas | 20+ |
-| Endpoints API | 28 |
-| Modelos de dados | 15 (User, Student, Exercise, Plan, Subscription, Payment...) |
-| Componentes React | 40+ |
-| Componentes UI (shadcn) | 12 (button, card, badge, modal, text-effect, etc.) |
-| Exercicios pre-carregados | 203 |
-| Exercicios com analise de postura IA | 50 |
-| Padroes biomecanicos | 13 |
-| Hooks customizados | 2 (useRestTimer, useSwipe) |
+| Paginas/Telas | 30+ |
+| Endpoints API | 35+ |
+| Modelos de dados | 20+ tabelas |
+| Componentes React | 60+ |
+| Exercicios no banco | **235** (203 originais + 32 maquinas Ironberg) |
+| Exercicios com analise de postura | **194** (50 originais + 144 estendidos) |
+| Padroes biomecanicos | **29** padroes |
+| Maquinas Ironberg cobertas | **32** (Hammer, Hoist, Nautilus, Life Fitness, Cybex) |
+| Modelos 3D Sketchfab | **30** exercicios mapeados |
+| Grupos musculares educativos | **13** com enciclopedia completa |
 | System prompts IA | 5 (chat, treino, anamnese, engajamento, Victor Virtual) |
-| Animacoes CSS | 15+ keyframes customizados |
-| Build time | ~4 segundos (Turbopack) |
+| Build time | ~4-6 segundos (Turbopack) |
+| Bugs corrigidos (QA) | 86+ em 6 auditorias |
 
 ---
 
-### 9. Checkout Mercado Pago (Sessao 8)
-- SDK `mercadopago` v2.12, lazy init
-- `POST /api/checkout` — cria preferencia (slug + CUID lookup)
-- `POST /api/webhooks/mercadopago` — IPN completo (HMAC-SHA256, auto user creation, idempotente)
-- 3 paginas retorno (success/failure/pending)
-- PlanModal com form checkout + fallback WhatsApp
+## O Que Ja Esta Funcional (COMPLETO)
 
-### 10. IA Victor Virtual (Sessao 8)
-- Chatbot publico na landing page com streaming
-- System prompt com planos, precos, metodo, contatos, CREF real
-- Rate limit 30 msgs/hora por IP
-- Feature gate: Chat do aluno so Pro/Elite
+### 1. Sistema de Autenticacao
+- Login/Registro com JWT seguro (httpOnly, secure, sameSite)
+- Senhas com hash bcrypt (12 rounds)
+- Proxy com protecao de rotas (API + pages)
+- Roles: ADMIN e STUDENT
+- **Sessao unica**: sessionVersion no JWT — se logar em outro device, o primeiro e kickado
+- Sessoes de 7 dias
 
-### 11. Correcao de Postura por IA (Sessoes 8-9) — FEATURE KILLER
-- **MediaPipe Pose (Google)** — gratuito, 100% client-side, offline, sem API key
-- **50 exercicios** com regras biomecanicas profissionais
-- **13 padroes de movimento**: squat, lunge, hinge, push-up, overhead press, curl, tricep extension, raise, row, plank, hip thrust, dip, calf raise
-- **11 grupos musculares** com seletor agrupado e busca
-- **Dual camera (push-up)**: detecta automaticamente se a camera esta lateral ou frontal
-- Camera frontal como padrao (aluno se ve) + botao SwitchCamera
-- Canvas overlay: esqueleto 33 pontos + feedback em tempo real (verde/amarelo/vermelho)
-- Texto grande legivel a distancia no canvas (15-20px dinamico)
-- Aspect ratio retrato (3:4) no mobile
-- GPU primeiro, fallback CPU automatico (dispositivos antigos)
+### 2. Painel Administrativo (Personal Trainer)
+- **Dashboard** com metricas real-time (alunos, sessoes, pagamentos, exercicios)
+- **CRUD completo de alunos** — cadastro, status, detalhes, restricoes medicas
+- **Workout Builder** — montagem de treinos com reorder, supersets, notas, **maquina sugerida**
+- **Biblioteca de 235 exercicios** — busca, filtro por musculo, exercicios custom
+- **Plano semanal** — atribuir treinos a dias da semana por aluno
+- **Planos & Assinaturas** — 3 tiers x 4 duracoes, feature flags, atribuir alunos
+- **Financeiro** — dashboard com overview, pagamentos, custos
+- **Hub IA** — geracao de treinos, analise anamnese, mensagens engajamento
+- **Import MFIT** — importar dados de outros apps
+- Navegacao: sidebar desktop + bottom nav mobile
+
+### 3. App do Aluno — Nivel Premium
+
+#### 3.1 Header Social (todas as paginas)
+- Avatar estilo Instagram com anel de progresso semanal
+- Saudacao personalizada (Bom dia/Boa tarde/Boa noite + nome)
+- Progresso semanal (X/Y treinos esta semana)
+- Streak badge (semanas consecutivas)
+- Notificacoes
+
+#### 3.2 Treino de Hoje (/today)
+- Workout player interativo com 5 fases (preview → active → rest → summary → done)
+- **Body Focus Area** — badges dos musculos do dia com info educativa ao tocar
+- **Botao 3D Musculos** — abre modelo 3D do exercicio (Sketchfab)
+- **Maquina sugerida** — "📍 Hammer Strength vermelho, 2ª fileira"
+- Timer circular de descanso com SVG animado
+- Registro de series (reps, carga, RPE)
+- Haptic feedback (vibrate)
+- Swipe gestures entre exercicios
+- Last session suggestions (cargas anteriores)
+- Active session recovery (retoma se fechar o app)
+
+#### 3.3 Evolucao (/evolution)
+- **Anatomia 3D** — modelo Ecorche rotavel (Sketchfab embed)
+- **Body Map SVG** — corpo humano frente/costas com musculos por intensidade
+- **Enciclopedia muscular** — tap no musculo abre bottom sheet educativo:
+  - Musculos alvos, sinergistas, antagonistas
+  - Pico de contracao, dica do Victor
+- **4 stat cards** (sessoes, volume, series, duracao/RPE)
+- **Volume chart** (area), **frequencia semanal** (bar), **RPE trend** (area)
+- **Exercise progression** — progressao de carga por exercicio (line)
+- **Calendar heatmap** — 3 meses de atividade
+- **Personal Records** — top 6 PRs com trofeu
+- **PDF export** — relatorio imprimivel
+
+#### 3.4 Correcao de Postura (/posture) — FEATURE KILLER
+- **MediaPipe Pose** — 33 landmarks, 100% client-side, offline, sem API key
+- **194 exercicios** com regras biomecanicas profissionais
+- **29 padroes de movimento** (squat, hinge, push, pull, press, curl, machine press, leg press, etc.)
+- **32 maquinas Ironberg** (Hammer Strength, Hoist ROC-IT, Nautilus, Life Fitness, Cybex)
+- **Texto GRANDE no canvas** — 28-44px, legivel de 2-3 metros
+- **Apenas erros/warnings** no overlay (correct = checkmark discreto)
+- **Replay pos-exercicio** — ao parar a camera, mostra timeline dos erros
+  - Timestamp + correcoes de cada momento
+  - Revisa durante o descanso sem interromper timer
+  - Serve pro aluno E pro Victor
+  - Nao salva automaticamente (privacidade)
+- Dual camera (push-up): detecta frontal vs lateral
+- Camera frontal padrao + SwitchCamera
 - Feature gate: somente plano Elite
-- **Diferencial absoluto: NENHUM concorrente tem isso**
 
-### 12. Protecao de Sessao Unica (Sessao 9)
-- Campo `sessionVersion` no JWT + banco de dados
-- Cada login incrementa versao → invalida sessoes anteriores
-- Se logar em 2 dispositivos, o primeiro e kickado com mensagem
-- Previne compartilhamento de conta
+#### 3.5 Chat com IA (/chat)
+- Streaming real-time
+- Bolhas de conversa, typing indicator, auto-scroll
+- Welcome message
+- Feature gate: Pro/Elite
 
-### 13. UX Premium — Redesign Nivel SaaS (Sessao 10)
-- **Dia de descanso redesenhado**: icone Moon profissional, grid semanal (treino vs descanso), card proximo treino, dicas de recuperacao, contador de sessoes
-- **Treino concluido redesenhado**: 3 stat cards (duracao, series, RPE com label de intensidade), lista de exercicios realizados com checks, nome do template
-- **Historico com stats**: 3 cards no topo (total sessoes, total series, media duracao)
-- **Auditoria UX completa**: 9 paginas revisadas (posture, chat, profile, admin dashboard, admin students — todas aprovadas)
+#### 3.6 Perfil (/profile)
+- Avatar, medidas corporais, IMC
+- Stats (sessoes, RPE medio, ultimo treino)
+- Botao "Ver Planos / Upgrade"
+
+#### 3.7 Comunidade (/community)
+- Ranking de alunos (podio top 3)
+- Feed de conquistas
+- Desafios semanais
+
+#### 3.8 Upgrade (/upgrade)
+- Comparacao 3 planos dentro do app
+- Destaque postura Elite, CTA WhatsApp
+
+### 4. Landing Page Premium
+- Hero com video background cinematografico + parallax
+- **Victor Virtual** — chatbot IA publico com streaming
+- Depoimentos carousel interativo
+- FAQ accordion premium com logos 3D flutuantes
+- Cards de plano com CardSpotlight (luz segue o mouse)
+- Sticky CTA mobile + garantia 7 dias
+- Footer com typing animation motivacional
+- Checkout modal com form + redirect MP
+
+### 5. Checkout Mercado Pago
+- SDK v2.12, lazy init
+- IPN webhook (HMAC-SHA256, idempotente)
+- Auto user creation + welcome email (Resend)
+- 3 paginas retorno (success/failure/pending)
+- Fallback WhatsApp no modal
+- **Seguranca**: rejeita webhook sem secret em producao, $transaction atomica
+
+### 6. Email Transacional (Resend)
+- Welcome email com login + senha temporaria
+- Template HTML dark theme premium
+- XSS prevention (escapeHtml)
+- Fallback graceful se RESEND_API_KEY nao configurada
+
+### 7. SEO & PWA
+- OG Image profissional (1200x630, branded)
+- JSON-LD Schema.org, robots.txt, sitemap.xml
+- PWA manifest + service worker + install banner
+- Security headers (X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy)
+
+### 8. Modelos 3D Sketchfab (30 exercicios)
+- Embed via iframe (zero bundle, lazy loading)
+- Exercicios mapeados: Bench Press, Pec Deck, Lat Pulldown, Cable Row,
+  T-Bar Row, Pull-Up, Shoulder Press, Hip Thrust, Belt Squat, Leg Press,
+  Leg Extension, Abdominal, Dips, Flexao, e mais
+- Rotacao touch, pinch zoom, annotations
+- Botao "3D Musculos" no workout preview + fullscreen viewer
+- Fonte: Mike - Modelo Muscular 3D (CC-BY) + Alexdubob Fitness Collection
 
 ---
 
-## Roadmap — Proximas Entregas
+## O Que Falta (NAO Funcional)
 
-### Fase 10b — Deploy Producao + Pre-launch (PENDENTE)
-- [ ] Configurar env vars producao no Coolify (Mercado Pago, IA, APP_URL)
-- [ ] Testar checkout end-to-end (sandbox MP)
-- [ ] Integrar email transacional (Resend/Nodemailer)
-- [ ] Deploy producao Coolify
-- [ ] Auditoria QA pre-launch final
+### Pendente — Keys do Victor (2026-03-21)
+- [ ] **GOOGLE_AI_API_KEY** — Chat IA, Victor Virtual, geracao treinos (tudo depende disso)
+- [ ] **RESEND_API_KEY** — Email transacional (welcome email)
+- [ ] **MERCADOPAGO_WEBHOOK_SECRET** — Webhook verificado em producao
+- [ ] Apos receber: configurar no .env + Coolify + redeploy
+
+### Pendente — Testes E2E
+- [ ] Testar checkout sandbox end-to-end (MP sandbox)
+- [ ] Testar login/redirect em producao
+- [ ] Testar todas as paginas no Coolify deploy
+
+### Pendente — Producao
+- [ ] Trocar credenciais MP teste → producao
+- [ ] Comprar dominio (victoroliveiraapersonal.com.br)
 - [ ] Apagar contas de teste antes do launch
+- [ ] Configurar webhook MP producao
 
-### Fase 11 — Grupo VIP & Comunidade
-- [ ] Chat em grupo (alunos do mesmo trainer)
-- [ ] Rankings e desafios semanais
-- [ ] Compartilhar progresso com outros alunos
-
-### Fase 12 — Nutricao & Saude
-- [ ] Plano alimentar basico
-- [ ] Tracking de macros simplificado
-- [ ] Integracao com IA para sugestoes nutricionais
-
-### Fase 13 — Maquinas de Academia (Projeto Separado)
-- [ ] Regras biomecanicas por equipamento especifico
-- [ ] QR Code por maquina → abre exercicio correto no app
-- [ ] Suporte a marcas: Life Fitness, Hammer Strength, Cybex, Panatta
+### Futuro — Melhorias
+- [ ] Feedback pos-exercicio com video gravado (gravar video + analise)
+- [ ] Modo "salvar replay" pra Victor ver remotamente
+- [ ] Mais modelos 3D Sketchfab (buscar novos)
+- [ ] QR Code por maquina na Ironberg → abre exercicio no app
+- [ ] Modulo de nutricao (tracking macros)
+- [ ] GIFs animados via ExerciseDB RapidAPI
+- [ ] Chat privado Victor ↔ Aluno
 
 ---
 
-## Diferenciais Competitivos vs MFIT
+## Diferenciais Competitivos
 
-| Feature | MFIT | Victor App |
-|---------|------|-----------|
-| Geracao de treino por IA | Nao | Sim — usa biblioteca real de 203 exercicios |
-| Chat IA pos-treino | Nao | Sim — streaming real-time |
-| Analise de anamnese por IA | Nao | Sim — classifica riscos automaticamente |
-| **Correcao de postura por camera** | **Nao** | **Sim — 50 exercicios, 13 padroes biomecanicos, tempo real** |
-| Engajamento automatico | Basico | IA gera mensagens personalizadas |
-| Design/UX | Generico | Dark mode premium, animacoes custom |
-| Planos com feature gates | Basico | Completo — IA, camera, grupo, nutricao |
-| PWA / App nativo | Sim | Sim — PWA com manifest, icons, service worker |
-| Checkout integrado | Sim | Sim — Mercado Pago (Pix, cartao, boleto) |
-| Protecao de conta | Basico | Sessao unica por dispositivo |
-| Custo mensal para o trainer | ~R$150/mes | Proprio — sem mensalidade |
-
----
-
-## Seguranca
-
-- Senhas nunca armazenadas em texto — bcrypt com salt de 12 rounds
-- Tokens JWT com expiracao de 7 dias
-- Protecao de sessao unica (sessionVersion no JWT)
-- Rotas protegidas por middleware (admin e student separados)
-- robots.txt bloqueia indexacao de areas privadas
-- Variaveis sensiveis via .env (nunca commitadas)
-- HTTPS forcado via Vercel Edge Network
+| Feature | MFIT | Hevy | Victor App |
+|---------|------|------|-----------|
+| Geracao de treino por IA | Nao | Nao | **Sim** — 235 exercicios |
+| Chat IA pos-treino | Nao | Nao | **Sim** — streaming |
+| Analise anamnese por IA | Nao | Nao | **Sim** |
+| **Correcao postura camera** | **Nao** | **Nao** | **Sim — 194 exercicios, 29 padroes, replay** |
+| **Corpo 3D anatomico** | **Nao** | **Nao** | **Sim — Sketchfab rotavel** |
+| **Enciclopedia muscular** | **Nao** | Basico | **Sim — alvos, sinergistas, pico contracao** |
+| **Maquinas Ironberg** | **Nao** | **Nao** | **Sim — 32 maquinas com biomec.** |
+| **Modelos 3D exercicios** | **Nao** | **Nao** | **Sim — 30 exercicios** |
+| Body map visual | Nao | Sim (basico) | **Sim — SVG frente/costas + intensidade** |
+| Checkout integrado | Sim | Nao | **Sim — MP (Pix, cartao, boleto)** |
+| Email boas-vindas | Basico | Nao | **Sim — Resend, dark theme** |
+| Sessao unica (anti-share) | Nao | Nao | **Sim** |
+| PWA | Sim | Sim | **Sim** |
+| Dark mode premium | Nao | Sim | **Sim — Ironberg theme** |
 
 ---
 
-## Como Rodar
+## URLs de Deploy
 
-```bash
-# Instalar dependencias
-npm install
+| Ambiente | URL |
+|----------|-----|
+| Coolify (VPS) | http://dogkkc0ogsc0sw048w0g0sso.187.77.226.144.sslip.io |
+| Vercel | https://victor-app-seven.vercel.app |
+| GitHub | https://github.com/l2versus/victor-app |
 
-# Configurar banco de dados
-# Criar .env com DATABASE_URL=postgresql://...
+## Contas de Teste
 
-# Gerar Prisma Client
-npx prisma generate
-
-# Push do schema para o banco
-npx prisma db push
-
-# Seed da biblioteca de exercicios
-npx prisma db seed
-
-# Iniciar dev server
-npm run dev
-```
-
----
-
-**Desenvolvido por Emmanuel** | Next.js 16 + TypeScript + Prisma + AI SDK | 2026
+| Email | Senha | Role |
+|-------|-------|------|
+| victor@teste.com | 123456 | Admin |
+| emmanuel@teste.com | admin123 | Aluno Elite |
+| aluno@teste.com | 123456 | Aluno sem plano |
