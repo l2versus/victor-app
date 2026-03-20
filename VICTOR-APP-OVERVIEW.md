@@ -199,17 +199,23 @@ O **Victor App** e uma plataforma web full-stack desenvolvida sob medida para pe
 - Se logar em 2 dispositivos, o primeiro e kickado com mensagem
 - Previne compartilhamento de conta
 
+### 13. UX Premium — Redesign Nivel SaaS (Sessao 10)
+- **Dia de descanso redesenhado**: icone Moon profissional, grid semanal (treino vs descanso), card proximo treino, dicas de recuperacao, contador de sessoes
+- **Treino concluido redesenhado**: 3 stat cards (duracao, series, RPE com label de intensidade), lista de exercicios realizados com checks, nome do template
+- **Historico com stats**: 3 cards no topo (total sessoes, total series, media duracao)
+- **Auditoria UX completa**: 9 paginas revisadas (posture, chat, profile, admin dashboard, admin students — todas aprovadas)
+
 ---
 
 ## Roadmap — Proximas Entregas
 
-### Fase 10 — Deploy Producao + Pre-launch
-- [ ] Configurar env vars producao (Mercado Pago, IA, APP_URL)
+### Fase 10b — Deploy Producao + Pre-launch (PENDENTE)
+- [ ] Configurar env vars producao no Coolify (Mercado Pago, IA, APP_URL)
 - [ ] Testar checkout end-to-end (sandbox MP)
 - [ ] Integrar email transacional (Resend/Nodemailer)
-- [ ] GIFs animados de exercicios (ExerciseDB RapidAPI)
-- [ ] Comprar dominio (victoroliveiraapersonal.com.br)
+- [ ] Deploy producao Coolify
 - [ ] Auditoria QA pre-launch final
+- [ ] Apagar contas de teste antes do launch
 
 ### Fase 11 — Grupo VIP & Comunidade
 - [ ] Chat em grupo (alunos do mesmo trainer)
