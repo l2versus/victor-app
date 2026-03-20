@@ -1,6 +1,8 @@
 import { getSession, validateSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
+import { prisma } from "@/lib/prisma"
 import { StudentNav } from "@/components/student/nav"
+import { HomeHeader } from "@/components/student/home-header"
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -10,6 +12,44 @@ export default async function StudentLayout({ children }: { children: React.Reac
   // Single-session protection: if another device logged in, kick this one
   const valid = await validateSession(session)
   if (!valid) redirect("/login?expired=1")
+
+  // Fetch student profile + stats for social header
+  const student = await prisma.student.findUnique({
+    where: { userId: session.userId },
+    include: { user: { select: { name: true, avatar: true } } },
+  })
+
+  // Weekly stats
+  const weekStart = new Date()
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay() + (weekStart.getDay() === 0 ? -6 : 1))
+  weekStart.setHours(0, 0, 0, 0)
+
+  const [weekSessions, streak, weekPlansCount] = await Promise.all([
+    student ? prisma.workoutSession.count({
+      where: { studentId: student.id, startedAt: { gte: weekStart }, completedAt: { not: null } },
+    }) : 0,
+    // Streak: consecutive weeks with ≥1 session
+    (async () => {
+      if (!student) return 0
+      const now = new Date()
+      let s = 0
+      for (let w = 0; w < 52; w++) {
+        const end = new Date(now); end.setDate(now.getDate() - w * 7)
+        const start = new Date(end); start.setDate(end.getDate() - 7)
+        const count = await prisma.workoutSession.count({
+          where: { studentId: student.id, completedAt: { not: null }, startedAt: { gte: start, lt: end } },
+        })
+        if (count > 0) s++; else break
+      }
+      return s
+    })(),
+    student ? prisma.studentWorkoutPlan.count({
+      where: { studentId: student.id, active: true },
+    }) : 0,
+  ])
+
+  const userName = student?.user.name || session.email.split("@")[0]
+  const userAvatar = student?.user.avatar || null
 
   return (
     <div className="min-h-screen bg-[#050505] relative overflow-hidden">
@@ -34,8 +74,19 @@ export default async function StudentLayout({ children }: { children: React.Reac
         <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/20 to-transparent" />
       </div>
 
+      {/* ═══ Social Header ═══ */}
+      <div className="relative z-10 max-w-lg mx-auto px-4 pt-5">
+        <HomeHeader
+          name={userName}
+          avatar={userAvatar}
+          streak={streak}
+          weekSessions={weekSessions}
+          weekTarget={weekPlansCount}
+        />
+      </div>
+
       {/* ═══ Content ═══ */}
-      <main className="relative z-10 max-w-lg mx-auto px-4 pt-6 pb-24">
+      <main className="relative z-10 max-w-lg mx-auto px-4 pb-24">
         {children}
       </main>
 
