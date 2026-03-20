@@ -55,6 +55,10 @@ export function PostureAnalyzer() {
   const [feedbackHistory, setFeedbackHistory] = useState<{ time: number; items: PostureFeedback[] }[]>([])
   const [showReplay, setShowReplay] = useState(false)
   const analysisStartRef = useRef<number>(0)
+  // ═══ Video recording for replay ═══
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
+  const recordedChunksRef = useRef<Blob[]>([])
+  const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null)
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -105,11 +109,23 @@ export function PostureAnalyzer() {
       try { (poseLandmarkerRef.current as { close: () => void }).close() } catch { /* ignore */ }
       poseLandmarkerRef.current = null
     }
+    // Stop video recording and generate replay URL
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      mediaRecorderRef.current.onstop = () => {
+        if (recordedChunksRef.current.length > 0) {
+          const blob = new Blob(recordedChunksRef.current, { type: "video/webm" })
+          setRecordedVideoUrl(URL.createObjectURL(blob))
+        }
+      }
+      mediaRecorderRef.current.stop()
+      mediaRecorderRef.current = null
+    }
+
     if (mountedRef.current) {
       setState("idle")
       setFeedback([])
       setFps(0)
-      // Show replay button if there were errors during the session
+      // Show replay if there were errors during the session
       if (feedbackHistory.length > 0) {
         setShowReplay(true)
       }
@@ -154,6 +170,19 @@ export function PostureAnalyzer() {
       if (videoRef.current) {
         videoRef.current.srcObject = stream
         await videoRef.current.play()
+      }
+
+      // ═══ Start video recording for replay ═══
+      setRecordedVideoUrl(null)
+      recordedChunksRef.current = []
+      try {
+        const recorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9" })
+        recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data) }
+        recorder.start(1000) // chunk every 1s
+        mediaRecorderRef.current = recorder
+      } catch {
+        // MediaRecorder not supported — skip recording silently
+        mediaRecorderRef.current = null
       }
 
       // Load MediaPipe PoseLandmarker (100% client-side, no API key)
@@ -653,6 +682,19 @@ export function PostureAnalyzer() {
               Fechar
             </button>
           </div>
+          {/* Video replay player */}
+          {recordedVideoUrl && (
+            <div className="p-3 border-b border-amber-500/10">
+              <video
+                src={recordedVideoUrl}
+                controls
+                playsInline
+                className="w-full rounded-xl bg-black"
+                style={{ maxHeight: "240px" }}
+              />
+              <p className="text-[9px] text-neutral-600 text-center mt-1">Assista sua execucao e compare com as correcoes abaixo</p>
+            </div>
+          )}
           <div className="max-h-64 overflow-y-auto divide-y divide-amber-500/10">
             {feedbackHistory.map((entry, i) => (
               <div key={i} className="px-4 py-2.5">

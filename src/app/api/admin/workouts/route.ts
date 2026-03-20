@@ -81,6 +81,7 @@ export async function POST(req: NextRequest) {
         notes?: string
         order: number
         supersetGroup?: string
+        suggestedMachine?: string
       }, index: number) => {
         let exerciseId = ex.exerciseId
         if (!exerciseId && ex.exerciseName) {
@@ -99,6 +100,7 @@ export async function POST(req: NextRequest) {
           notes: ex.notes || null,
           order: ex.order ?? index,
           supersetGroup: ex.supersetGroup || null,
+          suggestedMachine: ex.suggestedMachine || null,
         }
       })
     )
@@ -118,6 +120,7 @@ export async function POST(req: NextRequest) {
           create: validExercises as Array<{
             exerciseId: string; sets: number; reps: string; restSeconds: number;
             loadKg: number | null; notes: string | null; order: number; supersetGroup: string | null;
+            suggestedMachine: string | null;
           }>,
         },
       },

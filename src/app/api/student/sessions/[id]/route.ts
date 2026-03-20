@@ -35,10 +35,13 @@ export async function PATCH(
       },
     })
 
-    // Fire-and-forget: check achievements after session completion
-    checkAndCreateAchievements(student.id, id).catch(() => {})
+    // Check achievements and return them for celebration UI
+    let achievements: { type: string; message: string; detail?: string }[] = []
+    try {
+      achievements = await checkAndCreateAchievements(student.id, id)
+    } catch { /* non-blocking */ }
 
-    return NextResponse.json({ session: updated })
+    return NextResponse.json({ session: updated, achievements })
   } catch (error) {
     const message = error instanceof Error ? error.message : "Erro interno"
     const status = message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500

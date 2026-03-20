@@ -9,6 +9,7 @@ import { useRestTimer } from "@/hooks/use-rest-timer"
 import { useSwipe } from "@/hooks/use-swipe"
 import { BodyFocusBadges } from "@/components/student/muscle-info-card"
 import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
+import { useCelebration, type CelebrationType } from "@/components/student/celebration"
 
 interface ExerciseData {
   id: string
@@ -200,16 +201,30 @@ export function WorkoutPlayer({
     }
   }, [sessionId, completedSets, exercises, currentExIdx, currentEx, totalCompleted, totalSets, restTimer])
 
+  // Celebration
+  const { celebrate, CelebrationUI } = useCelebration()
+
   // Finish workout
   async function handleFinish() {
     if (!sessionId) return
     try {
-      await fetch(`/api/student/sessions/${sessionId}`, {
+      const res = await fetch(`/api/student/sessions/${sessionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ completedAt: new Date().toISOString(), rpe }),
       })
+      const data = await res.json()
       setPhase("done")
+
+      // Trigger celebration for achievements
+      if (data.achievements && data.achievements.length > 0) {
+        const ach = data.achievements[0]
+        const type: CelebrationType = ach.type.includes("PR") ? "pr"
+          : ach.type.includes("STREAK") ? "streak"
+          : ach.type.includes("LEVEL") ? "level_up"
+          : "milestone"
+        setTimeout(() => celebrate(type, ach.message, ach.detail || "Parabéns pela conquista!"), 800)
+      }
     } catch {
       setError("Erro ao finalizar treino. Tente novamente.")
     }
@@ -223,6 +238,7 @@ export function WorkoutPlayer({
 
   // ═══ DONE STATE ═══
   if (phase === "done") {
+    // Celebration overlay (confetti + modal) — rendered on top of everything
     const rpeLabel = completedToday?.rpe
       ? completedToday.rpe <= 3 ? "Leve" : completedToday.rpe <= 6 ? "Moderado" : completedToday.rpe <= 8 ? "Intenso" : "Máximo"
       : null
@@ -232,6 +248,7 @@ export function WorkoutPlayer({
 
     return (
       <div className="space-y-5 pt-4">
+        {CelebrationUI}
         {/* Hero */}
         <div className="flex flex-col items-center text-center pb-2">
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-600/20 to-emerald-800/10 border border-emerald-500/15 flex items-center justify-center mb-5 animate-pulse-glow" style={{ "--tw-shadow-color": "rgba(16,185,129,0.3)" } as React.CSSProperties}>

@@ -28,6 +28,7 @@ type WorkoutExercise = {
   loadKg: string
   notes: string
   supersetGroup: string
+  suggestedMachine: string
 }
 
 export default function NewWorkoutPage() {
@@ -52,6 +53,7 @@ export default function NewWorkoutPage() {
         loadKg: "",
         notes: "",
         supersetGroup: "",
+        suggestedMachine: "",
       },
     ])
     setShowPicker(false)
@@ -100,6 +102,7 @@ export default function NewWorkoutPage() {
             notes: ex.notes || null,
             order: i,
             supersetGroup: ex.supersetGroup || null,
+            suggestedMachine: ex.suggestedMachine || null,
           })),
         }),
       })
@@ -280,6 +283,22 @@ export default function NewWorkoutPage() {
                       className="text-center h-8 sm:h-9 text-xs sm:text-sm px-1 sm:px-2"
                     />
                   </div>
+                </div>
+
+                {/* Notes + Suggested Machine — collapsible row */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3 mt-2">
+                  <Input
+                    value={ex.notes}
+                    onChange={(e) => updateExercise(ex.tempId, "notes", e.target.value)}
+                    placeholder="Notas (ex: foco na excêntrica)"
+                    className="h-8 sm:h-9 text-xs sm:text-sm"
+                  />
+                  <Input
+                    value={ex.suggestedMachine}
+                    onChange={(e) => updateExercise(ex.tempId, "suggestedMachine", e.target.value)}
+                    placeholder="📍 Máquina (ex: Hammer vermelho, 2ª fileira)"
+                    className="h-8 sm:h-9 text-xs sm:text-sm"
+                  />
                 </div>
               </div>
             ))}
