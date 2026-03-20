@@ -20,10 +20,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Credenciais invalidas" }, { status: 401 })
     }
 
+    // Increment sessionVersion — invalidates any previous session on other devices
+    const updated = await prisma.user.update({
+      where: { id: user.id },
+      data: { sessionVersion: { increment: 1 } },
+      select: { sessionVersion: true },
+    })
+
     const token = generateToken({
       userId: user.id,
       email: user.email,
       role: user.role,
+      sv: updated.sessionVersion,
     })
 
     const response = NextResponse.json({

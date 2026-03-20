@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import {
-  User, Mail, Phone, Calendar, Ruler, Weight, Target,
+  User, Mail, Phone, Calendar, Ruler, Weight, Target, Globe,
   AlertTriangle, LogOut, Dumbbell, Activity, Clock, Edit3, Check, X,
 } from "lucide-react"
 import { format, formatDistanceToNow } from "date-fns"
@@ -219,14 +219,23 @@ export function ProfileClient({ student, stats }: ProfileProps) {
         )}
       </div>
 
-      {/* ═══ LOGOUT ═══ */}
-      <button
-        onClick={handleLogout}
-        className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-500/20 bg-red-500/5 text-red-400 text-sm font-medium hover:bg-red-500/10 hover:border-red-500/30 transition-all duration-300 active:scale-[0.98]"
-      >
-        <LogOut className="w-4 h-4" />
-        Sair da Conta
-      </button>
+      {/* ═══ SITE + LOGOUT ═══ */}
+      <div className="space-y-2">
+        <a
+          href="/"
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-white/10 bg-white/[0.03] text-neutral-400 text-sm font-medium hover:bg-white/[0.06] hover:text-neutral-300 transition-all duration-300 active:scale-[0.98]"
+        >
+          <Globe className="w-4 h-4" />
+          Visitar Site
+        </a>
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl border border-red-500/20 bg-red-500/5 text-red-400 text-sm font-medium hover:bg-red-500/10 hover:border-red-500/30 transition-all duration-300 active:scale-[0.98]"
+        >
+          <LogOut className="w-4 h-4" />
+          Sair da Conta
+        </button>
+      </div>
     </div>
   )
 }

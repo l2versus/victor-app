@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth"
+import { getSession, validateSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { AdminMobileNav } from "@/components/admin/mobile-nav"
@@ -6,6 +6,10 @@ import { AdminMobileNav } from "@/components/admin/mobile-nav"
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
   if (!session || session.role !== "ADMIN") redirect("/login")
+
+  // Single-session protection: if another device logged in, kick this one
+  const valid = await validateSession(session)
+  if (!valid) redirect("/login?expired=1")
 
   return (
     <div className="flex h-[100dvh] bg-[#060606] relative overflow-hidden">

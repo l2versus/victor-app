@@ -151,7 +151,115 @@ async function main() {
   console.log("\n⚠️  LEMBRE-SE: Apague esta conta depois dos testes!")
 }
 
+async function createVictorAdmin() {
+  console.log("\n🔧 Criando conta victoradmin (aluno Elite)...")
+
+  const trainerUser = await prisma.user.findFirst({
+    where: { role: "ADMIN" },
+    include: { trainerProfile: true },
+  })
+
+  if (!trainerUser?.trainerProfile) {
+    console.error("❌ Nenhum trainer ADMIN encontrado.")
+    return
+  }
+
+  const trainerId = trainerUser.trainerProfile.id
+
+  // Check if already exists
+  const existing = await prisma.user.findUnique({
+    where: { email: "victoradmin@teste.com" },
+  })
+
+  if (existing) {
+    console.log("⚠️  victoradmin@teste.com ja existe!")
+    const student = await prisma.student.findUnique({ where: { userId: existing.id } })
+    if (student) {
+      const sub = await prisma.subscription.findFirst({
+        where: { studentId: student.id, status: "ACTIVE" },
+        include: { plan: true },
+      })
+      console.log(`   Plano: ${sub?.plan?.name ?? "Nenhum"}`)
+      console.log(`   Valido ate: ${sub?.endDate?.toLocaleDateString("pt-BR") ?? "N/A"}`)
+    }
+    return
+  }
+
+  const hashedPassword = await bcrypt.hash("admin123", 12)
+
+  const user = await prisma.user.create({
+    data: {
+      email: "victoradmin@teste.com",
+      name: "Victor (Teste Elite)",
+      password: hashedPassword,
+      role: "STUDENT",
+      phone: "85996985823",
+      active: true,
+    },
+  })
+
+  const student = await prisma.student.create({
+    data: {
+      userId: user.id,
+      trainerId,
+      gender: "MALE",
+      weight: 85,
+      height: 1.80,
+      goals: "Teste de todas as features premium do app",
+      status: "ACTIVE",
+    },
+  })
+
+  // Find Elite plan
+  let elitePlan = await prisma.plan.findFirst({
+    where: { trainerId, hasPostureCamera: true, hasAI: true },
+  })
+
+  if (!elitePlan) {
+    elitePlan = await prisma.plan.create({
+      data: {
+        trainerId,
+        name: "Elite (Teste)",
+        slug: "elite_victor_test",
+        interval: "ANNUAL",
+        price: 0,
+        active: true,
+        hasAI: true,
+        hasPostureCamera: true,
+        hasVipGroup: true,
+        hasNutrition: true,
+        maxSessionsWeek: null,
+        description: "Plano de teste Victor",
+      },
+    })
+  }
+
+  const endDate = new Date()
+  endDate.setFullYear(endDate.getFullYear() + 1)
+
+  await prisma.subscription.create({
+    data: {
+      studentId: student.id,
+      planId: elitePlan.id,
+      status: "ACTIVE",
+      startDate: new Date(),
+      endDate,
+      autoRenew: false,
+    },
+  })
+
+  console.log("═".repeat(50))
+  console.log("🎉 CONTA VICTORADMIN CRIADA!")
+  console.log("═".repeat(50))
+  console.log(`   Login:  victoradmin@teste.com`)
+  console.log(`   Senha:  admin123`)
+  console.log(`   Plano:  Elite (todas features)`)
+  console.log(`   Valido: ate ${endDate.toLocaleDateString("pt-BR")}`)
+  console.log("═".repeat(50))
+}
+
 main()
+  .then(() => createVictorAdmin())
   .catch((e) => {
     console.error("❌ Erro:", e)
     process.exit(1)

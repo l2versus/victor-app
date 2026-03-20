@@ -273,23 +273,30 @@ export function PostureAnalyzer() {
     w: number,
     h: number,
   ) {
-    const panelHeight = Math.min(40 + fb.length * 26, h * 0.4)
+    // Scale font size based on canvas width — bigger on mobile for readability
+    // iPhone 11 canvas ~640px wide, this gives ~18px. iPhone SE ~375px → ~16px
+    const fontSize = Math.max(15, Math.min(20, w * 0.032))
+    const lineHeight = fontSize + 12
+    const dotRadius = Math.max(5, fontSize * 0.3)
+    const paddingTop = 16
+    const paddingLeft = 14
+
+    const panelHeight = Math.min(paddingTop + fb.length * lineHeight + 10, h * 0.45)
+
     // Semi-transparent panel at top
-    ctx.fillStyle = "rgba(0, 0, 0, 0.75)"
+    ctx.fillStyle = "rgba(0, 0, 0, 0.78)"
     ctx.fillRect(0, 0, w, panelHeight)
 
-    // Gradient bottom edge
-    const grad = ctx.createLinearGradient(0, panelHeight - 8, 0, panelHeight)
-    grad.addColorStop(0, "rgba(0, 0, 0, 0.75)")
+    // Gradient bottom edge for smooth fade
+    const grad = ctx.createLinearGradient(0, panelHeight - 12, 0, panelHeight)
+    grad.addColorStop(0, "rgba(0, 0, 0, 0.78)")
     grad.addColorStop(1, "rgba(0, 0, 0, 0)")
     ctx.fillStyle = grad
-    ctx.fillRect(0, panelHeight - 8, w, 8)
-
-    const fontSize = Math.max(11, Math.min(14, w * 0.028))
+    ctx.fillRect(0, panelHeight - 12, w, 12)
 
     fb.forEach((item, i) => {
-      const y = 20 + i * 26
-      if (y > panelHeight - 10) return // don't overflow
+      const y = paddingTop + i * lineHeight + lineHeight * 0.6
+      if (y > panelHeight - 8) return
 
       const color =
         item.status === "correct"
@@ -298,24 +305,28 @@ export function PostureAnalyzer() {
             ? "#eab308"
             : "#ef4444"
 
-      // Status dot
+      // Status dot (bigger for visibility)
       ctx.beginPath()
-      ctx.arc(16, y, 4, 0, Math.PI * 2)
+      ctx.arc(paddingLeft + dotRadius, y, dotRadius, 0, Math.PI * 2)
       ctx.fillStyle = color
       ctx.fill()
 
-      // Message
+      // Message text — bold, bigger, readable from arm's length
       ctx.fillStyle = "#ffffff"
-      ctx.font = `bold ${fontSize}px -apple-system, sans-serif`
-      const maxTextWidth = w - 80
-      const text = item.message.length > 50 ? item.message.slice(0, 47) + "..." : item.message
-      ctx.fillText(text, 28, y + 4, maxTextWidth)
+      ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`
+      const textX = paddingLeft + dotRadius * 2 + 10
+      const maxTextWidth = w - textX - 60
+      const maxChars = Math.floor(maxTextWidth / (fontSize * 0.55))
+      const text = item.message.length > maxChars ? item.message.slice(0, maxChars - 2) + ".." : item.message
+      ctx.fillText(text, textX, y + fontSize * 0.35, maxTextWidth)
 
-      // Angle badge
+      // Angle badge (right side, with color)
       if (item.angle !== undefined) {
+        const angleText = `${Math.round(item.angle)}°`
         ctx.fillStyle = color
-        ctx.font = `${fontSize - 1}px -apple-system, sans-serif`
-        ctx.fillText(`${Math.round(item.angle)}°`, w - 42, y + 4)
+        ctx.font = `bold ${fontSize - 2}px -apple-system, BlinkMacSystemFont, sans-serif`
+        const angleWidth = ctx.measureText(angleText).width
+        ctx.fillText(angleText, w - angleWidth - 12, y + fontSize * 0.35)
       }
     })
   }
@@ -462,7 +473,8 @@ export function PostureAnalyzer() {
       )}
 
       {/* ─── Camera / Canvas area ─── */}
-      <div className="relative rounded-2xl overflow-hidden bg-black aspect-[4/3]">
+      {/* aspect-[3/4] on mobile (portrait), aspect-[4/3] on wider screens */}
+      <div className="relative rounded-2xl overflow-hidden bg-black aspect-[3/4] sm:aspect-[4/3]">
         <video
           ref={videoRef}
           autoPlay

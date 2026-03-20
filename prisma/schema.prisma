@@ -23,16 +23,17 @@ enum Gender {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      Role     @default(STUDENT)
-  phone     String?
-  avatar    String?
-  active    Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id             String   @id @default(cuid())
+  email          String   @unique
+  password       String
+  name           String
+  role           Role     @default(STUDENT)
+  phone          String?
+  avatar         String?
+  active         Boolean  @default(true)
+  sessionVersion Int      @default(0) // incremented on each login — invalidates previous sessions
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   student        Student?        @relation("UserStudent")
   trainerProfile TrainerProfile? @relation("UserTrainer")

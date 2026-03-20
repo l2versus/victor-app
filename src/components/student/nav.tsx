@@ -3,12 +3,12 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Dumbbell, BarChart3, User, MessageCircle, Camera } from "lucide-react"
+import { Dumbbell, BarChart3, User, MessageCircle, Camera, Globe } from "lucide-react"
 
 const navItems = [
   { href: "/today", label: "Treino", icon: Dumbbell },
   { href: "/posture", label: "Postura", icon: Camera },
-  { href: "/history", label: "Histórico", icon: BarChart3 },
+  { href: "/history", label: "Historico", icon: BarChart3 },
   { href: "/chat", label: "Chat IA", icon: MessageCircle },
   { href: "/profile", label: "Perfil", icon: User },
 ]

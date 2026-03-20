@@ -1,4 +1,4 @@
-import { getSession } from "@/lib/auth"
+import { getSession, validateSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { StudentNav } from "@/components/student/nav"
 
@@ -6,6 +6,10 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const session = await getSession()
   if (!session) redirect("/login")
   if (session.role !== "STUDENT") redirect("/admin/dashboard")
+
+  // Single-session protection: if another device logged in, kick this one
+  const valid = await validateSession(session)
+  if (!valid) redirect("/login?expired=1")
 
   return (
     <div className="min-h-screen bg-[#050505] relative overflow-hidden">

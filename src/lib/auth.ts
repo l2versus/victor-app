@@ -17,6 +17,8 @@ export interface TokenPayload {
   userId: string
   email: string
   role: "ADMIN" | "STUDENT"
+  /** Session version — must match User.sessionVersion or session is invalid */
+  sv?: number
 }
 
 export async function hashPassword(password: string): Promise<string> {
@@ -46,9 +48,38 @@ export async function getSession(): Promise<TokenPayload | null> {
   return verifyToken(token)
 }
 
+/**
+ * Validate session against the database sessionVersion.
+ * If another device logged in, the version won't match → session invalid.
+ */
+export async function validateSession(session: TokenPayload): Promise<boolean> {
+  // Tokens without sv field are from before this feature — allow them
+  if (session.sv === undefined) return true
+
+  // Lazy import to avoid circular dependency
+  const { prisma } = await import("@/lib/prisma")
+  const user = await prisma.user.findUnique({
+    where: { id: session.userId },
+    select: { sessionVersion: true, active: true },
+  })
+
+  if (!user || !user.active) return false
+  return user.sessionVersion === session.sv
+}
+
 export async function requireAuth(): Promise<TokenPayload> {
   const session = await getSession()
   if (!session) throw new Error("Unauthorized")
+
+  // Check session version — if mismatched, another device logged in
+  const valid = await validateSession(session)
+  if (!valid) {
+    // Clear the stale cookie
+    const cookieStore = await cookies()
+    cookieStore.delete("token")
+    throw new Error("SessionExpired")
+  }
+
   return session
 }
 
