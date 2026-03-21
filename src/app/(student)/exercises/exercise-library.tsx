@@ -1,0 +1,200 @@
+"use client"
+
+import { useState } from "react"
+import { Search, Dumbbell, ChevronDown, Info, X } from "lucide-react"
+import { cn } from "@/lib/utils"
+import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
+import { MuscleBadge } from "@/components/student/muscle-info-card"
+import { find3DModel } from "@/lib/exercise-3d-models"
+
+interface Exercise {
+  id: string
+  name: string
+  muscle: string
+  equipment: string
+  instructions: string | null
+}
+
+interface ExerciseLibraryProps {
+  exercises: Exercise[]
+  muscleGroups: string[]
+}
+
+export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProps) {
+  const [search, setSearch] = useState("")
+  const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null)
+  const [expandedExercise, setExpandedExercise] = useState<string | null>(null)
+
+  const filtered = exercises.filter(ex => {
+    const matchSearch = !search || ex.name.toLowerCase().includes(search.toLowerCase()) ||
+      ex.muscle.toLowerCase().includes(search.toLowerCase()) ||
+      ex.equipment.toLowerCase().includes(search.toLowerCase()) ||
+      (ex.instructions?.toLowerCase().includes(search.toLowerCase()))
+    const matchMuscle = !selectedMuscle || ex.muscle === selectedMuscle
+    return matchSearch && matchMuscle
+  })
+
+  const grouped = filtered.reduce((acc, ex) => {
+    if (!acc[ex.muscle]) acc[ex.muscle] = []
+    acc[ex.muscle].push(ex)
+    return acc
+  }, {} as Record<string, Exercise[]>)
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div>
+        <h1 className="text-lg font-bold text-white flex items-center gap-2">
+          <Dumbbell className="w-5 h-5 text-red-400" />
+          Biblioteca de Exercícios
+        </h1>
+        <p className="text-[11px] text-neutral-500 mt-0.5">
+          {exercises.length} exercícios · Toque para aprender
+        </p>
+      </div>
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-600" />
+        <input
+          type="text"
+          value={search}
+          onChange={e => setSearch(e.target.value)}
+          placeholder="Buscar exercício, músculo ou equipamento..."
+          className="w-full pl-10 pr-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.08] text-white text-sm placeholder:text-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
+        />
+        {search && (
+          <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2">
+            <X className="w-4 h-4 text-neutral-500" />
+          </button>
+        )}
+      </div>
+
+      {/* Muscle filter chips */}
+      <div className="flex gap-1.5 overflow-x-auto no-scrollbar pb-1">
+        <button
+          onClick={() => setSelectedMuscle(null)}
+          className={cn(
+            "shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+            !selectedMuscle
+              ? "bg-red-600/20 text-red-400 border border-red-500/20"
+              : "bg-white/[0.04] text-neutral-500 border border-white/[0.06]"
+          )}
+        >
+          Todos ({exercises.length})
+        </button>
+        {muscleGroups.map(m => {
+          const count = exercises.filter(e => e.muscle === m).length
+          return (
+            <button
+              key={m}
+              onClick={() => setSelectedMuscle(selectedMuscle === m ? null : m)}
+              className={cn(
+                "shrink-0 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all",
+                selectedMuscle === m
+                  ? "bg-red-600/20 text-red-400 border border-red-500/20"
+                  : "bg-white/[0.04] text-neutral-500 border border-white/[0.06]"
+              )}
+            >
+              {m} ({count})
+            </button>
+          )
+        })}
+      </div>
+
+      {/* Results count */}
+      <p className="text-[10px] text-neutral-600 uppercase tracking-wider">
+        {filtered.length} exercício{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
+      </p>
+
+      {/* Exercise list by muscle group */}
+      <div className="space-y-5">
+        {Object.entries(grouped).map(([muscle, exs]) => (
+          <div key={muscle}>
+            {/* Group header */}
+            <div className="flex items-center gap-2 mb-2">
+              <MuscleBadge muscle={muscle} showInfoOnTap={true} />
+              <span className="text-[10px] text-neutral-600">{exs.length}</span>
+            </div>
+
+            {/* Exercise cards */}
+            <div className="space-y-1.5">
+              {exs.map(ex => {
+                const isExpanded = expandedExercise === ex.id
+                const has3D = !!find3DModel(ex.name)
+
+                return (
+                  <div
+                    key={ex.id}
+                    className={cn(
+                      "rounded-xl border transition-all duration-300",
+                      isExpanded
+                        ? "border-red-500/20 bg-red-600/[0.04]"
+                        : "border-white/[0.06] bg-white/[0.02]"
+                    )}
+                  >
+                    {/* Exercise header (clickable) */}
+                    <button
+                      onClick={() => setExpandedExercise(isExpanded ? null : ex.id)}
+                      className="w-full flex items-center gap-3 p-3 text-left active:scale-[0.99] transition-transform"
+                    >
+                      <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
+                        <Dumbbell className="w-3.5 h-3.5 text-neutral-500" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-white truncate">{ex.name}</p>
+                        <p className="text-[10px] text-neutral-600">{ex.equipment}</p>
+                      </div>
+                      <div className="flex items-center gap-1.5 shrink-0">
+                        {has3D && (
+                          <span className="text-[8px] px-1.5 py-0.5 rounded bg-red-600/15 text-red-400 border border-red-500/20 font-bold uppercase tracking-wider">3D</span>
+                        )}
+                        <ChevronDown className={cn(
+                          "w-4 h-4 text-neutral-600 transition-transform duration-300",
+                          isExpanded && "rotate-180"
+                        )} />
+                      </div>
+                    </button>
+
+                    {/* Expanded content */}
+                    {isExpanded && (
+                      <div className="px-3 pb-3 space-y-3 border-t border-white/[0.04] pt-3">
+                        {/* Instructions */}
+                        {ex.instructions && (
+                          <div className="flex items-start gap-2">
+                            <Info className="w-3.5 h-3.5 text-neutral-500 shrink-0 mt-0.5" />
+                            <p className="text-xs text-neutral-400 leading-relaxed">{ex.instructions}</p>
+                          </div>
+                        )}
+
+                        {/* 3D viewer button */}
+                        {has3D && (
+                          <Exercise3DButton exerciseName={ex.name} className="w-full justify-center py-2" />
+                        )}
+
+                        {/* Muscle info */}
+                        <div className="flex items-center gap-2">
+                          <span className="text-[9px] text-neutral-600">Músculo:</span>
+                          <MuscleBadge muscle={ex.muscle} />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Empty state */}
+      {filtered.length === 0 && (
+        <div className="text-center py-12">
+          <Search className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
+          <p className="text-neutral-400 text-sm">Nenhum exercício encontrado</p>
+          <p className="text-neutral-600 text-xs mt-1">Tente outro termo de busca</p>
+        </div>
+      )}
+    </div>
+  )
+}

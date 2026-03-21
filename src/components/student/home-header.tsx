@@ -1,6 +1,6 @@
 "use client"
 
-import { Flame, MessageCircle } from "lucide-react"
+import { Flame, MessageCircle, BookOpen } from "lucide-react"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { NotificationBell } from "@/components/student/notification-bell"
@@ -62,6 +62,14 @@ export function HomeHeader({ name, avatar, streak, weekSessions, weekTarget }: H
           <span className="text-[11px] font-bold text-orange-300">{streak}</span>
         </div>
       )}
+
+      {/* Exercise library */}
+      <Link
+        href="/exercises"
+        className="w-9 h-9 rounded-full bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-white hover:border-white/[0.12] active:scale-95 transition-all shrink-0"
+      >
+        <BookOpen className="w-4 h-4" />
+      </Link>
 
       {/* Chat with Victor */}
       <Link
