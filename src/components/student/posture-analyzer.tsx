@@ -16,6 +16,7 @@ import {
   Info,
   SwitchCamera,
   Save,
+  Share2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -60,6 +61,8 @@ export function PostureAnalyzer() {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null)
   const recordedChunksRef = useRef<Blob[]>([])
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null)
+  const recordedBlobRef = useRef<Blob | null>(null)
+  const recordedMimeRef = useRef<string>("video/mp4")
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -114,7 +117,9 @@ export function PostureAnalyzer() {
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.onstop = () => {
         if (recordedChunksRef.current.length > 0) {
-          const blob = new Blob(recordedChunksRef.current, { type: "video/webm" })
+          const mime = recordedMimeRef.current
+          const blob = new Blob(recordedChunksRef.current, { type: mime })
+          recordedBlobRef.current = blob
           setRecordedVideoUrl(URL.createObjectURL(blob))
         }
       }
@@ -173,9 +178,24 @@ export function PostureAnalyzer() {
 
       // ═══ Start video recording for replay ═══
       setRecordedVideoUrl(null)
+      recordedBlobRef.current = null
       recordedChunksRef.current = []
       try {
-        const recorder = new MediaRecorder(stream, { mimeType: "video/webm;codecs=vp9" })
+        // Prefer MP4 (iOS/WhatsApp compatible) → fallback to WebM
+        const mimeOptions = [
+          "video/mp4",
+          "video/mp4;codecs=avc1",
+          "video/webm;codecs=h264",
+          "video/webm;codecs=vp9",
+          "video/webm",
+        ]
+        const supportedMime = mimeOptions.find(m => MediaRecorder.isTypeSupported(m)) || ""
+        recordedMimeRef.current = supportedMime || "video/mp4"
+        const recorderOptions: MediaRecorderOptions = {
+          ...(supportedMime ? { mimeType: supportedMime } : {}),
+          videoBitsPerSecond: 1_000_000, // 1 Mbps (was ~10Mbps, reduces 85MB → ~8MB)
+        }
+        const recorder = new MediaRecorder(stream, recorderOptions)
         recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data) }
         recorder.start(1000) // chunk every 1s
         mediaRecorderRef.current = recorder
@@ -714,14 +734,32 @@ export function PostureAnalyzer() {
               <div className="flex gap-2">
                 <a
                   href={recordedVideoUrl}
-                  download={`postura-${selectedExercise.name.replace(/\s/g, "-")}-${new Date().toISOString().slice(0, 10)}.webm`}
+                  download={`postura-${selectedExercise.name.replace(/\s/g, "-")}-${new Date().toISOString().slice(0, 10)}.${recordedMimeRef.current.includes("mp4") ? "mp4" : "webm"}`}
                   className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-xs font-medium text-white hover:bg-white/[0.1] active:scale-[0.97] transition-all"
                 >
                   <Save className="w-3.5 h-3.5" />
-                  Salvar vídeo
+                  Salvar
                 </a>
+                {typeof navigator !== "undefined" && "share" in navigator && (
+                  <button
+                    onClick={async () => {
+                      const blob = recordedBlobRef.current
+                      if (!blob) return
+                      const ext = recordedMimeRef.current.includes("mp4") ? "mp4" : "webm"
+                      const fileName = `postura-${selectedExercise.name.replace(/\s/g, "-")}-${new Date().toISOString().slice(0, 10)}.${ext}`
+                      const file = new File([blob], fileName, { type: blob.type })
+                      try {
+                        await navigator.share({ title: `Correção Postural - ${selectedExercise.name}`, files: [file] })
+                      } catch { /* user cancelled share */ }
+                    }}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-red-600/15 border border-red-500/20 text-xs font-medium text-red-400 hover:bg-red-600/25 active:scale-[0.97] transition-all"
+                  >
+                    <Share2 className="w-3.5 h-3.5" />
+                    Enviar
+                  </button>
+                )}
                 <button
-                  onClick={() => { setShowReplay(false); setRecordedVideoUrl(null) }}
+                  onClick={() => { setShowReplay(false); setRecordedVideoUrl(null); recordedBlobRef.current = null }}
                   className="px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-neutral-500 hover:bg-white/[0.06] transition-all"
                 >
                   Descartar

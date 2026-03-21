@@ -381,12 +381,20 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                   >
                     <option value="">Sem máquina específica</option>
                     <option value="Hammer Strength">Hammer Strength</option>
+                    <option value="Hammer Strength MTS">Hammer Strength MTS</option>
+                    <option value="Hoist">Hoist</option>
                     <option value="Hoist ROC-IT">Hoist ROC-IT</option>
                     <option value="Nautilus">Nautilus</option>
+                    <option value="Nautilus Impact">Nautilus Impact</option>
+                    <option value="Nautilus Inspiration">Nautilus Inspiration</option>
                     <option value="Life Fitness">Life Fitness</option>
                     <option value="Life Fitness Insignia">Life Fitness Insignia</option>
                     <option value="Cybex Prestige">Cybex Prestige</option>
                     <option value="Matrix">Matrix</option>
+                    <option value="Panatta">Panatta</option>
+                    <option value="Panatta Monolith">Panatta Monolith</option>
+                    <option value="Panatta Inspiration">Panatta Inspiration</option>
+                    <option value="Stark Strong">Stark Strong</option>
                     <option value="ICG">ICG</option>
                     <option value="Barra livre">Barra livre</option>
                     <option value="Halter">Halter</option>
