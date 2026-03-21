@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 import { AuthLayout } from "@/components/auth/auth-layout"
 
 export function LoginForm() {
@@ -52,6 +54,11 @@ export function LoginForm() {
 
   return (
     <AuthLayout>
+      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors mb-6 group">
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        Voltar ao site
+      </Link>
+
       <div className="text-center mb-8 lg:text-left">
         <h1 className="text-2xl font-bold text-white mb-1">Bem-vindo de volta</h1>
         <p className="text-sm text-neutral-400">Entre na sua conta para continuar</p>

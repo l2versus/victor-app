@@ -2,6 +2,8 @@
 
 import { useState } from "react"
 import { useRouter } from "next/navigation"
+import { ArrowLeft } from "lucide-react"
+import Link from "next/link"
 import { AuthLayout } from "@/components/auth/auth-layout"
 
 export default function RegisterPage() {
@@ -44,6 +46,11 @@ export default function RegisterPage() {
 
   return (
     <AuthLayout>
+      <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 hover:text-white transition-colors mb-6 group">
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        Voltar ao site
+      </Link>
+
       <div className="text-center mb-8 lg:text-left">
         <h1 className="text-2xl font-bold text-white mb-1">Criar Conta</h1>
         <p className="text-sm text-neutral-400">Comece sua transformação com Victor</p>
