@@ -21,6 +21,7 @@ export default async function ExercisesPage() {
         muscle: true,
         equipment: true,
         instructions: true,
+        videoUrl: true,
       },
       orderBy: [{ muscle: "asc" }, { name: "asc" }],
     }),

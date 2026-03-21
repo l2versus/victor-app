@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Search, Dumbbell, ChevronDown, Info, X } from "lucide-react"
+import { Search, Dumbbell, ChevronDown, Info, X, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
 import { MuscleBadge } from "@/components/student/muscle-info-card"
@@ -13,6 +13,7 @@ interface Exercise {
   muscle: string
   equipment: string
   instructions: string | null
+  videoUrl: string | null
 }
 
 interface ExerciseLibraryProps {
@@ -167,6 +168,39 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
                           </div>
                         )}
 
+                        {/* Video from Victor */}
+                        {ex.videoUrl && (
+                          <div className="rounded-xl overflow-hidden bg-black">
+                            {ex.videoUrl.includes("youtube.com") || ex.videoUrl.includes("youtu.be") ? (
+                              <iframe
+                                src={`https://www.youtube.com/embed/${extractYouTubeId(ex.videoUrl)}`}
+                                className="w-full aspect-video"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
+                                allowFullScreen
+                                loading="lazy"
+                              />
+                            ) : ex.videoUrl.includes("instagram.com") ? (
+                              <a
+                                href={ex.videoUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-2 p-3 text-xs text-pink-400 hover:text-pink-300 transition-colors"
+                              >
+                                <Play className="w-4 h-4" />
+                                Ver vídeo no Instagram
+                              </a>
+                            ) : (
+                              <video
+                                src={ex.videoUrl}
+                                controls
+                                playsInline
+                                className="w-full aspect-video"
+                                preload="metadata"
+                              />
+                            )}
+                          </div>
+                        )}
+
                         {/* 3D viewer button */}
                         {has3D && (
                           <Exercise3DButton exerciseName={ex.name} className="w-full justify-center py-2" />
@@ -197,4 +231,19 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
       )}
     </div>
   )
+}
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function extractYouTubeId(url: string): string {
+  // youtube.com/watch?v=ID or youtu.be/ID or youtube.com/embed/ID
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+  ]
+  for (const p of patterns) {
+    const m = url.match(p)
+    if (m) return m[1]
+  }
+  return url // fallback: assume it's already the ID
 }
