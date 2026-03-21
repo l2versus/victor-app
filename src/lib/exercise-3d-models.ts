@@ -315,8 +315,188 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
     credit: "Mike - Modelo Muscular 3D",
   },
 
-  // ═══ REMADA UNILATERAL ═══
-  // Remada Unilateral — aguardando ID real do Sketchfab
+  // ══════════════════════════════════════════════════════════════
+  // ANIMAÇÕES DE EXERCÍCIO (pessoa fazendo o movimento na máquina)
+  // Fontes: luismi93, amir.poorazima, chaitanyak (Sketchfab CC)
+  // ══════════════════════════════════════════════════════════════
+
+  // ─── PERNAS (máquinas) ─────────────────────────────────────
+  {
+    sketchfabId: "49ab42b9ee0c4e4fbd0407fb48b0a4d4",
+    title: "Leg Press (Animado)",
+    titleEn: "Gym Leg Press Animated",
+    matchExercises: [
+      "Leg Press", "Life Fitness Insignia Leg Press",
+      "Hammer Strength Leg Press", "Matrix Leg Press",
+    ],
+    muscles: ["Quadríceps", "Glúteos"],
+    credit: "luismi93 (Sketchfab)",
+  },
+  {
+    sketchfabId: "c476464294ed4a67bafb27ca7fc114a1",
+    title: "Treino de Pernas (Animado)",
+    titleEn: "Legs Workout Animated",
+    matchExercises: [
+      "Cadeira Extensora", "Cadeira Flexora", "Mesa Flexora",
+      "Hoist Leg Extension", "Hoist Leg Curl",
+      "Cybex Prestige VRS Leg Extension", "Cybex Prestige VRS Leg Curl",
+    ],
+    muscles: ["Quadríceps", "Posterior"],
+    credit: "luismi93 (Sketchfab)",
+  },
+
+  // ─── COSTAS (máquinas) ─────────────────────────────────────
+  {
+    sketchfabId: "201736c5f3974529a1c4fdc5e6bb6074",
+    title: "Exercício de Costas (Animado)",
+    titleEn: "Gym Exercise Animated (Back)",
+    matchExercises: [
+      "Remada na Máquina", "Remada Sentada no Cabo",
+      "Hammer Strength D.Y. Row", "Hoist Lat Pulldown",
+      "Remada Curvada com Barra", "Remada Cavalinho",
+    ],
+    muscles: ["Costas", "Bíceps"],
+    credit: "luismi93 (Sketchfab)",
+  },
+  {
+    sketchfabId: "164f19da64494642be5b4a203c1b1468",
+    title: "Puxada Dorsal (Lat Pulldown Animado)",
+    titleEn: "Gym Lat Pulldown Animated",
+    matchExercises: [
+      "Puxada Aberta", "Puxada Fechada", "Puxada Supinada",
+      "Nautilus Lat Pulldown", "Life Fitness Insignia Lat Pulldown",
+    ],
+    muscles: ["Costas", "Bíceps"],
+    credit: "luismi93 (Sketchfab)",
+  },
+
+  // ─── PEITO (máquinas) ──────────────────────────────────────
+  {
+    sketchfabId: "12436dd60a5a49329ffb502a23f77d97",
+    title: "Supino na Máquina (Animado)",
+    titleEn: "Seated Chest Press Machine",
+    matchExercises: [
+      "Supino na Máquina", "Hoist Chest Press (ROC-IT)",
+      "Nautilus Chest Press", "Life Fitness Insignia Chest Press",
+      "Hammer Strength Iso-Lateral Chest Press",
+      "Hammer Strength Decline Press",
+    ],
+    muscles: ["Peito", "Tríceps"],
+    credit: "chaitanyak (Sketchfab)",
+  },
+  {
+    sketchfabId: "dbb127254b2a4910ba44dcd590f1e653",
+    title: "Crossover no Cabo (Máquina)",
+    titleEn: "Signature Cable Crossover",
+    matchExercises: [
+      "Crossover no Cabo", "Crossover Baixo",
+      "Rosca no Cabo", "Tríceps Corda", "Face Pull no Cabo",
+    ],
+    muscles: ["Peito", "Variado"],
+    credit: "chaitanyak (Sketchfab)",
+  },
+
+  // ─── CORE (animados) ───────────────────────────────────────
+  {
+    sketchfabId: "1076a704673b4386966215962132cc51",
+    title: "Abdômen e Glúteos (Animado)",
+    titleEn: "Gym Abs-Glutes Animated",
+    matchExercises: [
+      "Abdominal Crunch", "Abdominal Declinado",
+      "Hoist Abdominal (ROC-IT)", "Nautilus Abdominal Crunch",
+      "Elevação de Quadril", "Elevação de Quadril com Elástico",
+    ],
+    muscles: ["Abdômen", "Glúteos"],
+    credit: "luismi93 (Sketchfab)",
+  },
+  {
+    sketchfabId: "c24d18ab0e194c629eb5df4ded145b15",
+    title: "Abdominal Bicicleta (Animado)",
+    titleEn: "Bicycle Crunch Exercise",
+    matchExercises: ["Abdominal Bicicleta", "Mountain Climber"],
+    muscles: ["Abdômen"],
+    credit: "chaitanyak (Sketchfab)",
+  },
+  {
+    sketchfabId: "bc935ce6fc7a44f1b51cd9ae8e7981e0",
+    title: "Twist Russo com Halter",
+    titleEn: "Dumbbell Russian Twist",
+    matchExercises: ["Twist Russo"],
+    muscles: ["Abdômen", "Oblíquos"],
+    credit: "luismi93 (Sketchfab)",
+  },
+  {
+    sketchfabId: "3c37d2298ca14c2093ef796a412c539d",
+    title: "Abdominal Reverso com Halter",
+    titleEn: "Dumbbell Reverse Crunches",
+    matchExercises: ["Elevação de Pernas Deitado", "Elevação de Joelhos na Barra"],
+    muscles: ["Abdômen"],
+    credit: "luismi93 (Sketchfab)",
+  },
+
+  // ─── AGACHAMENTO / TERRA (animados) ────────────────────────
+  {
+    sketchfabId: "66be0ea74eec428182a53214c47fc1fc",
+    title: "Agachamento e Levantamento Terra",
+    titleEn: "Gym Squats and Deadlift",
+    matchExercises: [
+      "Agachamento Livre", "Agachamento Frontal",
+      "Levantamento Terra", "Terra Sumô",
+    ],
+    muscles: ["Quadríceps", "Glúteos", "Posterior", "Costas"],
+    credit: "chaitanyak (Sketchfab)",
+  },
+  {
+    sketchfabId: "ec77d84940d2459ab71c8be5b74e1c16",
+    title: "Agachamento com Salto",
+    titleEn: "Squat Jump Exercise",
+    matchExercises: ["Agachamento Sumô", "Agachamento Goblet", "Burpee"],
+    muscles: ["Quadríceps", "Glúteos"],
+    credit: "amir.poorazima (Sketchfab)",
+  },
+
+  // ─── BARRA / HALTERES (animados) ──────────────────────────
+  {
+    sketchfabId: "ea6c656c83104c35ae0668c12b2fb9d4",
+    title: "Treino com Barra (Vários Exercícios)",
+    titleEn: "Barbells Workout Animation Bundle",
+    matchExercises: [
+      "Supino Reto com Barra", "Desenvolvimento com Barra",
+      "Rosca Direta com Barra", "Remada Curvada com Barra",
+      "Encolhimento com Barra",
+    ],
+    muscles: ["Variado"],
+    credit: "chaitanyak (Sketchfab)",
+  },
+
+  // ─── 5 EXERCÍCIOS (pacote animado) ────────────────────────
+  {
+    sketchfabId: "7b5abc01fd804bc7b53da6259234eaf6",
+    title: "5 Exercícios de Academia (Animado)",
+    titleEn: "Gym 5 Exercises Animated",
+    matchExercises: [
+      "Crucifixo com Halter", "Rosca Direta com Halter",
+      "Rosca Martelo", "Supino Inclinado com Halter",
+      "Hiperextensão",
+    ],
+    muscles: ["Peito", "Bíceps", "Lombar"],
+    credit: "luismi93 (Sketchfab)",
+  },
+
+  // ─── OMBROS (máquinas) ────────────────────────────────────
+  {
+    sketchfabId: "0d4e687bdbb24b5888ccfb72d296fa76",
+    title: "Treino de Academia (Geral)",
+    titleEn: "Gym Workout",
+    matchExercises: [
+      "Desenvolvimento na Máquina", "Hoist Shoulder Press (ROC-IT)",
+      "Hammer Strength Iso-Lateral Shoulder Press",
+      "Life Fitness Insignia Shoulder Press",
+      "Elevação Lateral na Máquina", "Hoist Lateral Raise (ROC-IT)",
+    ],
+    muscles: ["Ombros"],
+    credit: "luismi93 (Sketchfab)",
+  },
 ]
 
 /**
