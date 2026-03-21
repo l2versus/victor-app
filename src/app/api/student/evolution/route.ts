@@ -101,16 +101,39 @@ export async function GET() {
         template: s.template.name,
       }))
 
-    // ═══ 4. Volume trend (total reps × load per session) ═══
+    // ═══ 4. Volume trend (total reps × load per session) + breakdown by exercise ═══
     const volumeTrend = sessions.map((s) => {
       const volume = s.sets.reduce((acc, set) => acc + set.reps * set.loadKg, 0)
       const totalSets = s.sets.length
+
+      // Breakdown por exercício dentro da sessão
+      const exerciseBreakdown: { name: string; muscle: string; volume: number; sets: number; maxLoad: number }[] = []
+      const byExercise = new Map<string, typeof s.sets>()
+      for (const set of s.sets) {
+        if (!byExercise.has(set.exerciseId)) byExercise.set(set.exerciseId, [])
+        byExercise.get(set.exerciseId)!.push(set)
+      }
+      for (const [exId, sets] of byExercise) {
+        const ex = exerciseMap.get(exId)
+        if (!ex) continue
+        const exVol = sets.reduce((a, set) => a + set.reps * set.loadKg, 0)
+        const maxLoad = Math.max(...sets.map(set => set.loadKg))
+        exerciseBreakdown.push({
+          name: ex.name,
+          muscle: ex.muscle,
+          volume: Math.round(exVol),
+          sets: sets.length,
+          maxLoad,
+        })
+      }
+
       return {
         date: s.startedAt.toISOString().split("T")[0],
         volume: Math.round(volume),
         sets: totalSets,
         template: s.template.name,
         duration: s.durationMin,
+        exercises: exerciseBreakdown,
       }
     })
 

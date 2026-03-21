@@ -101,19 +101,21 @@ function Anatomy3DViewer() {
 
         <iframe
           title="Anatomia 3D — Musculos"
-          src="https://sketchfab.com/models/33162ec759e04d2985dbbdf4ec908d66/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark_link=0&ui_watermark=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=1&ui_stop=0&preload=1&transparent=1&camera=0"
+          src="https://sketchfab.com/models/33162ec759e04d2985dbbdf4ec908d66/embed?autostart=1&ui_theme=dark&ui_infos=0&ui_watermark_link=0&ui_watermark=0&ui_ar=0&ui_help=0&ui_settings=0&ui_vr=0&ui_fullscreen=0&ui_annotations=1&ui_stop=0&preload=1&transparent=1&camera=0&dnt=1&ui_controls=0"
           className="w-full h-full border-0"
           allow="autoplay; fullscreen; xr-spatial-tracking"
           onLoad={() => setLoaded(true)}
           loading="lazy"
         />
+        {/* Overlay to hide Sketchfab branding at bottom-left and top-right */}
+        <div className="absolute bottom-0 left-0 w-20 h-12 bg-gradient-to-r from-[#0a0a0a] to-transparent pointer-events-none" />
+        <div className="absolute top-0 right-0 w-24 h-10 bg-gradient-to-l from-[#0a0a0a] to-transparent pointer-events-none" />
       </div>
 
       {/* Hint */}
       <div className="px-4 py-2 border-t border-white/[0.04]">
-        <p className="text-[9px] text-neutral-600 text-center flex items-center justify-center gap-1.5">
-          <span className="inline-block w-4 h-4 rounded bg-white/[0.04] text-neutral-500 text-[8px] flex items-center justify-center">↻</span>
-          Arraste para rotacionar · Pinch para zoom · Toque nos nomes
+        <p className="text-[9px] text-neutral-600 text-center">
+          Arraste para rotacionar · Pinch para zoom · Toque nos musculos
         </p>
       </div>
     </div>
@@ -122,13 +124,26 @@ function Anatomy3DViewer() {
 
 /* ═══ Tooltip ═══ */
 function ChartTooltip({ active, payload, label, unit }: {
-  active?: boolean; payload?: Array<{ value: number }>; label?: string; unit?: string
+  active?: boolean; payload?: Array<{ value: number; payload?: Record<string, unknown> }>; label?: string; unit?: string
 }) {
   if (!active || !payload?.length) return null
+  const data = payload[0].payload as Record<string, unknown> | undefined
+  const exercises = data?.exercises as Array<{ name: string; volume: number; maxLoad: number; sets: number }> | undefined
+
   return (
-    <div className="rounded-lg bg-[#111]/95 backdrop-blur-xl border border-white/[0.08] px-2.5 py-1.5 shadow-2xl">
+    <div className="rounded-xl bg-[#111]/95 backdrop-blur-xl border border-white/[0.08] px-3 py-2 shadow-2xl max-w-[200px]">
       <p className="text-[9px] text-neutral-500">{label}</p>
-      <p className="text-xs font-bold text-white">{payload[0].value.toLocaleString("pt-BR")}{unit || ""}</p>
+      <p className="text-sm font-bold text-white">{payload[0].value.toLocaleString("pt-BR")}{unit || ""}</p>
+      {exercises && exercises.length > 0 && (
+        <div className="mt-1.5 pt-1.5 border-t border-white/[0.06] space-y-1">
+          {exercises.slice(0, 5).map((ex, i) => (
+            <div key={i} className="flex items-center justify-between gap-2">
+              <span className="text-[8px] text-neutral-400 truncate flex-1">{ex.name}</span>
+              <span className="text-[8px] text-white font-medium shrink-0">{ex.maxLoad}kg</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -183,7 +198,7 @@ export function EvolutionClient() {
     doc.open()
 
     const style = doc.createElement("style")
-    style.textContent = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0a;color:#e5e5e5;padding:32px}.header{background:linear-gradient(135deg,#1a0000,#0a0a0a);border:1px solid #dc2626;border-radius:16px;padding:24px;margin-bottom:24px}.header h1{font-size:24px;color:#fff;margin-bottom:4px}.header p{color:#737373;font-size:13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}.card{background:#111;border:1px solid #222;border-radius:12px;padding:16px;text-align:center}.card .val{font-size:24px;font-weight:900;color:#fff}.card .lbl{font-size:10px;color:#737373;text-transform:uppercase;letter-spacing:0.1em;margin-top:4px}h2{font-size:16px;color:#fff;margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid #dc2626}table{width:100%;border-collapse:collapse;background:#111;border-radius:12px;overflow:hidden;border:1px solid #222}td{padding:6px 12px;border-bottom:1px solid #222}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #dc2626;color:#525252;font-size:11px;text-align:center}@media print{body{background:#fff;color:#111}.header{background:#f5f5f5;border-color:#dc2626}.card{background:#f9f9f9;border-color:#e5e5e5}.card .val{color:#111}table{background:#f9f9f9;border-color:#e5e5e5}td{border-color:#e5e5e5!important}h2{color:#111}.footer{color:#999}}`
+    style.textContent = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0a;color:#e5e5e5;padding:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.header{background:linear-gradient(135deg,#1a0000,#0a0a0a);border:1px solid #dc2626;border-radius:16px;padding:24px;margin-bottom:24px}.header h1{font-size:24px;color:#fff;margin-bottom:4px}.header p{color:#737373;font-size:13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}.card{background:#111;border:1px solid #333;border-radius:12px;padding:16px;text-align:center}.card .val{font-size:24px;font-weight:900;color:#fff}.card .lbl{font-size:10px;color:#737373;text-transform:uppercase;letter-spacing:0.1em;margin-top:4px}h2{font-size:16px;color:#fff;margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid #dc2626}table{width:100%;border-collapse:collapse;background:#111;border-radius:12px;overflow:hidden;border:1px solid #333}td{padding:8px 12px;border-bottom:1px solid #222;font-size:14px}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #dc2626;color:#525252;font-size:11px;text-align:center}@media print{body{background:#0a0a0a!important;color:#e5e5e5!important}.header{background:#1a0000!important}.card{background:#111!important}.card .val{color:#fff!important}}`
     doc.head.appendChild(style)
     doc.title = "Evolucao — VO Personal"
 

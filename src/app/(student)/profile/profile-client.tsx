@@ -48,8 +48,13 @@ export function ProfileClient({ student, stats }: ProfileProps) {
     .slice(0, 2)
     .toUpperCase()
 
+  // IMC = peso(kg) / altura(m)². Height pode estar em metros (1.83) ou cm (183).
+  // Se height > 3, assume cm e divide por 100. Se <= 3, já está em metros.
   const bmi = student.weight && student.height
-    ? (student.weight / Math.pow(student.height / 100, 2)).toFixed(1)
+    ? (() => {
+        const heightM = student.height > 3 ? student.height / 100 : student.height
+        return (student.weight / (heightM * heightM)).toFixed(1)
+      })()
     : null
 
   const genderLabels: Record<string, string> = {
