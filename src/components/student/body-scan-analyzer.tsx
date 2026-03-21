@@ -43,7 +43,8 @@ interface Ratios {
 }
 
 type BodyShape = "V_SHAPE" | "TRAPEZOID" | "X_SHAPE" | "RECTANGLE" | "PEAR"
-type Step = "camera" | "result"
+type Step = "camera_front" | "camera_side" | "result"
+type ScanPhase = "front" | "side"
 
 // ─── Body shape data ──────────────────────────────────────────────────────────
 
@@ -199,7 +200,8 @@ function RatioBar({ label, value, ideal }: { label: string; value: number; ideal
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export function BodyScanAnalyzer() {
-  const [step, setStep] = useState<Step>("camera")
+  const [step, setStep] = useState<Step>("camera_front")
+  const [scanPhase, setScanPhase] = useState<ScanPhase>("front")
   const [cameraState, setCameraState] = useState<"idle" | "loading" | "active" | "error">("idle")
   const [errorMsg, setErrorMsg] = useState("")
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment")
@@ -446,7 +448,7 @@ export function BodyScanAnalyzer() {
   }
 
   function reset() {
-    setStep("camera")
+    setStep("camera_front"); setScanPhase("front")
     setCameraState("idle")
     setMeasurements(null)
     setRatios(null)
@@ -576,13 +578,27 @@ export function BodyScanAnalyzer() {
       })()}
 
       {/* ─ CAMERA VIEW ─ */}
-      {step === "camera" && (
+      {(step === "camera_front" || step === "camera_side") && (
         <>
-          {/* Guide tip */}
-          <div className="bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 flex items-start gap-2">
-            <ChevronRight className="w-4 h-4 text-red-400 shrink-0 mt-0.5" />
-            <p className="text-xs text-neutral-400 leading-relaxed">
-              Fique em pé a ~2m da câmera. Corpo inteiro visível. Roupas ajustadas para melhor precisão.
+          {/* Guide tip — changes based on scan phase */}
+          <div className="bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className={cn(
+                "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
+                step === "camera_front"
+                  ? "bg-red-600/15 text-red-400"
+                  : "bg-blue-600/15 text-blue-400"
+              )}>
+                {step === "camera_front" ? "📸 Foto 1 de 2" : "📸 Foto 2 de 2"}
+              </span>
+              <span className="text-xs font-semibold text-white">
+                {step === "camera_front" ? "Posição frontal" : "Posição lateral"}
+              </span>
+            </div>
+            <p className="text-[11px] text-neutral-400 leading-relaxed">
+              {step === "camera_front"
+                ? "Fique de FRENTE para a câmera. Corpo inteiro visível, braços levemente afastados, a ~2m."
+                : "Agora fique de LADO (perfil). Mesma distância, corpo reto, braços naturais."}
             </p>
           </div>
 

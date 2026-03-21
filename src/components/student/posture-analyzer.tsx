@@ -15,6 +15,7 @@ import {
   Zap,
   Info,
   SwitchCamera,
+  Save,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -125,10 +126,8 @@ export function PostureAnalyzer() {
       setState("idle")
       setFeedback([])
       setFps(0)
-      // Show replay if there were errors during the session
-      if (feedbackHistory.length > 0) {
-        setShowReplay(true)
-      }
+      // Always show replay when analysis stops — video is always recorded
+      setShowReplay(true)
     }
   }, [])
 
@@ -664,16 +663,34 @@ export function PostureAnalyzer() {
         </div>
       )}
 
-      {/* ─── REPLAY — Post-exercise feedback summary ─── */}
-      {showReplay && feedbackHistory.length > 0 && state === "idle" && (
-        <div className="rounded-2xl border border-amber-500/20 bg-amber-600/[0.06] overflow-hidden">
-          <div className="px-4 py-3 flex items-center justify-between border-b border-amber-500/10">
+      {/* ─── REPLAY — Video + feedback (always shows after analysis stops) ─── */}
+      {showReplay && state === "idle" && (recordedVideoUrl || feedbackHistory.length > 0) && (
+        <div className={cn(
+          "rounded-2xl border overflow-hidden",
+          feedbackHistory.length > 0
+            ? "border-amber-500/20 bg-amber-600/[0.06]"
+            : "border-emerald-500/20 bg-emerald-600/[0.06]"
+        )}>
+          {/* Header */}
+          <div className={cn(
+            "px-4 py-3 flex items-center justify-between border-b",
+            feedbackHistory.length > 0 ? "border-amber-500/10" : "border-emerald-500/10"
+          )}>
             <div className="flex items-center gap-2">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
-              <span className="text-sm font-semibold text-amber-300">Correções da sessão</span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
-                {feedbackHistory.length} momentos
-              </span>
+              {feedbackHistory.length > 0 ? (
+                <>
+                  <AlertTriangle className="w-4 h-4 text-amber-400" />
+                  <span className="text-sm font-semibold text-amber-300">Correções da sessão</span>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/15 text-amber-400 font-medium">
+                    {feedbackHistory.length} pontos
+                  </span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-semibold text-emerald-300">Execução correta!</span>
+                </>
+              )}
             </div>
             <button
               onClick={() => setShowReplay(false)}
@@ -682,43 +699,66 @@ export function PostureAnalyzer() {
               Fechar
             </button>
           </div>
-          {/* Video replay player */}
+
+          {/* Video player — ALWAYS visible when recorded */}
           {recordedVideoUrl && (
-            <div className="p-3 border-b border-amber-500/10">
+            <div className="p-3 space-y-2">
               <video
                 src={recordedVideoUrl}
                 controls
                 playsInline
                 className="w-full rounded-xl bg-black"
-                style={{ maxHeight: "240px" }}
+                style={{ maxHeight: "280px" }}
               />
-              <p className="text-[9px] text-neutral-600 text-center mt-1">Assista sua execucao e compare com as correcoes abaixo</p>
+              {/* Save + share buttons */}
+              <div className="flex gap-2">
+                <a
+                  href={recordedVideoUrl}
+                  download={`postura-${selectedExercise.name.replace(/\s/g, "-")}-${new Date().toISOString().slice(0, 10)}.webm`}
+                  className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-xs font-medium text-white hover:bg-white/[0.1] active:scale-[0.97] transition-all"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  Salvar vídeo
+                </a>
+                <button
+                  onClick={() => { setShowReplay(false); setRecordedVideoUrl(null) }}
+                  className="px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-neutral-500 hover:bg-white/[0.06] transition-all"
+                >
+                  Descartar
+                </button>
+              </div>
             </div>
           )}
-          <div className="max-h-64 overflow-y-auto divide-y divide-amber-500/10">
-            {feedbackHistory.map((entry, i) => (
-              <div key={i} className="px-4 py-2.5">
-                <p className="text-[10px] text-amber-400/60 font-mono mb-1">
-                  ⏱ {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, "0")}
-                </p>
-                {entry.items.map((fb, j) => (
-                  <div key={j} className="flex items-start gap-2 mt-1">
-                    {fb.status === "error" ? (
-                      <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertTriangle className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
-                    )}
-                    <p className="text-xs text-neutral-300">{fb.message}</p>
+
+          {/* Error timeline (only if there were errors) */}
+          {feedbackHistory.length > 0 && (
+            <>
+              <div className="max-h-48 overflow-y-auto divide-y divide-amber-500/10">
+                {feedbackHistory.map((entry, i) => (
+                  <div key={i} className="px-4 py-2.5">
+                    <p className="text-[10px] text-amber-400/60 font-mono mb-1">
+                      ⏱ {Math.floor(entry.time / 60)}:{(entry.time % 60).toString().padStart(2, "0")}
+                    </p>
+                    {entry.items.map((fb, j) => (
+                      <div key={j} className="flex items-start gap-2 mt-1">
+                        {fb.status === "error" ? (
+                          <XCircle className="w-3.5 h-3.5 text-red-400 shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertTriangle className="w-3.5 h-3.5 text-yellow-400 shrink-0 mt-0.5" />
+                        )}
+                        <p className="text-xs text-neutral-300">{fb.message}</p>
+                      </div>
+                    ))}
                   </div>
                 ))}
               </div>
-            ))}
-          </div>
-          <div className="px-4 py-2.5 border-t border-amber-500/10 bg-amber-600/[0.03]">
-            <p className="text-[10px] text-neutral-500 text-center">
-              Revise os pontos acima antes da proxima serie • Nao salvo automaticamente
-            </p>
-          </div>
+              <div className="px-4 py-2 border-t border-amber-500/10 bg-amber-600/[0.03]">
+                <p className="text-[10px] text-neutral-500 text-center">
+                  Revise antes da proxima serie
+                </p>
+              </div>
+            </>
+          )}
         </div>
       )}
 
