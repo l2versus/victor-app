@@ -18,6 +18,13 @@ const BodyScanAnalyzer = dynamic(
   }
 )
 
-export function BodyScanLoader() {
-  return <BodyScanAnalyzer />
+interface BodyScanLoaderProps {
+  weight?: number
+  height?: number
+  gender?: string
+  birthDate?: string
+}
+
+export function BodyScanLoader(props: BodyScanLoaderProps) {
+  return <BodyScanAnalyzer {...props} />
 }

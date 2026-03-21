@@ -208,7 +208,12 @@ export default async function BodyScanPage() {
           <Scan className="w-3.5 h-3.5" />
           {latestScan ? "Novo scan" : "Primeiro scan"}
         </p>
-        <BodyScanLoader />
+        <BodyScanLoader
+          weight={student.weight ?? undefined}
+          height={student.height ?? undefined}
+          gender={student.gender ?? undefined}
+          birthDate={student.birthDate?.toISOString() ?? undefined}
+        />
       </div>
 
       {/* ── History ───────────────────────────────────────────────────────── */}

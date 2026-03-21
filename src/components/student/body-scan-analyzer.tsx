@@ -214,7 +214,62 @@ function RatioBar({ label, value, ideal }: { label: string; value: number; ideal
 
 // ─── Main component ───────────────────────────────────────────────────────────
 
-export function BodyScanAnalyzer() {
+// ─── Body Fat % Estimation ──────────────────────────────────────────────────
+
+interface BodyFatResult {
+  deurenberg: number | null
+  navy: number | null
+  average: number | null
+  bmi: number | null
+  category: string
+}
+
+function estimateBodyFat(opts: {
+  weight?: number; height?: number; gender?: string; birthDate?: string
+  waistHipRatio?: number
+}): BodyFatResult {
+  const { weight, height, gender, birthDate, waistHipRatio } = opts
+  if (!weight || !height) return { deurenberg: null, navy: null, average: null, bmi: null, category: "Dados insuficientes" }
+
+  const heightM = height > 3 ? height / 100 : height
+  const bmi = weight / (heightM * heightM)
+  const isMale = gender === "MALE" || gender === "Masculino"
+  const sex = isMale ? 1 : 0
+
+  // Age
+  let age = 30 // default
+  if (birthDate) {
+    const bd = new Date(birthDate)
+    const now = new Date()
+    age = now.getFullYear() - bd.getFullYear()
+    if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--
+  }
+
+  // 1. Deurenberg (1991): BF% = 1.20 × BMI + 0.23 × Age − 10.8 × Sex − 5.4
+  const deurenberg = Math.round((1.20 * bmi + 0.23 * age - 10.8 * sex - 5.4) * 10) / 10
+
+  // 2. Navy-adapted: uses waist/hip ratio as proxy
+  // Simplified: BF% = (1.61 × BMI) + (0.13 × Age) − (12.1 × Sex) − 13.9 + (waistHip correction)
+  // The waistHip ratio adds/subtracts: high ratio = more visceral fat
+  const whCorrection = waistHipRatio ? (waistHipRatio - 0.80) * 15 : 0
+  const navy = Math.round(((1.61 * bmi + 0.13 * age - 12.1 * sex - 13.9) + whCorrection) * 10) / 10
+
+  const avg = Math.round(((deurenberg + navy) / 2) * 10) / 10
+
+  // Category
+  let category: string
+  if (isMale) {
+    category = avg < 6 ? "Essencial" : avg < 14 ? "Atlético" : avg < 18 ? "Fitness" : avg < 25 ? "Normal" : "Acima"
+  } else {
+    category = avg < 14 ? "Essencial" : avg < 21 ? "Atlético" : avg < 25 ? "Fitness" : avg < 32 ? "Normal" : "Acima"
+  }
+
+  return { deurenberg, navy, average: avg, bmi: Math.round(bmi * 10) / 10, category }
+}
+
+export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
+  weight?: number; height?: number; gender?: string; birthDate?: string
+}) {
   const [step, setStep] = useState<Step>("camera_front")
   const [scanPhase, setScanPhase] = useState<ScanPhase>("front")
   const [cameraState, setCameraState] = useState<"idle" | "loading" | "active" | "error">("idle")
@@ -541,6 +596,45 @@ export function BodyScanAnalyzer() {
                 )}
               </div>
             </div>
+
+            {/* Body Fat + IMC card */}
+            {(() => {
+              const bf = estimateBodyFat({ weight, height, gender, birthDate, waistHipRatio: ratios.waistHip })
+              if (!bf.average) return null
+              const bfColor = bf.category === "Atlético" ? "text-emerald-400"
+                : bf.category === "Fitness" ? "text-blue-400"
+                : bf.category === "Normal" ? "text-amber-400"
+                : bf.category === "Acima" ? "text-red-400"
+                : "text-purple-400"
+              return (
+                <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                  <p className="text-xs font-semibold text-neutral-400 flex items-center gap-1.5 mb-3">
+                    <Activity className="w-3.5 h-3.5" />
+                    Composição corporal estimada
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="text-center p-2 rounded-xl bg-white/[0.03]">
+                      <p className="text-lg font-black text-white">{bf.average}%</p>
+                      <p className="text-[8px] text-neutral-500 uppercase tracking-wider">Gordura</p>
+                      <p className={cn("text-[9px] font-semibold mt-0.5", bfColor)}>{bf.category}</p>
+                    </div>
+                    <div className="text-center p-2 rounded-xl bg-white/[0.03]">
+                      <p className="text-lg font-black text-white">{bf.bmi}</p>
+                      <p className="text-[8px] text-neutral-500 uppercase tracking-wider">IMC</p>
+                      <p className="text-[9px] text-neutral-600 mt-0.5">{weight}kg</p>
+                    </div>
+                    <div className="text-center p-2 rounded-xl bg-white/[0.03]">
+                      <p className="text-lg font-black text-white">{Math.round(weight! * (1 - bf.average! / 100))}kg</p>
+                      <p className="text-[8px] text-neutral-500 uppercase tracking-wider">Massa magra</p>
+                      <p className="text-[9px] text-neutral-600 mt-0.5">estimada</p>
+                    </div>
+                  </div>
+                  <p className="text-[8px] text-neutral-700 text-center mt-2">
+                    Deurenberg ({bf.deurenberg}%) + Navy adaptado ({bf.navy}%) · Para precisão use bioimpedância
+                  </p>
+                </div>
+              )
+            })()}
 
             {/* Ratios */}
             <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 space-y-3.5">
