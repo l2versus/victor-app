@@ -48,7 +48,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
       {/* Sidebar ember glow */}
       <div className="absolute top-0 right-0 w-32 h-64 bg-gradient-to-l from-red-600/[0.03] to-transparent pointer-events-none" />
       {/* Logo — Titanium */}
-      <Link href="/admin/dashboard" className="block px-7 py-8 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
+      <Link href="/" className="block px-7 py-8 border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors">
         <div className="flex items-center gap-3.5">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white font-semibold text-base tracking-tight shadow-lg shadow-red-600/20">
             V
