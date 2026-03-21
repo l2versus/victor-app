@@ -49,26 +49,7 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
     muscles: ["Peito"],
     credit: "Mike - Modelo Muscular 3D",
   },
-  {
-    sketchfabId: "62dumbbell-flys-id",
-    title: "Crucifixo com Halter",
-    titleEn: "Dumbbell Flys",
-    matchExercises: [
-      "Crucifixo com Halter", "Crucifixo Inclinado", "Crucifixo Declinado",
-    ],
-    muscles: ["Peito"],
-    credit: "Mike - Modelo Muscular 3D (coleção Fitness)",
-  },
-  {
-    sketchfabId: "60cable-crossover-id",
-    title: "Crossover no Cabo",
-    titleEn: "Cable Crossover",
-    matchExercises: [
-      "Crossover no Cabo", "Crossover Baixo",
-    ],
-    muscles: ["Peito"],
-    credit: "Mike - Modelo Muscular 3D (coleção Fitness)",
-  },
+  // Crucifixo e Crossover — aguardando IDs reais do Sketchfab
 
   // ═══ COSTAS ═══
   {
@@ -235,17 +216,7 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
     muscles: ["Quadríceps", "Glúteos", "Posterior"],
     credit: "Mike - Modelo Muscular 3D",
   },
-  {
-    sketchfabId: "plate-loaded-leg-extension-id",
-    title: "Cadeira Extensora",
-    titleEn: "Plate Loaded Leg Extension",
-    matchExercises: [
-      "Cadeira Extensora", "Hammer Strength Iso-Lateral Leg Extension",
-      "Hoist Leg Extension", "Cybex Prestige VRS Leg Extension",
-    ],
-    muscles: ["Quadríceps"],
-    credit: "Mike - Modelo Muscular 3D",
-  },
+  // Cadeira Extensora — aguardando ID real do Sketchfab
 
   // ═══ GLÚTEOS ═══
   {
@@ -260,14 +231,7 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
     muscles: ["Glúteos", "Posterior"],
     credit: "Mike - Modelo Muscular 3D",
   },
-  {
-    sketchfabId: "hip-hyperextension-id",
-    title: "Hiperextensão para Glúteos",
-    titleEn: "Hip Hyperextension",
-    matchExercises: ["Glute-Ham Raise", "Hiperextensão"],
-    muscles: ["Glúteos", "Posterior", "Lombar"],
-    credit: "Mike - Modelo Muscular 3D",
-  },
+  // Hiperextensão — aguardando ID real do Sketchfab
 
   // ═══ ADUTORES / ABDUTORES ═══
   {
@@ -324,16 +288,7 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
   },
 
   // ═══ FLEXÃO ═══
-  {
-    sketchfabId: "close-grip-pushup-id",
-    title: "Flexão Fechada",
-    titleEn: "Close Grip Push Up",
-    matchExercises: [
-      "Flexão de Braço", "Flexão Diamante", "Flexão Inclinada", "Flexão com Déficit",
-    ],
-    muscles: ["Peito", "Tríceps"],
-    credit: "Mike - Modelo Muscular 3D (coleção Fitness)",
-  },
+  // Flexão — aguardando ID real do Sketchfab
 
   // ═══ PARALELAS ═══
   {
@@ -361,16 +316,7 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
   },
 
   // ═══ REMADA UNILATERAL ═══
-  {
-    sketchfabId: "single-arm-row-id",
-    title: "Remada Unilateral",
-    titleEn: "Single Arm Row",
-    matchExercises: [
-      "Remada Unilateral com Halter", "Meadows Row",
-    ],
-    muscles: ["Costas", "Bíceps"],
-    credit: "Mike - Modelo Muscular 3D (coleção Fitness)",
-  },
+  // Remada Unilateral — aguardando ID real do Sketchfab
 ]
 
 /**
