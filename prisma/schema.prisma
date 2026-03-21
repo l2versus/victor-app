@@ -126,6 +126,8 @@ model Exercise {
   equipment    String
   gifUrl       String?
   videoUrl     String?
+  imageUrl     String?   /// Foto da máquina (link externo: Imgur, Google Drive, etc)
+  machineBrand String?   /// Marca/modelo da máquina (ex: "Hammer Strength Iso-Lateral")
   instructions String?
   isCustom     Boolean @default(false)
 

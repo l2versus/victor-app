@@ -14,6 +14,8 @@ type Exercise = {
   instructions: string | null
   gifUrl: string | null
   videoUrl: string | null
+  imageUrl: string | null
+  machineBrand: string | null
   isCustom: boolean
 }
 
@@ -48,7 +50,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
   const [showForm, setShowForm] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
-  const [editMedia, setEditMedia] = useState({ gifUrl: "", videoUrl: "" })
+  const [editMedia, setEditMedia] = useState({ gifUrl: "", videoUrl: "", imageUrl: "", machineBrand: "" })
   const [savingMedia, setSavingMedia] = useState(false)
 
   const fetchExercises = useCallback(async (s: string, m: string, p: number) => {
@@ -254,7 +256,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                           {exs.map((ex) => (
                             <button
                               key={ex.id}
-                              onClick={() => { setSelectedExercise(ex); setEditMedia({ gifUrl: ex.gifUrl || "", videoUrl: ex.videoUrl || "" }) }}
+                              onClick={() => { setSelectedExercise(ex); setEditMedia({ gifUrl: ex.gifUrl || "", videoUrl: ex.videoUrl || "", imageUrl: ex.imageUrl || "", machineBrand: ex.machineBrand || "" }) }}
                               className="group/item flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors w-full text-left cursor-pointer"
                             >
                               {/* Thumbnail */}
@@ -366,10 +368,60 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
               {/* Edit media form */}
               <div className="border-t border-white/[0.06] pt-4 space-y-3">
                 <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5">
-                  <Pencil className="w-3 h-3" /> Editar Mídia
+                  <Pencil className="w-3 h-3" /> Editar Exercício
                 </p>
+
+                {/* Marca da máquina — dropdown com marcas da Ironberg */}
                 <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">URL da Imagem / GIF</label>
+                  <label className="text-xs text-neutral-500 mb-1 block">Marca da máquina</label>
+                  <select
+                    value={editMedia.machineBrand}
+                    onChange={e => setEditMedia({ ...editMedia, machineBrand: e.target.value })}
+                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none focus:border-red-500/30"
+                  >
+                    <option value="">Sem máquina específica</option>
+                    <option value="Hammer Strength">Hammer Strength</option>
+                    <option value="Hoist ROC-IT">Hoist ROC-IT</option>
+                    <option value="Nautilus">Nautilus</option>
+                    <option value="Life Fitness">Life Fitness</option>
+                    <option value="Life Fitness Insignia">Life Fitness Insignia</option>
+                    <option value="Cybex Prestige">Cybex Prestige</option>
+                    <option value="Matrix">Matrix</option>
+                    <option value="ICG">ICG</option>
+                    <option value="Barra livre">Barra livre</option>
+                    <option value="Halter">Halter</option>
+                    <option value="Cabo">Cabo</option>
+                    <option value="Peso corporal">Peso corporal</option>
+                  </select>
+                </div>
+
+                {/* Foto da máquina */}
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Foto da máquina (link)</label>
+                  <input
+                    value={editMedia.imageUrl}
+                    onChange={e => setEditMedia({ ...editMedia, imageUrl: e.target.value })}
+                    placeholder="https://link-da-foto.com/maquina.jpg"
+                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
+                  />
+                  <p className="text-[9px] text-neutral-600 mt-1">Tire a foto → suba pro Google Drive ou Imgur → cole o link</p>
+                </div>
+
+                {/* Vídeo */}
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Vídeo do exercício (YouTube)</label>
+                  <input
+                    value={editMedia.videoUrl}
+                    onChange={e => setEditMedia({ ...editMedia, videoUrl: e.target.value })}
+                    placeholder="https://youtube.com/watch?v=..."
+                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
+                  />
+                  <p className="text-[9px] text-neutral-600 mt-1">Filme o exercício → suba pro YouTube (não listado) → cole o link</p>
+                </div>
+
+                {/* GIF */}
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">GIF animado (opcional)</label>
                   <input
                     value={editMedia.gifUrl}
                     onChange={e => setEditMedia({ ...editMedia, gifUrl: e.target.value })}
@@ -377,15 +429,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                     className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
                   />
                 </div>
-                <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">URL do Vídeo (YouTube)</label>
-                  <input
-                    value={editMedia.videoUrl}
-                    onChange={e => setEditMedia({ ...editMedia, videoUrl: e.target.value })}
-                    placeholder="https://youtube.com/watch?v=..."
-                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
-                  />
-                </div>
+
                 <button
                   onClick={async () => {
                     setSavingMedia(true)
@@ -393,11 +437,22 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                       const res = await fetch(`/api/admin/exercises?id=${selectedExercise.id}`, {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ gifUrl: editMedia.gifUrl || null, videoUrl: editMedia.videoUrl || null }),
+                        body: JSON.stringify({
+                          gifUrl: editMedia.gifUrl || null,
+                          videoUrl: editMedia.videoUrl || null,
+                          imageUrl: editMedia.imageUrl || null,
+                          machineBrand: editMedia.machineBrand || null,
+                        }),
                       })
                       if (res.ok) {
                         setExercises(prev => prev.map(ex =>
-                          ex.id === selectedExercise.id ? { ...ex, gifUrl: editMedia.gifUrl || null, videoUrl: editMedia.videoUrl || null } : ex
+                          ex.id === selectedExercise.id ? {
+                            ...ex,
+                            gifUrl: editMedia.gifUrl || null,
+                            videoUrl: editMedia.videoUrl || null,
+                            imageUrl: editMedia.imageUrl || null,
+                            machineBrand: editMedia.machineBrand || null,
+                          } : ex
                         ))
                         setSelectedExercise(null)
                       }
@@ -406,7 +461,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                   disabled={savingMedia}
                   className="w-full py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 transition-all disabled:opacity-50"
                 >
-                  {savingMedia ? "Salvando..." : "Salvar Mídia"}
+                  {savingMedia ? "Salvando..." : "Salvar"}
                 </button>
               </div>
             </div>

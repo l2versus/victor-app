@@ -14,6 +14,8 @@ interface Exercise {
   equipment: string
   instructions: string | null
   videoUrl: string | null
+  imageUrl: string | null
+  machineBrand: string | null
 }
 
 interface ExerciseLibraryProps {
@@ -144,7 +146,9 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-white truncate">{ex.name}</p>
-                        <p className="text-[10px] text-neutral-600">{ex.equipment}</p>
+                        <p className="text-[10px] text-neutral-600">
+                          {ex.machineBrand ? `${ex.machineBrand} · ` : ""}{ex.equipment}
+                        </p>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
                         {has3D && (
@@ -160,6 +164,24 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
                     {/* Expanded content */}
                     {isExpanded && (
                       <div className="px-3 pb-3 space-y-3 border-t border-white/[0.04] pt-3">
+                        {/* Machine photo */}
+                        {ex.imageUrl && (
+                          <img
+                            src={ex.imageUrl}
+                            alt={ex.machineBrand || ex.name}
+                            className="w-full rounded-xl object-cover max-h-48 bg-neutral-900"
+                            loading="lazy"
+                          />
+                        )}
+
+                        {/* Machine brand badge */}
+                        {ex.machineBrand && (
+                          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                            <span className="text-[9px] text-neutral-500 uppercase tracking-wider">Máquina:</span>
+                            <span className="text-xs font-semibold text-white">{ex.machineBrand}</span>
+                          </div>
+                        )}
+
                         {/* Instructions */}
                         {ex.instructions && (
                           <div className="flex items-start gap-2">

@@ -107,6 +107,8 @@ export async function PATCH(req: NextRequest) {
       data: {
         gifUrl: body.gifUrl ?? undefined,
         videoUrl: body.videoUrl ?? undefined,
+        imageUrl: body.imageUrl ?? undefined,
+        machineBrand: body.machineBrand ?? undefined,
       },
     })
 
