@@ -1,10 +1,12 @@
-// Victor App — Service Worker v3
-const CACHE_NAME = "vo-app-v3"
-const PRECACHE_URLS = ["/", "/login", "/today"]
+// Victor App — Service Worker v4
+const CACHE_NAME = "vo-app-v4"
 
 self.addEventListener("install", (event) => {
+  // Only precache truly static assets — skip pages that may redirect (auth)
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(PRECACHE_URLS))
+    caches.open(CACHE_NAME).then((cache) =>
+      cache.addAll(["/login"]).catch(() => {/* ignore precache failures on iOS */})
+    )
   )
   self.skipWaiting()
 })

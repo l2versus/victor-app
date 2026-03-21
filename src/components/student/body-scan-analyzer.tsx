@@ -128,16 +128,31 @@ function calcMeasurements(lm: Landmark[], w: number, h: number): Measurements {
   const rawShoulderPx = dist(lm[11], lm[12], w, h)
   const rawHipPx = dist(lm[23], lm[24], w, h)
 
-  // Multiplicadores de correção (articulação → contorno real)
-  const SHOULDER_CORRECTION = 1.08  // deltóides adicionam ~8%
-  const HIP_CORRECTION = 1.40       // glúteos/tecido adicionam ~40%
+  // ═══ MULTIPLICADORES ADAPTATIVOS ═══
+  // MediaPipe mede articulações (esqueleto), não silhueta.
+  // O hip é o mais afetado: articulação coxofemoral fica MUITO interna.
+  // A correção varia por biótipo: se rawRatio > 1.5, pessoa tem ombros
+  // desproporcionalmente largos vs pelve → hip precisa de mais correção.
+  const rawRatio = rawShoulderPx / rawHipPx
+
+  // Ombros: deltóides adicionam ~8-12% além da glenoumeral
+  const SHOULDER_CORRECTION = 1.08
+
+  // Quadril: adaptativo — quanto mais "esquelético" o ratio, mais correção
+  // Ratio < 1.3: pessoa com quadril proporcional → ×1.50 (mais volume externo)
+  // Ratio 1.3-1.6: intermediário → ×1.45
+  // Ratio > 1.6: ombros muito largos vs pelve → ×1.55 (pelve fina, muito tecido externo)
+  const HIP_CORRECTION = rawRatio < 1.3 ? 1.50
+    : rawRatio < 1.6 ? 1.45
+    : 1.55
 
   const shoulderPx = rawShoulderPx * SHOULDER_CORRECTION
   const hipPx = rawHipPx * HIP_CORRECTION
 
-  // Cintura: estimar pela posição Y (40% entre ombro e quadril) e proporção do tronco
-  // Usa a média ponderada das larguras corrigidas como base
-  const waistPx = Math.min(shoulderPx, hipPx) * 0.82
+  // Cintura: ponto mais estreito do tronco (~75-85% do menor entre ombro/hip corrigido)
+  // Pessoas com ombros proporcionais ao quadril tendem a ter cintura mais marcada
+  const waistRatio = rawRatio < 1.3 ? 0.78 : 0.82
+  const waistPx = Math.min(shoulderPx, hipPx) * waistRatio
 
   const shoulderY = (lm[11].y + lm[12].y) / 2
   const hipY = (lm[23].y + lm[24].y) / 2

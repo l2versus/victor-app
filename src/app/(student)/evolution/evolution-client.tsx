@@ -107,9 +107,10 @@ function Anatomy3DViewer() {
           onLoad={() => setLoaded(true)}
           loading="lazy"
         />
-        {/* Overlay to hide Sketchfab branding at bottom-left and top-right */}
-        <div className="absolute bottom-0 left-0 w-20 h-12 bg-gradient-to-r from-[#0a0a0a] to-transparent pointer-events-none" />
-        <div className="absolute top-0 right-0 w-24 h-10 bg-gradient-to-l from-[#0a0a0a] to-transparent pointer-events-none" />
+        {/* Overlays to cover Sketchfab branding (logo, buy, share buttons) */}
+        <div className="absolute bottom-0 left-0 w-28 h-16 bg-[#0a0a0a] pointer-events-none z-10" />
+        <div className="absolute top-0 right-0 w-28 h-12 bg-[#0a0a0a] pointer-events-none z-10" />
+        <div className="absolute top-0 left-0 w-16 h-12 bg-[#0a0a0a] pointer-events-none z-10" />
       </div>
 
       {/* Hint */}
