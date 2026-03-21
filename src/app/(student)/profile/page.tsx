@@ -16,13 +16,19 @@ export default async function ProfilePage() {
   const student = await prisma.student.findUnique({
     where: { userId: session.userId },
     include: {
-      user: { select: { name: true, email: true, phone: true, avatar: true, createdAt: true } },
+      user: {
+        select: {
+          name: true, email: true, phone: true, avatar: true, createdAt: true,
+          birthDate: true,
+          addressStreet: true, addressNumber: true, addressComp: true,
+          addressNeighborhood: true, addressCity: true, addressState: true, addressZip: true,
+        },
+      },
     },
   })
 
   if (!student) redirect("/login")
 
-  // Aggregate stats
   const [totalSessions, rpeAgg, lastSession] = await Promise.all([
     prisma.workoutSession.count({
       where: { studentId: student.id, completedAt: { not: null } },
@@ -45,13 +51,22 @@ export default async function ProfilePage() {
         name: student.user.name,
         email: student.user.email,
         phone: student.user.phone,
-        birthDate: student.birthDate?.toISOString() || null,
+        birthDate: (student.birthDate || student.user.birthDate)?.toISOString() || null,
         gender: student.gender,
         weight: student.weight,
         height: student.height,
         goals: student.goals,
         restrictions: student.restrictions as string | null,
         memberSince: student.user.createdAt.toISOString(),
+        address: {
+          street: student.user.addressStreet,
+          number: student.user.addressNumber,
+          comp: student.user.addressComp,
+          neighborhood: student.user.addressNeighborhood,
+          city: student.user.addressCity,
+          state: student.user.addressState,
+          zip: student.user.addressZip,
+        },
       }}
       stats={{
         totalSessions,

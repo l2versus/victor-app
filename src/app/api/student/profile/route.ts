@@ -70,18 +70,39 @@ export async function PATCH(req: NextRequest) {
     const { student } = await requireStudent()
     const body = await req.json()
 
-    const allowedFields = ["phone", "weight", "height"]
+    // Campos do Student
+    const studentFields = ["weight", "height", "birthDate", "gender", "goals"]
     const updateData: Record<string, unknown> = {}
-    const userUpdateData: Record<string, unknown> = {}
 
-    for (const key of allowedFields) {
+    for (const key of studentFields) {
       if (body[key] !== undefined) {
-        if (key === "phone") {
-          userUpdateData[key] = body[key]
-        } else {
+        if (key === "weight" || key === "height") {
           updateData[key] = body[key] ? parseFloat(body[key]) : null
+        } else if (key === "birthDate") {
+          updateData[key] = body[key] ? new Date(body[key]) : null
+        } else {
+          updateData[key] = body[key] || null
         }
       }
+    }
+
+    // Campos do User (dados pessoais + endereço)
+    const userFields = [
+      "name", "phone",
+      "addressStreet", "addressNumber", "addressComp",
+      "addressNeighborhood", "addressCity", "addressState", "addressZip",
+    ]
+    const userUpdateData: Record<string, unknown> = {}
+
+    for (const key of userFields) {
+      if (body[key] !== undefined) {
+        userUpdateData[key] = body[key] || null
+      }
+    }
+
+    // name é obrigatório — não pode ser null
+    if (userUpdateData.name === null) {
+      return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
     }
 
     const [updatedStudent] = await Promise.all([
