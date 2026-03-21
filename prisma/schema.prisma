@@ -540,6 +540,8 @@ model DirectMessage {
   receiverId String
   content    String
   readAt     DateTime?
+  /// Canal: APP (padrão), WHATSAPP (do aluno), WHATSAPP_BOT (resposta automática)
+  channel    String    @default("APP")
 
   sender   User @relation("MessageSender", fields: [senderId], references: [id])
   receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
