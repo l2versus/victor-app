@@ -569,7 +569,7 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-0.5">Formato corporal</p>
                 <p className={cn("font-bold text-sm leading-tight", info.color)}>{info.label}</p>
-                <p className="text-[10px] text-neutral-600 mt-0.5">MediaPipe Pose · 33 pontos</p>
+                <p className="text-[10px] text-neutral-600 mt-0.5">IA Victor · Análise corporal</p>
               </div>
             </div>
 

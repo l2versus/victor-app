@@ -38,7 +38,7 @@ export default async function PosturePage() {
             <ul className="text-sm text-neutral-400 space-y-2 text-left">
               <li className="flex items-start gap-2">
                 <Eye className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
-                <span>33 pontos do corpo detectados em tempo real pela IA</span>
+                <span>Análise corporal com IA em tempo real pelo Victor App</span>
               </li>
               <li className="flex items-start gap-2">
                 <Activity className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />

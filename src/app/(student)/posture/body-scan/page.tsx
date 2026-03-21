@@ -66,7 +66,7 @@ export default async function BodyScanPage() {
           </div>
           <div className="bg-amber-600/10 border border-amber-500/20 rounded-xl p-4 space-y-2 text-left">
             {[
-              "MediaPipe detecta ombros, quadril, pernas em tempo real",
+              "IA detecta ombros, quadril, pernas em tempo real",
               "Coach IA analisa suas proporções + objetivos da anamnese",
               "Diz exatamente o que falta e quais músculos focar",
               "Histórico de scans + gráfico de evolução das proporções",

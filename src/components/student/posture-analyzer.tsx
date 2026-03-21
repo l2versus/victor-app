@@ -595,7 +595,7 @@ export function PostureAnalyzer() {
             <Loader2 className="w-8 h-8 text-red-400 animate-spin" />
             <div className="text-center">
               <p className="text-sm text-neutral-300">Carregando modelo de IA...</p>
-              <p className="text-[10px] text-neutral-600 mt-1">33 pontos do corpo • GPU acelerado</p>
+              <p className="text-[10px] text-neutral-600 mt-1">Análise biomecânica • GPU acelerado</p>
             </div>
           </div>
         )}

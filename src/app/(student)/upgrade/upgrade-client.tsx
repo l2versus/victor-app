@@ -148,8 +148,8 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
 
               <div className="space-y-2.5">
                 {[
-                  { icon: Eye, text: "33 pontos do corpo detectados em tempo real pela IA", color: "text-blue-400" },
-                  { icon: Activity, text: "49 exercicios com regras biomecanicas profissionais", color: "text-blue-400" },
+                  { icon: Eye, text: "Análise corporal com IA em tempo real", color: "text-blue-400" },
+                  { icon: Activity, text: "194 exercícios com correção biomecânica", color: "text-blue-400" },
                   { icon: Zap, text: "Feedback visual instantaneo — verde, amarelo, vermelho", color: "text-emerald-400" },
                   { icon: Shield, text: "Prevencao de lesoes baseada em fisiologia do exercicio", color: "text-amber-400" },
                   { icon: Camera, text: "100% offline — nenhuma imagem sai do seu celular", color: "text-purple-400" },
