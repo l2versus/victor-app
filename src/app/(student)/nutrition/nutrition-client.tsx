@@ -46,18 +46,61 @@ const MEAL_TYPES: { type: Meal["type"]; label: string; icon: React.ComponentType
 ]
 
 const QUICK_FOODS: Food[] = [
+  // ═══ PROTEÍNAS ═══
   { name: "Frango grelhado", amount: "100g", calories: 165, protein: 31, carbs: 0, fat: 3.6 },
-  { name: "Arroz branco", amount: "100g", calories: 130, protein: 2.7, carbs: 28, fat: 0.3 },
-  { name: "Feijão cozido", amount: "100g", calories: 76, protein: 4.8, carbs: 13.6, fat: 0.5 },
-  { name: "Batata-doce", amount: "100g", calories: 103, protein: 2.3, carbs: 24, fat: 0.1 },
-  { name: "Ovo cozido", amount: "1 un (50g)", calories: 78, protein: 6, carbs: 0.6, fat: 5 },
+  { name: "Ovo cozido", amount: "1 un (50g)", calories: 78, protein: 6.3, carbs: 0.6, fat: 5.3 },
+  { name: "Ovo mexido (2un)", amount: "100g", calories: 154, protein: 11, carbs: 1.6, fat: 11.2 },
   { name: "Whey protein", amount: "1 dose (30g)", calories: 120, protein: 24, carbs: 3, fat: 1.5 },
+  { name: "Peito de peru", amount: "4 fatias (40g)", calories: 42, protein: 8.4, carbs: 0.6, fat: 0.6 },
+  { name: "Atum em lata", amount: "1 lata (120g)", calories: 144, protein: 30, carbs: 0, fat: 1.8 },
+  { name: "Carne moída", amount: "100g", calories: 212, protein: 26, carbs: 0, fat: 11.5 },
+  { name: "Tilápia grelhada", amount: "100g", calories: 128, protein: 26, carbs: 0, fat: 2.7 },
+
+  // ═══ CARBOIDRATOS ═══
+  { name: "Arroz branco", amount: "100g", calories: 130, protein: 2.7, carbs: 28, fat: 0.3 },
+  { name: "Arroz integral", amount: "100g", calories: 124, protein: 2.6, carbs: 25.8, fat: 1 },
+  { name: "Feijão cozido", amount: "100g", calories: 77, protein: 4.5, carbs: 14, fat: 0.5 },
+  { name: "Batata-doce cozida", amount: "100g", calories: 86, protein: 1.6, carbs: 20, fat: 0.1 },
+  { name: "Macarrão cozido", amount: "100g", calories: 126, protein: 4.5, carbs: 25, fat: 0.6 },
+  { name: "Mandioca cozida", amount: "100g", calories: 125, protein: 0.6, carbs: 30, fat: 0.3 },
+  { name: "Cuscuz", amount: "100g", calories: 112, protein: 2.6, carbs: 23, fat: 0.6 },
+
+  // ═══ CAFÉ DA MANHÃ ═══
+  { name: "Pão integral", amount: "2 fatias (50g)", calories: 127, protein: 4.2, carbs: 21, fat: 1.5 },
+  { name: "Pão francês", amount: "1 un (50g)", calories: 150, protein: 4.5, carbs: 28.5, fat: 1.5 },
+  { name: "Tapioca", amount: "1 un (40g goma)", calories: 136, protein: 0.1, carbs: 34, fat: 0 },
+  { name: "Aveia", amount: "40g", calories: 152, protein: 5.4, carbs: 26, fat: 2.8 },
+  { name: "Granola", amount: "40g", calories: 176, protein: 3.2, carbs: 26, fat: 6.8 },
   { name: "Banana", amount: "1 un (100g)", calories: 89, protein: 1.1, carbs: 23, fat: 0.3 },
-  { name: "Aveia", amount: "40g", calories: 156, protein: 6.8, carbs: 26.4, fat: 2.8 },
-  { name: "Leite integral", amount: "200ml", calories: 122, protein: 6.4, carbs: 9.6, fat: 6.6 },
-  { name: "Pão integral", amount: "2 fatias (50g)", calories: 124, protein: 4, carbs: 20.5, fat: 1.5 },
+  { name: "Mamão", amount: "100g", calories: 40, protein: 0.5, carbs: 10.4, fat: 0.1 },
+  { name: "Maçã", amount: "1 un (130g)", calories: 68, protein: 0.3, carbs: 18, fat: 0.2 },
+  { name: "Leite integral", amount: "200ml", calories: 124, protein: 6.6, carbs: 10, fat: 6.6 },
+  { name: "Leite desnatado", amount: "200ml", calories: 70, protein: 6.6, carbs: 10, fat: 0.4 },
+  { name: "Iogurte natural", amount: "170g", calories: 100, protein: 5.8, carbs: 7.6, fat: 5 },
+  { name: "Iogurte grego", amount: "100g", calories: 97, protein: 10, carbs: 4, fat: 5 },
+  { name: "Queijo minas", amount: "30g", calories: 64, protein: 5.7, carbs: 0.4, fat: 4.3 },
+  { name: "Requeijão", amount: "1 col sopa (20g)", calories: 54, protein: 1.2, carbs: 0.4, fat: 5.2 },
+  { name: "Manteiga", amount: "10g", calories: 72, protein: 0.1, carbs: 0, fat: 8.1 },
+  { name: "Café com leite", amount: "200ml", calories: 67, protein: 3.3, carbs: 5.3, fat: 3.5 },
+  { name: "Café preto", amount: "100ml", calories: 2, protein: 0.1, carbs: 0, fat: 0 },
+  { name: "Suco de laranja", amount: "200ml", calories: 94, protein: 1.4, carbs: 22, fat: 0.2 },
+  { name: "Açaí", amount: "100g", calories: 58, protein: 0.8, carbs: 6.2, fat: 3.9 },
+  { name: "Mel", amount: "1 col sopa (21g)", calories: 64, protein: 0.1, carbs: 17, fat: 0 },
+  { name: "Pasta de amendoim", amount: "1 col sopa (16g)", calories: 94, protein: 4, carbs: 3, fat: 8 },
+  { name: "Cream cheese", amount: "20g", calories: 57, protein: 1.3, carbs: 0.6, fat: 5.6 },
+
+  // ═══ GORDURAS BOAS ═══
   { name: "Azeite", amount: "1 col sopa (14g)", calories: 124, protein: 0, carbs: 0, fat: 14 },
-  { name: "Queijo minas", amount: "30g", calories: 63, protein: 5.7, carbs: 0.4, fat: 4.3 },
+  { name: "Castanha-do-pará", amount: "3 un (12g)", calories: 79, protein: 1.7, carbs: 1.5, fat: 7.7 },
+  { name: "Amendoim", amount: "30g", calories: 170, protein: 7.8, carbs: 4.8, fat: 14.1 },
+  { name: "Abacate", amount: "100g", calories: 96, protein: 1.2, carbs: 6, fat: 8.4 },
+
+  // ═══ SUPLEMENTOS ═══
+  { name: "Creatina", amount: "5g", calories: 0, protein: 0, carbs: 0, fat: 0 },
+  { name: "Dextrose", amount: "30g", calories: 120, protein: 0, carbs: 30, fat: 0 },
+  { name: "Maltodextrina", amount: "30g", calories: 114, protein: 0, carbs: 28.5, fat: 0 },
+  { name: "BCAA", amount: "5g", calories: 20, protein: 5, carbs: 0, fat: 0 },
+  { name: "Albumina", amount: "30g", calories: 105, protein: 24, carbs: 1.5, fat: 0.3 },
 ]
 
 const WATER_GOAL_ML = 3000
