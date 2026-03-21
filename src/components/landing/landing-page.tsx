@@ -1256,18 +1256,38 @@ export function LandingPage() {
           </div>
 
           {/* Bottom bar */}
-          <div className="border-t border-white/[0.04] pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <p className="text-neutral-600 text-xs">© 2026 Victor Oliveira · CREF 016254-G/CE</p>
+          <div className="border-t border-white/[0.04] pt-6 flex flex-col items-center gap-4">
+            <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                <p className="text-neutral-600 text-xs">© 2026 Victor Oliveira · CREF 016254-G/CE</p>
+              </div>
+              <div className="flex items-center gap-4">
+                <p className="text-neutral-800 text-[10px] tracking-wider uppercase flex items-center gap-2">
+                  <Shield className="w-3 h-3 text-emerald-500/40" />
+                  Pagamento seguro
+                </p>
+                <span className="text-neutral-800">·</span>
+                <p className="text-neutral-800 text-[10px] tracking-wider uppercase">Garantia 7 dias</p>
+              </div>
             </div>
-            <div className="flex items-center gap-4">
-              <p className="text-neutral-800 text-[10px] tracking-wider uppercase flex items-center gap-2">
-                <Shield className="w-3 h-3 text-emerald-500/40" />
-                Pagamento seguro
-              </p>
-              <span className="text-neutral-800">·</span>
-              <p className="text-neutral-800 text-[10px] tracking-wider uppercase">Garantia 7 dias</p>
+
+            {/* Developer credit */}
+            <div className="border-t border-white/[0.03] pt-4 w-full flex items-center justify-center">
+              <a
+                href="https://instagram.com/emmanuelbezerra_"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2.5 px-4 py-2 rounded-lg hover:bg-white/[0.03] transition-all group"
+              >
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-blue-600/80 to-blue-800/80 flex items-center justify-center text-white text-[9px] font-bold tracking-tight shadow-md shadow-blue-600/10 group-hover:shadow-blue-500/20 transition-shadow">
+                  {"</>"}
+                </div>
+                <div>
+                  <p className="text-neutral-600 text-[10px] leading-tight">Desenvolvido por</p>
+                  <p className="text-neutral-400 text-xs font-semibold tracking-tight group-hover:text-blue-400 transition-colors">Emmanuel Bezerra</p>
+                </div>
+              </a>
             </div>
           </div>
         </div>
