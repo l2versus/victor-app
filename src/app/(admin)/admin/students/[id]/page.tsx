@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { StudentDetailActions } from "./student-detail-actions"
 import { WorkoutPlans } from "./workout-plans"
+import { StudentTools } from "./student-tools"
 
 export default async function StudentDetailPage({
   params,
@@ -99,6 +100,9 @@ export default async function StudentDetailPage({
           <StudentDetailActions studentId={student.id} status={student.status} />
         </div>
       </div>
+
+      {/* Quick Tools — Visão do Aluno / Evolução / PDF */}
+      <StudentTools studentId={student.id} studentName={student.user.name} />
 
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
