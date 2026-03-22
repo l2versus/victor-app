@@ -185,32 +185,11 @@ export function PostureAnalyzer() {
       }
 
       // ═══ Start video recording for replay ═══
+      // Recording is deferred until canvas is ready (see startCanvasRecording below)
+      // This ensures the recorded video includes skeleton + feedback overlays
       setRecordedVideoUrl(null)
       recordedBlobRef.current = null
       recordedChunksRef.current = []
-      try {
-        // Prefer MP4 (iOS/WhatsApp compatible) → fallback to WebM
-        const mimeOptions = [
-          "video/mp4",
-          "video/mp4;codecs=avc1",
-          "video/webm;codecs=h264",
-          "video/webm;codecs=vp9",
-          "video/webm",
-        ]
-        const supportedMime = mimeOptions.find(m => MediaRecorder.isTypeSupported(m)) || ""
-        recordedMimeRef.current = supportedMime || "video/mp4"
-        const recorderOptions: MediaRecorderOptions = {
-          ...(supportedMime ? { mimeType: supportedMime } : {}),
-          videoBitsPerSecond: 1_000_000, // 1 Mbps (was ~10Mbps, reduces 85MB → ~8MB)
-        }
-        const recorder = new MediaRecorder(stream, recorderOptions)
-        recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data) }
-        recorder.start(1000) // chunk every 1s
-        mediaRecorderRef.current = recorder
-      } catch {
-        // MediaRecorder not supported — skip recording silently
-        mediaRecorderRef.current = null
-      }
 
       // Load MediaPipe PoseLandmarker (100% client-side, no API key)
       const vision = await import("@mediapipe/tasks-vision")
@@ -256,6 +235,35 @@ export function PostureAnalyzer() {
 
       const drawingUtils = new DrawingUtils(ctx)
       let lastTimestamp = -1
+      let recorderStarted = false
+
+      function startCanvasRecording() {
+        if (recorderStarted || !canvas) return
+        recorderStarted = true
+        try {
+          // Record from CANVAS (includes skeleton + feedback overlays) not raw camera
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const canvasStream = (canvas as any).captureStream(30) // 30 fps
+          const mimeOptions = [
+            "video/mp4",
+            "video/mp4;codecs=avc1",
+            "video/webm;codecs=h264",
+            "video/webm;codecs=vp9",
+            "video/webm",
+          ]
+          const supportedMime = mimeOptions.find(m => MediaRecorder.isTypeSupported(m)) || ""
+          recordedMimeRef.current = supportedMime || "video/mp4"
+          const recorder = new MediaRecorder(canvasStream, {
+            ...(supportedMime ? { mimeType: supportedMime } : {}),
+            videoBitsPerSecond: 1_000_000,
+          })
+          recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data) }
+          recorder.start(1000)
+          mediaRecorderRef.current = recorder
+        } catch {
+          mediaRecorderRef.current = null
+        }
+      }
 
       function detect() {
         if (!video || !canvas || !ctx || !poseLandmarkerRef.current) return
@@ -263,6 +271,9 @@ export function PostureAnalyzer() {
 
         canvas.width = video.videoWidth
         canvas.height = video.videoHeight
+
+        // Start recording from canvas on first frame (dimensions now set)
+        if (!recorderStarted) startCanvasRecording()
 
         const now = performance.now()
         if (now === lastTimestamp) {
