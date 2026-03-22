@@ -109,7 +109,7 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
     return true
   }, [])
 
-  function startRecording() {
+  async function startRecording() {
     if (!initRecognition()) return
     setError("")
     setTranscription("")
@@ -119,6 +119,12 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
     setIsPaused(false)
 
     try {
+      // Request microphone access first — some browsers (Chrome desktop)
+      // need getUserMedia before SpeechRecognition.start() works
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      // Release the stream immediately — we just need the permission grant
+      stream.getTracks().forEach(t => t.stop())
+
       recognitionRef.current.start()
       isRecordingRef.current = true
       isPausedRef.current = false
@@ -126,9 +132,12 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
       timerRef.current = setInterval(() => {
         setDuration(prev => prev + 1)
       }, 1000)
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err)
-      setError("Erro ao iniciar gravação")
+      const msg = err instanceof DOMException && err.name === "NotAllowedError"
+        ? "Permissão de microfone negada. Habilite nas configurações do navegador."
+        : "Erro ao iniciar gravação. Verifique se o microfone está conectado."
+      setError(msg)
     }
   }
 
