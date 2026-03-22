@@ -1,31 +1,38 @@
 import { NextRequest, NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { getSession } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { getPlaylistTracks, refreshAccessToken } from "@/lib/spotify"
 
-// GET /api/spotify/playlists/[id] — Tracks de uma playlist específica
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params
-  const cookieStore = await cookies()
-  let accessToken = cookieStore.get("spotify_access_token")?.value
-  const refreshToken = cookieStore.get("spotify_refresh_token")?.value
+  const session = await getSession()
+  if (!session) return NextResponse.json({ error: "Não autenticado" }, { status: 401 })
 
-  if (!accessToken && !refreshToken) {
-    return NextResponse.json({ error: "Não conectado" }, { status: 401 })
+  const student = await prisma.student.findUnique({
+    where: { userId: session.userId },
+    select: { id: true, spotifyAccessToken: true, spotifyRefreshToken: true, spotifyExpiresAt: true },
+  })
+
+  if (!student?.spotifyRefreshToken) {
+    return NextResponse.json({ error: "Spotify não conectado" }, { status: 401 })
   }
 
-  if (!accessToken && refreshToken) {
+  let accessToken = student.spotifyAccessToken
+  const expired = !accessToken || !student.spotifyExpiresAt || student.spotifyExpiresAt < new Date()
+
+  if (expired) {
     try {
-      const newTokens = await refreshAccessToken(refreshToken)
+      const newTokens = await refreshAccessToken(student.spotifyRefreshToken)
       accessToken = newTokens.access_token
-      cookieStore.set("spotify_access_token", accessToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: newTokens.expires_in,
-        path: "/",
-        sameSite: "lax",
+      await prisma.student.update({
+        where: { id: student.id },
+        data: {
+          spotifyAccessToken: newTokens.access_token,
+          spotifyExpiresAt: new Date(Date.now() + newTokens.expires_in * 1000),
+        },
       })
     } catch {
       return NextResponse.json({ error: "Token expirado" }, { status: 401 })
@@ -35,23 +42,7 @@ export async function GET(
   try {
     const tracks = await getPlaylistTracks(accessToken!, id)
     return NextResponse.json({ tracks })
-  } catch (err) {
-    if (err instanceof Error && err.message === "SPOTIFY_TOKEN_EXPIRED" && refreshToken) {
-      try {
-        const newTokens = await refreshAccessToken(refreshToken)
-        cookieStore.set("spotify_access_token", newTokens.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          maxAge: newTokens.expires_in,
-          path: "/",
-          sameSite: "lax",
-        })
-        const tracks = await getPlaylistTracks(newTokens.access_token, id)
-        return NextResponse.json({ tracks })
-      } catch {
-        return NextResponse.json({ error: "Token expirado" }, { status: 401 })
-      }
-    }
+  } catch {
     return NextResponse.json({ error: "Erro ao buscar tracks" }, { status: 500 })
   }
 }

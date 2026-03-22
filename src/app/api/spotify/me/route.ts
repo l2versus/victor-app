@@ -1,55 +1,84 @@
 import { NextResponse } from "next/server"
-import { cookies } from "next/headers"
+import { getSession } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
 import { getSpotifyProfile, refreshAccessToken } from "@/lib/spotify"
 
 // GET /api/spotify/me — Perfil do usuário logado no Spotify
 export async function GET() {
-  const cookieStore = await cookies()
-  const accessToken = cookieStore.get("spotify_access_token")?.value
-  const refreshToken = cookieStore.get("spotify_refresh_token")?.value
+  const session = await getSession()
+  if (!session) return NextResponse.json({ connected: false })
 
-  if (!accessToken && !refreshToken) {
+  const student = await prisma.student.findUnique({
+    where: { userId: session.userId },
+    select: {
+      id: true,
+      spotifyAccessToken: true,
+      spotifyRefreshToken: true,
+      spotifyExpiresAt: true,
+      spotifyName: true,
+    },
+  })
+
+  if (!student?.spotifyRefreshToken) {
     return NextResponse.json({ connected: false })
   }
 
   try {
-    // Tenta com access token atual
-    if (accessToken) {
-      const profile = await getSpotifyProfile(accessToken)
-      return NextResponse.json({ connected: true, profile })
-    }
-    throw new Error("SPOTIFY_TOKEN_EXPIRED")
-  } catch (err) {
-    // Tenta renovar o token
-    if (refreshToken && err instanceof Error && err.message === "SPOTIFY_TOKEN_EXPIRED") {
-      try {
-        const newTokens = await refreshAccessToken(refreshToken)
-        cookieStore.set("spotify_access_token", newTokens.access_token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          maxAge: newTokens.expires_in,
-          path: "/",
-          sameSite: "lax",
-        })
+    let accessToken = student.spotifyAccessToken
+    const expired = !accessToken || !student.spotifyExpiresAt || student.spotifyExpiresAt < new Date()
 
-        const profile = await getSpotifyProfile(newTokens.access_token)
-        return NextResponse.json({ connected: true, profile })
-      } catch {
-        // Refresh token expirou — precisa logar de novo
-        cookieStore.delete("spotify_access_token")
-        cookieStore.delete("spotify_refresh_token")
-        return NextResponse.json({ connected: false })
-      }
+    // Renova token se expirou
+    if (expired && student.spotifyRefreshToken) {
+      const newTokens = await refreshAccessToken(student.spotifyRefreshToken)
+      accessToken = newTokens.access_token
+
+      await prisma.student.update({
+        where: { id: student.id },
+        data: {
+          spotifyAccessToken: newTokens.access_token,
+          spotifyExpiresAt: new Date(Date.now() + newTokens.expires_in * 1000),
+        },
+      })
     }
 
+    const profile = await getSpotifyProfile(accessToken!)
+    return NextResponse.json({
+      connected: true,
+      profile: {
+        name: profile.name,
+        image: profile.image,
+        product: profile.product,
+      },
+    })
+  } catch {
+    // Token inválido — limpa tudo
+    await prisma.student.update({
+      where: { id: student.id },
+      data: {
+        spotifyAccessToken: null,
+        spotifyRefreshToken: null,
+        spotifyExpiresAt: null,
+        spotifyName: null,
+      },
+    })
     return NextResponse.json({ connected: false })
   }
 }
 
 // DELETE /api/spotify/me — Desconectar Spotify
 export async function DELETE() {
-  const cookieStore = await cookies()
-  cookieStore.delete("spotify_access_token")
-  cookieStore.delete("spotify_refresh_token")
+  const session = await getSession()
+  if (!session) return NextResponse.json({ disconnected: true })
+
+  await prisma.student.updateMany({
+    where: { userId: session.userId },
+    data: {
+      spotifyAccessToken: null,
+      spotifyRefreshToken: null,
+      spotifyExpiresAt: null,
+      spotifyName: null,
+    },
+  })
+
   return NextResponse.json({ disconnected: true })
 }

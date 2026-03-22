@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
-import { exchangeCodeForTokens } from "@/lib/spotify"
-
-function setCookie(name: string, value: string, maxAge: number): string {
-  return `${name}=${value}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${maxAge}`
-}
+import { getSession } from "@/lib/auth"
+import { prisma } from "@/lib/prisma"
+import { exchangeCodeForTokens, getSpotifyProfile } from "@/lib/spotify"
 
 // GET /api/spotify/callback — Spotify redireciona aqui após login
 export async function GET(req: NextRequest) {
@@ -16,21 +14,39 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/today?spotify=denied", baseUrl))
   }
 
+  // Pega o aluno logado via cookie de sessão
+  const session = await getSession()
+  if (!session) {
+    return NextResponse.redirect(new URL("/today?spotify=error&reason=nosession", baseUrl))
+  }
+
+  const student = await prisma.student.findUnique({
+    where: { userId: session.userId },
+    select: { id: true },
+  })
+
+  if (!student) {
+    return NextResponse.redirect(new URL("/today?spotify=error&reason=nostudent", baseUrl))
+  }
+
   try {
     const tokens = await exchangeCodeForTokens(code)
+    const profile = await getSpotifyProfile(tokens.access_token)
 
-    const redirectUrl = new URL("/today?spotify=connected", baseUrl)
-    const res = new NextResponse(null, {
-      status: 307,
-      headers: { Location: redirectUrl.toString() },
+    // Salva no banco — 100% confiável, sem cookies frágeis
+    await prisma.student.update({
+      where: { id: student.id },
+      data: {
+        spotifyAccessToken: tokens.access_token,
+        spotifyRefreshToken: tokens.refresh_token,
+        spotifyExpiresAt: new Date(Date.now() + tokens.expires_in * 1000),
+        spotifyName: profile.name,
+      },
     })
 
-    res.headers.append("Set-Cookie", setCookie("spotify_access_token", tokens.access_token, tokens.expires_in))
-    res.headers.append("Set-Cookie", setCookie("spotify_refresh_token", tokens.refresh_token, 60 * 60 * 24 * 30))
-
-    return res
+    return NextResponse.redirect(new URL("/today?spotify=connected", baseUrl))
   } catch (err) {
-    console.error("[Spotify Callback] Token exchange failed:", err)
+    console.error("[Spotify Callback]", err)
     return NextResponse.redirect(new URL("/today?spotify=error&reason=token", baseUrl))
   }
 }

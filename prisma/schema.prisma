@@ -113,6 +113,12 @@ model Student {
   scheduleSlots     ScheduleSlot[]
   extraActivities   ExtraActivity[]
 
+  // Spotify OAuth tokens (salvo no DB, não em cookies)
+  spotifyAccessToken  String?
+  spotifyRefreshToken String?
+  spotifyExpiresAt    DateTime?
+  spotifyName         String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
