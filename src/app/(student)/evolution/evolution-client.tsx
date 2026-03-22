@@ -190,13 +190,29 @@ export function EvolutionClient() {
         ])
         if (!evoRes.ok || !statsRes.ok || !histRes.ok) return
         const [e, s, h] = await Promise.all([evoRes.json(), statsRes.json(), histRes.json()])
-        if (e.loadProgression) {
-          setEvo(e)
-          setStats(s)
-          setHistory(h)
-          const keys = Object.keys(e.loadProgression)
-          if (keys.length > 0) setSelectedEx(keys[0])
+        // Ensure all required fields exist with defaults
+        const safeEvo = {
+          weeklyFrequency: e.weeklyFrequency || [],
+          loadProgression: e.loadProgression || {},
+          rpeTrend: e.rpeTrend || [],
+          volumeTrend: (e.volumeTrend || []).map((v: Record<string, unknown>) => ({
+            ...v,
+            exercises: v.exercises || [],
+          })),
+          muscleDistribution: e.muscleDistribution || [],
+          totalVolume: e.totalVolume || 0,
+          totalSessions: e.totalSessions || 0,
+          totalSets: e.totalSets || 0,
+          avgSetsPerSession: e.avgSetsPerSession || 0,
+          avgDuration: e.avgDuration || 0,
+          avgRPE: e.avgRPE || 0,
+          daysSinceStart: e.daysSinceStart || 0,
         }
+        setEvo({ ...e, ...safeEvo } as unknown as EvolutionData)
+        setStats(s)
+        setHistory(h)
+        const keys = Object.keys(safeEvo.loadProgression)
+        if (keys.length > 0) setSelectedEx(keys[0])
       } catch { /* network error — show empty state */ }
       finally { setLoading(false) }
     }
@@ -419,7 +435,7 @@ export function EvolutionClient() {
             const recentSessions = evo.volumeTrend.slice(-3)
             const currentMaxByExercise = new Map<string, { name: string; currentMax: number }>()
             for (const session of recentSessions) {
-              for (const ex of session.exercises) {
+              for (const ex of (session.exercises || [])) {
                 const existing = currentMaxByExercise.get(ex.name)
                 if (!existing || ex.maxLoad > existing.currentMax) {
                   currentMaxByExercise.set(ex.name, { name: ex.name, currentMax: ex.maxLoad })
