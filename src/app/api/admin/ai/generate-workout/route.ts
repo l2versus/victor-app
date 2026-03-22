@@ -1,5 +1,5 @@
 import { generateText } from "ai"
-import { aiModel, SYSTEM_PROMPTS } from "@/lib/ai"
+import { premiumModel, SYSTEM_PROMPTS } from "@/lib/ai"
 import { requireAdmin } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
@@ -75,7 +75,7 @@ ${exerciseNames}
 IMPORTANTE: Use APENAS exercicios da lista acima. Se nao encontrar exatamente, use o mais proximo.`
 
   const result = await generateText({
-    model: aiModel,
+    model: premiumModel,
     system: SYSTEM_PROMPTS.workoutGenerator,
     messages: [{ role: "user", content: prompt }],
   })

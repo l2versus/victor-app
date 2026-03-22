@@ -185,7 +185,7 @@ export default function CommunityPage() {
   const isPro = features.planName?.toLowerCase().includes("pro") || features.planName?.toLowerCase().includes("elite") || features.hasVipGroup
   const isElite = features.planName?.toLowerCase().includes("elite") || features.hasVipGroup
 
-  const tabs: { id: Tab; label: string; icon: React.ElementType; locked: boolean }[] = [
+  const tabs: { id: Tab; label: string; icon: typeof Trophy; locked: boolean }[] = [
     { id: "ranking", label: "Ranking", icon: Trophy, locked: false },
     { id: "feed", label: "Feed", icon: Flame, locked: !isPro },
     { id: "desafios", label: "Desafios", icon: Target, locked: !isPro },
@@ -514,7 +514,7 @@ function PodiumCard({ student, position }: { student: RankedStudent; position: 1
 }
 
 function PostTypeBadge({ type }: { type: string }) {
-  const config: Record<string, { icon: React.ElementType; label: string; color: string }> = {
+  const config: Record<string, { icon: typeof Award; label: string; color: string }> = {
     ACHIEVEMENT: { icon: Award, label: "PR", color: "text-yellow-400 bg-yellow-400/10" },
     MILESTONE: { icon: Zap, label: "Marco", color: "text-blue-400 bg-blue-400/10" },
     ANNOUNCEMENT: { icon: HandMetal, label: "Aviso", color: "text-red-400 bg-red-400/10" },

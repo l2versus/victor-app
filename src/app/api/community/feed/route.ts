@@ -6,6 +6,22 @@ export async function GET(req: NextRequest) {
   try {
     const session = await requireAuth()
 
+    // Get trainerId for data isolation
+    let trainerId: string | undefined
+    if (session.role === "STUDENT") {
+      const student = await prisma.student.findUnique({
+        where: { userId: session.userId },
+        select: { trainerId: true },
+      })
+      trainerId = student?.trainerId
+    } else {
+      const trainer = await prisma.trainerProfile.findUnique({
+        where: { userId: session.userId },
+        select: { id: true },
+      })
+      trainerId = trainer?.id
+    }
+
     const { searchParams } = new URL(req.url)
     const cursor = searchParams.get("cursor")
     const limit = Math.min(Number(searchParams.get("limit")) || 20, 50)
@@ -14,6 +30,7 @@ export async function GET(req: NextRequest) {
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       orderBy: { createdAt: "desc" },
+      ...(trainerId ? { where: { student: { trainerId } } } : {}),
       include: {
         student: {
           include: {

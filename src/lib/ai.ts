@@ -1,25 +1,28 @@
 import { createAnthropic } from "@ai-sdk/anthropic"
-import { createOpenAI } from "@ai-sdk/openai"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 
-export type AIProvider = "anthropic" | "openai" | "google"
+// ─── Dual AI System ──────────────────────────────────────────────────────────
+// Premium model (Claude) → Pro/Elite features: chat aluno, treino, anamnese, nutrição, body scan
+// Free model (Gemini Flash) → Landing page chat, engagement messages
 
-const PROVIDER = (process.env.AI_PROVIDER as AIProvider) || "anthropic"
+function getPremiumModel() {
+  const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+  return anthropic(process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250514")
+}
 
-function getModel() {
-  if (PROVIDER === "anthropic") {
-    const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    return anthropic(process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250514")
-  }
-  if (PROVIDER === "openai") {
-    const openai = createOpenAI({ apiKey: process.env.OPENAI_API_KEY })
-    return openai(process.env.OPENAI_MODEL || "gpt-4o-mini")
-  }
+function getFreeModel() {
   const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
   return google(process.env.GOOGLE_AI_MODEL || "gemini-2.0-flash")
 }
 
-export const aiModel = getModel()
+/** Claude — para features premium (Pro/Elite) */
+export const premiumModel = getPremiumModel()
+
+/** Gemini Flash — para features gratuitas (landing, engagement) */
+export const freeModel = getFreeModel()
+
+/** @deprecated Use premiumModel ou freeModel diretamente */
+export const aiModel = premiumModel
 
 export const SYSTEM_PROMPTS = {
   postWorkout: `Voce e o assistente IA do Victor Oliveira, personal trainer de elite em Fortaleza/CE.

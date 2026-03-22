@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireStudent } from "@/lib/student"
 import { checkFeature } from "@/lib/subscription"
-import { aiModel } from "@/lib/ai"
+import { premiumModel } from "@/lib/ai"
 import { generateText } from "ai"
 
 // POST /api/student/nutrition/ai — AI nutrition suggestion based on today's meals + recent workouts
@@ -53,7 +53,7 @@ Analise a nutrição do dia cruzando com o objetivo e os treinos recentes. Dê s
 Seja direto. Máximo 3 parágrafos curtos. Sem markdown. Em português brasileiro.`
 
     const { text } = await generateText({
-      model: aiModel,
+      model: premiumModel,
       system: `Você é nutricionista esportivo parceiro do personal trainer Victor Oliveira.
 Analise ingestão calórica e macros do aluno e sugira ajustes baseados no objetivo e treinos.
 Seja direto, prático e motivador. Use português brasileiro casual. Sem julgamentos negativos.`,

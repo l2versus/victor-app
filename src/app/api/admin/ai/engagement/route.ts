@@ -1,5 +1,5 @@
 import { generateText } from "ai"
-import { aiModel, SYSTEM_PROMPTS } from "@/lib/ai"
+import { freeModel, SYSTEM_PROMPTS } from "@/lib/ai"
 import { requireAdmin } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { getTrainerProfile } from "@/lib/admin"
@@ -48,7 +48,7 @@ Sessoes completas: ${completedSessions}
 Objetivo: ${student.goals || "nao definido"}`
 
     const result = await generateText({
-      model: aiModel,
+      model: freeModel,
       system: SYSTEM_PROMPTS.engagement,
       messages: [{ role: "user", content: prompt }],
     })
@@ -89,7 +89,7 @@ Objetivo: ${student.goals || "nao definido"}`
   const messages = []
   for (const student of needsEngagement) {
     const result = await generateText({
-      model: aiModel,
+      model: freeModel,
       system: SYSTEM_PROMPTS.engagement,
       messages: [
         {

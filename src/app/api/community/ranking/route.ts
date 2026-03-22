@@ -4,7 +4,23 @@ import { prisma } from "@/lib/prisma"
 
 export async function GET(req: NextRequest) {
   try {
-    await requireAuth()
+    const session = await requireAuth()
+
+    // Get student's trainerId for isolation
+    let trainerId: string | undefined
+    if (session.role === "STUDENT") {
+      const student = await prisma.student.findUnique({
+        where: { userId: session.userId },
+        select: { trainerId: true },
+      })
+      trainerId = student?.trainerId
+    } else {
+      const trainer = await prisma.trainerProfile.findUnique({
+        where: { userId: session.userId },
+        select: { id: true },
+      })
+      trainerId = trainer?.id
+    }
 
     const { searchParams } = new URL(req.url)
     const period = searchParams.get("period") || "month" // week | month | all
@@ -17,14 +33,13 @@ export async function GET(req: NextRequest) {
     } else if (period === "month") {
       dateFrom = new Date(now.getFullYear(), now.getMonth(), 1)
     }
-    // "all" = no date filter
 
     const dateFilter = dateFrom ? { startedAt: { gte: dateFrom } } : {}
     const completedFilter = { completedAt: { not: null } }
 
-    // Get all active students with their sessions
+    // Get only students from the same trainer (data isolation)
     const students = await prisma.student.findMany({
-      where: { status: "ACTIVE" },
+      where: { status: "ACTIVE", ...(trainerId ? { trainerId } : {}) },
       include: {
         user: { select: { name: true, avatar: true } },
         sessions: {

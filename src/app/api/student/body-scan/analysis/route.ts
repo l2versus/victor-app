@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { generateText } from "ai"
-import { aiModel, SYSTEM_PROMPTS } from "@/lib/ai"
+import { premiumModel, SYSTEM_PROMPTS } from "@/lib/ai"
 import { prisma } from "@/lib/prisma"
 import { requireStudent } from "@/lib/student"
 import { checkFeature } from "@/lib/subscription"
@@ -97,7 +97,7 @@ Largura estimada (pixels normalizados):
 Agora analise esse aluno como um coach de bodybuilding experiente ao lado dele. Seja específico, use os números, cruze com o objetivo, diga o que falta e o que focar.`
 
     const { text } = await generateText({
-      model: aiModel,
+      model: premiumModel,
       system: SYSTEM_PROMPTS.bodyScanCoach,
       prompt,
       maxOutputTokens: 350,

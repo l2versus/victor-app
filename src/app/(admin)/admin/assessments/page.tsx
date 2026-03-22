@@ -1,27 +1,47 @@
 import { requireAdmin } from "@/lib/auth"
-import { ClipboardList } from "lucide-react"
+import { getTrainerProfile } from "@/lib/admin"
+import { prisma } from "@/lib/prisma"
+import { AssessmentsManager } from "./assessments-manager"
 
 export default async function AssessmentsPage() {
-  await requireAdmin()
+  const session = await requireAdmin()
+  const trainer = await getTrainerProfile(session.userId)
+
+  const [students, assessments] = await Promise.all([
+    prisma.student.findMany({
+      where: { trainerId: trainer.id, status: "ACTIVE" },
+      include: { user: { select: { name: true } } },
+      orderBy: { user: { name: "asc" } },
+    }),
+    prisma.assessment.findMany({
+      where: { student: { trainerId: trainer.id } },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      include: {
+        student: { include: { user: { select: { name: true } } } },
+      },
+    }),
+  ])
 
   return (
-    <div className="flex items-center justify-center h-[70vh]">
-      <div className="text-center">
-        <div className="relative inline-block mb-6">
-          <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-red-600/20 to-red-800/10 border border-red-500/10 flex items-center justify-center mx-auto backdrop-blur-xl">
-            <ClipboardList className="w-9 h-9 text-red-500" />
-          </div>
-          <div className="absolute inset-0 rounded-3xl bg-red-500/10 animate-ping" style={{ animationDuration: '3s' }} />
-        </div>
-        <h1 className="text-2xl font-bold text-white mb-2">Avaliações</h1>
-        <p className="text-neutral-500 text-sm max-w-xs mx-auto mb-6">
-          Composição corporal, fotos de progresso e métricas de desempenho em breve.
-        </p>
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06] text-neutral-400 text-xs">
-          <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-          Em desenvolvimento
-        </div>
-      </div>
-    </div>
+    <AssessmentsManager
+      students={students.map(s => ({
+        id: s.id,
+        name: s.user.name,
+        weight: s.weight,
+        birthDate: s.birthDate?.toISOString() || null,
+        gender: s.gender,
+      }))}
+      initialAssessments={assessments.map(a => ({
+        id: a.id,
+        studentId: a.studentId,
+        studentName: a.student.user.name,
+        type: a.type,
+        title: a.title,
+        data: a.data as Record<string, unknown>,
+        notes: a.notes,
+        createdAt: a.createdAt.toISOString(),
+      }))}
+    />
   )
 }

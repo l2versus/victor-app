@@ -1,11 +1,13 @@
 import { generateText } from "ai"
-import { aiModel } from "@/lib/ai"
+import { premiumModel } from "@/lib/ai"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { checkFeature } from "@/lib/subscription"
 import { NextRequest } from "next/server"
 
 // Save structured feedback after chat completion
 export async function POST(req: NextRequest) {
+  try {
   const session = await requireAuth()
   if (session.role !== "STUDENT") {
     return Response.json({ error: "Forbidden" }, { status: 403 })
@@ -21,6 +23,15 @@ export async function POST(req: NextRequest) {
     return Response.json({ error: "Student not found" }, { status: 404 })
   }
 
+  // Feature gate: only Pro/Elite plans have AI feedback
+  const hasAI = await checkFeature(student.id, "hasAI")
+  if (!hasAI) {
+    return Response.json(
+      { error: "Seu plano não inclui feedback por IA" },
+      { status: 403 }
+    )
+  }
+
   // Verify session belongs to this student
   if (sessionId) {
     const workoutSession = await prisma.workoutSession.findUnique({
@@ -33,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   // Use AI to extract structured data from conversation
   const extractionResult = await generateText({
-    model: aiModel,
+    model: premiumModel,
     system: `Extraia dados estruturados da conversa pos-treino. Responda APENAS com JSON valido:
 {
   "rpe": number|null (1-10),
@@ -101,4 +112,12 @@ export async function POST(req: NextRequest) {
   }
 
   return Response.json({ success: true, feedback })
+  } catch (error) {
+    console.error("[Feedback] Error:", error)
+    const message = error instanceof Error ? error.message : "Erro interno"
+    if (message === "Unauthorized") {
+      return Response.json({ error: message }, { status: 401 })
+    }
+    return Response.json({ error: "Erro ao salvar feedback" }, { status: 500 })
+  }
 }

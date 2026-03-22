@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin, hashPassword } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { aiModel } from "@/lib/ai"
+import { freeModel } from "@/lib/ai"
 import { generateText, Output } from "ai"
 import { z } from "zod"
 import crypto from "crypto"
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     // Step 1: Use AI to parse the MFIT data
     const { output: parsedData } = await generateText({
-      model: aiModel,
+      model: freeModel,
       output: Output.object({ schema: MfitDataSchema }),
       prompt: `${MFIT_PARSE_PROMPT}\n\nNome do arquivo: ${fileName || "desconhecido"}\n\nCONTEÚDO:\n${content}`,
     })

@@ -1,5 +1,5 @@
 import { generateText } from "ai"
-import { aiModel, SYSTEM_PROMPTS } from "@/lib/ai"
+import { premiumModel, SYSTEM_PROMPTS } from "@/lib/ai"
 import { requireAdmin } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
@@ -41,7 +41,7 @@ export async function POST(req: NextRequest) {
   }
 
   const result = await generateText({
-    model: aiModel,
+    model: premiumModel,
     system: SYSTEM_PROMPTS.anamnesisAnalyzer,
     messages: [
       {

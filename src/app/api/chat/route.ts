@@ -1,5 +1,5 @@
 import { streamText } from "ai"
-import { aiModel, SYSTEM_PROMPTS } from "@/lib/ai"
+import { freeModel, SYSTEM_PROMPTS } from "@/lib/ai"
 import { NextRequest } from "next/server"
 
 // Rate limit: simple in-memory counter per IP (resets on deploy)
@@ -48,7 +48,7 @@ export async function POST(req: NextRequest) {
       .slice(-10)
 
     const result = streamText({
-      model: aiModel,
+      model: freeModel,
       system: SYSTEM_PROMPTS.victorVirtual,
       messages: trimmedMessages,
     })
