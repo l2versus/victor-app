@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { Eye, TrendingUp, Download, X, Dumbbell, Smartphone, ChevronDown, Loader2 } from "lucide-react"
+import { Eye, TrendingUp, Download, X, Dumbbell, Smartphone, ChevronDown, Loader2, MessageCircle } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -26,7 +26,7 @@ type EvolutionEntry = {
 
 type InsightsData = { weekPlans: WeekPlan[]; evolution: EvolutionEntry[] }
 
-export function StudentTools({ studentId, studentName }: { studentId: string; studentName: string }) {
+export function StudentTools({ studentId, studentName, studentPhone }: { studentId: string; studentName: string; studentPhone?: string | null }) {
   const [data, setData] = useState<InsightsData | null>(null)
   const [loading, setLoading] = useState(false)
   const [modal, setModal] = useState<"preview" | "evolution" | null>(null)
@@ -59,13 +59,21 @@ export function StudentTools({ studentId, studentName }: { studentId: string; st
     generatePDF(d.weekPlans, studentName)
   }
 
+  const openWhatsApp = () => {
+    if (!studentPhone) return
+    const clean = studentPhone.replace(/[\s\-\(\)]/g, "")
+    const number = clean.startsWith("+") ? clean.slice(1) : clean.startsWith("55") ? clean : `55${clean}`
+    window.open(`https://wa.me/${number}`, "_blank")
+  }
+
   return (
     <>
       {/* Quick Actions Bar */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <ToolButton icon={Eye} label="Visão do Aluno" color="blue" onClick={() => openModal("preview")} loading={loading && modal === null} />
-        <ToolButton icon={TrendingUp} label="Evolução de Cargas" color="emerald" onClick={() => openModal("evolution")} loading={loading && modal === null} />
+        <ToolButton icon={TrendingUp} label="Evolução" color="emerald" onClick={() => openModal("evolution")} loading={loading && modal === null} />
         <ToolButton icon={Download} label="Baixar PDF" color="amber" onClick={handlePDF} loading={loading && modal === null} />
+        <ToolButton icon={MessageCircle} label={studentPhone ? "WhatsApp" : "Sem tel."} color="green" onClick={openWhatsApp} loading={false} />
       </div>
 
       {/* ═══ PREVIEW MODAL ═══ */}
@@ -87,13 +95,14 @@ export function StudentTools({ studentId, studentName }: { studentId: string; st
 
 /* ═══ TOOL BUTTON ═══ */
 function ToolButton({ icon: Icon, label, color, onClick, loading }: {
-  icon: typeof Eye; label: string; color: "blue" | "emerald" | "amber"
+  icon: typeof Eye; label: string; color: "blue" | "emerald" | "amber" | "green"
   onClick: () => void; loading: boolean
 }) {
   const colors = {
     blue: "from-blue-600/15 to-blue-800/5 border-blue-500/15 text-blue-400 hover:border-blue-500/30",
     emerald: "from-emerald-600/15 to-emerald-800/5 border-emerald-500/15 text-emerald-400 hover:border-emerald-500/30",
     amber: "from-amber-600/15 to-amber-800/5 border-amber-500/15 text-amber-400 hover:border-amber-500/30",
+    green: "from-green-600/15 to-green-800/5 border-green-500/15 text-green-400 hover:border-green-500/30",
   }
 
   return (
@@ -338,7 +347,7 @@ function LoadEvolution({ evolution }: { evolution: EvolutionEntry[] }) {
   )
 }
 
-/* ═══ PDF GENERATOR — opens printable page ═══ */
+/* ═══ PDF GENERATOR — with exercise photos ═══ */
 function generatePDF(plans: WeekPlan[], studentName: string) {
   const printWindow = window.open("", "_blank")
   if (!printWindow) return
@@ -346,25 +355,29 @@ function generatePDF(plans: WeekPlan[], studentName: string) {
   const doc = printWindow.document
   doc.open()
 
-  // Build safe content using DOM after document setup
   const style = doc.createElement("style")
   style.textContent = `
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; padding: 32px; max-width: 800px; margin: 0 auto; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #1a1a1a; padding: 32px; max-width: 900px; margin: 0 auto; }
     h1 { font-size: 22px; margin-bottom: 4px; }
     .subtitle { color: #666; font-size: 12px; margin-bottom: 24px; }
     .day-block { margin-bottom: 28px; page-break-inside: avoid; }
     .day-title { font-size: 14px; font-weight: 700; color: #dc2626; text-transform: uppercase; letter-spacing: 1px; padding-bottom: 6px; border-bottom: 2px solid #dc2626; margin-bottom: 12px; }
-    .template-name { font-size: 16px; font-weight: 600; margin-bottom: 10px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 8px; }
-    th { background: #f5f5f5; padding: 6px 10px; text-align: left; font-weight: 600; font-size: 10px; text-transform: uppercase; letter-spacing: 0.5px; color: #666; border-bottom: 1px solid #ddd; }
-    td { padding: 8px 10px; border-bottom: 1px solid #eee; vertical-align: top; }
-    .ex-num { width: 30px; text-align: center; font-weight: 700; color: #dc2626; }
-    .ex-name { font-weight: 600; }
+    .template-name { font-size: 16px; font-weight: 600; margin-bottom: 12px; }
+    .ex-card { display: flex; gap: 12px; padding: 10px; margin-bottom: 8px; border: 1px solid #eee; border-radius: 10px; page-break-inside: avoid; }
+    .ex-card:nth-child(even) { background: #fafafa; }
+    .ex-img { width: 70px; height: 70px; object-fit: cover; border-radius: 8px; flex-shrink: 0; }
+    .ex-placeholder { width: 70px; height: 70px; border-radius: 8px; flex-shrink: 0; background: #f0f0f0; display: flex; align-items: center; justify-content: center; color: #ccc; font-size: 24px; }
+    .ex-info { flex: 1; min-width: 0; }
+    .ex-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+    .ex-num { width: 22px; height: 22px; background: #dc2626; color: white; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; flex-shrink: 0; }
+    .ex-name { font-weight: 600; font-size: 13px; }
     .ex-detail { color: #666; font-size: 11px; margin-top: 2px; }
-    .instructions { color: #888; font-size: 10px; margin-top: 3px; line-height: 1.4; }
+    .ex-sets { display: flex; gap: 16px; margin-top: 6px; font-size: 12px; color: #333; }
+    .ex-sets-val { color: #dc2626; font-weight: 600; }
+    .instructions { color: #888; font-size: 10px; margin-top: 4px; line-height: 1.4; }
     .footer { margin-top: 32px; text-align: center; color: #999; font-size: 10px; border-top: 1px solid #eee; padding-top: 12px; }
-    @media print { body { padding: 16px; } }
+    @media print { body { padding: 16px; } .ex-card { break-inside: avoid; } }
   `
 
   doc.close()
@@ -396,57 +409,81 @@ function generatePDF(plans: WeekPlan[], studentName: string) {
     tName.textContent = p.templateName
     block.appendChild(tName)
 
-    const table = doc.createElement("table")
-    const thead = doc.createElement("tr")
-    for (const h of ["#", "Exercício", "Séries", "Reps", "Carga", "Descanso"]) {
-      const th = doc.createElement("th")
-      th.textContent = h
-      if (h === "#") th.className = "ex-num"
-      thead.appendChild(th)
-    }
-    table.appendChild(thead)
-
     p.exercises.forEach((ex, i) => {
-      const tr = doc.createElement("tr")
+      const card = doc.createElement("div")
+      card.className = "ex-card"
 
-      const tdNum = doc.createElement("td")
-      tdNum.className = "ex-num"
-      tdNum.textContent = String(i + 1)
-      tr.appendChild(tdNum)
+      // Exercise image
+      if (ex.imageUrl) {
+        const img = doc.createElement("img")
+        img.className = "ex-img"
+        img.src = ex.imageUrl
+        img.alt = ex.name
+        card.appendChild(img)
+      } else {
+        const ph = doc.createElement("div")
+        ph.className = "ex-placeholder"
+        ph.textContent = "\uD83C\uDFCB\uFE0F"
+        card.appendChild(ph)
+      }
 
-      const tdName = doc.createElement("td")
-      const nameDiv = doc.createElement("div")
-      nameDiv.className = "ex-name"
-      nameDiv.textContent = ex.name
-      tdName.appendChild(nameDiv)
-      const detailDiv = doc.createElement("div")
-      detailDiv.className = "ex-detail"
-      detailDiv.textContent = `${ex.muscle} · ${ex.equipment}${ex.technique !== "NORMAL" ? ` · ${ex.technique}` : ""}`
-      tdName.appendChild(detailDiv)
+      // Exercise info
+      const info = doc.createElement("div")
+      info.className = "ex-info"
+
+      const header = doc.createElement("div")
+      header.className = "ex-header"
+      const num = doc.createElement("div")
+      num.className = "ex-num"
+      num.textContent = String(i + 1)
+      header.appendChild(num)
+      const name = doc.createElement("div")
+      name.className = "ex-name"
+      name.textContent = ex.name
+      header.appendChild(name)
+      info.appendChild(header)
+
+      const detail = doc.createElement("div")
+      detail.className = "ex-detail"
+      detail.textContent = `${ex.muscle} · ${ex.equipment}${ex.technique !== "NORMAL" ? ` · ${ex.technique}` : ""}`
+      info.appendChild(detail)
+
+      // Sets info using safe DOM
+      const sets = doc.createElement("div")
+      sets.className = "ex-sets"
+
+      const addSetInfo = (label: string, value: string) => {
+        const span = doc.createElement("span")
+        span.textContent = label + " "
+        const strong = doc.createElement("span")
+        strong.className = "ex-sets-val"
+        strong.textContent = value
+        span.appendChild(strong)
+        sets.appendChild(span)
+      }
+
+      addSetInfo("Séries:", `${ex.sets}x${ex.reps}`)
+      if (ex.loadKg) addSetInfo("Carga:", `${ex.loadKg}kg`)
+      addSetInfo("Descanso:", `${ex.restSeconds}s`)
+      info.appendChild(sets)
+
       if (ex.instructions) {
         const instrDiv = doc.createElement("div")
         instrDiv.className = "instructions"
         instrDiv.textContent = ex.instructions
-        tdName.appendChild(instrDiv)
+        info.appendChild(instrDiv)
       }
       if (ex.notes) {
         const notesDiv = doc.createElement("div")
         notesDiv.className = "instructions"
-        notesDiv.textContent = `📝 ${ex.notes}`
-        tdName.appendChild(notesDiv)
-      }
-      tr.appendChild(tdName)
-
-      for (const val of [String(ex.sets), ex.reps, ex.loadKg ? `${ex.loadKg}kg` : "—", `${ex.restSeconds}s`]) {
-        const td = doc.createElement("td")
-        td.textContent = val
-        tr.appendChild(td)
+        notesDiv.textContent = `\uD83D\uDCDD ${ex.notes}`
+        info.appendChild(notesDiv)
       }
 
-      table.appendChild(tr)
+      card.appendChild(info)
+      block.appendChild(card)
     })
 
-    block.appendChild(table)
     body.appendChild(block)
   }
 
@@ -455,5 +492,6 @@ function generatePDF(plans: WeekPlan[], studentName: string) {
   footer.textContent = "Victor Personal · Gerado automaticamente"
   body.appendChild(footer)
 
-  setTimeout(() => printWindow.print(), 500)
+  // Wait for images to load before printing
+  setTimeout(() => printWindow.print(), 1500)
 }

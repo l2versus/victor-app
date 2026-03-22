@@ -24,6 +24,7 @@ import {
   BarChart3,
   QrCode,
   UserPlus,
+  Send,
 } from "lucide-react"
 
 const navItems = [
@@ -38,6 +39,7 @@ const navItems = [
   { href: "/admin/exercises", label: "Exercícios", icon: Library },
   { href: "/admin/plans", label: "Planos", icon: Crown },
   { href: "/admin/messages", label: "Mensagens", icon: MessageCircle },
+  { href: "/admin/broadcasts", label: "Broadcast", icon: Send },
   { href: "/admin/challenges", label: "Desafios", icon: Target },
   { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },

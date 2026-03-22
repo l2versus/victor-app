@@ -102,7 +102,7 @@ export default async function StudentDetailPage({
       </div>
 
       {/* Quick Tools — Visão do Aluno / Evolução / PDF */}
-      <StudentTools studentId={student.id} studentName={student.user.name} />
+      <StudentTools studentId={student.id} studentName={student.user.name} studentPhone={student.user.phone} />
 
       {/* Content Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

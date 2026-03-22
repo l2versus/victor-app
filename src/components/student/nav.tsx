@@ -56,8 +56,8 @@ export function StudentNav({ hasNutrition = false }: StudentNavProps) {
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 safe-bottom">
-      {/* Glass background */}
-      <div className="absolute inset-0 bg-[#050505]/90 backdrop-blur-2xl border-t border-white/4" />
+      {/* Glass background — premium frosted */}
+      <div className="absolute inset-0 bg-[#030303]/80 backdrop-blur-3xl border-t border-white/[0.06]" />
 
       {/* Top accent */}
       <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-red-600/20 to-transparent" />

@@ -26,6 +26,7 @@ import {
   BarChart3,
   QrCode,
   UserPlus,
+  Send,
 } from "lucide-react"
 
 const mainItems = [
@@ -44,6 +45,7 @@ const moreItems = [
   { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/plans", label: "Planos", icon: Crown },
   { href: "/admin/messages", label: "Mensagens", icon: MessageCircle },
+  { href: "/admin/broadcasts", label: "Broadcast", icon: Send },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },

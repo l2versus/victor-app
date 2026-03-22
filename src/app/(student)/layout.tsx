@@ -60,26 +60,33 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const userAvatar = student?.user.avatar || null
 
   return (
-    <div className="min-h-screen bg-[#050505] relative overflow-x-hidden">
-      {/* ═══ Living Background — GPU accelerated ═══ */}
+    <div className="min-h-screen bg-[#030303] relative overflow-x-hidden">
+      {/* ═══ Premium Background — Ironberg hero + cinematic overlay ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
-        {/* Ember orbs — will-change + backface for GPU compositing */}
-        <div
-          className="absolute top-[-5%] right-[-10%] w-75 h-75 bg-red-600/4 rounded-full blur-[100px]"
-          style={{ animation: "student-orb-1 8s ease-in-out infinite", willChange: "transform", backfaceVisibility: "hidden" }}
-        />
-        <div
-          className="absolute bottom-[20%] left-[-5%] w-62.5 h-62.5 bg-red-800/3 rounded-full blur-[80px]"
-          style={{ animation: "student-orb-2 10s ease-in-out infinite 2s", willChange: "transform", backfaceVisibility: "hidden" }}
+        {/* Ironberg gym photo — fixed, covers viewport */}
+        <img
+          src="/img/ironberg.webp"
+          alt=""
+          className="absolute inset-0 w-full h-full object-cover"
+          style={{ filter: "brightness(0.15) saturate(0.3)" }}
         />
 
-        {/* Noise texture */}
-        <div className="absolute inset-0 opacity-[0.015]" style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`
-        }} />
+        {/* Multi-layer gradient overlay for depth */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-[#030303]/85 to-[#030303]" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#030303] via-transparent to-transparent" style={{ height: "100%" }} />
+
+        {/* Subtle red accent glow */}
+        <div
+          className="absolute top-0 right-0 w-80 h-80 bg-red-600/[0.04] rounded-full blur-[120px]"
+          style={{ willChange: "transform" }}
+        />
+        <div
+          className="absolute bottom-40 left-0 w-60 h-60 bg-red-800/[0.03] rounded-full blur-[100px]"
+          style={{ willChange: "transform" }}
+        />
 
         {/* Top accent line */}
-        <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-red-600/20 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/30 to-transparent" />
       </div>
 
       {/* ═══ Social Header ═══ */}
