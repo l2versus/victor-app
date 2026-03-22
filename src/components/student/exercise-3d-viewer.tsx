@@ -38,8 +38,8 @@ export function Exercise3DViewer({
         </button>
       </div>
 
-      {/* 3D Viewer */}
-      <div className={cn("relative w-full transition-all duration-500", expanded ? "h-[350px]" : "h-[200px]")}>
+      {/* 3D Viewer — with overlays to hide Sketchfab branding */}
+      <div className={cn("relative w-full transition-all duration-500 overflow-hidden", expanded ? "h-[350px]" : "h-[200px]")}>
         {!loaded && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#0a0a0a]">
             <div className="flex items-center gap-2">
@@ -56,6 +56,10 @@ export function Exercise3DViewer({
           onLoad={() => setLoaded(true)}
           loading="lazy"
         />
+        {/* Cover Sketchfab bottom bar (author, $, share) */}
+        <div className="absolute bottom-0 left-0 right-0 h-10 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/90 to-transparent pointer-events-none" />
+        {/* Cover Sketchfab top-right controls */}
+        <div className="absolute top-0 right-0 w-12 h-10 bg-gradient-to-l from-[#0a0a0a] to-transparent pointer-events-none" />
       </div>
 
       {/* Footer hint */}
@@ -151,6 +155,9 @@ function Exercise3DFullscreen({ model, onClose }: { model: Exercise3DModel; onCl
           allow="autoplay; fullscreen; xr-spatial-tracking"
           onLoad={() => setLoaded(true)}
         />
+        {/* Cover Sketchfab bottom bar (author, $, share) */}
+        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-black via-black/90 to-transparent pointer-events-none" />
+        <div className="absolute top-0 right-0 w-14 h-12 bg-gradient-to-l from-black to-transparent pointer-events-none" />
       </div>
 
       {/* Muscle badges */}

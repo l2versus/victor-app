@@ -613,6 +613,9 @@ export function WorkoutPlayer({
         </div>
       </div>
 
+      {/* Spotify Player */}
+      <SpotifyMiniPlayer />
+
       {/* Exercise Navigation */}
       <div className="flex items-center justify-between">
         <button

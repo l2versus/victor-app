@@ -308,7 +308,7 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
     title: "Functional Trainer (Cabo Duplo)",
     titleEn: "Dual Functional Trainer",
     matchExercises: [
-      "Crossover no Cabo", "Rosca no Cabo", "Tríceps Corda",
+      "Crossover no Cabo", "Tríceps Corda",
       "Face Pull no Cabo", "Woodchop no Cabo",
     ],
     muscles: ["Variado"],
@@ -390,7 +390,7 @@ export const EXERCISE_3D_MODELS: Exercise3DModel[] = [
     titleEn: "Signature Cable Crossover",
     matchExercises: [
       "Crossover no Cabo", "Crossover Baixo",
-      "Rosca no Cabo", "Tríceps Corda", "Face Pull no Cabo",
+      "Tríceps Corda", "Face Pull no Cabo",
     ],
     muscles: ["Peito", "Variado"],
     credit: "chaitanyak (Sketchfab)",
