@@ -281,7 +281,7 @@ function SectionCard({ icon: Icon, iconColor, iconBg, title, onEdit, children }:
 
 function BottomSheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center">
+    <div className="fixed inset-0 z-60 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-neutral-900 border-t border-white/10 rounded-t-3xl p-6 pb-10 max-h-[85vh] overflow-y-auto animate-slide-up">
         <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />

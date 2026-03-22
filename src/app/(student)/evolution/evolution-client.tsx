@@ -25,7 +25,7 @@ type EvolutionData = {
     data: { date: string; maxLoad: number }[]
   }>
   rpeTrend: { date: string; rpe: number; template: string }[]
-  volumeTrend: { date: string; volume: number; sets: number; template: string; duration: number | null }[]
+  volumeTrend: { date: string; volume: number; sets: number; template: string; duration: number | null; exercises: { name: string; muscle: string; volume: number; sets: number; maxLoad: number }[] }[]
   muscleDistribution: { muscle: string; volume: number }[]
   summary: {
     totalSessions: number; totalVolume: number; totalSets: number
@@ -129,20 +129,40 @@ function ChartTooltip({ active, payload, label, unit }: {
 }) {
   if (!active || !payload?.length) return null
   const data = payload[0].payload as Record<string, unknown> | undefined
-  const exercises = data?.exercises as Array<{ name: string; volume: number; maxLoad: number; sets: number }> | undefined
+  const exercises = data?.exercises as Array<{ name: string; volume: number; maxLoad: number; sets: number; muscle: string }> | undefined
 
   return (
-    <div className="rounded-xl bg-[#111]/95 backdrop-blur-xl border border-white/[0.08] px-3 py-2 shadow-2xl max-w-[200px]">
-      <p className="text-[9px] text-neutral-500">{label}</p>
+    <div className="rounded-xl bg-[#111]/95 backdrop-blur-xl border border-white/[0.08] px-3 py-2.5 shadow-2xl max-w-[240px]">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-[9px] text-neutral-500">{label}</p>
+        {typeof data?.template === "string" && <p className="text-[8px] text-neutral-600 truncate">{data.template}</p>}
+      </div>
       <p className="text-sm font-bold text-white">{payload[0].value.toLocaleString("pt-BR")}{unit || ""}</p>
       {exercises && exercises.length > 0 && (
-        <div className="mt-1.5 pt-1.5 border-t border-white/[0.06] space-y-1">
-          {exercises.slice(0, 5).map((ex, i) => (
-            <div key={i} className="flex items-center justify-between gap-2">
-              <span className="text-[8px] text-neutral-400 truncate flex-1">{ex.name}</span>
-              <span className="text-[8px] text-white font-medium shrink-0">{ex.maxLoad}kg</span>
+        <div className="mt-1.5 pt-1.5 border-t border-white/[0.06] space-y-1.5">
+          {exercises
+            .sort((a, b) => b.volume - a.volume)
+            .slice(0, 6)
+            .map((ex, i) => (
+            <div key={i} className="space-y-0.5">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[8px] text-neutral-400 truncate flex-1">{ex.name}</span>
+                <span className="text-[8px] text-white font-semibold shrink-0">{ex.volume.toLocaleString("pt-BR")} kg</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[7px] text-neutral-600">{ex.sets}s x {ex.maxLoad}kg max</span>
+                <div className="flex-1 h-[2px] rounded-full bg-white/[0.04] overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-red-500/60"
+                    style={{ width: `${Math.min(100, (ex.volume / Math.max(...exercises.map(e => e.volume))) * 100)}%` }}
+                  />
+                </div>
+              </div>
             </div>
           ))}
+          {exercises.length > 6 && (
+            <p className="text-[7px] text-neutral-600 text-center">+{exercises.length - 6} exercicios</p>
+          )}
         </div>
       )}
     </div>
@@ -403,6 +423,93 @@ export function EvolutionClient() {
               </ResponsiveContainer>
             </div>
           </Section>
+
+          {/* ═══ PR PROGRESS — How close to beating PRs ═══ */}
+          {stats.prs.length > 0 && evo.volumeTrend.length > 0 && (() => {
+            // Build current max load per exercise from the last 3 sessions
+            const recentSessions = evo.volumeTrend.slice(-3)
+            const currentMaxByExercise = new Map<string, { name: string; currentMax: number }>()
+            for (const session of recentSessions) {
+              for (const ex of session.exercises) {
+                const existing = currentMaxByExercise.get(ex.name)
+                if (!existing || ex.maxLoad > existing.currentMax) {
+                  currentMaxByExercise.set(ex.name, { name: ex.name, currentMax: ex.maxLoad })
+                }
+              }
+            }
+
+            // Match against PRs
+            const prProgress = stats.prs
+              .map((pr) => {
+                const current = currentMaxByExercise.get(pr.exerciseName)
+                if (!current) return null
+                const pctOfPr = Math.round((current.currentMax / pr.loadKg) * 100)
+                const diff = pr.loadKg - current.currentMax
+                const goalPlus5 = pr.loadKg + 5
+                const diffToGoal = goalPlus5 - current.currentMax
+                return {
+                  name: pr.exerciseName,
+                  muscle: pr.muscle,
+                  pr: pr.loadKg,
+                  current: current.currentMax,
+                  pctOfPr: Math.min(pctOfPr, 100),
+                  diff,
+                  goalPlus5,
+                  diffToGoal,
+                  isAtPr: diff <= 0,
+                }
+              })
+              .filter(Boolean) as Array<{
+                name: string; muscle: string; pr: number; current: number
+                pctOfPr: number; diff: number; goalPlus5: number; diffToGoal: number; isAtPr: boolean
+              }>
+
+            if (prProgress.length === 0) return null
+
+            return (
+              <Section title="Progresso para o PR" subtitle="Baseado nas ultimas 3 sessoes">
+                <div className="px-3 pb-3 space-y-2.5">
+                  {prProgress.slice(0, 5).map((item) => (
+                    <div key={item.name} className="space-y-1.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="text-[10px] text-white font-medium truncate">{item.name}</span>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/[0.04] text-neutral-600 shrink-0">{item.muscle}</span>
+                        </div>
+                        <span className="text-[10px] font-bold shrink-0 ml-2" style={{ color: item.isAtPr ? "#22c55e" : item.pctOfPr >= 90 ? "#f59e0b" : "#ef4444" }}>
+                          {item.isAtPr ? "No PR!" : `Falta ${item.diff}kg (${100 - item.pctOfPr}%)`}
+                        </span>
+                      </div>
+                      {/* Progress bar to PR */}
+                      <div className="relative h-2 rounded-full bg-white/[0.04] overflow-hidden">
+                        <div
+                          className="absolute inset-y-0 left-0 rounded-full transition-all duration-500"
+                          style={{
+                            width: `${item.pctOfPr}%`,
+                            background: item.isAtPr
+                              ? "linear-gradient(90deg, #22c55e, #16a34a)"
+                              : item.pctOfPr >= 90
+                              ? "linear-gradient(90deg, #f59e0b, #d97706)"
+                              : "linear-gradient(90deg, #ef4444, #dc2626)",
+                          }}
+                        />
+                      </div>
+                      {/* Labels row */}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[8px] text-neutral-600">Atual: {item.current}kg</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[8px] text-neutral-500">PR: {item.pr}kg</span>
+                          <span className="text-[8px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-400 font-semibold">
+                            Meta +5kg: {item.goalPlus5}kg {!item.isAtPr ? "" : `(falta ${item.diffToGoal}kg)`}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Section>
+            )
+          })()}
 
           {/* ═══ FREQUENCY (Hevy-style bar) ═══ */}
           <Section title="Frequencia semanal" subtitle="Sessoes por semana">

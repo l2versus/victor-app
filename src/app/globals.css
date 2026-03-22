@@ -73,6 +73,35 @@
     @apply bg-background text-foreground antialiased;
     font-family: var(--font-sans, system-ui, -apple-system, sans-serif);
   }
+
+  /* ═══ NATIVE APP FEEL ═══ */
+  /* Eliminates 300ms tap delay on ALL touch targets */
+  a, button, [role="button"], input, select, textarea, label, summary {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Prevent text selection on interactive elements (app-like) */
+  nav, [role="navigation"], [role="tablist"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  /* Smooth momentum scrolling everywhere */
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Prevent pull-to-refresh on app shell (PWA) */
+  body {
+    overscroll-behavior-y: contain;
+  }
+
+  /* Faster transitions — replace transition-all with specific properties */
+  .transition-all {
+    transition-property: transform, opacity, color, background-color, border-color, box-shadow;
+    transition-timing-function: cubic-bezier(0.2, 0, 0, 1);
+  }
 }
 
 /* ═══ SCROLLBAR ═══ */
@@ -80,6 +109,10 @@
 ::-webkit-scrollbar-track { background: #0a0a0a; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+
+/* Hide scrollbar but keep scroll (chip filters, horizontal lists) */
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
 /* ═══ SELECTION ═══ */
 ::selection { background: rgba(220, 38, 38, 0.3); color: #fff; }
@@ -272,6 +305,22 @@
   position: absolute;
   inset: 0;
   background: radial-gradient(ellipse at 50% 80%, rgba(220,38,38,0.15), transparent 70%);
+}
+
+/* ═══ ACCESSIBILITY: Reduce Motion ═══ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ═══ GPU ACCELERATION FOR ANIMATED ELEMENTS ═══ */
+.animate-ember, .animate-pulse-glow, .animate-streak-fire,
+.animate-float-slow, .animate-marquee, .animate-timer-pulse {
+  will-change: transform, opacity;
+  backface-visibility: hidden;
 }
 
 /* ═══ STUDENT SAFE BOTTOM ═══ */

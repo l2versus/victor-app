@@ -54,7 +54,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
   const userAvatar = student?.user.avatar || null
 
   return (
-    <div className="min-h-screen bg-[#050505] relative overflow-hidden">
+    <div className="min-h-screen bg-[#050505] relative overflow-x-hidden">
       {/* ═══ Living Background ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {/* Ember orbs */}

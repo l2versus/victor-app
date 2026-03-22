@@ -96,7 +96,8 @@ export async function PATCH(req: NextRequest) {
 
     for (const key of userFields) {
       if (body[key] !== undefined) {
-        userUpdateData[key] = body[key] || null
+        const val = typeof body[key] === "string" ? body[key].trim() : body[key]
+        userUpdateData[key] = val === "" ? null : val
       }
     }
 
