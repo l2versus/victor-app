@@ -6,7 +6,7 @@ export async function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value
 
   // Public routes — no auth needed
-  const publicPaths = ["/login", "/register", "/cadastro", "/victoroliveira", "/api/auth", "/api/webhooks", "/api/spotify/callback", "/api/spotify/login"]
+  const publicPaths = ["/login", "/register", "/cadastro", "/victoroliveira", "/api/auth", "/api/webhooks", "/api/spotify/callback"]
   if (publicPaths.some((p) => pathname.startsWith(p)) || pathname === "/") {
     return NextResponse.next()
   }

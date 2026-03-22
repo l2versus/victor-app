@@ -65,14 +65,13 @@ export function SpotifyMiniPlayer() {
   useEffect(() => {
     checkConnection()
 
-    // Escuta mensagem do popup de callback do Spotify
-    function handleMessage(e: MessageEvent) {
-      if (e.data?.type === "spotify-callback" && e.data.success) {
-        checkConnection()
-      }
+    // Se voltou do Spotify com ?spotify=connected, limpa a URL
+    const params = new URLSearchParams(window.location.search)
+    if (params.get("spotify") === "connected") {
+      const url = new URL(window.location.href)
+      url.searchParams.delete("spotify")
+      window.history.replaceState({}, "", url.pathname)
     }
-    window.addEventListener("message", handleMessage)
-    return () => window.removeEventListener("message", handleMessage)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -116,36 +115,24 @@ export function SpotifyMiniPlayer() {
     )
   }
 
-  // Abre popup pro Spotify OAuth
-  function openSpotifyLogin() {
-    const w = 450, h = 650
-    const left = window.screenX + (window.innerWidth - w) / 2
-    const top = window.screenY + (window.innerHeight - h) / 2
-    window.open(
-      "/api/spotify/login",
-      "spotify-login",
-      `width=${w},height=${h},left=${left},top=${top},popup=yes`
-    )
-  }
-
   // ═══ NOT CONNECTED — Login Button ═══
   if (!connected) {
     return (
-      <button
-        onClick={openSpotifyLogin}
-        className="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl hover:border-[#1DB954]/30 hover:bg-[#1DB954]/[0.04] transition-all active:scale-[0.98] group"
+      <a
+        href="/api/spotify/login"
+        className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl hover:border-[#1DB954]/30 hover:bg-[#1DB954]/[0.04] transition-all active:scale-[0.98] group"
       >
         <div className="w-10 h-10 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/20 flex items-center justify-center shrink-0 group-hover:bg-[#1DB954]/20 transition-colors">
           <SpotifyIcon />
         </div>
-        <div className="flex-1 text-left">
+        <div className="flex-1">
           <p className="text-sm font-medium text-white">Conectar Spotify</p>
           <p className="text-[11px] text-neutral-500">Suas músicas durante o treino</p>
         </div>
         <div className="px-3 py-1.5 rounded-full bg-[#1DB954] text-black text-[11px] font-bold shrink-0">
           Login
         </div>
-      </button>
+      </a>
     )
   }
 
