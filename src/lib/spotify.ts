@@ -16,8 +16,8 @@ function getClientSecret() {
   return process.env.SPOTIFY_CLIENT_SECRET || ""
 }
 
-function getRedirectUri() {
-  const base = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+function getRedirectUri(origin?: string) {
+  const base = origin || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
   return `${base}/api/spotify/callback`
 }
 
@@ -30,12 +30,12 @@ const SCOPES = [
 ].join(" ")
 
 /** Gera URL de login do Spotify */
-export function getSpotifyAuthUrl(state: string): string {
+export function getSpotifyAuthUrl(state: string, origin?: string): string {
   const params = new URLSearchParams({
     response_type: "code",
     client_id: getClientId(),
     scope: SCOPES,
-    redirect_uri: getRedirectUri(),
+    redirect_uri: getRedirectUri(origin),
     state,
     show_dialog: "true",
   })
@@ -43,7 +43,7 @@ export function getSpotifyAuthUrl(state: string): string {
 }
 
 /** Troca authorization code por access + refresh tokens */
-export async function exchangeCodeForTokens(code: string) {
+export async function exchangeCodeForTokens(code: string, origin?: string) {
   const res = await fetch(SPOTIFY_TOKEN_URL, {
     method: "POST",
     headers: {
@@ -53,7 +53,7 @@ export async function exchangeCodeForTokens(code: string) {
     body: new URLSearchParams({
       grant_type: "authorization_code",
       code,
-      redirect_uri: getRedirectUri(),
+      redirect_uri: getRedirectUri(origin),
     }),
   })
 
