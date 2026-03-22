@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import type { ExerciseTechnique } from "@/generated/prisma/enums"
 
 // GET /api/admin/workouts/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -70,6 +71,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           order: number
           supersetGroup?: string
           suggestedMachine?: string
+          technique?: string
         }, index: number) => {
           let exerciseId = ex.exerciseId
           if (!exerciseId && ex.exerciseName) {
@@ -89,6 +91,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
             order: ex.order ?? index,
             supersetGroup: ex.supersetGroup || null,
             suggestedMachine: ex.suggestedMachine || null,
+            technique: (ex.technique || "NORMAL") as ExerciseTechnique,
           }
         })
       )
@@ -97,17 +100,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         exerciseId: string; sets: number; reps: string; restSeconds: number;
         loadKg: number | null; notes: string | null; order: number;
         supersetGroup: string | null; suggestedMachine: string | null;
+        technique: ExerciseTechnique;
       }>
 
       // Delete old exercises and create new ones in a transaction
       await prisma.$transaction([
         prisma.workoutExercise.deleteMany({ where: { templateId: id } }),
-        prisma.workoutTemplate.update({
-          where: { id },
-          data: {
-            ...updateData,
-            exercises: { create: validExercises },
-          },
+        prisma.workoutTemplate.update({ where: { id }, data: updateData }),
+        prisma.workoutExercise.createMany({
+          data: validExercises.map((ex) => ({ ...ex, templateId: id })),
         }),
       ])
     } else {

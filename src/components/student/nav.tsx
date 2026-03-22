@@ -41,21 +41,24 @@ export function StudentNav({ hasNutrition = false }: StudentNavProps) {
             <Link
               key={item.href}
               href={item.href}
+              prefetch={true}
               className={cn(
-                "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl transition-all duration-300 flex-1",
+                "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl flex-1",
+                "transition-[color,transform] duration-150 ease-out",
                 isActive
                   ? "text-white"
                   : "text-neutral-600 active:text-neutral-400 active:scale-95"
               )}
             >
               <div className={cn(
-                "relative flex items-center justify-center w-8 h-8 rounded-xl transition-all duration-300",
+                "relative flex items-center justify-center w-8 h-8 rounded-xl",
+                "transition-[background-color,border-color] duration-150",
                 isActive && (isNutrition
                   ? "bg-emerald-600/10 border border-emerald-500/20"
                   : "bg-red-600/10 border border-red-500/20")
               )}>
                 <item.icon className={cn(
-                  "w-4.25 h-4.25 transition-all duration-300",
+                  "w-4.25 h-4.25 transition-colors duration-150",
                   isActive && (isNutrition
                     ? "text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]"
                     : "text-red-400 drop-shadow-[0_0_6px_rgba(220,38,38,0.4)]")
@@ -70,7 +73,7 @@ export function StudentNav({ hasNutrition = false }: StudentNavProps) {
                 )}
               </div>
               <span className={cn(
-                "text-[9px] font-medium tracking-wider uppercase transition-colors duration-300",
+                "text-[9px] font-medium tracking-wider uppercase transition-colors duration-150",
                 isActive ? "text-neutral-300" : "text-neutral-700"
               )}>
                 {item.label}

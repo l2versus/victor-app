@@ -120,11 +120,11 @@ export default async function TodayPage() {
     include: { sets: true },
   })
 
-  const lastSetsMap: Record<string, { setNumber: number; reps: number; loadKg: number }[]> = {}
+  const lastSetsMap: Record<string, { setNumber: number; reps: number; loadKg: number; technique: string }[]> = {}
   if (lastSession) {
     for (const set of lastSession.sets) {
       if (!lastSetsMap[set.exerciseId]) lastSetsMap[set.exerciseId] = []
-      lastSetsMap[set.exerciseId].push({ setNumber: set.setNumber, reps: set.reps, loadKg: set.loadKg })
+      lastSetsMap[set.exerciseId].push({ setNumber: set.setNumber, reps: set.reps, loadKg: set.loadKg, technique: set.technique })
     }
   }
 
@@ -141,6 +141,7 @@ export default async function TodayPage() {
     notes: we.notes,
     supersetGroup: we.supersetGroup,
     suggestedMachine: we.suggestedMachine,
+    technique: we.technique,
     lastSets: lastSetsMap[we.exercise.id] || [],
   }))
 
@@ -158,10 +159,13 @@ export default async function TodayPage() {
         id: activeSession.id,
         startedAt: activeSession.startedAt.toISOString(),
         completedSets: activeSession.sets.map((s) => ({
+          id: s.id,
           exerciseId: s.exerciseId,
           setNumber: s.setNumber,
           reps: s.reps,
           loadKg: s.loadKg,
+          technique: s.technique,
+          isExtra: s.isExtra,
         })),
       } : null}
       completedToday={completedToday ? {

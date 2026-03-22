@@ -56,11 +56,16 @@ export async function GET() {
       include: { sets: true },
     })
 
-    const lastSetsMap: Record<string, { reps: number; loadKg: number }[]> = {}
+    const lastSetsMap: Record<string, { setNumber: number; reps: number; loadKg: number; technique: string }[]> = {}
     if (lastSession) {
       for (const set of lastSession.sets) {
         if (!lastSetsMap[set.exerciseId]) lastSetsMap[set.exerciseId] = []
-        lastSetsMap[set.exerciseId].push({ reps: set.reps, loadKg: set.loadKg })
+        lastSetsMap[set.exerciseId].push({
+          setNumber: set.setNumber,
+          reps: set.reps,
+          loadKg: set.loadKg,
+          technique: set.technique,
+        })
       }
     }
 

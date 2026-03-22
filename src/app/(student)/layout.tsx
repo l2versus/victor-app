@@ -29,18 +29,24 @@ export default async function StudentLayout({ children }: { children: React.Reac
     student ? prisma.workoutSession.count({
       where: { studentId: student.id, startedAt: { gte: weekStart }, completedAt: { not: null } },
     }) : 0,
-    // Streak: consecutive weeks with ≥1 session
+    // Streak: 1 aggregated query instead of up to 52 individual ones
     (async () => {
       if (!student) return 0
+      const sessions = await prisma.workoutSession.findMany({
+        where: { studentId: student.id, completedAt: { not: null } },
+        select: { startedAt: true },
+        orderBy: { startedAt: "desc" },
+      })
+      if (sessions.length === 0) return 0
       const now = new Date()
       let s = 0
       for (let w = 0; w < 52; w++) {
         const end = new Date(now); end.setDate(now.getDate() - w * 7)
         const start = new Date(end); start.setDate(end.getDate() - 7)
-        const count = await prisma.workoutSession.count({
-          where: { studentId: student.id, completedAt: { not: null }, startedAt: { gte: start, lt: end } },
-        })
-        if (count > 0) s++; else break
+        const hasSession = sessions.some(
+          (sess) => sess.startedAt >= start && sess.startedAt < end
+        )
+        if (hasSession) s++; else break
       }
       return s
     })(),
@@ -55,16 +61,16 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <div className="min-h-screen bg-[#050505] relative overflow-x-hidden">
-      {/* ═══ Living Background ═══ */}
-      <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Ember orbs */}
+      {/* ═══ Living Background — GPU accelerated ═══ */}
+      <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
+        {/* Ember orbs — will-change + backface for GPU compositing */}
         <div
           className="absolute top-[-5%] right-[-10%] w-75 h-75 bg-red-600/4 rounded-full blur-[100px]"
-          style={{ animation: "student-orb-1 8s ease-in-out infinite" }}
+          style={{ animation: "student-orb-1 8s ease-in-out infinite", willChange: "transform", backfaceVisibility: "hidden" }}
         />
         <div
           className="absolute bottom-[20%] left-[-5%] w-62.5 h-62.5 bg-red-800/3 rounded-full blur-[80px]"
-          style={{ animation: "student-orb-2 10s ease-in-out infinite 2s" }}
+          style={{ animation: "student-orb-2 10s ease-in-out infinite 2s", willChange: "transform", backfaceVisibility: "hidden" }}
         />
 
         {/* Noise texture */}

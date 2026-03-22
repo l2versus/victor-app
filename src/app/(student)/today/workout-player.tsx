@@ -3,13 +3,17 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import {
   Play, ChevronLeft, ChevronRight, Check, Dumbbell, Clock,
-  Flame, Trophy, X, Zap,
+  Flame, Trophy, X, Zap, Plus, Pencil, Trash2, ChevronDown,
 } from "lucide-react"
 import { useRestTimer } from "@/hooks/use-rest-timer"
 import { useSwipe } from "@/hooks/use-swipe"
 import { BodyFocusBadges } from "@/components/student/muscle-info-card"
 import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
 import { useCelebration, type CelebrationType } from "@/components/student/celebration"
+
+// ═══ TYPES ═══
+
+type Technique = "NORMAL" | "DROP_SET" | "REST_PAUSE" | "PYRAMID" | "REVERSE_PYRAMID" | "FST7" | "MYO_REPS"
 
 interface ExerciseData {
   id: string
@@ -24,14 +28,18 @@ interface ExerciseData {
   notes: string | null
   supersetGroup: string | null
   suggestedMachine: string | null
-  lastSets: { setNumber: number; reps: number; loadKg: number }[]
+  technique: Technique
+  lastSets: { setNumber: number; reps: number; loadKg: number; technique: string }[]
 }
 
 interface CompletedSet {
+  id?: string
   exerciseId: string
   setNumber: number
   reps: number
   loadKg: number
+  technique: Technique
+  isExtra: boolean
 }
 
 interface WorkoutPlayerProps {
@@ -53,6 +61,35 @@ interface WorkoutPlayerProps {
 }
 
 type Phase = "preview" | "active" | "rest" | "summary" | "done"
+
+// ═══ TECHNIQUE HELPERS ═══
+
+const TECHNIQUE_INFO: Record<Technique, { label: string; shortLabel: string; color: string; description: string }> = {
+  NORMAL: { label: "Normal", shortLabel: "Normal", color: "text-neutral-400", description: "Séries padrão" },
+  DROP_SET: { label: "Drop Set", shortLabel: "Drop", color: "text-purple-400", description: "Reduza o peso e continue sem descanso" },
+  REST_PAUSE: { label: "Rest-Pause", shortLabel: "R-P", color: "text-cyan-400", description: "Pause 10-15s e faça mais reps" },
+  PYRAMID: { label: "Pirâmide", shortLabel: "Pir", color: "text-amber-400", description: "Aumente o peso a cada série" },
+  REVERSE_PYRAMID: { label: "Pirâmide Invertida", shortLabel: "PirInv", color: "text-orange-400", description: "Comece pesado e reduza" },
+  FST7: { label: "FST-7", shortLabel: "FST7", color: "text-rose-400", description: "7 séries, 30s descanso (fascia stretch)" },
+  MYO_REPS: { label: "Myo-Reps", shortLabel: "Myo", color: "text-emerald-400", description: "Série ativadora + mini-séries de 3-5 reps" },
+}
+
+function TechniqueBadge({ technique, size = "sm" }: { technique: Technique; size?: "sm" | "md" }) {
+  if (technique === "NORMAL") return null
+  const info = TECHNIQUE_INFO[technique]
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full border ${
+      size === "sm" ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-0.5 text-[10px]"
+    } font-medium ${info.color} bg-current/10 border-current/20`}
+    style={{ backgroundColor: "color-mix(in srgb, currentColor 10%, transparent)" }}
+    >
+      <Zap className={size === "sm" ? "w-2.5 h-2.5" : "w-3 h-3"} />
+      {size === "sm" ? info.shortLabel : info.label}
+    </span>
+  )
+}
+
+// ═══ MAIN COMPONENT ═══
 
 export function WorkoutPlayer({
   templateId,
@@ -149,20 +186,27 @@ export function WorkoutPlayer({
   }
 
   // Complete a set
-  const handleCompleteSet = useCallback(async (exerciseId: string, setNumber: number, reps: number, loadKg: number) => {
+  const handleCompleteSet = useCallback(async (
+    exerciseId: string,
+    setNumber: number,
+    reps: number,
+    loadKg: number,
+    technique: Technique = "NORMAL",
+    isExtra: boolean = false,
+  ) => {
     if (!sessionId) return
 
-    // Haptic feedback
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate(50)
     }
 
     try {
-      await fetch(`/api/student/sessions/${sessionId}/sets`, {
+      const res = await fetch(`/api/student/sessions/${sessionId}/sets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ exerciseId, setNumber, reps, loadKg }),
+        body: JSON.stringify({ exerciseId, setNumber, reps, loadKg, technique, isExtra }),
       })
+      const data = await res.json()
 
       let newExSetsCount = 0
       let newTotalCount = 0
@@ -170,36 +214,96 @@ export function WorkoutPlayer({
       setCompletedSets((prev) => {
         const next = new Map(prev)
         const existing = next.get(exerciseId) || []
-        next.set(exerciseId, [...existing, { exerciseId, setNumber, reps, loadKg }])
+        next.set(exerciseId, [...existing, {
+          id: data.set?.id,
+          exerciseId,
+          setNumber,
+          reps,
+          loadKg,
+          technique,
+          isExtra,
+        }])
         newExSetsCount = existing.length + 1
         newTotalCount = Array.from(next.values()).reduce((sum, arr) => sum + arr.length, 0)
         return next
       })
 
-      // Check if all sets for this exercise are done (counts from updater)
       const prescribedSets = exercises.find((e) => e.id === exerciseId)?.sets || 0
 
-      if (newExSetsCount >= prescribedSets) {
-        // Move to next exercise or summary
+      if (newExSetsCount >= prescribedSets && !isExtra) {
         if (currentExIdx < exercises.length - 1) {
           setNextExName(exercises[currentExIdx + 1].name)
           setPhase("rest")
           restTimer.start(currentEx.restSeconds)
-        } else {
-          // Check if ALL sets done
-          if (newTotalCount >= totalSets) {
-            setPhase("summary")
-          }
+        } else if (newTotalCount >= totalSets) {
+          setPhase("summary")
         }
       } else {
-        // Rest between sets
-        setPhase("rest")
-        restTimer.start(currentEx.restSeconds)
+        // Rest between sets (shorter for techniques like FST7)
+        const restTime = technique === "FST7" ? 30
+          : technique === "REST_PAUSE" ? 15
+          : technique === "MYO_REPS" ? 5
+          : technique === "DROP_SET" ? 0
+          : currentEx.restSeconds
+        if (restTime > 0) {
+          setPhase("rest")
+          restTimer.start(restTime)
+        }
       }
     } catch {
       setError("Erro ao salvar série. Tente novamente.")
     }
-  }, [sessionId, completedSets, exercises, currentExIdx, currentEx, totalCompleted, totalSets, restTimer])
+  }, [sessionId, exercises, currentExIdx, currentEx, totalSets, restTimer])
+
+  // Edit an existing set
+  const handleEditSet = useCallback(async (
+    setId: string,
+    reps: number,
+    loadKg: number,
+    technique: Technique,
+    exerciseId: string,
+    setNumber: number,
+  ) => {
+    if (!sessionId) return
+    try {
+      await fetch(`/api/student/sessions/${sessionId}/sets`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ setId, reps, loadKg, technique }),
+      })
+
+      setCompletedSets((prev) => {
+        const next = new Map(prev)
+        const sets = next.get(exerciseId) || []
+        const idx = sets.findIndex((s) => s.id === setId || (s.setNumber === setNumber && !s.id))
+        if (idx >= 0) {
+          sets[idx] = { ...sets[idx], reps, loadKg, technique }
+          next.set(exerciseId, [...sets])
+        }
+        return next
+      })
+    } catch {
+      setError("Erro ao editar série.")
+    }
+  }, [sessionId])
+
+  // Delete extra set
+  const handleDeleteSet = useCallback(async (setId: string, exerciseId: string) => {
+    if (!sessionId || !setId) return
+    try {
+      await fetch(`/api/student/sessions/${sessionId}/sets?setId=${setId}`, {
+        method: "DELETE",
+      })
+      setCompletedSets((prev) => {
+        const next = new Map(prev)
+        const sets = (next.get(exerciseId) || []).filter((s) => s.id !== setId)
+        next.set(exerciseId, sets)
+        return next
+      })
+    } catch {
+      setError("Erro ao remover série.")
+    }
+  }, [sessionId])
 
   // Celebration
   const { celebrate, CelebrationUI } = useCelebration()
@@ -216,7 +320,6 @@ export function WorkoutPlayer({
       const data = await res.json()
       setPhase("done")
 
-      // Trigger celebration for achievements
       if (data.achievements && data.achievements.length > 0) {
         const ach = data.achievements[0]
         const type: CelebrationType = ach.type.includes("PR") ? "pr"
@@ -238,7 +341,6 @@ export function WorkoutPlayer({
 
   // ═══ DONE STATE ═══
   if (phase === "done") {
-    // Celebration overlay (confetti + modal) — rendered on top of everything
     const rpeLabel = completedToday?.rpe
       ? completedToday.rpe <= 3 ? "Leve" : completedToday.rpe <= 6 ? "Moderado" : completedToday.rpe <= 8 ? "Intenso" : "Máximo"
       : null
@@ -249,7 +351,6 @@ export function WorkoutPlayer({
     return (
       <div className="space-y-5 pt-4">
         {CelebrationUI}
-        {/* Hero */}
         <div className="flex flex-col items-center text-center pb-2">
           <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-emerald-600/20 to-emerald-800/10 border border-emerald-500/15 flex items-center justify-center mb-5 animate-pulse-glow" style={{ "--tw-shadow-color": "rgba(16,185,129,0.3)" } as React.CSSProperties}>
             <Check className="w-9 h-9 text-emerald-400" />
@@ -258,7 +359,6 @@ export function WorkoutPlayer({
           <p className="text-neutral-500 text-sm">{templateName}</p>
         </div>
 
-        {/* Stats row */}
         <div className="grid grid-cols-3 gap-3">
           <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4 text-center">
             <Clock className="w-4 h-4 text-blue-400 mx-auto mb-2" />
@@ -277,23 +377,24 @@ export function WorkoutPlayer({
           </div>
         </div>
 
-        {/* Exercises completed list */}
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5">
           <h3 className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-3">Exercícios realizados</h3>
           <div className="space-y-2">
-            {exercises.map((ex, i) => (
+            {exercises.map((ex) => (
               <div key={ex.id} className="flex items-center gap-3 py-1.5">
                 <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/15 flex items-center justify-center shrink-0">
                   <Check className="w-3 h-3 text-emerald-400" />
                 </div>
                 <span className="text-sm text-neutral-300 truncate flex-1">{ex.name}</span>
-                <span className="text-[10px] text-neutral-600">{ex.sets}x{ex.reps}</span>
+                <div className="flex items-center gap-1.5">
+                  <TechniqueBadge technique={ex.technique} />
+                  <span className="text-[10px] text-neutral-600">{ex.sets}x{ex.reps}</span>
+                </div>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Footer message */}
         <p className="text-center text-xs text-neutral-600 pb-2">
           Descanse bem e volte amanha para o proximo treino
         </p>
@@ -311,7 +412,6 @@ export function WorkoutPlayer({
             <span>{error}</span>
           </div>
         )}
-        {/* Header */}
         <div className="text-center pt-4">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 mb-3">
             <Dumbbell className="w-3 h-3 text-red-400" />
@@ -323,13 +423,11 @@ export function WorkoutPlayer({
           </p>
         </div>
 
-        {/* Body Focus Area — interactive muscle badges with educational info */}
         {(() => {
           const muscles = [...new Set(exercises.map(e => e.muscle))]
           return <BodyFocusBadges muscles={muscles} />
         })()}
 
-        {/* Exercise List Preview */}
         <div className="space-y-2">
           {exercises.map((ex, i) => (
             <div
@@ -340,7 +438,10 @@ export function WorkoutPlayer({
                 {i + 1}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white truncate">{ex.name}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm font-medium text-white truncate">{ex.name}</p>
+                  <TechniqueBadge technique={ex.technique} />
+                </div>
                 <div className="flex items-center gap-2 mt-0.5">
                   <p className="text-[11px] text-neutral-500">{ex.muscle} · {ex.sets}×{ex.reps}</p>
                   <Exercise3DButton exerciseName={ex.name} />
@@ -358,7 +459,6 @@ export function WorkoutPlayer({
           ))}
         </div>
 
-        {/* Start Button */}
         <button
           onClick={handleStart}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base shadow-xl shadow-red-600/25 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all duration-300"
@@ -377,12 +477,9 @@ export function WorkoutPlayer({
 
     return (
       <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050505]/95 backdrop-blur-xl animate-slide-up">
-        {/* Timer Circle */}
         <div className="relative w-48 h-48 mb-8 animate-timer-pulse">
           <svg className="w-full h-full timer-circle" viewBox="0 0 120 120">
-            {/* Track */}
             <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="4" />
-            {/* Progress */}
             <circle
               cx="60" cy="60" r="54" fill="none"
               stroke="url(#timerGradient)" strokeWidth="4" strokeLinecap="round"
@@ -398,14 +495,12 @@ export function WorkoutPlayer({
             </defs>
           </svg>
 
-          {/* Time Display */}
           <div className="absolute inset-0 flex flex-col items-center justify-center">
             <p className="text-5xl font-bold text-white tabular-nums">{restTimer.remaining}</p>
             <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-1">Descanso</p>
           </div>
         </div>
 
-        {/* Next exercise info */}
         {nextExName && (
           <div className="text-center mb-8">
             <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">Próximo</p>
@@ -413,7 +508,6 @@ export function WorkoutPlayer({
           </div>
         )}
 
-        {/* Skip Button */}
         <button
           onClick={() => { restTimer.skip(); setPhase("active") }}
           className="px-6 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 text-sm font-medium hover:bg-white/[0.06] hover:text-white transition-all active:scale-95"
@@ -442,7 +536,6 @@ export function WorkoutPlayer({
           <p className="text-neutral-500 text-sm">{formatTime(elapsed)} · {totalCompleted} séries</p>
         </div>
 
-        {/* RPE Selector */}
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5">
           <h3 className="text-sm font-semibold text-white/80 mb-4 text-center">Como foi o treino? (RPE)</h3>
           <div className="grid grid-cols-5 gap-2">
@@ -469,7 +562,6 @@ export function WorkoutPlayer({
           </div>
         </div>
 
-        {/* Finish Button */}
         <button
           onClick={handleFinish}
           disabled={rpe === null}
@@ -488,8 +580,8 @@ export function WorkoutPlayer({
 
   // ═══ ACTIVE STATE ═══
   const exCompletedSets = completedSets.get(currentEx.id) || []
-  const currentSetNumber = exCompletedSets.length + 1
-  const isExerciseDone = exCompletedSets.length >= currentEx.sets
+  const prescribedSetCount = currentEx.sets
+  const isExerciseDone = exCompletedSets.filter(s => !s.isExtra).length >= prescribedSetCount
 
   return (
     <div className="space-y-4" {...swipe}>
@@ -499,7 +591,8 @@ export function WorkoutPlayer({
           <span>{error}</span>
         </div>
       )}
-      {/* ═══ FLOATING PROGRESS PILL ═══ */}
+
+      {/* Progress bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Clock className="w-3.5 h-3.5 text-neutral-600" />
@@ -510,13 +603,13 @@ export function WorkoutPlayer({
           <div className="w-20 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
             <div
               className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-500"
-              style={{ width: `${progress * 100}%` }}
+              style={{ width: `${Math.min(progress * 100, 100)}%` }}
             />
           </div>
         </div>
       </div>
 
-      {/* ═══ EXERCISE NAVIGATION ═══ */}
+      {/* Exercise Navigation */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => setCurrentExIdx((i) => Math.max(0, i - 1))}
@@ -537,16 +630,19 @@ export function WorkoutPlayer({
         </button>
       </div>
 
-      {/* ═══ EXERCISE CARD ═══ */}
+      {/* Exercise Card */}
       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-5 swipe-container">
         {/* Header */}
-        <div className="flex items-center gap-3 mb-5">
+        <div className="flex items-center gap-3 mb-4">
           <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/10 flex items-center justify-center text-red-400 border border-red-500/15">
             <Dumbbell className="w-5 h-5" />
           </div>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-white truncate">{currentEx.name}</h2>
-            <p className="text-xs text-neutral-500">{currentEx.muscle} · {currentEx.equipment}</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-xs text-neutral-500">{currentEx.muscle} · {currentEx.equipment}</p>
+              <TechniqueBadge technique={currentEx.technique} size="md" />
+            </div>
           </div>
           {isExerciseDone && (
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center animate-set-complete">
@@ -555,6 +651,14 @@ export function WorkoutPlayer({
           )}
         </div>
 
+        {/* Technique description */}
+        {currentEx.technique !== "NORMAL" && (
+          <div className="mb-4 flex items-start gap-2 px-3 py-2 rounded-lg bg-purple-500/5 border border-purple-500/10">
+            <Zap className="w-3.5 h-3.5 text-purple-400 mt-0.5 shrink-0" />
+            <p className="text-xs text-purple-300/80">{TECHNIQUE_INFO[currentEx.technique].description}</p>
+          </div>
+        )}
+
         {/* Instructions */}
         {currentEx.instructions && (
           <p className="text-xs text-neutral-500 mb-4 leading-relaxed border-l-2 border-red-500/20 pl-3">
@@ -562,34 +666,89 @@ export function WorkoutPlayer({
           </p>
         )}
 
-        {/* Sets Grid */}
+        {/* Sets Grid — Header */}
         <div className="space-y-2">
-          <div className="grid grid-cols-4 gap-2 mb-1">
+          <div className="grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 mb-1">
             <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center">Série</span>
             <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center">Reps</span>
             <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center">Kg</span>
+            <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center">Técnica</span>
             <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center"></span>
           </div>
 
-          {Array.from({ length: currentEx.sets }, (_, i) => {
+          {/* Prescribed sets */}
+          {Array.from({ length: prescribedSetCount }, (_, i) => {
             const setNum = i + 1
-            const completed = exCompletedSets.find((s) => s.setNumber === setNum)
+            const completed = exCompletedSets.find((s) => s.setNumber === setNum && !s.isExtra)
             const lastSet = currentEx.lastSets.find((s) => s.setNumber === setNum)
             const suggestedLoad = lastSet?.loadKg || currentEx.loadKg || 0
             const suggestedReps = parseInt(currentEx.reps) || 10
 
             return (
               <SetRow
-                key={setNum}
+                key={`prescribed-${setNum}`}
                 setNumber={setNum}
                 prescribedReps={suggestedReps}
                 suggestedLoad={suggestedLoad}
                 completed={completed}
-                isCurrent={setNum === currentSetNumber && !isExerciseDone}
-                onComplete={(reps, loadKg) => handleCompleteSet(currentEx.id, setNum, reps, loadKg)}
+                exerciseTechnique={currentEx.technique}
+                lastSetTechnique={lastSet?.technique as Technique | undefined}
+                onComplete={(reps, loadKg, technique) =>
+                  handleCompleteSet(currentEx.id, setNum, reps, loadKg, technique, false)
+                }
+                onEdit={(reps, loadKg, technique) =>
+                  completed?.id
+                    ? handleEditSet(completed.id, reps, loadKg, technique, currentEx.id, setNum)
+                    : undefined
+                }
               />
             )
           })}
+
+          {/* Extra sets */}
+          {exCompletedSets
+            .filter((s) => s.isExtra)
+            .map((extra, i) => (
+              <SetRow
+                key={`extra-${extra.id || i}`}
+                setNumber={prescribedSetCount + i + 1}
+                prescribedReps={parseInt(currentEx.reps) || 10}
+                suggestedLoad={extra.loadKg}
+                completed={extra}
+                exerciseTechnique={currentEx.technique}
+                isExtra
+                onComplete={() => {}}
+                onEdit={(reps, loadKg, technique) =>
+                  extra.id
+                    ? handleEditSet(extra.id, reps, loadKg, technique, currentEx.id, extra.setNumber)
+                    : undefined
+                }
+                onDelete={() => extra.id ? handleDeleteSet(extra.id, currentEx.id) : undefined}
+              />
+            ))}
+
+          {/* Add extra set button */}
+          <AddExtraSetButton
+            exerciseId={currentEx.id}
+            nextSetNumber={prescribedSetCount + exCompletedSets.filter(s => s.isExtra).length + 1}
+            suggestedReps={parseInt(currentEx.reps) || 10}
+            suggestedLoad={
+              exCompletedSets.length > 0
+                ? exCompletedSets[exCompletedSets.length - 1].loadKg
+                : currentEx.loadKg || 0
+            }
+            exerciseTechnique={currentEx.technique}
+            onAdd={(reps, loadKg, technique) =>
+              handleCompleteSet(
+                currentEx.id,
+                prescribedSetCount + exCompletedSets.filter(s => s.isExtra).length + 1,
+                reps,
+                loadKg,
+                technique,
+                true,
+              )
+            }
+          />
         </div>
 
         {/* Notes */}
@@ -615,69 +774,251 @@ export function WorkoutPlayer({
   )
 }
 
-/* ═══ SET ROW ═══ */
+// ═══ SET ROW — Editável, com technique picker ═══
+
 function SetRow({
   setNumber,
   prescribedReps,
   suggestedLoad,
   completed,
-  isCurrent,
+  exerciseTechnique,
+  lastSetTechnique,
+  isExtra = false,
   onComplete,
+  onEdit,
+  onDelete,
 }: {
   setNumber: number
   prescribedReps: number
   suggestedLoad: number
   completed: CompletedSet | undefined
-  isCurrent: boolean
-  onComplete: (reps: number, loadKg: number) => void
+  exerciseTechnique: Technique
+  lastSetTechnique?: Technique
+  isExtra?: boolean
+  onComplete: (reps: number, loadKg: number, technique: Technique) => void
+  onEdit?: (reps: number, loadKg: number, technique: Technique) => void
+  onDelete?: () => void
 }) {
-  const [reps, setReps] = useState(prescribedReps)
-  const [loadKg, setLoadKg] = useState(suggestedLoad)
+  const defaultTechnique = exerciseTechnique !== "NORMAL" ? exerciseTechnique : (lastSetTechnique || "NORMAL")
 
-  if (completed) {
+  const [reps, setReps] = useState(completed?.reps ?? prescribedReps)
+  const [loadKg, setLoadKg] = useState(completed?.loadKg ?? suggestedLoad)
+  const [technique, setTechnique] = useState<Technique>(completed?.technique ?? defaultTechnique)
+  const [editing, setEditing] = useState(false)
+  const [showTechPicker, setShowTechPicker] = useState(false)
+
+  const techInfo = TECHNIQUE_INFO[technique]
+
+  // Completed + not editing
+  if (completed && !editing) {
     return (
-      <div className="grid grid-cols-4 gap-2 items-center py-2 px-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10">
-        <span className="text-center text-sm font-bold text-emerald-400">{setNumber}</span>
+      <div className="grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 items-center py-2 px-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10 group">
+        <span className="text-center text-sm font-bold text-emerald-400">
+          {setNumber}
+          {isExtra && <span className="text-[8px] text-emerald-600 block">extra</span>}
+        </span>
         <span className="text-center text-sm text-emerald-300">{completed.reps}</span>
-        <span className="text-center text-sm text-emerald-300">{completed.loadKg}</span>
+        <span className="text-center text-sm text-emerald-300">{completed.loadKg}kg</span>
         <div className="flex justify-center">
-          <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center animate-set-complete">
-            <Check className="w-4 h-4 text-emerald-400" />
-          </div>
+          {completed.technique !== "NORMAL" ? (
+            <TechniqueBadge technique={completed.technique} />
+          ) : (
+            <span className="text-[9px] text-emerald-600">—</span>
+          )}
+        </div>
+        <div className="flex justify-center gap-1">
+          <button
+            onClick={() => {
+              setReps(completed.reps)
+              setLoadKg(completed.loadKg)
+              setTechnique(completed.technique)
+              setEditing(true)
+            }}
+            className="w-7 h-7 rounded-lg bg-white/[0.05] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            title="Editar série"
+          >
+            <Pencil className="w-3 h-3 text-neutral-400" />
+          </button>
+          {isExtra && onDelete && (
+            <button
+              onClick={onDelete}
+              className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              title="Remover série extra"
+            >
+              <Trash2 className="w-3 h-3 text-red-400" />
+            </button>
+          )}
         </div>
       </div>
     )
   }
 
+  // Editing or new set input
+  const isActive = !completed || editing
+
   return (
-    <div className={`grid grid-cols-4 gap-2 items-center py-2 px-2 rounded-xl transition-all duration-300 ${
-      isCurrent ? "bg-red-500/5 border border-red-500/15 animate-pulse-glow" : "bg-white/[0.02] border border-white/[0.04]"
-    }`}>
-      <span className={`text-center text-sm font-bold ${isCurrent ? "text-red-400" : "text-neutral-500"}`}>
-        {setNumber}
+    <div className="space-y-0">
+      <div className={`grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 items-center py-2 px-2 rounded-xl transition-all duration-300 ${
+        isActive && !editing
+          ? "bg-red-500/5 border border-red-500/15 animate-pulse-glow"
+          : editing
+          ? "bg-amber-500/5 border border-amber-500/15"
+          : "bg-white/[0.02] border border-white/[0.04]"
+      }`}>
+        <span className={`text-center text-sm font-bold ${
+          isActive && !editing ? "text-red-400" : editing ? "text-amber-400" : "text-neutral-500"
+        }`}>
+          {setNumber}
+          {isExtra && <span className="text-[8px] text-neutral-600 block">extra</span>}
+        </span>
+        <input
+          type="number"
+          value={reps}
+          onChange={(e) => setReps(parseInt(e.target.value) || 0)}
+          className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
+        />
+        <input
+          type="number"
+          step="0.5"
+          value={loadKg}
+          onChange={(e) => setLoadKg(parseFloat(e.target.value) || 0)}
+          className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
+        />
+        <button
+          onClick={() => setShowTechPicker(!showTechPicker)}
+          className={`flex items-center justify-center gap-0.5 text-[9px] font-medium rounded-lg py-1.5 px-1 transition-all ${techInfo.color} hover:bg-white/[0.05]`}
+        >
+          {technique === "NORMAL" ? "Normal" : TECHNIQUE_INFO[technique].shortLabel}
+          <ChevronDown className="w-2.5 h-2.5" />
+        </button>
+        <div className="flex justify-center">
+          {editing ? (
+            <button
+              onClick={() => {
+                if (onEdit) onEdit(reps, loadKg, technique)
+                setEditing(false)
+              }}
+              className="w-11 h-11 rounded-lg bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all active:scale-90"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+          ) : (
+            <button
+              onClick={() => onComplete(reps, loadKg, technique)}
+              className="w-11 h-11 rounded-lg bg-red-600/20 border border-red-500/30 text-red-400 flex items-center justify-center transition-all duration-200 active:scale-90 hover:bg-red-600/30"
+            >
+              <Check className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Technique Picker Dropdown */}
+      {showTechPicker && (
+        <div className="mx-2 mt-1 rounded-xl border border-white/[0.08] bg-[#111] backdrop-blur-xl p-2 space-y-1 animate-slide-up">
+          {(Object.keys(TECHNIQUE_INFO) as Technique[]).map((tech) => {
+            const info = TECHNIQUE_INFO[tech]
+            return (
+              <button
+                key={tech}
+                onClick={() => { setTechnique(tech); setShowTechPicker(false) }}
+                className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all ${
+                  technique === tech
+                    ? "bg-white/[0.08] border border-white/[0.12]"
+                    : "hover:bg-white/[0.04]"
+                }`}
+              >
+                <Zap className={`w-3 h-3 ${info.color} shrink-0`} />
+                <div className="flex-1 min-w-0">
+                  <p className={`text-xs font-medium ${info.color}`}>{info.label}</p>
+                  <p className="text-[10px] text-neutral-600 truncate">{info.description}</p>
+                </div>
+                {technique === tech && <Check className="w-3 h-3 text-white shrink-0" />}
+              </button>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ═══ ADD EXTRA SET BUTTON ═══
+
+function AddExtraSetButton({
+  exerciseId,
+  nextSetNumber,
+  suggestedReps,
+  suggestedLoad,
+  exerciseTechnique,
+  onAdd,
+}: {
+  exerciseId: string
+  nextSetNumber: number
+  suggestedReps: number
+  suggestedLoad: number
+  exerciseTechnique: Technique
+  onAdd: (reps: number, loadKg: number, technique: Technique) => void
+}) {
+  const [expanded, setExpanded] = useState(false)
+  const [reps, setReps] = useState(suggestedReps)
+  const [loadKg, setLoadKg] = useState(suggestedLoad)
+  const [technique, setTechnique] = useState<Technique>(exerciseTechnique)
+
+  if (!expanded) {
+    return (
+      <button
+        onClick={() => {
+          setReps(suggestedReps)
+          setLoadKg(suggestedLoad)
+          setExpanded(true)
+        }}
+        className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-white/[0.08] text-neutral-500 text-xs font-medium hover:border-white/[0.15] hover:text-neutral-300 transition-all"
+      >
+        <Plus className="w-3.5 h-3.5" />
+        Adicionar série extra
+      </button>
+    )
+  }
+
+  return (
+    <div className="grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 items-center py-2 px-2 rounded-xl bg-blue-500/5 border border-blue-500/15 border-dashed">
+      <span className="text-center text-sm font-bold text-blue-400">
+        {nextSetNumber}
+        <span className="text-[8px] text-blue-600 block">extra</span>
       </span>
       <input
         type="number"
         value={reps}
         onChange={(e) => setReps(parseInt(e.target.value) || 0)}
-        className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
+        className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-blue-500/50 outline-none py-1"
+        autoFocus
       />
       <input
         type="number"
         step="0.5"
         value={loadKg}
         onChange={(e) => setLoadKg(parseFloat(e.target.value) || 0)}
-        className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
+        className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-blue-500/50 outline-none py-1"
       />
-      <div className="flex justify-center">
+      <select
+        value={technique}
+        onChange={(e) => setTechnique(e.target.value as Technique)}
+        className="text-[9px] text-white bg-transparent border border-white/10 rounded-lg py-1.5 px-1 outline-none"
+      >
+        {(Object.keys(TECHNIQUE_INFO) as Technique[]).map((tech) => (
+          <option key={tech} value={tech} className="bg-[#111]">
+            {TECHNIQUE_INFO[tech].shortLabel}
+          </option>
+        ))}
+      </select>
+      <div className="flex justify-center gap-1">
         <button
-          onClick={() => onComplete(reps, loadKg)}
-          disabled={!isCurrent}
-          className={`w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-200 active:scale-90 ${
-            isCurrent
-              ? "bg-red-600/20 border border-red-500/30 text-red-400 hover:bg-red-600/30"
-              : "bg-white/[0.03] border border-white/[0.06] text-neutral-700"
-          }`}
+          onClick={() => {
+            onAdd(reps, loadKg, technique)
+            setExpanded(false)
+          }}
+          className="w-11 h-11 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center transition-all active:scale-90"
         >
           <Check className="w-4 h-4" />
         </button>

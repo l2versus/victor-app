@@ -162,6 +162,17 @@ model WorkoutTemplate {
   @@index([trainerId])
 }
 
+/// Técnicas avançadas de treinamento
+enum ExerciseTechnique {
+  NORMAL
+  DROP_SET
+  REST_PAUSE
+  PYRAMID
+  REVERSE_PYRAMID
+  FST7
+  MYO_REPS
+}
+
 model WorkoutExercise {
   id            String  @id @default(cuid())
   templateId    String
@@ -175,6 +186,8 @@ model WorkoutExercise {
   supersetGroup    String?
   /// Máquina sugerida na academia (ex: "Hammer Strength vermelho, 2ª fileira")
   suggestedMachine String?
+  /// Técnica avançada prescrita pelo treinador
+  technique        ExerciseTechnique @default(NORMAL)
 
   template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   exercise Exercise        @relation(fields: [exerciseId], references: [id])
@@ -231,18 +244,23 @@ model WorkoutSession {
 }
 
 model SessionSet {
-  id         String  @id @default(cuid())
+  id         String            @id @default(cuid())
   sessionId  String
   exerciseId String
   setNumber  Int
   reps       Int
   loadKg     Float
   rpe        Int?
-  completed  Boolean @default(true)
+  completed  Boolean           @default(true)
+  /// Técnica utilizada na execução real
+  technique  ExerciseTechnique @default(NORMAL)
+  /// Série extra adicionada pelo aluno (além do prescrito)
+  isExtra    Boolean           @default(false)
 
   session WorkoutSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
 
   @@index([sessionId])
+  @@index([exerciseId])
 }
 
 // ═══════════════════════════════════════

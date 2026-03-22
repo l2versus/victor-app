@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import type { ExerciseTechnique } from "@/generated/prisma/enums"
 
 // GET /api/admin/workouts?search=&page=1&limit=20
 export async function GET(req: NextRequest) {
@@ -82,6 +83,7 @@ export async function POST(req: NextRequest) {
         order: number
         supersetGroup?: string
         suggestedMachine?: string
+        technique?: string
       }, index: number) => {
         let exerciseId = ex.exerciseId
         if (!exerciseId && ex.exerciseName) {
@@ -101,6 +103,7 @@ export async function POST(req: NextRequest) {
           order: ex.order ?? index,
           supersetGroup: ex.supersetGroup || null,
           suggestedMachine: ex.suggestedMachine || null,
+          technique: (ex.technique || "NORMAL") as ExerciseTechnique,
         }
       })
     )
