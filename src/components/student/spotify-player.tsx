@@ -73,11 +73,12 @@ export function SpotifyMiniPlayer() {
 
     // Mostrar erro se voltou do OAuth com falha
     if (spotifyResult && spotifyResult !== "connected") {
+      const detail = params.get("detail") || ""
       setError(
         spotifyResult === "denied"
           ? "Acesso negado no Spotify"
           : reason === "token"
-            ? "Erro ao conectar — tente novamente"
+            ? `Erro ao conectar — ${detail || "tente novamente"}`
             : reason === "student"
               ? "Conta não encontrada"
               : "Erro ao conectar"
@@ -89,6 +90,7 @@ export function SpotifyMiniPlayer() {
       const url = new URL(window.location.href)
       url.searchParams.delete("spotify")
       url.searchParams.delete("reason")
+      url.searchParams.delete("detail")
       window.history.replaceState({}, "", url.pathname)
     }
 

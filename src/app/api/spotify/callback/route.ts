@@ -85,7 +85,10 @@ export async function GET(req: NextRequest) {
     console.log("[Spotify Callback] SUCCESS — tokens saved for", student.id)
     return NextResponse.redirect(new URL("/today?spotify=connected", baseUrl))
   } catch (err) {
-    console.error("[Spotify Callback] TOKEN EXCHANGE FAILED:", err)
-    return NextResponse.redirect(new URL("/today?spotify=error&reason=token", baseUrl))
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error("[Spotify Callback] TOKEN EXCHANGE FAILED:", msg)
+    // Pass short error detail to frontend for debugging
+    const detail = encodeURIComponent(msg.slice(0, 120))
+    return NextResponse.redirect(new URL(`/today?spotify=error&reason=token&detail=${detail}`, baseUrl))
   }
 }
