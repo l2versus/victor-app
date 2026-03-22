@@ -211,7 +211,9 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
       } else if (data.sandboxUrl) {
         window.location.href = data.sandboxUrl
       } else {
-        alert("Erro ao gerar link de pagamento. Tente novamente ou fale com Victor no WhatsApp.")
+        const detail = data.detail || data.error || "Erro desconhecido"
+        console.error("Checkout failed:", data)
+        alert(`Erro ao gerar link de pagamento: ${detail}\n\nTente novamente ou fale com Victor no WhatsApp.`)
       }
     } catch {
       alert("Erro de conexão. Tente novamente.")

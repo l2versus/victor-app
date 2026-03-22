@@ -21,11 +21,16 @@ export async function POST(req: NextRequest) {
   const trainer = await getTrainerProfile(session.userId)
   const body = await req.json()
 
+  // Auto-generate slug: "Pro" + "SEMIANNUAL" → "pro_semiannual"
+  const interval = body.interval || "MONTHLY"
+  const slug = `${(body.name || "plan").toLowerCase().replace(/\s+/g, "_")}_${interval.toLowerCase()}`
+
   const plan = await prisma.plan.create({
     data: {
       trainerId: trainer.id,
       name: body.name,
-      interval: body.interval || "MONTHLY",
+      slug,
+      interval,
       price: body.price,
       hasAI: body.hasAI ?? false,
       hasPostureCamera: body.hasPostureCamera ?? false,

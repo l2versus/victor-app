@@ -15,13 +15,29 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    // Find the plan by slug (client sends "pro_semiannual") or by id (CUID)
+    // Find plan by: slug → id → name+interval fallback
+    // Landing page sends "pro_semiannual" = tier name + interval
     let plan = await prisma.plan.findUnique({ where: { slug: planId } })
     if (!plan) {
-      plan = await prisma.plan.findUnique({ where: { id: planId } })
+      plan = await prisma.plan.findUnique({ where: { id: planId } }).catch(() => null)
+    }
+    if (!plan) {
+      // Fallback: parse "pro_semiannual" → name="Pro", interval="SEMIANNUAL"
+      const parts = planId.split("_")
+      if (parts.length >= 2) {
+        const tierName = parts[0]
+        const intervalKey = parts.slice(1).join("_").toUpperCase()
+        plan = await prisma.plan.findFirst({
+          where: {
+            name: { equals: tierName, mode: "insensitive" },
+            interval: intervalKey as "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "ANNUAL",
+            active: true,
+          },
+        })
+      }
     }
     if (!plan || !plan.active) {
-      return NextResponse.json({ error: "Plano não encontrado" }, { status: 404 })
+      return NextResponse.json({ error: `Plano não encontrado: ${planId}` }, { status: 404 })
     }
 
     const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
@@ -72,6 +88,7 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error("Checkout error:", error)
-    return NextResponse.json({ error: "Erro ao criar checkout" }, { status: 500 })
+    const detail = error instanceof Error ? error.message : "Unknown error"
+    return NextResponse.json({ error: "Erro ao criar checkout", detail }, { status: 500 })
   }
 }
