@@ -77,7 +77,7 @@ export default function MessagesPage() {
   useEffect(() => {
     if (activeChat) {
       fetchMessages(activeChat.id)
-      pollRef.current = setInterval(() => fetchMessages(activeChat.id), 15000)
+      pollRef.current = setInterval(() => fetchMessages(activeChat.id), 5000)
       return () => clearInterval(pollRef.current)
     }
   }, [activeChat, fetchMessages])

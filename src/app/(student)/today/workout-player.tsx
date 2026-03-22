@@ -112,6 +112,7 @@ export function WorkoutPlayer({
   const [phase, setPhase] = useState<Phase>(
     completedToday ? "done" : activeSession ? "active" : "preview"
   )
+  const [videoModal, setVideoModal] = useState<{ url: string; name: string } | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(activeSession?.id || null)
   const [currentExIdx, setCurrentExIdx] = useState(0)
   const [completedSets, setCompletedSets] = useState<Map<string, CompletedSet[]>>(
@@ -492,9 +493,13 @@ export function WorkoutPlayer({
                     )}
                   </div>
 
-                  {/* Right: thumbnail */}
+                  {/* Right: thumbnail (clickable for video) */}
                   {thumbnail ? (
-                    <div className="w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 relative bg-neutral-900">
+                    <button
+                      type="button"
+                      onClick={() => hasVideo && ex.videoUrl ? setVideoModal({ url: ex.videoUrl, name: ex.name }) : undefined}
+                      className={`w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 relative bg-neutral-900 ${hasVideo ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
+                    >
                       <img
                         src={thumbnail}
                         alt={ex.name}
@@ -508,7 +513,7 @@ export function WorkoutPlayer({
                           </div>
                         </div>
                       )}
-                    </div>
+                    </button>
                   ) : (
                     <div className="w-24 h-24 rounded-xl border border-white/[0.06] bg-white/[0.02] shrink-0 flex items-center justify-center">
                       <Dumbbell className="w-6 h-6 text-neutral-700" />
@@ -557,6 +562,39 @@ export function WorkoutPlayer({
           <Play className="w-5 h-5" fill="currentColor" />
           {isScheduledToday ? "Iniciar Treino" : "Treinar Agora"}
         </button>
+
+        {/* ═══ VIDEO MODAL ═══ */}
+        {videoModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setVideoModal(null)}>
+            <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
+            <div className="relative w-full max-w-lg rounded-2xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
+                <p className="text-sm font-semibold text-white truncate">{videoModal.name}</p>
+                <button onClick={() => setVideoModal(null)} className="w-7 h-7 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="aspect-video bg-black">
+                {videoModal.url.includes("youtube.com") || videoModal.url.includes("youtu.be") ? (
+                  <iframe
+                    src={`https://www.youtube.com/embed/${videoModal.url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]+)/)?.[1] || ""}`}
+                    className="w-full h-full"
+                    allowFullScreen
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  />
+                ) : videoModal.url.includes("instagram.com") ? (
+                  <div className="flex items-center justify-center h-full">
+                    <a href={videoModal.url} target="_blank" rel="noopener noreferrer" className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-medium">
+                      Abrir no Instagram
+                    </a>
+                  </div>
+                ) : (
+                  <video src={videoModal.url} controls autoPlay className="w-full h-full" />
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

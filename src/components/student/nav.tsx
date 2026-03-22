@@ -1,9 +1,10 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Dumbbell, TrendingUp, User, Trophy, Camera, Utensils, MoreHorizontal, X, ImageIcon, Activity } from "lucide-react"
+import { Dumbbell, TrendingUp, User, Trophy, Camera, Utensils, ImageIcon, Activity, MessageSquare } from "lucide-react"
 
 const BASE_NAV = [
   { href: "/today", label: "Treino", icon: Dumbbell },
@@ -28,6 +29,26 @@ interface StudentNavProps {
 
 export function StudentNav({ hasNutrition = false }: StudentNavProps) {
   const pathname = usePathname()
+  const [unreadMessages, setUnreadMessages] = useState(0)
+
+  // Poll for unread messages every 10s
+  useEffect(() => {
+    async function checkUnread() {
+      try {
+        const res = await fetch("/api/messages")
+        if (!res.ok) return
+        const data = await res.json()
+        const total = (data.conversations || []).reduce(
+          (sum: number, c: { unreadCount: number }) => sum + (c.unreadCount || 0), 0
+        )
+        setUnreadMessages(total)
+      } catch { /* ignore */ }
+    }
+    checkUnread()
+    const interval = setInterval(checkUnread, 10000)
+    return () => clearInterval(interval)
+  }, [])
+
   const navItems = hasNutrition
     ? [...BASE_NAV.slice(0, 2), NUTRITION_ITEM, ...BASE_NAV.slice(2, 4), BASE_NAV[4]]
     : BASE_NAV
@@ -44,6 +65,7 @@ export function StudentNav({ hasNutrition = false }: StudentNavProps) {
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href)
           const isNutrition = item.href === "/nutrition"
+          const isProfile = item.href === "/profile"
           return (
             <Link
               key={item.href}
@@ -77,6 +99,12 @@ export function StudentNav({ hasNutrition = false }: StudentNavProps) {
                       ? "bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.6)]"
                       : "bg-red-500 shadow-[0_0_4px_rgba(220,38,38,0.6)]"
                   )} />
+                )}
+                {/* Unread message badge on Profile (messages accessible from profile) */}
+                {isProfile && unreadMessages > 0 && (
+                  <div className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/40">
+                    <span className="text-[8px] font-bold text-white px-1">{unreadMessages > 9 ? "9+" : unreadMessages}</span>
+                  </div>
                 )}
               </div>
               <span className={cn(

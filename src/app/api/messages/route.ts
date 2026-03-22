@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import webpush from "web-push"
 
 // GET — list conversations or messages with a specific user
 export async function GET(req: NextRequest) {
@@ -134,6 +135,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Alunos só podem enviar mensagens para o treinador" }, { status: 403 })
     }
 
+    // Get sender name for notification
+    const sender = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { name: true },
+    })
+    const senderName = sender?.name || "Alguém"
+
     const message = await prisma.directMessage.create({
       data: {
         senderId: session.userId,
@@ -142,6 +150,24 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Create in-app notification for receiver
+    await prisma.notification.create({
+      data: {
+        userId: receiverId,
+        type: "new_message",
+        title: `Mensagem de ${senderName}`,
+        body: content.trim().slice(0, 120),
+        metadata: { senderId: session.userId, messageId: message.id },
+      },
+    }).catch(() => {}) // non-blocking
+
+    // Send push notification (non-blocking)
+    sendPushToUser(receiverId, {
+      title: `💬 ${senderName}`,
+      body: content.trim().slice(0, 100),
+      url: session.role === "ADMIN" ? "/admin/messages" : "/messages",
+    }).catch(() => {})
+
     return NextResponse.json({ message }, { status: 201 })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Erro interno"
@@ -149,5 +175,35 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: msg }, { status: 401 })
     }
     return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}
+
+// ═══ PUSH HELPER ═══
+async function sendPushToUser(userId: string, payload: { title: string; body: string; url: string }) {
+  const vapidPublic = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
+  const vapidPrivate = process.env.VAPID_PRIVATE_KEY
+  const vapidSubject = process.env.VAPID_SUBJECT
+  if (!vapidPublic || !vapidPrivate || !vapidSubject) return
+
+  webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate)
+
+  // Find student by userId to get push subscriptions
+  const student = await prisma.student.findUnique({ where: { userId }, select: { id: true } })
+  if (!student) return // Receiver is admin — no push for now
+
+  const subs = await prisma.pushSubscription.findMany({ where: { studentId: student.id } })
+
+  for (const sub of subs) {
+    try {
+      await webpush.sendNotification(
+        { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+        JSON.stringify({ title: payload.title, body: payload.body, url: payload.url })
+      )
+    } catch (err: unknown) {
+      // Clean up expired subscriptions (410 Gone)
+      if (err && typeof err === "object" && "statusCode" in err && (err as { statusCode: number }).statusCode === 410) {
+        await prisma.pushSubscription.delete({ where: { id: sub.id } }).catch(() => {})
+      }
+    }
   }
 }
