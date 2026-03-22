@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { generateText } from "ai"
-import { freeModel } from "@/lib/ai"
+import { premiumModel } from "@/lib/ai"
 import { prisma } from "@/lib/prisma"
 
 // POST /api/admin/ai/voice-workout — parse voice transcription into structured workout
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const exerciseList = exercises.map(e => `${e.name} (${e.muscle})`).join(", ")
 
     const result = await generateText({
-      model: freeModel,
+      model: premiumModel,
       system: `Voce e um assistente que converte prescricoes de treino faladas por personal trainers em JSON estruturado.
 
 O personal trainer vai FALAR o treino e voce recebe a transcricao. Extraia:
