@@ -140,7 +140,7 @@ function ChartTooltip({ active, payload, label, unit }: {
       <p className="text-sm font-bold text-white">{payload[0].value.toLocaleString("pt-BR")}{unit || ""}</p>
       {exercises && exercises.length > 0 && (
         <div className="mt-1.5 pt-1.5 border-t border-white/[0.06] space-y-1.5">
-          {exercises
+          {[...exercises]
             .sort((a, b) => b.volume - a.volume)
             .slice(0, 6)
             .map((ex, i) => (
@@ -179,6 +179,7 @@ export function EvolutionClient() {
   const [selectedEx, setSelectedEx] = useState<string | null>(null)
   const [showExPicker, setShowExPicker] = useState(false)
   const [exportingPdf, setExportingPdf] = useState(false)
+  const [volumeDetail, setVolumeDetail] = useState<number | null>(null) // index into volumeTrend
 
   useEffect(() => {
     async function load() {
@@ -407,10 +408,16 @@ export function EvolutionClient() {
           </div>
 
           {/* ═══ VOLUME CHART (Hevy-style area) ═══ */}
-          <Section title="Volume por sessao" subtitle="Reps x Carga (kg)">
+          <Section title="Volume por sessao" subtitle="Toque no ponto para ver detalhes">
             <div className="px-1 pb-2 h-44">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={evo.volumeTrend} margin={{ top: 4, right: 4, left: -24, bottom: 0 }}>
+                <AreaChart
+                  data={evo.volumeTrend}
+                  margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
+                  onClick={(e) => {
+                    if (e?.activeTooltipIndex != null) setVolumeDetail(Number(e.activeTooltipIndex))
+                  }}
+                >
                   <defs>
                     <linearGradient id="volG" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="0%" stopColor="#ef4444" stopOpacity={0.35} />
@@ -421,11 +428,86 @@ export function EvolutionClient() {
                   <XAxis dataKey="date" tick={{ fontSize: 8, fill: "#404040" }} tickFormatter={(v) => v.slice(5)} interval="preserveStartEnd" />
                   <YAxis tick={{ fontSize: 8, fill: "#404040" }} />
                   <Tooltip content={<ChartTooltip unit=" kg" />} />
-                  <Area type="monotone" dataKey="volume" stroke="#ef4444" strokeWidth={2} fill="url(#volG)" dot={false} activeDot={{ r: 4, fill: "#ef4444", stroke: "#0a0a0a", strokeWidth: 2 }} />
+                  <Area
+                    type={evo.volumeTrend.length > 1 ? "monotone" : "linear"}
+                    dataKey="volume"
+                    stroke="#ef4444"
+                    strokeWidth={2}
+                    fill="url(#volG)"
+                    dot={evo.volumeTrend.length === 1 ? { r: 5, fill: "#ef4444", stroke: "#0a0a0a", strokeWidth: 2 } : false}
+                    activeDot={evo.volumeTrend.length > 1 ? { r: 4, fill: "#ef4444", stroke: "#0a0a0a", strokeWidth: 2 } : false}
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </div>
           </Section>
+
+          {/* ═══ VOLUME DETAIL MODAL ═══ */}
+          {volumeDetail !== null && evo.volumeTrend[volumeDetail] && (() => {
+            const session = evo.volumeTrend[volumeDetail]
+            const exercises = session.exercises || []
+            return (
+              <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setVolumeDetail(null)}>
+                <div
+                  className="w-full max-w-lg rounded-t-3xl bg-[#0c0c0c] border-t border-white/[0.08] p-5 pb-8 max-h-[75vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {/* Handle */}
+                  <div className="w-10 h-1 rounded-full bg-white/[0.1] mx-auto mb-4" />
+
+                  {/* Header */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-white">{session.template}</h3>
+                      <p className="text-[10px] text-neutral-500 mt-0.5">{session.date}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-lg font-black text-white">{session.volume.toLocaleString("pt-BR")}<span className="text-xs text-neutral-500 ml-1">kg</span></p>
+                      <p className="text-[9px] text-neutral-600">{session.sets} series · {session.duration ? `${session.duration} min` : "—"}</p>
+                    </div>
+                  </div>
+
+                  {/* Exercises breakdown */}
+                  {exercises.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-[9px] text-neutral-600 uppercase tracking-wider font-medium">Detalhes por exercicio</p>
+                      {[...exercises].sort((a, b) => b.volume - a.volume).map((ex, i) => {
+                        const maxVol = Math.max(...exercises.map(e => e.volume), 1)
+                        return (
+                          <div key={i} className="rounded-xl bg-white/[0.03] border border-white/[0.04] p-3">
+                            <div className="flex items-center justify-between mb-1.5">
+                              <div className="flex items-center gap-2 min-w-0">
+                                <span className="text-xs text-white font-medium truncate">{ex.name}</span>
+                                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/[0.06] text-neutral-500 shrink-0">{ex.muscle}</span>
+                              </div>
+                              <span className="text-xs font-bold text-white shrink-0 ml-2">{ex.volume.toLocaleString("pt-BR")} kg</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-1.5 rounded-full bg-white/[0.04] overflow-hidden">
+                                <div
+                                  className="h-full rounded-full bg-red-500/70"
+                                  style={{ width: `${Math.min(100, (ex.volume / maxVol) * 100)}%` }}
+                                />
+                              </div>
+                              <span className="text-[9px] text-neutral-600 shrink-0">{ex.sets}s · {ex.maxLoad}kg max</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+
+                  {/* Close button */}
+                  <button
+                    onClick={() => setVolumeDetail(null)}
+                    className="w-full mt-4 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-neutral-400 text-sm font-medium hover:bg-white/[0.06] transition-all"
+                  >
+                    Fechar
+                  </button>
+                </div>
+              </div>
+            )
+          })()}
 
           {/* ═══ PR PROGRESS — How close to beating PRs ═══ */}
           {stats.prs.length > 0 && evo.volumeTrend.length > 0 && (() => {
@@ -446,7 +528,7 @@ export function EvolutionClient() {
               .map((pr) => {
                 const current = currentMaxByExercise.get(pr.exerciseName)
                 if (!current) return null
-                const pctOfPr = Math.round((current.currentMax / pr.loadKg) * 100)
+                const pctOfPr = pr.loadKg > 0 ? Math.round((current.currentMax / pr.loadKg) * 100) : (current.currentMax > 0 ? 100 : 0)
                 const diff = pr.loadKg - current.currentMax
                 const goalPlus5 = pr.loadKg + 5
                 const diffToGoal = goalPlus5 - current.currentMax
