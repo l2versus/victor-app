@@ -67,6 +67,8 @@ model TrainerProfile {
   plans     Plan[]
   costs         OperationalCost[]
   scheduleSlots ScheduleSlot[]
+  checkIns      CheckIn[]
+  leads         Lead[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -112,6 +114,7 @@ model Student {
   progressPhotos    ProgressPhoto[]
   scheduleSlots     ScheduleSlot[]
   extraActivities   ExtraActivity[]
+  checkIns          CheckIn[]
 
   // Spotify OAuth tokens (salvo no DB, não em cookies)
   spotifyAccessToken  String?
@@ -874,4 +877,84 @@ model PaymentReminder {
 
   @@index([paymentId])
   @@index([status])
+}
+
+// ═══════════════════════════════════════
+// CHECK-IN — QR Code presence tracking
+// ═══════════════════════════════════════
+
+model CheckIn {
+  id        String   @id @default(cuid())
+  studentId String
+  trainerId String
+  method    String   @default("QR") // QR, MANUAL
+  notes     String?
+
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([trainerId])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════
+// CRM — Lead management
+// ═══════════════════════════════════════
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  TRIAL
+  NEGOTIATING
+  CONVERTED
+  LOST
+}
+
+enum LeadSource {
+  WALK_IN
+  REFERRAL
+  INSTAGRAM
+  WHATSAPP
+  WEBSITE
+  OTHER
+}
+
+model Lead {
+  id        String     @id @default(cuid())
+  trainerId String
+  name      String
+  phone     String?
+  email     String?
+  source    LeadSource @default(OTHER)
+  status    LeadStatus @default(NEW)
+  notes     String?
+  value     Float?     // potential monthly value
+
+  trainer   TrainerProfile @relation(fields: [trainerId], references: [id])
+  followUps LeadFollowUp[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model LeadFollowUp {
+  id      String   @id @default(cuid())
+  leadId  String
+  type    String   // CALL, WHATSAPP, EMAIL, VISIT, NOTE
+  content String
+  dueDate DateTime?
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([dueDate])
 }

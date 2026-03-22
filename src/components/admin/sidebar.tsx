@@ -21,12 +21,18 @@ import {
   Calendar,
   Bell,
   BookOpen,
+  BarChart3,
+  QrCode,
+  UserPlus,
 } from "lucide-react"
 
 const navItems = [
   { href: "/admin/dashboard", label: "Painel", icon: LayoutDashboard },
+  { href: "/admin/bi-treino", label: "BI Treino", icon: BarChart3 },
   { href: "/admin/students", label: "Alunos", icon: Users },
   { href: "/admin/schedule", label: "Agenda", icon: Calendar },
+  { href: "/admin/checkin", label: "Presença", icon: QrCode },
+  { href: "/admin/crm", label: "CRM", icon: UserPlus },
   { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
   { href: "/admin/template-library", label: "Templates", icon: BookOpen },
   { href: "/admin/exercises", label: "Exercícios", icon: Library },

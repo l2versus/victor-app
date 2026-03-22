@@ -66,6 +66,29 @@ export async function POST(req: NextRequest) {
       },
     })
 
+    // Notify student about new appointment
+    if (studentId) {
+      const studentRecord = await prisma.student.findUnique({
+        where: { id: studentId },
+        select: { userId: true },
+      })
+      if (studentRecord) {
+        const slotDate = new Date(date)
+        const dateStr = slotDate.toLocaleDateString("pt-BR", {
+          weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+        })
+        await prisma.notification.create({
+          data: {
+            userId: studentRecord.userId,
+            type: "schedule_new",
+            title: "Novo agendamento",
+            body: `Você tem um novo agendamento: ${title || "Sessão de treino"} em ${dateStr}. Confirme na sua agenda!`,
+            metadata: { slotId: slot.id },
+          },
+        })
+      }
+    }
+
     return NextResponse.json({ slot }, { status: 201 })
   } catch (error) {
     console.error("POST /api/admin/schedule error:", error)
@@ -82,6 +105,13 @@ export async function PATCH(req: NextRequest) {
     if (!id) return NextResponse.json({ error: "ID required" }, { status: 400 })
 
     const body = await req.json()
+
+    // Get the slot before update to check for student notification
+    const existingSlot = await prisma.scheduleSlot.findUnique({
+      where: { id },
+      select: { studentId: true, date: true, title: true, status: true },
+    })
+
     const slot = await prisma.scheduleSlot.update({
       where: { id },
       data: {
@@ -99,6 +129,36 @@ export async function PATCH(req: NextRequest) {
         },
       },
     })
+
+    // Notify student about status change
+    if (body.status && existingSlot?.studentId && body.status !== existingSlot.status) {
+      const studentRecord = await prisma.student.findUnique({
+        where: { id: existingSlot.studentId },
+        select: { userId: true },
+      })
+      if (studentRecord) {
+        const dateStr = new Date(existingSlot.date).toLocaleDateString("pt-BR", {
+          weekday: "short", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+        })
+        const statusMessages: Record<string, { title: string; body: string }> = {
+          CONFIRMED: { title: "Agendamento confirmado", body: `Seu agendamento de ${dateStr} foi confirmado pelo professor!` },
+          CANCELLED: { title: "Agendamento cancelado", body: `Seu agendamento de ${dateStr} foi cancelado.` },
+          COMPLETED: { title: "Sessão concluída", body: `Sua sessão de ${dateStr} foi marcada como concluída. Bom treino!` },
+        }
+        const msg = statusMessages[body.status]
+        if (msg) {
+          await prisma.notification.create({
+            data: {
+              userId: studentRecord.userId,
+              type: `schedule_${body.status.toLowerCase()}`,
+              title: msg.title,
+              body: msg.body,
+              metadata: { slotId: id },
+            },
+          })
+        }
+      }
+    }
 
     return NextResponse.json({ slot })
   } catch (error) {

@@ -4,11 +4,11 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Dumbbell, TrendingUp, User, Trophy, Camera, Utensils, ImageIcon, Activity, MessageSquare } from "lucide-react"
+import { Dumbbell, TrendingUp, User, Trophy, Camera, Utensils, ImageIcon, Activity, MessageSquare, CalendarCheck } from "lucide-react"
 
 const BASE_NAV = [
   { href: "/today", label: "Treino", icon: Dumbbell },
-  { href: "/posture", label: "Postura", icon: Camera },
+  { href: "/schedule", label: "Agenda", icon: CalendarCheck },
   { href: "/community", label: "Comunidade", icon: Trophy },
   { href: "/evolution", label: "Evolução", icon: TrendingUp },
   { href: "/profile", label: "Perfil", icon: User },
@@ -21,6 +21,7 @@ export const EXTRA_STUDENT_PAGES = [
   { href: "/progress", label: "Fotos Progresso", icon: ImageIcon },
   { href: "/extra", label: "Atividades Extra", icon: Activity },
   { href: "/nutrition", label: "Nutrição", icon: Utensils },
+  { href: "/posture", label: "Postura", icon: Camera },
 ]
 
 interface StudentNavProps {
