@@ -1,39 +1,34 @@
 import { NextRequest, NextResponse } from "next/server"
-import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { exchangeCodeForTokens, getSpotifyProfile } from "@/lib/spotify"
 
 // GET /api/spotify/callback — Spotify redireciona aqui após login
+// Rota PÚBLICA (sem cookie de sessão) — o studentId vem no state
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code")
+  const state = req.nextUrl.searchParams.get("state") // = studentId
   const error = req.nextUrl.searchParams.get("error")
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin
 
-  if (error || !code) {
+  if (error || !code || !state) {
     return NextResponse.redirect(new URL("/today?spotify=denied", baseUrl))
   }
 
-  // Pega o aluno logado via cookie de sessão
-  const session = await getSession()
-  if (!session) {
-    return NextResponse.redirect(new URL("/today?spotify=error&reason=nosession", baseUrl))
-  }
-
+  // Verifica se o studentId é válido
   const student = await prisma.student.findUnique({
-    where: { userId: session.userId },
+    where: { id: state },
     select: { id: true },
   })
 
   if (!student) {
-    return NextResponse.redirect(new URL("/today?spotify=error&reason=nostudent", baseUrl))
+    return NextResponse.redirect(new URL("/today?spotify=error&reason=invalid_state", baseUrl))
   }
 
   try {
     const tokens = await exchangeCodeForTokens(code)
     const profile = await getSpotifyProfile(tokens.access_token)
 
-    // Salva no banco — 100% confiável, sem cookies frágeis
     await prisma.student.update({
       where: { id: student.id },
       data: {
