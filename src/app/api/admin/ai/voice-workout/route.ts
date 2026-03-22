@@ -103,6 +103,7 @@ Responda APENAS com JSON valido:
     return NextResponse.json({ workout })
   } catch (error) {
     console.error("POST /api/admin/ai/voice-workout error:", error)
-    return NextResponse.json({ error: "Erro ao processar voz" }, { status: 500 })
+    const msg = error instanceof Error ? error.message : "Erro desconhecido"
+    return NextResponse.json({ error: `Erro ao processar voz: ${msg}` }, { status: 500 })
   }
 }

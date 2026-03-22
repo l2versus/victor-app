@@ -69,17 +69,18 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
 
     recognition.onresult = (event: any) => {
       let interim = ""
-      let final = ""
-      for (let i = 0; i < event.results.length; i++) {
+      let newFinal = ""
+      // Only process results starting from resultIndex (new/changed results)
+      for (let i = event.resultIndex; i < event.results.length; i++) {
         const result = event.results[i]
         if (result.isFinal) {
-          final += result[0].transcript + " "
+          newFinal += result[0].transcript + " "
         } else {
           interim += result[0].transcript
         }
       }
-      if (final) {
-        setTranscription(prev => prev + final)
+      if (newFinal) {
+        setTranscription(prev => prev + newFinal)
       }
       setInterimText(interim)
     }
