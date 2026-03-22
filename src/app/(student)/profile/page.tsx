@@ -56,7 +56,11 @@ export default async function ProfilePage() {
         weight: student.weight,
         height: student.height,
         goals: student.goals,
-        restrictions: student.restrictions as string | null,
+        restrictions: typeof student.restrictions === "string"
+          ? student.restrictions
+          : student.restrictions
+            ? JSON.stringify(student.restrictions)
+            : null,
         memberSince: student.user.createdAt.toISOString(),
         address: {
           street: student.user.addressStreet,
