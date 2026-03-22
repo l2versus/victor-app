@@ -1,18 +1,35 @@
 "use client"
 
 import { useEffect, useState, useCallback } from "react"
-import { Zap, Bell, Dumbbell, X } from "lucide-react"
+import { Zap, Bell, Dumbbell, X, Share, Plus, MoreVertical, Download } from "lucide-react"
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
   userChoice: Promise<{ outcome: "accepted" | "dismissed" }>
 }
 
+type Platform = "ios" | "android" | "desktop" | "unknown"
+
+function detectPlatform(): Platform {
+  const ua = navigator.userAgent || ""
+  // iOS: iPhone, iPad, iPod, or Mac with touch (iPad with desktop UA)
+  if (/iPhone|iPod/i.test(ua)) return "ios"
+  if (/iPad/i.test(ua)) return "ios"
+  if (/Macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return "ios" // iPad with desktop UA
+  if (/Android/i.test(ua)) return "android"
+  if (/Windows|Macintosh|Linux/i.test(ua) && navigator.maxTouchPoints === 0) return "desktop"
+  return "unknown"
+}
+
+function isStandaloneMode(): boolean {
+  return window.matchMedia("(display-mode: standalone)").matches
+    || (navigator as unknown as { standalone?: boolean }).standalone === true
+}
+
 export default function PWAProvider() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [showBanner, setShowBanner] = useState(false)
-  const [isIOS, setIsIOS] = useState(false)
-  const [isStandalone, setIsStandalone] = useState(false)
+  const [platform, setPlatform] = useState<Platform>("unknown")
   const [closing, setClosing] = useState(false)
 
   useEffect(() => {
@@ -20,27 +37,37 @@ export default function PWAProvider() {
       navigator.serviceWorker.register("/sw.js").catch(() => {})
     }
 
-    const standalone = window.matchMedia("(display-mode: standalone)").matches
-      || (navigator as unknown as { standalone?: boolean }).standalone === true
-    setIsStandalone(standalone)
+    // Already installed as PWA
+    if (isStandaloneMode()) return
 
-    const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
-    setIsIOS(ios)
+    const plat = detectPlatform()
+    setPlatform(plat)
 
+    // Already dismissed recently (24h cooldown)
+    const dismissed = localStorage.getItem("vo_install_dismissed")
+    if (dismissed && Date.now() - parseInt(dismissed) < 24 * 60 * 60 * 1000) return
+
+    // Listen for native install prompt (Chrome/Edge/Samsung)
     const handler = (e: Event) => {
       e.preventDefault()
       setDeferredPrompt(e as BeforeInstallPromptEvent)
-      const dismissed = localStorage.getItem("vo_install_dismissed")
-      if (!dismissed) {
-        setTimeout(() => setShowBanner(true), 5000)
-      }
+      setTimeout(() => setShowBanner(true), 3000)
     }
     window.addEventListener("beforeinstallprompt", handler)
 
-    if (ios && !standalone) {
-      const dismissed = localStorage.getItem("vo_install_dismissed")
-      if (!dismissed) {
-        setTimeout(() => setShowBanner(true), 5000)
+    // For iOS and Android browsers without beforeinstallprompt:
+    // Show manual instructions after 5 seconds
+    if (plat === "ios" || plat === "android") {
+      const timer = setTimeout(() => {
+        // Only show if native prompt didn't fire
+        setShowBanner(prev => {
+          if (prev) return prev // already showing
+          return true
+        })
+      }, 5000)
+      return () => {
+        clearTimeout(timer)
+        window.removeEventListener("beforeinstallprompt", handler)
       }
     }
 
@@ -65,7 +92,7 @@ export default function PWAProvider() {
     }, 300)
   }, [])
 
-  if (isStandalone || !showBanner) return null
+  if (isStandaloneMode() || !showBanner) return null
 
   return (
     <>
@@ -100,13 +127,13 @@ export default function PWAProvider() {
           <div className="px-6 py-5">
             <div className="space-y-3 mb-6">
               {[
-                { icon: Zap, title: "Acesso instantâneo", desc: "Abra direto da tela inicial" },
-                { icon: Bell, title: "Notificações", desc: "Lembretes de treino e evolução" },
-                { icon: Dumbbell, title: "Seu treino sempre à mão", desc: "Timer, séries e carga na palma" },
+                { icon: Zap, title: "Acesso instantaneo", desc: "Abra direto da tela inicial" },
+                { icon: Bell, title: "Notificacoes", desc: "Lembretes de treino e evolucao" },
+                { icon: Dumbbell, title: "Seu treino sempre a mao", desc: "Timer, series e carga na palma" },
               ].map((item) => (
                 <div key={item.title} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-red-600/10 border border-red-500/10 flex items-center justify-center shrink-0">
-                    <item.icon className="w-4.5 h-4.5 text-red-400" />
+                    <item.icon className="w-4 h-4 text-red-400" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">{item.title}</p>
@@ -116,34 +143,22 @@ export default function PWAProvider() {
               ))}
             </div>
 
-            {isIOS ? (
-              <div className="text-center">
-                <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl p-4 mb-3">
-                  <p className="text-sm text-neutral-300 leading-relaxed">
-                    Toque em{" "}
-                    <span className="inline-flex items-center align-middle mx-1 px-2 py-0.5 bg-white/10 rounded text-[11px] font-medium text-white">
-                      <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                      </svg>
-                      Compartilhar
-                    </span>{" "}
-                    e depois em <strong className="text-white">&ldquo;Tela de Início&rdquo;</strong>
-                  </p>
-                </div>
-                <button onClick={handleDismiss} className="w-full py-3 rounded-xl text-neutral-500 text-sm font-medium hover:bg-white/[0.03] transition-colors">
-                  Agora não
-                </button>
-              </div>
+            {/* Platform-specific install instructions */}
+            {platform === "ios" ? (
+              <IOSInstructions onDismiss={handleDismiss} />
+            ) : platform === "android" && !deferredPrompt ? (
+              <AndroidInstructions onDismiss={handleDismiss} />
             ) : (
               <div className="space-y-2">
                 <button
                   onClick={handleInstall}
-                  className="w-full py-3.5 rounded-xl bg-red-600 text-white font-bold text-sm shadow-lg shadow-red-600/20 hover:bg-red-500 transition-all hover:scale-[1.02] active:scale-[0.98]"
+                  className="w-full py-3.5 rounded-xl bg-red-600 text-white font-bold text-sm shadow-lg shadow-red-600/20 hover:bg-red-500 transition-all active:scale-[0.98]"
                 >
-                  Instalar App Grátis
+                  <Download className="w-4 h-4 inline mr-2" />
+                  Instalar App Gratis
                 </button>
                 <button onClick={handleDismiss} className="w-full py-3 rounded-xl text-neutral-500 text-sm font-medium hover:bg-white/[0.03] transition-colors">
-                  Agora não
+                  Agora nao
                 </button>
               </div>
             )}
@@ -151,5 +166,107 @@ export default function PWAProvider() {
         </div>
       </div>
     </>
+  )
+}
+
+// ─── iOS Step-by-step ─────────────────────────────────────────────────────────
+
+function IOSInstructions({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div>
+      <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-3 text-center">
+        Como instalar no iPhone/iPad
+      </p>
+
+      <div className="space-y-2.5 mb-4">
+        {/* Step 1 */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center shrink-0">
+            <Share className="w-4 h-4 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">1. Toque em Compartilhar</p>
+            <p className="text-[10px] text-neutral-500">O icone de compartilhar na barra do Safari (quadrado com seta pra cima)</p>
+          </div>
+        </div>
+
+        {/* Step 2 */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center shrink-0">
+            <Plus className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">2. &ldquo;Tela de Inicio&rdquo;</p>
+            <p className="text-[10px] text-neutral-500">Role para baixo e toque em &ldquo;Adicionar a Tela de Inicio&rdquo;</p>
+          </div>
+        </div>
+
+        {/* Step 3 */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <div className="w-8 h-8 rounded-lg bg-red-600/20 flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 text-red-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">3. Toque &ldquo;Adicionar&rdquo;</p>
+            <p className="text-[10px] text-neutral-500">Pronto! O app aparece na sua tela inicial</p>
+          </div>
+        </div>
+      </div>
+
+      <button onClick={onDismiss} className="w-full py-3 rounded-xl text-neutral-500 text-sm font-medium hover:bg-white/[0.03] transition-colors">
+        Entendi
+      </button>
+    </div>
+  )
+}
+
+// ─── Android Step-by-step ─────────────────────────────────────────────────────
+
+function AndroidInstructions({ onDismiss }: { onDismiss: () => void }) {
+  return (
+    <div>
+      <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-3 text-center">
+        Como instalar no Android
+      </p>
+
+      <div className="space-y-2.5 mb-4">
+        {/* Step 1 */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <div className="w-8 h-8 rounded-lg bg-blue-600/20 flex items-center justify-center shrink-0">
+            <MoreVertical className="w-4 h-4 text-blue-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">1. Toque nos 3 pontinhos</p>
+            <p className="text-[10px] text-neutral-500">No canto superior direito do Chrome (menu)</p>
+          </div>
+        </div>
+
+        {/* Step 2 */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center shrink-0">
+            <Download className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">2. &ldquo;Instalar aplicativo&rdquo;</p>
+            <p className="text-[10px] text-neutral-500">Ou &ldquo;Adicionar a tela inicial&rdquo; dependendo do navegador</p>
+          </div>
+        </div>
+
+        {/* Step 3 */}
+        <div className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <div className="w-8 h-8 rounded-lg bg-red-600/20 flex items-center justify-center shrink-0">
+            <Zap className="w-4 h-4 text-red-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">3. Confirme a instalacao</p>
+            <p className="text-[10px] text-neutral-500">Pronto! O app aparece na sua tela inicial</p>
+          </div>
+        </div>
+      </div>
+
+      <button onClick={onDismiss} className="w-full py-3 rounded-xl text-neutral-500 text-sm font-medium hover:bg-white/[0.03] transition-colors">
+        Entendi
+      </button>
+    </div>
   )
 }
