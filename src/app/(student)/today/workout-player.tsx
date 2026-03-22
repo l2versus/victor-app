@@ -23,6 +23,9 @@ interface ExerciseData {
   muscle: string
   equipment: string
   instructions: string | null
+  imageUrl: string | null
+  gifUrl: string | null
+  videoUrl: string | null
   sets: number
   reps: string
   restSeconds: number
@@ -435,77 +438,104 @@ export function WorkoutPlayer({
         })()}
 
         <div className="space-y-3">
-          {exercises.map((ex, i) => (
-            <div
-              key={ex.id}
-              className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden hover:border-white/[0.1] transition-all duration-300"
-            >
-              {/* Header */}
-              <div className="flex items-center gap-3 p-4 pb-2">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600/15 to-red-900/5 flex items-center justify-center text-red-400 text-xs font-bold border border-red-500/10 shrink-0">
-                  {i + 1}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <p className="text-sm font-medium text-white truncate">{ex.name}</p>
-                    <TechniqueBadge technique={ex.technique} />
-                  </div>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <p className="text-[11px] text-neutral-500">{ex.muscle} · {ex.equipment}</p>
-                    <Exercise3DButton exerciseName={ex.name} />
-                  </div>
-                </div>
-              </div>
+          {exercises.map((ex, i) => {
+            const thumbnail = ex.gifUrl || ex.imageUrl || null
+            const hasVideo = !!ex.videoUrl
 
-              {/* Details — MFIT-style */}
-              <div className="px-4 pb-4 space-y-2">
-                {/* Sets / Reps / Load / Rest */}
-                <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                  <span className="px-2 py-1 rounded-lg bg-red-500/10 text-red-400 font-semibold">
-                    {ex.sets} × {ex.reps}
-                  </span>
-                  {ex.loadKg != null && ex.loadKg > 0 && (
-                    <span className="px-2 py-1 rounded-lg bg-white/[0.04] text-neutral-400 font-medium">
-                      {ex.loadKg}kg
-                    </span>
+            return (
+              <div
+                key={ex.id}
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden hover:border-white/[0.1] transition-all duration-300"
+              >
+                {/* Main row — info left, thumbnail right (MFIT-style) */}
+                <div className="flex gap-3 p-4">
+                  {/* Left: exercise info */}
+                  <div className="flex-1 min-w-0 space-y-2">
+                    {/* Name + number */}
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-600/15 to-red-900/5 flex items-center justify-center text-red-400 text-[10px] font-bold border border-red-500/10 shrink-0 mt-0.5">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white leading-tight">{ex.name}</p>
+                        <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                          <TechniqueBadge technique={ex.technique} />
+                          <Exercise3DButton exerciseName={ex.name} />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Sets / Load */}
+                    <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                      <span className="text-neutral-500">Séries:</span>
+                      <span className="text-white font-medium">{ex.sets}×{ex.reps}</span>
+                      {ex.loadKg != null && ex.loadKg > 0 && (
+                        <>
+                          <span className="text-neutral-600">·</span>
+                          <span className="text-neutral-500">Carga:</span>
+                          <span className="text-white font-medium">{ex.loadKg}kg</span>
+                        </>
+                      )}
+                    </div>
+
+                    {/* Instructions */}
+                    {ex.instructions && (
+                      <div>
+                        <p className="text-[10px] text-neutral-500 font-medium mb-0.5">Instruções:</p>
+                        <p className="text-[11px] text-neutral-400 leading-relaxed">{ex.instructions}</p>
+                      </div>
+                    )}
+
+                    {/* Machine location */}
+                    {ex.suggestedMachine && (
+                      <p className="text-[10px] text-amber-400/70 truncate">📍 {ex.suggestedMachine}</p>
+                    )}
+                  </div>
+
+                  {/* Right: thumbnail */}
+                  {thumbnail ? (
+                    <div className="w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 relative bg-neutral-900">
+                      <img
+                        src={thumbnail}
+                        alt={ex.name}
+                        className="w-full h-full object-cover"
+                        loading="lazy"
+                      />
+                      {hasVideo && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                          <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
+                            <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="w-24 h-24 rounded-xl border border-white/[0.06] bg-white/[0.02] shrink-0 flex items-center justify-center">
+                      <Dumbbell className="w-6 h-6 text-neutral-700" />
+                    </div>
                   )}
-                  {ex.restSeconds > 0 && (
-                    <span className="text-neutral-600">
-                      ⏱ {ex.restSeconds}s descanso
-                    </span>
-                  )}
                 </div>
 
-                {/* Machine location */}
-                {ex.suggestedMachine && (
-                  <p className="text-[10px] text-amber-400/70 truncate">📍 {ex.suggestedMachine}</p>
-                )}
-
-                {/* Instructions */}
-                {ex.instructions && (
-                  <div className="border-l-2 border-red-500/20 pl-3">
-                    <p className="text-[11px] text-neutral-400 leading-relaxed">{ex.instructions}</p>
-                  </div>
-                )}
-
-                {/* Trainer notes */}
-                {ex.notes && (
-                  <div className="flex items-start gap-2 px-2 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10">
-                    <Zap className="w-3 h-3 text-amber-400 mt-0.5 shrink-0" />
-                    <p className="text-[10px] text-amber-300/80">{ex.notes}</p>
-                  </div>
-                )}
-
-                {/* Technique description */}
-                {ex.technique !== "NORMAL" && (
-                  <div className="flex items-start gap-2 px-2 py-1.5 rounded-lg bg-purple-500/5 border border-purple-500/10">
-                    <Zap className="w-3 h-3 text-purple-400 mt-0.5 shrink-0" />
-                    <p className="text-[10px] text-purple-300/80">{TECHNIQUE_INFO[ex.technique].description}</p>
+                {/* Extra info row */}
+                {(ex.notes || ex.technique !== "NORMAL") && (
+                  <div className="px-4 pb-3 space-y-2">
+                    {ex.notes && (
+                      <div className="flex items-start gap-2 px-2 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                        <Zap className="w-3 h-3 text-amber-400 mt-0.5 shrink-0" />
+                        <p className="text-[10px] text-amber-300/80">{ex.notes}</p>
+                      </div>
+                    )}
+                    {ex.technique !== "NORMAL" && (
+                      <div className="flex items-start gap-2 px-2 py-1.5 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                        <Zap className="w-3 h-3 text-purple-400 mt-0.5 shrink-0" />
+                        <p className="text-[10px] text-purple-300/80">{TECHNIQUE_INFO[ex.technique].description}</p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
 
         {/* ═══ SPOTIFY — Já pode escolher a playlist antes de treinar ═══ */}
@@ -696,18 +726,29 @@ export function WorkoutPlayer({
 
       {/* Exercise Card */}
       <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-5 swipe-container">
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/10 flex items-center justify-center text-red-400 border border-red-500/15">
-            <Dumbbell className="w-5 h-5" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h2 className="text-lg font-bold text-white truncate">{currentEx.name}</h2>
-            <div className="flex items-center gap-2 mt-0.5">
-              <p className="text-xs text-neutral-500">{currentEx.muscle} · {currentEx.equipment}</p>
-              <TechniqueBadge technique={currentEx.technique} size="md" />
-              <RMCalculatorButton exerciseName={currentEx.name} />
+        {/* Header with thumbnail */}
+        <div className="flex gap-3 mb-4">
+          <div className="flex-1 min-w-0 flex items-start gap-3">
+            {(() => {
+              const thumb = currentEx.gifUrl || currentEx.imageUrl
+              return thumb ? (
+                <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 bg-neutral-900">
+                  <img src={thumb} alt={currentEx.name} className="w-full h-full object-cover" loading="lazy" />
+                </div>
+              ) : (
+                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/10 flex items-center justify-center text-red-400 border border-red-500/15 shrink-0">
+                  <Dumbbell className="w-5 h-5" />
+                </div>
+              )
+            })()}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-lg font-bold text-white truncate">{currentEx.name}</h2>
+              <div className="flex items-center gap-2 mt-0.5">
+                <p className="text-xs text-neutral-500">{currentEx.muscle} · {currentEx.equipment}</p>
+                <TechniqueBadge technique={currentEx.technique} size="md" />
+                <RMCalculatorButton exerciseName={currentEx.name} />
             </div>
+          </div>
           </div>
           {isExerciseDone && (
             <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center animate-set-complete">
