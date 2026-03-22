@@ -3,16 +3,17 @@ import { prisma } from "@/lib/prisma"
 import { exchangeCodeForTokens, getSpotifyProfile } from "@/lib/spotify"
 
 // GET /api/spotify/callback — Spotify redireciona aqui após login
-// Rota PÚBLICA (sem cookie de sessão) — o studentId vem no state
+// Rota PÚBLICA — studentId vem no state param
+// Retorna HTML que fecha o popup e notifica a janela pai
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code")
   const state = req.nextUrl.searchParams.get("state") // = studentId
   const error = req.nextUrl.searchParams.get("error")
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin
-
   if (error || !code || !state) {
-    return NextResponse.redirect(new URL("/today?spotify=denied", baseUrl))
+    return new NextResponse(callbackHTML(false, "Acesso negado pelo Spotify"), {
+      headers: { "Content-Type": "text/html" },
+    })
   }
 
   // Verifica se o studentId é válido
@@ -22,7 +23,9 @@ export async function GET(req: NextRequest) {
   })
 
   if (!student) {
-    return NextResponse.redirect(new URL("/today?spotify=error&reason=invalid_state", baseUrl))
+    return new NextResponse(callbackHTML(false, "Sessão inválida"), {
+      headers: { "Content-Type": "text/html" },
+    })
   }
 
   try {
@@ -39,9 +42,42 @@ export async function GET(req: NextRequest) {
       },
     })
 
-    return NextResponse.redirect(new URL("/today?spotify=connected", baseUrl))
+    return new NextResponse(callbackHTML(true, profile.name), {
+      headers: { "Content-Type": "text/html" },
+    })
   } catch (err) {
     console.error("[Spotify Callback]", err)
-    return NextResponse.redirect(new URL("/today?spotify=error&reason=token", baseUrl))
+    return new NextResponse(callbackHTML(false, "Erro ao conectar"), {
+      headers: { "Content-Type": "text/html" },
+    })
   }
+}
+
+function callbackHTML(success: boolean, message: string): string {
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spotify — ${success ? "Conectado" : "Erro"}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0a0a0a; color: #fff; font-family: -apple-system, sans-serif;
+    display: flex; align-items: center; justify-content: center; height: 100vh; }
+  .card { text-align: center; padding: 2rem; }
+  .icon { font-size: 3rem; margin-bottom: 1rem; }
+  .title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+  .sub { color: #888; font-size: 0.875rem; }
+</style></head>
+<body>
+  <div class="card">
+    <div class="icon">${success ? "✅" : "❌"}</div>
+    <div class="title">${success ? "Spotify Conectado!" : "Erro"}</div>
+    <div class="sub">${success ? message : message}<br>Fechando...</div>
+  </div>
+  <script>
+    // Notifica a janela pai e fecha o popup
+    if (window.opener) {
+      window.opener.postMessage({ type: "spotify-callback", success: ${success} }, "*");
+    }
+    setTimeout(function() { window.close(); }, 1500);
+  </script>
+</body></html>`
 }
