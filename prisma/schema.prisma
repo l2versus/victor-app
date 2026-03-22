@@ -128,6 +128,7 @@ model Exercise {
   videoUrl     String?
   imageUrl     String?   /// Foto da máquina (link externo: Imgur, Google Drive, etc)
   machineBrand String?   /// Marca/modelo da máquina (ex: "Hammer Strength Iso-Lateral")
+  machine3dModel String? /// Slug do modelo 3D .glb (ex: "panatta-leg-press-45" → /models/machines/panatta-leg-press-45.glb)
   instructions String?
   isCustom     Boolean @default(false)
 

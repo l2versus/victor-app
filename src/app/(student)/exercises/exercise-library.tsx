@@ -6,6 +6,12 @@ import { cn } from "@/lib/utils"
 import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
 import { MuscleBadge } from "@/components/student/muscle-info-card"
 import { find3DModel } from "@/lib/exercise-3d-models"
+import dynamic from "next/dynamic"
+
+const Machine3DGuide = dynamic(
+  () => import("@/components/student/machine-3d-guide").then(m => ({ default: m.Machine3DGuide })),
+  { ssr: false }
+)
 
 interface Exercise {
   id: string
@@ -16,6 +22,7 @@ interface Exercise {
   videoUrl: string | null
   imageUrl: string | null
   machineBrand: string | null
+  machine3dModel: string | null
 }
 
 interface ExerciseLibraryProps {
@@ -223,7 +230,16 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
                           </div>
                         )}
 
-                        {/* 3D viewer button */}
+                        {/* 3D Machine model (local .glb) */}
+                        {ex.machine3dModel && (
+                          <Machine3DGuide
+                            modelSlug={ex.machine3dModel}
+                            machineName={ex.name}
+                            onClose={() => {}}
+                          />
+                        )}
+
+                        {/* 3D Muscle viewer (Sketchfab) */}
                         {has3D && (
                           <Exercise3DButton exerciseName={ex.name} className="w-full justify-center py-2" />
                         )}
