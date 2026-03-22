@@ -48,7 +48,11 @@ export function getSpotifyAuthUrl(state: string): string {
 /** Troca authorization code por access + refresh tokens */
 export async function exchangeCodeForTokens(code: string) {
   const redirectUri = getRedirectUri()
+  const cid = getClientId()
+  const csec = getClientSecret()
   console.log("[Spotify] Token exchange redirect_uri:", redirectUri)
+  console.log("[Spotify] client_id length:", cid.length, "| first4:", cid.slice(0, 4), "| last4:", cid.slice(-4))
+  console.log("[Spotify] client_secret length:", csec.length, "| first4:", csec.slice(0, 4), "| last4:", csec.slice(-4))
   const res = await fetch(SPOTIFY_TOKEN_URL, {
     method: "POST",
     headers: {
