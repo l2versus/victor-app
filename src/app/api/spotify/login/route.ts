@@ -4,7 +4,6 @@ import { prisma } from "@/lib/prisma"
 import { getSpotifyAuthUrl } from "@/lib/spotify"
 
 // GET /api/spotify/login — Redireciona para tela de login do Spotify
-// Codifica o studentId no state pra o callback saber quem é
 export async function GET(req: NextRequest) {
   const session = await getSession()
   if (!session) {
@@ -20,11 +19,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 })
   }
 
-  // Use request origin so Spotify redirects back to the same host (Coolify, Vercel, localhost)
-  const origin = req.nextUrl.origin
+  // Detect real origin — behind reverse proxy (Coolify/Traefik), nextUrl.origin returns localhost
+  const proto = req.headers.get("x-forwarded-proto") || "http"
+  const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host
+  const origin = `${proto}://${host}`
 
-  // Encode origin in state along with studentId: "studentId|origin"
-  const state = `${student.id}|${origin}`
+  console.log("[Spotify Login] origin detected:", origin, "| student:", student.id)
+
+  // Encode origin in state: base64("studentId::origin")
+  const statePayload = `${student.id}::${origin}`
+  const state = Buffer.from(statePayload).toString("base64url")
+
   const authUrl = getSpotifyAuthUrl(state, origin)
   return NextResponse.redirect(authUrl)
 }
