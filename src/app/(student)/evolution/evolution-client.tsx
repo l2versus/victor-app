@@ -207,86 +207,75 @@ export function EvolutionClient() {
     if (!evo || !stats) return
     setExportingPdf(true)
 
-    const printWindow = window.open("", "_blank")
-    if (!printWindow) {
-      setExportingPdf(false)
-      alert("Permita pop-ups para gerar o PDF do relatorio.")
-      return
+    // Build PRs rows safely (all data from our own API, no user input)
+    const prsRows = stats.prs.slice(0, 8).map(pr => {
+      const name = String(pr.exerciseName).replace(/[<>&"']/g, "")
+      const load = Number(pr.loadKg)
+      return `<tr><td>${name}</td><td style="text-align:right;font-weight:700">${load} kg</td></tr>`
+    }).join("")
+
+    const prsSection = stats.prs.length > 0
+      ? `<h2>Records Pessoais</h2><table>${prsRows}</table>`
+      : ""
+
+    const totalVol = evo.summary.totalVolume.toLocaleString("pt-BR")
+    const dateStr = new Date().toLocaleDateString("pt-BR")
+
+    const html = [
+      "<!DOCTYPE html><html><head><meta charset='utf-8'>",
+      "<title>Evolucao — VO Personal</title>",
+      "<style>",
+      "*{margin:0;padding:0;box-sizing:border-box}",
+      "body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0a;color:#e5e5e5;padding:24px;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}",
+      ".header{background:#1a0000;border:1px solid #dc2626;border-radius:16px;padding:24px;margin-bottom:24px}",
+      ".header h1{font-size:24px;color:#fff;margin-bottom:4px}",
+      ".header p{color:#a3a3a3;font-size:13px}",
+      ".grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}",
+      ".card{background:#111;border:1px solid #333;border-radius:12px;padding:16px;text-align:center}",
+      ".card .val{font-size:24px;font-weight:900;color:#fff}",
+      ".card .lbl{font-size:10px;color:#a3a3a3;text-transform:uppercase;letter-spacing:0.1em;margin-top:4px}",
+      "h2{font-size:16px;color:#fff;margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid #dc2626}",
+      "table{width:100%;border-collapse:collapse;background:#111;border-radius:12px;overflow:hidden;border:1px solid #333}",
+      "td{padding:10px 14px;border-bottom:1px solid #222;font-size:14px;color:#e5e5e5}",
+      ".footer{margin-top:32px;padding-top:16px;border-top:1px solid #dc2626;color:#737373;font-size:11px;text-align:center}",
+      "@media print{body{background:#0a0a0a!important;color:#e5e5e5!important}.header{background:#1a0000!important}.card{background:#111!important}.card .val{color:#fff!important}td{color:#e5e5e5!important}h2{color:#fff!important}}",
+      "</style></head><body>",
+      `<div class="header"><h1>Relatorio de Evolucao</h1><p>${dateStr} — Ultimos ${evo.summary.periodDays} dias</p></div>`,
+      '<div class="grid">',
+      `<div class="card"><div class="val">${evo.summary.totalSessions}</div><div class="lbl">Sessoes</div></div>`,
+      `<div class="card"><div class="val">${totalVol}</div><div class="lbl">Volume (kg)</div></div>`,
+      `<div class="card"><div class="val">${evo.summary.totalSets}</div><div class="lbl">Series</div></div>`,
+      `<div class="card"><div class="val">${evo.summary.avgDuration || "—"} min</div><div class="lbl">Duracao media</div></div>`,
+      "</div>",
+      prsSection,
+      '<div class="footer">Gerado pelo Victor App — VO Personal • CREF 016254-G/CE</div>',
+      "</body></html>",
+    ].join("\n")
+
+    // Use Blob URL + iframe (no pop-up block, works on mobile)
+    const blob = new Blob([html], { type: "text/html" })
+    const url = URL.createObjectURL(blob)
+
+    const iframe = document.createElement("iframe")
+    iframe.style.cssText = "position:fixed;top:-10000px;left:-10000px;width:800px;height:600px"
+    iframe.src = url
+    document.body.appendChild(iframe)
+
+    iframe.onload = () => {
+      setTimeout(() => {
+        try {
+          iframe.contentWindow?.print()
+        } catch {
+          // Fallback: open blob URL in new tab
+          window.open(url, "_blank")
+        }
+        setTimeout(() => {
+          document.body.removeChild(iframe)
+          URL.revokeObjectURL(url)
+          setExportingPdf(false)
+        }, 1000)
+      }, 300)
     }
-
-    // Build the print document using DOM APIs (safe, no XSS risk — all data is from our own API)
-    const doc = printWindow.document
-    doc.open()
-
-    const style = doc.createElement("style")
-    style.textContent = `*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0a;color:#e5e5e5;padding:24px;-webkit-print-color-adjust:exact;print-color-adjust:exact}.header{background:linear-gradient(135deg,#1a0000,#0a0a0a);border:1px solid #dc2626;border-radius:16px;padding:24px;margin-bottom:24px}.header h1{font-size:24px;color:#fff;margin-bottom:4px}.header p{color:#737373;font-size:13px}.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}.card{background:#111;border:1px solid #333;border-radius:12px;padding:16px;text-align:center}.card .val{font-size:24px;font-weight:900;color:#fff}.card .lbl{font-size:10px;color:#737373;text-transform:uppercase;letter-spacing:0.1em;margin-top:4px}h2{font-size:16px;color:#fff;margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid #dc2626}table{width:100%;border-collapse:collapse;background:#111;border-radius:12px;overflow:hidden;border:1px solid #333}td{padding:8px 12px;border-bottom:1px solid #222;font-size:14px}.footer{margin-top:32px;padding-top:16px;border-top:1px solid #dc2626;color:#525252;font-size:11px;text-align:center}@media print{body{background:#0a0a0a!important;color:#e5e5e5!important}.header{background:#1a0000!important}.card{background:#111!important}.card .val{color:#fff!important}}`
-    doc.head.appendChild(style)
-    doc.title = "Evolucao — VO Personal"
-
-    // Header
-    const header = doc.createElement("div")
-    header.className = "header"
-    const h1 = doc.createElement("h1")
-    h1.textContent = "Relatorio de Evolucao"
-    const p = doc.createElement("p")
-    p.textContent = `${new Date().toLocaleDateString("pt-BR")} — Ultimos ${evo.summary.periodDays} dias`
-    header.appendChild(h1)
-    header.appendChild(p)
-    doc.body.appendChild(header)
-
-    // Stats grid
-    const grid = doc.createElement("div")
-    grid.className = "grid"
-    const statsData = [
-      [evo.summary.totalSessions.toString(), "Sessoes"],
-      [evo.summary.totalVolume.toLocaleString("pt-BR"), "Volume (kg)"],
-      [evo.summary.totalSets.toString(), "Series"],
-      [`${evo.summary.avgDuration || "—"} min`, "Duracao media"],
-    ]
-    for (const [val, lbl] of statsData) {
-      const card = doc.createElement("div")
-      card.className = "card"
-      const v = doc.createElement("div")
-      v.className = "val"
-      v.textContent = val
-      const l = doc.createElement("div")
-      l.className = "lbl"
-      l.textContent = lbl
-      card.appendChild(v)
-      card.appendChild(l)
-      grid.appendChild(card)
-    }
-    doc.body.appendChild(grid)
-
-    // PRs table
-    if (stats.prs.length > 0) {
-      const h2 = doc.createElement("h2")
-      h2.textContent = "Records Pessoais"
-      doc.body.appendChild(h2)
-      const table = doc.createElement("table")
-      for (const pr of stats.prs.slice(0, 8)) {
-        const tr = doc.createElement("tr")
-        const td1 = doc.createElement("td")
-        td1.textContent = pr.exerciseName
-        const td2 = doc.createElement("td")
-        td2.textContent = `${pr.loadKg} kg`
-        td2.style.textAlign = "right"
-        td2.style.fontWeight = "700"
-        tr.appendChild(td1)
-        tr.appendChild(td2)
-        table.appendChild(tr)
-      }
-      doc.body.appendChild(table)
-    }
-
-    // Footer
-    const footer = doc.createElement("div")
-    footer.className = "footer"
-    footer.textContent = `Gerado pelo Victor App — VO Personal • CREF 016254-G/CE`
-    doc.body.appendChild(footer)
-
-    doc.close()
-    setTimeout(() => { printWindow.print(); setExportingPdf(false) }, 500)
   }
 
   if (loading) {
