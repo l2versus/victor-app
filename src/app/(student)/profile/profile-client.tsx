@@ -198,6 +198,43 @@ export function ProfileClient({ student, stats }: ProfileProps) {
           <ActionRow icon={Mail} label="Alterar Email" sublabel={student.email} onClick={() => setActiveSheet("email")} />
         </div>
 
+        {/* ═══ FERRAMENTAS ═══ */}
+        <div className="space-y-1.5">
+          <h3 className="text-[10px] text-neutral-600 uppercase tracking-widest font-semibold px-1 pb-1">
+            Ferramentas
+          </h3>
+          <Link
+            href="/progress"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-neutral-300 text-sm font-medium hover:bg-white/[0.04] transition-all active:scale-[0.98]"
+          >
+            <div className="w-8 h-8 rounded-xl bg-pink-500/10 flex items-center justify-center">
+              <span className="text-sm">📸</span>
+            </div>
+            <span className="flex-1">Fotos de Progresso</span>
+            <ChevronRight className="w-4 h-4 text-neutral-600" />
+          </Link>
+          <Link
+            href="/extra"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-neutral-300 text-sm font-medium hover:bg-white/[0.04] transition-all active:scale-[0.98]"
+          >
+            <div className="w-8 h-8 rounded-xl bg-blue-500/10 flex items-center justify-center">
+              <span className="text-sm">🏃</span>
+            </div>
+            <span className="flex-1">Atividades Extra</span>
+            <ChevronRight className="w-4 h-4 text-neutral-600" />
+          </Link>
+          <Link
+            href="/exercises"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl bg-white/[0.02] border border-white/[0.06] text-neutral-300 text-sm font-medium hover:bg-white/[0.04] transition-all active:scale-[0.98]"
+          >
+            <div className="w-8 h-8 rounded-xl bg-amber-500/10 flex items-center justify-center">
+              <span className="text-sm">💪</span>
+            </div>
+            <span className="flex-1">Biblioteca de Exercícios</span>
+            <ChevronRight className="w-4 h-4 text-neutral-600" />
+          </Link>
+        </div>
+
         {/* ═══ NOTIFICAÇÕES + UPGRADE + SITE + LOGOUT ═══ */}
         <div className="space-y-2">
           <PushNotificationToggle />

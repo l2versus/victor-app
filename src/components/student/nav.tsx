@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
-import { Dumbbell, TrendingUp, User, Trophy, Camera, Utensils } from "lucide-react"
+import { Dumbbell, TrendingUp, User, Trophy, Camera, Utensils, MoreHorizontal, X, ImageIcon, Activity } from "lucide-react"
 
 const BASE_NAV = [
   { href: "/today", label: "Treino", icon: Dumbbell },
@@ -14,6 +14,13 @@ const BASE_NAV = [
 ]
 
 const NUTRITION_ITEM = { href: "/nutrition", label: "Nutrição", icon: Utensils }
+
+// Extra student pages accessible via profile or deep links
+export const EXTRA_STUDENT_PAGES = [
+  { href: "/progress", label: "Fotos Progresso", icon: ImageIcon },
+  { href: "/extra", label: "Atividades Extra", icon: Activity },
+  { href: "/nutrition", label: "Nutrição", icon: Utensils },
+]
 
 interface StudentNavProps {
   hasNutrition?: boolean

@@ -11,6 +11,7 @@ import { BodyFocusBadges } from "@/components/student/muscle-info-card"
 import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
 import { useCelebration, type CelebrationType } from "@/components/student/celebration"
 import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
+import { RMCalculatorButton } from "@/components/student/rm-calculator"
 
 // ═══ TYPES ═══
 
@@ -649,6 +650,7 @@ export function WorkoutPlayer({
             <div className="flex items-center gap-2 mt-0.5">
               <p className="text-xs text-neutral-500">{currentEx.muscle} · {currentEx.equipment}</p>
               <TechniqueBadge technique={currentEx.technique} size="md" />
+              <RMCalculatorButton exerciseName={currentEx.name} />
             </div>
           </div>
           {isExerciseDone && (

@@ -20,18 +20,24 @@ import {
   X,
   MessageCircle,
   Target,
+  Calendar,
+  Bell,
+  BookOpen,
 } from "lucide-react"
 
 const mainItems = [
   { href: "/admin/dashboard", label: "Início", icon: LayoutDashboard },
   { href: "/admin/students", label: "Alunos", icon: Users },
-  { href: "/admin/messages", label: "Chat", icon: MessageCircle },
+  { href: "/admin/schedule", label: "Agenda", icon: Calendar },
   { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
 ]
 
 const moreItems = [
+  { href: "/admin/template-library", label: "Templates", icon: BookOpen },
   { href: "/admin/challenges", label: "Desafios", icon: Target },
+  { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/plans", label: "Planos", icon: Crown },
+  { href: "/admin/messages", label: "Mensagens", icon: MessageCircle },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },

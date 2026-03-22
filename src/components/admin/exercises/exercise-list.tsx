@@ -405,26 +405,50 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
 
                 {/* Foto da máquina */}
                 <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Foto da máquina (link)</label>
-                  <input
-                    value={editMedia.imageUrl}
-                    onChange={e => setEditMedia({ ...editMedia, imageUrl: e.target.value })}
-                    placeholder="https://link-da-foto.com/maquina.jpg"
-                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
-                  />
-                  <p className="text-[9px] text-neutral-600 mt-1">Tire a foto → suba pro Google Drive ou Imgur → cole o link</p>
+                  <label className="text-xs text-neutral-500 mb-1 block">Foto da máquina</label>
+                  <div className="flex gap-2">
+                    <input
+                      value={editMedia.imageUrl}
+                      onChange={e => setEditMedia({ ...editMedia, imageUrl: e.target.value })}
+                      placeholder="https://link-da-foto.com/maquina.jpg"
+                      className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
+                    />
+                    <label className="shrink-0 px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-xs text-neutral-400 cursor-pointer hover:bg-white/[0.1] transition-colors flex items-center gap-1.5">
+                      📷 Upload
+                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const reader = new FileReader()
+                        reader.onload = () => setEditMedia({ ...editMedia, imageUrl: reader.result as string })
+                        reader.readAsDataURL(file)
+                      }} />
+                    </label>
+                  </div>
+                  <p className="text-[9px] text-neutral-600 mt-1">Cole um link ou faça upload direto da foto</p>
                 </div>
 
                 {/* Vídeo */}
                 <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Vídeo do exercício (YouTube)</label>
-                  <input
-                    value={editMedia.videoUrl}
-                    onChange={e => setEditMedia({ ...editMedia, videoUrl: e.target.value })}
-                    placeholder="https://youtube.com/watch?v=..."
-                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
-                  />
-                  <p className="text-[9px] text-neutral-600 mt-1">Filme o exercício → suba pro YouTube (não listado) → cole o link</p>
+                  <label className="text-xs text-neutral-500 mb-1 block">Vídeo do exercício (YouTube / Instagram / Upload)</label>
+                  <div className="flex gap-2">
+                    <input
+                      value={editMedia.videoUrl}
+                      onChange={e => setEditMedia({ ...editMedia, videoUrl: e.target.value })}
+                      placeholder="https://youtube.com/watch?v=... ou Instagram"
+                      className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
+                    />
+                    <label className="shrink-0 px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-xs text-neutral-400 cursor-pointer hover:bg-white/[0.1] transition-colors flex items-center gap-1.5">
+                      🎬 Upload
+                      <input type="file" accept="video/*" className="hidden" onChange={e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        const reader = new FileReader()
+                        reader.onload = () => setEditMedia({ ...editMedia, videoUrl: reader.result as string })
+                        reader.readAsDataURL(file)
+                      }} />
+                    </label>
+                  </div>
+                  <p className="text-[9px] text-neutral-600 mt-1">YouTube, Instagram ou vídeo gravado direto do celular</p>
                 </div>
 
                 {/* GIF */}
