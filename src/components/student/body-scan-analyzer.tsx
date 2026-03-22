@@ -15,6 +15,7 @@ import {
   MessageSquare,
   Dumbbell,
   XCircle,
+  Eye,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -27,7 +28,7 @@ interface Landmark {
   visibility?: number
 }
 
-interface Measurements {
+interface FrontMeasurements {
   shoulderPx: number
   hipPx: number
   waistPx: number
@@ -35,16 +36,37 @@ interface Measurements {
   legPx: number
 }
 
+interface SideMeasurements {
+  chestDepthPx: number
+  waistDepthPx: number
+  hipDepthPx: number
+  headForwardPx: number // forward head posture
+  trunkLeanDeg: number  // trunk lean angle (kyphosis/lordosis indicator)
+}
+
+interface CombinedMeasurements extends FrontMeasurements {
+  side: SideMeasurements | null
+}
+
 interface Ratios {
   shoulderWaist: number
   shoulderHip: number
   waistHip: number
   legTorso: number
+  // Side ratios (when available)
+  chestToWaistDepth?: number  // chest depth vs waist depth
+  gluteProjection?: number    // hip depth vs waist depth
+}
+
+interface PostureScore {
+  headForward: "good" | "moderate" | "poor"
+  trunkAlignment: "good" | "moderate" | "poor"
+  overallScore: number // 0-100
+  notes: string[]
 }
 
 type BodyShape = "V_SHAPE" | "TRAPEZOID" | "X_SHAPE" | "RECTANGLE" | "PEAR"
 type Step = "camera_front" | "camera_side" | "result"
-type ScanPhase = "front" | "side"
 
 // ─── Body shape data ──────────────────────────────────────────────────────────
 
@@ -83,21 +105,27 @@ const SHAPE_INFO: Record<BodyShape, { label: string; icon: string; color: string
 
 function classifyShape(ratios: Ratios): BodyShape {
   const { shoulderHip, waistHip } = ratios
-  // Thresholds ajustados para valores COM correção biométrica:
-  // Com correção, shoulderHip típico cai de ~1.7 pra ~1.0-1.3
-  if (shoulderHip > 1.25) return "V_SHAPE"       // ombros significativamente maiores
-  if (shoulderHip > 1.10) return "TRAPEZOID"      // ombros moderadamente maiores
-  if (shoulderHip >= 0.85 && waistHip < 0.80) return "X_SHAPE"  // cintura marcada
-  if (shoulderHip >= 0.85) return "RECTANGLE"     // proporcional
+  if (shoulderHip > 1.25) return "V_SHAPE"
+  if (shoulderHip > 1.10) return "TRAPEZOID"
+  if (shoulderHip >= 0.85 && waistHip < 0.80) return "X_SHAPE"
+  if (shoulderHip >= 0.85) return "RECTANGLE"
   return "PEAR"
 }
 
-function generateLocalAnalysis(ratios: Ratios, shape: BodyShape): string {
+function generateLocalAnalysis(ratios: Ratios, shape: BodyShape, posture: PostureScore | null): string {
   const info = SHAPE_INFO[shape]
   const lines = [`Formato: ${info.label}.`, info.tip]
   if (ratios.shoulderHip > 1.2) lines.push("Excelente largura de ombros!")
   if (ratios.waistHip < 0.75) lines.push("Cintura proporcional ao quadril.")
   if (ratios.legTorso > 1.1) lines.push("Boa proporção perna/tronco.")
+  if (ratios.chestToWaistDepth && ratios.chestToWaistDepth > 1.15) {
+    lines.push("Boa projeção peitoral na vista lateral.")
+  }
+  if (posture) {
+    if (posture.overallScore >= 80) lines.push("Postura geral boa!")
+    else if (posture.overallScore >= 50) lines.push("Postura com pontos de atenção.")
+    posture.notes.forEach(n => lines.push(n))
+  }
   return lines.join(" ")
 }
 
@@ -107,50 +135,16 @@ function dist(a: Landmark, b: Landmark, w: number, h: number) {
   return Math.hypot((a.x - b.x) * w, (a.y - b.y) * h)
 }
 
-function calcMeasurements(lm: Landmark[], w: number, h: number): Measurements {
-  // ═══ CORREÇÃO BIOMÉTRICA ═══
-  // MediaPipe Pose mede o CENTRO das articulações (esqueleto), não a silhueta externa.
-  // Os landmarks 23/24 (hip) medem a pelve interna — MUITO mais estreita que o quadril real.
-  // Aplicamos multiplicadores baseados em antropometria (Dempster, 1955; Winter, 2009):
-  //
-  // Ombros: landmarks 11/12 estão nas articulações glenoumerais, que são ~92% da largura
-  //         real dos ombros (deltóides adicionam volume lateral). Multiplicador: 1.08
-  //
-  // Quadril: landmarks 23/24 estão nas articulações coxofemorais (centro da pelve).
-  //          A largura real do quadril (incluindo glúteos/tecido) é ~35-45% maior.
-  //          Para mulheres: ~1.45x. Para homens: ~1.35x. Média: 1.40x
-  //
-  // Cintura: não tem landmark direto. Estimamos pela posição Y entre costelas (ombro)
-  //          e quadril, e usamos a largura proporcional ao tronco.
-  //          A cintura real fica a ~40% da distância ombro→quadril (ponto mais estreito).
-  //          Largura: tipicamente 70-80% da largura do quadril corrigido.
-
+function calcFrontMeasurements(lm: Landmark[], w: number, h: number): FrontMeasurements {
   const rawShoulderPx = dist(lm[11], lm[12], w, h)
   const rawHipPx = dist(lm[23], lm[24], w, h)
-
-  // ═══ MULTIPLICADORES ADAPTATIVOS ═══
-  // MediaPipe mede articulações (esqueleto), não silhueta.
-  // O hip é o mais afetado: articulação coxofemoral fica MUITO interna.
-  // A correção varia por biótipo: se rawRatio > 1.5, pessoa tem ombros
-  // desproporcionalmente largos vs pelve → hip precisa de mais correção.
   const rawRatio = rawShoulderPx / rawHipPx
 
-  // Ombros: deltóides adicionam ~8-12% além da glenoumeral
   const SHOULDER_CORRECTION = 1.08
-
-  // Quadril: adaptativo — quanto mais "esquelético" o ratio, mais correção
-  // Ratio < 1.3: pessoa com quadril proporcional → ×1.50 (mais volume externo)
-  // Ratio 1.3-1.6: intermediário → ×1.45
-  // Ratio > 1.6: ombros muito largos vs pelve → ×1.55 (pelve fina, muito tecido externo)
-  const HIP_CORRECTION = rawRatio < 1.3 ? 1.50
-    : rawRatio < 1.6 ? 1.45
-    : 1.55
+  const HIP_CORRECTION = rawRatio < 1.3 ? 1.50 : rawRatio < 1.6 ? 1.45 : 1.55
 
   const shoulderPx = rawShoulderPx * SHOULDER_CORRECTION
   const hipPx = rawHipPx * HIP_CORRECTION
-
-  // Cintura: ponto mais estreito do tronco (~75-85% do menor entre ombro/hip corrigido)
-  // Pessoas com ombros proporcionais ao quadril tendem a ter cintura mais marcada
   const waistRatio = rawRatio < 1.3 ? 0.78 : 0.82
   const waistPx = Math.min(shoulderPx, hipPx) * waistRatio
 
@@ -162,14 +156,89 @@ function calcMeasurements(lm: Landmark[], w: number, h: number): Measurements {
   return { shoulderPx, hipPx, waistPx, torsoPx, legPx }
 }
 
-function calcRatios(m: Measurements): Ratios {
-  const r2 = (n: number) => Math.round(n * 100) / 100
-  return {
-    shoulderWaist: r2(m.shoulderPx / m.waistPx),
-    shoulderHip: r2(m.shoulderPx / m.hipPx),
-    waistHip: r2(m.waistPx / m.hipPx),
-    legTorso: r2(m.legPx / m.torsoPx),
+function calcSideMeasurements(lm: Landmark[], w: number, h: number): SideMeasurements {
+  // Side view: measure front-to-back depths using Z and X coordinates
+  // In side view, the X axis represents depth (front-to-back)
+
+  // Chest depth: distance between front chest and back at shoulder level
+  // Using landmarks 11 (left shoulder) and 12 (right shoulder) - in side view one is front, one is back
+  const shoulderSpread = Math.abs(lm[11].x - lm[12].x) * w
+  const chestDepthPx = Math.max(shoulderSpread, dist(lm[11], lm[12], w, h) * 0.7)
+
+  // Waist depth: estimated from hip and shoulder midpoint depth
+  const hipSpread = Math.abs(lm[23].x - lm[24].x) * w
+  const waistDepthPx = (chestDepthPx + hipSpread) * 0.45
+
+  // Hip depth (glute projection)
+  const hipDepthPx = Math.max(hipSpread, dist(lm[23], lm[24], w, h) * 0.7)
+
+  // Forward head posture: ear (landmark 7/8) vs shoulder (11/12) X offset
+  // In side view, if head is forward of shoulders, indicates FHP
+  const earX = (lm[7]?.x ?? lm[0]?.x ?? 0)
+  const shoulderX = (lm[11].x + lm[12].x) / 2
+  const headForwardPx = (earX - shoulderX) * w // positive = forward head
+
+  // Trunk lean: angle from hip to shoulder vs vertical
+  const shoulderMidX = (lm[11].x + lm[12].x) / 2
+  const shoulderMidY = (lm[11].y + lm[12].y) / 2
+  const hipMidX = (lm[23].x + lm[24].x) / 2
+  const hipMidY = (lm[23].y + lm[24].y) / 2
+  const dx = (shoulderMidX - hipMidX) * w
+  const dy = (hipMidY - shoulderMidY) * h
+  const trunkLeanDeg = Math.atan2(Math.abs(dx), dy) * (180 / Math.PI)
+
+  return { chestDepthPx, waistDepthPx, hipDepthPx, headForwardPx, trunkLeanDeg }
+}
+
+function calcPostureScore(side: SideMeasurements): PostureScore {
+  const notes: string[] = []
+  let score = 100
+
+  // Forward head posture
+  let headForward: "good" | "moderate" | "poor" = "good"
+  if (Math.abs(side.headForwardPx) > 30) {
+    headForward = "poor"
+    score -= 30
+    notes.push("Cabeça projetada à frente — trabalhe retração cervical.")
+  } else if (Math.abs(side.headForwardPx) > 15) {
+    headForward = "moderate"
+    score -= 15
+    notes.push("Leve anteriorização da cabeça — atenção à postura no dia a dia.")
   }
+
+  // Trunk alignment
+  let trunkAlignment: "good" | "moderate" | "poor" = "good"
+  if (side.trunkLeanDeg > 12) {
+    trunkAlignment = "poor"
+    score -= 30
+    notes.push("Inclinação significativa do tronco — possível hipercifose ou hiperlordose.")
+  } else if (side.trunkLeanDeg > 6) {
+    trunkAlignment = "moderate"
+    score -= 15
+    notes.push("Leve inclinação do tronco — fortaleça core e extensores.")
+  }
+
+  return {
+    headForward,
+    trunkAlignment,
+    overallScore: Math.max(0, score),
+    notes,
+  }
+}
+
+function calcRatios(front: FrontMeasurements, side: SideMeasurements | null): Ratios {
+  const r2 = (n: number) => Math.round(n * 100) / 100
+  const ratios: Ratios = {
+    shoulderWaist: r2(front.shoulderPx / front.waistPx),
+    shoulderHip: r2(front.shoulderPx / front.hipPx),
+    waistHip: r2(front.waistPx / front.hipPx),
+    legTorso: r2(front.legPx / front.torsoPx),
+  }
+  if (side) {
+    ratios.chestToWaistDepth = r2(side.chestDepthPx / side.waistDepthPx)
+    ratios.gluteProjection = r2(side.hipDepthPx / side.waistDepthPx)
+  }
+  return ratios
 }
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -212,9 +281,22 @@ function RatioBar({ label, value, ideal }: { label: string; value: number; ideal
   )
 }
 
-// ─── Main component ───────────────────────────────────────────────────────────
+function PostureIndicator({ label, status }: { label: string; status: "good" | "moderate" | "poor" }) {
+  const config = {
+    good: { color: "text-emerald-400", bg: "bg-emerald-600/15", label: "Bom" },
+    moderate: { color: "text-amber-400", bg: "bg-amber-600/15", label: "Atenção" },
+    poor: { color: "text-red-400", bg: "bg-red-600/15", label: "Corrigir" },
+  }
+  const c = config[status]
+  return (
+    <div className="flex items-center justify-between py-1.5">
+      <span className="text-xs text-neutral-400">{label}</span>
+      <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-full", c.bg, c.color)}>{c.label}</span>
+    </div>
+  )
+}
 
-// ─── Body Fat % Estimation ──────────────────────────────────────────────────
+// ─── Body Fat Estimation ──────────────────────────────────────────────────────
 
 interface BodyFatResult {
   deurenberg: number | null
@@ -236,8 +318,7 @@ function estimateBodyFat(opts: {
   const isMale = gender === "MALE" || gender === "Masculino"
   const sex = isMale ? 1 : 0
 
-  // Age
-  let age = 30 // default
+  let age = 30
   if (birthDate) {
     const bd = new Date(birthDate)
     const now = new Date()
@@ -245,18 +326,11 @@ function estimateBodyFat(opts: {
     if (now.getMonth() < bd.getMonth() || (now.getMonth() === bd.getMonth() && now.getDate() < bd.getDate())) age--
   }
 
-  // 1. Deurenberg (1991): BF% = 1.20 × BMI + 0.23 × Age − 10.8 × Sex − 5.4
   const deurenberg = Math.round((1.20 * bmi + 0.23 * age - 10.8 * sex - 5.4) * 10) / 10
-
-  // 2. Navy-adapted: uses waist/hip ratio as proxy
-  // Simplified: BF% = (1.61 × BMI) + (0.13 × Age) − (12.1 × Sex) − 13.9 + (waistHip correction)
-  // The waistHip ratio adds/subtracts: high ratio = more visceral fat
   const whCorrection = waistHipRatio ? (waistHipRatio - 0.80) * 15 : 0
   const navy = Math.round(((1.61 * bmi + 0.13 * age - 12.1 * sex - 13.9) + whCorrection) * 10) / 10
-
   const avg = Math.round(((deurenberg + navy) / 2) * 10) / 10
 
-  // Category
   let category: string
   if (isMale) {
     category = avg < 6 ? "Essencial" : avg < 14 ? "Atlético" : avg < 18 ? "Fitness" : avg < 25 ? "Normal" : "Acima"
@@ -267,15 +341,25 @@ function estimateBodyFat(opts: {
   return { deurenberg, navy, average: avg, bmi: Math.round(bmi * 10) / 10, category }
 }
 
+// ─── Main component ───────────────────────────────────────────────────────────
+
 export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
   weight?: number; height?: number; gender?: string; birthDate?: string
 }) {
   const [step, setStep] = useState<Step>("camera_front")
-  const [scanPhase, setScanPhase] = useState<ScanPhase>("front")
   const [cameraState, setCameraState] = useState<"idle" | "loading" | "active" | "error">("idle")
   const [errorMsg, setErrorMsg] = useState("")
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment")
-  const [measurements, setMeasurements] = useState<Measurements | null>(null)
+
+  // Front scan data
+  const [frontMeasurements, setFrontMeasurements] = useState<FrontMeasurements | null>(null)
+  const [frontImageData, setFrontImageData] = useState<string | null>(null)
+
+  // Side scan data
+  const [sideMeasurements, setSideMeasurements] = useState<SideMeasurements | null>(null)
+  const [postureScore, setPostureScore] = useState<PostureScore | null>(null)
+
+  // Combined results
   const [ratios, setRatios] = useState<Ratios | null>(null)
   const [bodyShape, setBodyShape] = useState<BodyShape | null>(null)
   const [aiCoachAnalysis, setAiCoachAnalysis] = useState("")
@@ -284,25 +368,19 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [saveError, setSaveError] = useState(false)
+  const [showFrontPhoto, setShowFrontPhoto] = useState(true)
 
   const videoRef = useRef<HTMLVideoElement>(null)
-  // FIX: single canvas always mounted — React won't remount it, preserving drawn content
   const canvasRef = useRef<HTMLCanvasElement>(null)
+  const frontCanvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const mountedRef = useRef(true)
-  // FIX: ref tracks facingMode so startCamera always reads the latest value
   const facingModeRef = useRef<"user" | "environment">("environment")
 
-  useEffect(() => {
-    facingModeRef.current = facingMode
-  }, [facingMode])
-
+  useEffect(() => { facingModeRef.current = facingMode }, [facingMode])
   useEffect(() => {
     mountedRef.current = true
-    return () => {
-      mountedRef.current = false
-      stopCamera()
-    }
+    return () => { mountedRef.current = false; stopCamera() }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -318,7 +396,6 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
     setErrorMsg("")
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
-        // FIX: use ref, not state — ensures latest value even when called inside switchCamera
         video: { facingMode: { ideal: facingModeRef.current }, width: { ideal: 640 }, height: { ideal: 480 } },
         audio: false,
       })
@@ -338,130 +415,38 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
 
   async function switchCamera() {
     const next = facingMode === "user" ? "environment" : "user"
-    // FIX: update ref IMMEDIATELY before calling startCamera, state update is async
     facingModeRef.current = next
     setFacingMode(next)
     stopCamera()
     await startCamera()
   }
 
-  async function captureAndAnalyze() {
-    const video = videoRef.current
-    const canvas = canvasRef.current
-    if (!video || !canvas) return
+  // ─── MediaPipe detection ────────────────────────────────────────────────────
 
-    setProcessing(true)
-    setProcessingStage("Capturando foto...")
-    setErrorMsg("")
-
+  async function loadPoseLandmarker() {
+    const vision = await import("@mediapipe/tasks-vision")
+    const { PoseLandmarker, FilesetResolver } = vision
+    const filesetResolver = await FilesetResolver.forVisionTasks(
+      "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
+    )
     try {
-      const W = video.videoWidth || 640
-      const H = video.videoHeight || 480
-      canvas.width = W
-      canvas.height = H
-      const ctx = canvas.getContext("2d")!
-      ctx.drawImage(video, 0, 0, W, H)
-
-      setProcessingStage("Carregando modelo de visão computacional...")
-      const vision = await import("@mediapipe/tasks-vision")
-      const { PoseLandmarker, FilesetResolver } = vision
-      const filesetResolver = await FilesetResolver.forVisionTasks(
-        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/wasm"
-      )
-
-      let poseLandmarker: InstanceType<typeof PoseLandmarker>
-      try {
-        poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
-            delegate: "GPU",
-          },
-          runningMode: "IMAGE",
-          numPoses: 1,
-        })
-      } catch {
-        poseLandmarker = await PoseLandmarker.createFromOptions(filesetResolver, {
-          baseOptions: {
-            modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
-            delegate: "CPU",
-          },
-          runningMode: "IMAGE",
-          numPoses: 1,
-        })
-      }
-
-      setProcessingStage("Detectando landmarks corporais...")
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = (poseLandmarker as any).detect(canvas) as { landmarks: Landmark[][] }
-      poseLandmarker.close()
-
-      if (!result.landmarks || result.landmarks.length === 0) {
-        if (mountedRef.current) {
-          setErrorMsg("Nenhuma pessoa detectada. Afaste-se ~2m e fique em pé de frente.")
-          setProcessingStage("") // FIX: clear stage on early return
-        }
-        return
-      }
-
-      const lm = result.landmarks[0] as Landmark[]
-      const keyLandmarks = [11, 12, 23, 24, 27, 28]
-      const allVisible = keyLandmarks.every(i => (lm[i]?.visibility ?? 0) > 0.3)
-      if (!allVisible) {
-        if (mountedRef.current) {
-          setErrorMsg("Corpo não totalmente visível. Garanta que cabeça, tronco e pernas apareçam.")
-          setProcessingStage("") // FIX: clear stage on early return
-        }
-        return
-      }
-
-      setProcessingStage("Calculando proporções...")
-      const m = calcMeasurements(lm, W, H)
-      const r = calcRatios(m)
-      const shape = classifyShape(r)
-      const localAnalysis = generateLocalAnalysis(r, shape)
-
-      // Draw skeleton on the SAME canvas (ref is stable — no remount)
-      drawSkeleton(ctx, lm, W, H)
-      stopCamera()
-
-      if (mountedRef.current) {
-        setMeasurements(m)
-        setRatios(r)
-        setBodyShape(shape)
-        // Show result immediately with local analysis while AI loads
-        setAiCoachAnalysis(localAnalysis)
-        setStep("result")
-        setProcessingStage("")
-      }
-
-      // AI coach call — non-blocking, updates analysis when ready
-      setProcessingStage("Coach IA analisando seus objetivos...")
-      try {
-        const res = await fetch("/api/student/body-scan/analysis", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ ratios: r, bodyShape: shape, measurements: m }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          if (mountedRef.current && data.analysis) {
-            setAiCoachAnalysis(data.analysis)
-          }
-        }
-      } catch {
-        // AI failed — local analysis already shown, user not affected
-      }
-    } catch (err) {
-      if (mountedRef.current) {
-        setErrorMsg("Erro ao processar a imagem. Tente novamente.")
-        setProcessingStage("")
-        console.error(err)
-      }
-    } finally {
-      if (mountedRef.current) {
-        setProcessing(false)
-        setProcessingStage("")
-      }
+      return await PoseLandmarker.createFromOptions(filesetResolver, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_full/float16/1/pose_landmarker_full.task",
+          delegate: "GPU",
+        },
+        runningMode: "IMAGE",
+        numPoses: 1,
+      })
+    } catch {
+      return await PoseLandmarker.createFromOptions(filesetResolver, {
+        baseOptions: {
+          modelAssetPath: "https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task",
+          delegate: "CPU",
+        },
+        runningMode: "IMAGE",
+        numPoses: 1,
+      })
     }
   }
 
@@ -492,8 +477,188 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
     }
   }
 
+  // ─── Capture handlers ───────────────────────────────────────────────────────
+
+  async function captureFront() {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas) return
+
+    setProcessing(true)
+    setProcessingStage("Capturando foto frontal...")
+    setErrorMsg("")
+
+    try {
+      const W = video.videoWidth || 640
+      const H = video.videoHeight || 480
+      canvas.width = W
+      canvas.height = H
+      const ctx = canvas.getContext("2d")!
+      ctx.drawImage(video, 0, 0, W, H)
+
+      setProcessingStage("Carregando visão computacional...")
+      const poseLandmarker = await loadPoseLandmarker()
+
+      setProcessingStage("Detectando landmarks frontais...")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = (poseLandmarker as any).detect(canvas) as { landmarks: Landmark[][] }
+      poseLandmarker.close()
+
+      if (!result.landmarks || result.landmarks.length === 0) {
+        setErrorMsg("Nenhuma pessoa detectada. Afaste-se ~2m e fique de frente.")
+        return
+      }
+
+      const lm = result.landmarks[0] as Landmark[]
+      const keyLandmarks = [11, 12, 23, 24, 27, 28]
+      if (!keyLandmarks.every(i => (lm[i]?.visibility ?? 0) > 0.3)) {
+        setErrorMsg("Corpo não totalmente visível. Garanta cabeça, tronco e pernas apareçam.")
+        return
+      }
+
+      setProcessingStage("Calculando proporções frontais...")
+      const front = calcFrontMeasurements(lm, W, H)
+
+      // Draw skeleton on canvas
+      drawSkeleton(ctx, lm, W, H)
+
+      // Save front photo as data URL
+      const frontDataUrl = canvas.toDataURL("image/jpeg", 0.8)
+
+      // Save to separate canvas for display
+      if (frontCanvasRef.current) {
+        frontCanvasRef.current.width = W
+        frontCanvasRef.current.height = H
+        const fCtx = frontCanvasRef.current.getContext("2d")!
+        fCtx.drawImage(canvas, 0, 0)
+      }
+
+      stopCamera()
+
+      if (mountedRef.current) {
+        setFrontMeasurements(front)
+        setFrontImageData(frontDataUrl)
+        setStep("camera_side")
+        setCameraState("idle")
+        setProcessingStage("")
+      }
+    } catch (err) {
+      console.error(err)
+      setErrorMsg("Erro ao processar. Tente novamente.")
+    } finally {
+      if (mountedRef.current) {
+        setProcessing(false)
+        setProcessingStage("")
+      }
+    }
+  }
+
+  async function captureSide() {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+    if (!video || !canvas || !frontMeasurements) return
+
+    setProcessing(true)
+    setProcessingStage("Capturando foto lateral...")
+    setErrorMsg("")
+
+    try {
+      const W = video.videoWidth || 640
+      const H = video.videoHeight || 480
+      canvas.width = W
+      canvas.height = H
+      const ctx = canvas.getContext("2d")!
+      ctx.drawImage(video, 0, 0, W, H)
+
+      setProcessingStage("Detectando landmarks laterais...")
+      const poseLandmarker = await loadPoseLandmarker()
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result = (poseLandmarker as any).detect(canvas) as { landmarks: Landmark[][] }
+      poseLandmarker.close()
+
+      let side: SideMeasurements | null = null
+      let posture: PostureScore | null = null
+
+      if (result.landmarks && result.landmarks.length > 0) {
+        const lm = result.landmarks[0] as Landmark[]
+        setProcessingStage("Analisando profundidade e postura...")
+        side = calcSideMeasurements(lm, W, H)
+        posture = calcPostureScore(side)
+        drawSkeleton(ctx, lm, W, H)
+      }
+
+      stopCamera()
+
+      // Calculate combined ratios
+      const r = calcRatios(frontMeasurements, side)
+      const shape = classifyShape(r)
+      const localAnalysis = generateLocalAnalysis(r, shape, posture)
+
+      if (mountedRef.current) {
+        setSideMeasurements(side)
+        setPostureScore(posture)
+        setRatios(r)
+        setBodyShape(shape)
+        setAiCoachAnalysis(localAnalysis)
+        setStep("result")
+        setProcessingStage("")
+      }
+
+      // AI coach — non-blocking
+      setProcessingStage("Coach IA analisando...")
+      try {
+        const res = await fetch("/api/student/body-scan/analysis", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ratios: r,
+            bodyShape: shape,
+            measurements: frontMeasurements,
+            sideMeasurements: side,
+            postureScore: posture,
+          }),
+        })
+        if (res.ok) {
+          const data = await res.json()
+          if (mountedRef.current && data.analysis) setAiCoachAnalysis(data.analysis)
+        }
+      } catch { /* local analysis already shown */ }
+    } catch (err) {
+      console.error(err)
+      setErrorMsg("Erro na captura lateral. Tente novamente.")
+    } finally {
+      if (mountedRef.current) {
+        setProcessing(false)
+        setProcessingStage("")
+      }
+    }
+  }
+
+  function skipSide() {
+    if (!frontMeasurements) return
+    stopCamera()
+    const r = calcRatios(frontMeasurements, null)
+    const shape = classifyShape(r)
+    const localAnalysis = generateLocalAnalysis(r, shape, null)
+    setRatios(r)
+    setBodyShape(shape)
+    setAiCoachAnalysis(localAnalysis)
+    setStep("result")
+
+    // AI coach
+    fetch("/api/student/body-scan/analysis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ratios: r, bodyShape: shape, measurements: frontMeasurements }),
+    })
+      .then(res => res.ok ? res.json() : null)
+      .then(data => { if (data?.analysis && mountedRef.current) setAiCoachAnalysis(data.analysis) })
+      .catch(() => {})
+  }
+
   async function saveScan() {
-    if (!measurements || !ratios || !bodyShape) return
+    if (!frontMeasurements || !ratios || !bodyShape) return
     setSaving(true)
     setSaveError(false)
     try {
@@ -501,16 +666,16 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          measurements,
+          measurements: frontMeasurements,
           ratios,
           bodyShape,
           aiAnalysis: aiCoachAnalysis,
+          notes: postureScore ? `Postura: ${postureScore.overallScore}/100. ${postureScore.notes.join(" ")}` : null,
         }),
       })
       if (!res.ok) throw new Error("save failed")
       setSaved(true)
     } catch {
-      // FIX: show save error to user instead of silent failure
       setSaveError(true)
     } finally {
       setSaving(false)
@@ -518,9 +683,12 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
   }
 
   function reset() {
-    setStep("camera_front"); setScanPhase("front")
+    setStep("camera_front")
     setCameraState("idle")
-    setMeasurements(null)
+    setFrontMeasurements(null)
+    setFrontImageData(null)
+    setSideMeasurements(null)
+    setPostureScore(null)
     setRatios(null)
     setBodyShape(null)
     setAiCoachAnalysis("")
@@ -528,17 +696,14 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
     setSaved(false)
     setSaveError(false)
     setErrorMsg("")
-    // Clear canvas content
+    setShowFrontPhoto(true)
     const canvas = canvasRef.current
-    if (canvas) {
-      const ctx = canvas.getContext("2d")
-      ctx?.clearRect(0, 0, canvas.width, canvas.height)
-    }
+    if (canvas) canvas.getContext("2d")?.clearRect(0, 0, canvas.width, canvas.height)
+    const fCanvas = frontCanvasRef.current
+    if (fCanvas) fCanvas.getContext("2d")?.clearRect(0, 0, fCanvas.width, fCanvas.height)
   }
 
   // ── Render ────────────────────────────────────────────────────────────────
-  // FIX: canvas ALWAYS rendered (never unmounts) — only visibility toggles.
-  // This preserves the drawn skeleton image when switching from camera to result view.
 
   return (
     <div className="space-y-4">
@@ -547,36 +712,54 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
         const info = SHAPE_INFO[bodyShape]
         return (
           <>
-            {/* Header */}
             <div className="flex items-center justify-between">
               <h2 className="text-sm font-bold text-white flex items-center gap-2">
                 <Activity className="w-4 h-4 text-red-400" />
                 Resultado do Scan
               </h2>
-              {/* FIX: touch target ≥ 44px via py-2.5 px-3 */}
-              <button
-                onClick={reset}
-                className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-white transition-colors py-2.5 px-3 -mr-3 rounded-xl"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                Novo scan
+              <button onClick={reset}
+                className="flex items-center gap-1.5 text-xs text-neutral-500 hover:text-white transition-colors py-2.5 px-3 -mr-3 rounded-xl">
+                <RotateCcw className="w-3.5 h-3.5" /> Novo scan
               </button>
             </div>
 
-            {/* Body shape + AI coach — full width card */}
+            {/* Dual photo viewer */}
+            {(frontImageData || canvasRef.current) && (
+              <div className="space-y-2">
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setShowFrontPhoto(true)}
+                    className={cn("flex-1 text-[10px] py-1.5 rounded-lg font-medium transition-all",
+                      showFrontPhoto ? "bg-red-600/20 text-red-400 border border-red-500/20" : "bg-white/[0.04] text-neutral-500 border border-white/[0.06]"
+                    )}>
+                    Frontal
+                  </button>
+                  <button
+                    onClick={() => setShowFrontPhoto(false)}
+                    className={cn("flex-1 text-[10px] py-1.5 rounded-lg font-medium transition-all",
+                      !showFrontPhoto ? "bg-blue-600/20 text-blue-400 border border-blue-500/20" : "bg-white/[0.04] text-neutral-500 border border-white/[0.06]"
+                    )}>
+                    Lateral {sideMeasurements ? "" : "(pulada)"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Body shape + AI coach */}
             <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4 flex items-start gap-3">
               <BodySvg shape={bodyShape} />
               <div className="flex-1 min-w-0">
                 <p className="text-[10px] text-neutral-500 uppercase tracking-widest mb-0.5">Formato corporal</p>
                 <p className={cn("font-bold text-sm leading-tight", info.color)}>{info.label}</p>
-                <p className="text-[10px] text-neutral-600 mt-0.5">IA Victor · Análise corporal</p>
+                <p className="text-[10px] text-neutral-600 mt-0.5">
+                  Scan {sideMeasurements ? "completo (frente + lateral)" : "frontal"}
+                </p>
               </div>
             </div>
 
             {/* AI Coach diagnosis */}
             <div className="rounded-2xl border border-red-600/20 overflow-hidden"
-              style={{ background: "linear-gradient(135deg, rgba(127,29,29,0.25) 0%, rgba(24,24,27,0.5) 100%)" }}
-            >
+              style={{ background: "linear-gradient(135deg, rgba(127,29,29,0.25) 0%, rgba(24,24,27,0.5) 100%)" }}>
               <div className="flex items-center gap-2 px-4 pt-3 pb-2 border-b border-white/5">
                 <div className="w-6 h-6 rounded-lg bg-red-600/25 flex items-center justify-center">
                   <MessageSquare className="w-3 h-3 text-red-400" />
@@ -584,20 +767,38 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
                 <p className="text-xs font-bold text-red-300">Coach Virtual — Diagnóstico</p>
               </div>
               <div className="px-4 py-3">
-                {aiCoachAnalysis && aiCoachAnalysis !== generateLocalAnalysis(ratios, bodyShape) ? (
-                  <p className="text-sm text-neutral-200 leading-relaxed">{aiCoachAnalysis}</p>
-                ) : processing ? (
-                  <div className="flex items-center gap-2 py-1">
-                    <Loader2 className="w-4 h-4 text-red-400 animate-spin shrink-0" />
-                    <p className="text-xs text-neutral-500">Cruzando com seus objetivos...</p>
-                  </div>
-                ) : (
-                  <p className="text-sm text-neutral-300 leading-relaxed">{aiCoachAnalysis}</p>
-                )}
+                <p className="text-sm text-neutral-200 leading-relaxed">{aiCoachAnalysis}</p>
               </div>
             </div>
 
-            {/* Body Fat + IMC card */}
+            {/* Posture Analysis (if side scan done) */}
+            {postureScore && (
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                <p className="text-xs font-semibold text-neutral-400 flex items-center gap-1.5 mb-3">
+                  <Eye className="w-3.5 h-3.5" />
+                  Análise Postural
+                  <span className={cn(
+                    "ml-auto text-[10px] font-bold px-2 py-0.5 rounded-full",
+                    postureScore.overallScore >= 80 ? "bg-emerald-600/15 text-emerald-400" :
+                    postureScore.overallScore >= 50 ? "bg-amber-600/15 text-amber-400" :
+                    "bg-red-600/15 text-red-400"
+                  )}>
+                    {postureScore.overallScore}/100
+                  </span>
+                </p>
+                <PostureIndicator label="Posição da cabeça" status={postureScore.headForward} />
+                <PostureIndicator label="Alinhamento do tronco" status={postureScore.trunkAlignment} />
+                {postureScore.notes.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-white/5">
+                    {postureScore.notes.map((n, i) => (
+                      <p key={i} className="text-[10px] text-neutral-500 leading-relaxed">• {n}</p>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Body Fat */}
             {(() => {
               const bf = estimateBodyFat({ weight, height, gender, birthDate, waistHipRatio: ratios.waistHip })
               if (!bf.average) return null
@@ -630,7 +831,7 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
                     </div>
                   </div>
                   <p className="text-[8px] text-neutral-700 text-center mt-2">
-                    Deurenberg ({bf.deurenberg}%) + Navy adaptado ({bf.navy}%) · Para precisão use bioimpedância
+                    Deurenberg ({bf.deurenberg}%) + Navy ({bf.navy}%) · Para precisão use bioimpedância
                   </p>
                 </div>
               )
@@ -646,6 +847,12 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
               <RatioBar label="Ombro / Quadril" value={ratios.shoulderHip} ideal="1.0–1.25 (atlético)" />
               <RatioBar label="Cintura / Quadril" value={ratios.waistHip} ideal="< 0.80 (definição)" />
               <RatioBar label="Perna / Tronco" value={ratios.legTorso} ideal="1.0–1.2 (proporcional)" />
+              {ratios.chestToWaistDepth && (
+                <RatioBar label="Peito / Cintura (profundidade)" value={ratios.chestToWaistDepth} ideal="> 1.15 (peitoral desenvolvido)" />
+              )}
+              {ratios.gluteProjection && (
+                <RatioBar label="Glúteo / Cintura (projeção)" value={ratios.gluteProjection} ideal="> 1.10 (glúteo desenvolvido)" />
+              )}
             </div>
 
             {/* Tip */}
@@ -657,30 +864,22 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
               <p className="text-xs text-neutral-500 leading-relaxed">{info.tip}</p>
             </div>
 
-            {/* Save — FIX: min-h-[44px] touch target + error state */}
+            {/* Save */}
             {saveError && (
               <div className="flex items-center gap-2 p-3 rounded-xl bg-red-900/20 border border-red-500/20">
                 <XCircle className="w-4 h-4 text-red-400 shrink-0" />
                 <p className="text-xs text-red-300">Erro ao salvar. Verifique sua conexão e tente novamente.</p>
               </div>
             )}
-            <button
-              onClick={saveScan}
-              disabled={saving || saved}
+            <button onClick={saveScan} disabled={saving || saved}
               className={cn(
                 "w-full min-h-[48px] rounded-xl font-semibold text-sm flex items-center justify-center gap-2 transition-all active:scale-[0.97]",
-                saved
-                  ? "bg-green-600/20 text-green-400 border border-green-500/20"
+                saved ? "bg-green-600/20 text-green-400 border border-green-500/20"
                   : "bg-red-600 text-white hover:bg-red-500 shadow-lg shadow-red-600/20"
-              )}
-            >
-              {saving ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : saved ? (
-                <><CheckCircle2 className="w-4 h-4" />Scan salvo!</>
-              ) : (
-                <><Save className="w-4 h-4" />Salvar scan</>
-              )}
+              )}>
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" />
+                : saved ? <><CheckCircle2 className="w-4 h-4" />Scan salvo!</>
+                : <><Save className="w-4 h-4" />Salvar scan</>}
             </button>
           </>
         )
@@ -689,16 +888,24 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
       {/* ─ CAMERA VIEW ─ */}
       {(step === "camera_front" || step === "camera_side") && (
         <>
-          {/* Guide tip — changes based on scan phase */}
+          {/* Progress indicator */}
+          <div className="flex gap-2">
+            <div className={cn("flex-1 h-1 rounded-full transition-all",
+              step === "camera_front" ? "bg-red-500" : "bg-red-500")}>
+            </div>
+            <div className={cn("flex-1 h-1 rounded-full transition-all",
+              step === "camera_side" ? "bg-blue-500" : "bg-white/10")}>
+            </div>
+          </div>
+
+          {/* Guide tip */}
           <div className="bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5">
             <div className="flex items-center gap-2 mb-1">
               <span className={cn(
                 "text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full",
-                step === "camera_front"
-                  ? "bg-red-600/15 text-red-400"
-                  : "bg-blue-600/15 text-blue-400"
+                step === "camera_front" ? "bg-red-600/15 text-red-400" : "bg-blue-600/15 text-blue-400"
               )}>
-                {step === "camera_front" ? "📸 Foto 1 de 2" : "📸 Foto 2 de 2"}
+                {step === "camera_front" ? "Foto 1 de 2" : "Foto 2 de 2"}
               </span>
               <span className="text-xs font-semibold text-white">
                 {step === "camera_front" ? "Posição frontal" : "Posição lateral"}
@@ -711,23 +918,40 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
             </p>
           </div>
 
-          {/* Camera viewport — FIX: max-h-[60vh] prevents overflow on small screens */}
+          {/* Front photo preview (when on side step) */}
+          {step === "camera_side" && frontImageData && (
+            <div className="flex items-center gap-3 px-3 py-2 rounded-xl bg-emerald-900/20 border border-emerald-500/20">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <p className="text-xs text-emerald-300">Foto frontal capturada! Agora a lateral.</p>
+            </div>
+          )}
+
+          {/* Camera viewport */}
           <div className="relative rounded-2xl overflow-hidden bg-zinc-900/60 border border-white/5"
-            style={{ aspectRatio: "3/4", maxHeight: "60vh" }}
-          >
+            style={{ aspectRatio: "3/4", maxHeight: "60vh" }}>
             {cameraState === "idle" && (
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-5">
                 <svg viewBox="0 0 80 120" className="w-20 h-32 opacity-15" fill="white">
-                  <circle cx="40" cy="12" r="10" />
-                  <line x1="40" y1="22" x2="40" y2="70" stroke="white" strokeWidth="4" />
-                  <line x1="20" y1="35" x2="60" y2="35" stroke="white" strokeWidth="4" />
-                  <line x1="40" y1="70" x2="25" y2="110" stroke="white" strokeWidth="4" />
-                  <line x1="40" y1="70" x2="55" y2="110" stroke="white" strokeWidth="4" />
+                  {step === "camera_front" ? (
+                    <>
+                      <circle cx="40" cy="12" r="10" />
+                      <line x1="40" y1="22" x2="40" y2="70" stroke="white" strokeWidth="4" />
+                      <line x1="20" y1="35" x2="60" y2="35" stroke="white" strokeWidth="4" />
+                      <line x1="40" y1="70" x2="25" y2="110" stroke="white" strokeWidth="4" />
+                      <line x1="40" y1="70" x2="55" y2="110" stroke="white" strokeWidth="4" />
+                    </>
+                  ) : (
+                    <>
+                      <circle cx="40" cy="12" r="10" />
+                      <line x1="40" y1="22" x2="42" y2="70" stroke="white" strokeWidth="4" />
+                      <line x1="42" y1="35" x2="55" y2="50" stroke="white" strokeWidth="3" />
+                      <line x1="42" y1="70" x2="38" y2="110" stroke="white" strokeWidth="4" />
+                      <line x1="42" y1="70" x2="46" y2="110" stroke="white" strokeWidth="4" />
+                    </>
+                  )}
                 </svg>
-                <button
-                  onClick={startCamera}
-                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 active:scale-[0.97] transition-all shadow-lg shadow-red-600/30 min-h-[48px]"
-                >
+                <button onClick={startCamera}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 active:scale-[0.97] transition-all shadow-lg shadow-red-600/30 min-h-[48px]">
                   <Camera className="w-4 h-4" />
                   Abrir câmera
                 </button>
@@ -745,82 +969,76 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
               <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 p-6">
                 <AlertTriangle className="w-8 h-8 text-amber-400" />
                 <p className="text-xs text-neutral-300 text-center font-medium">{errorMsg}</p>
-                {/* FIX: touch target ≥ 44px */}
-                <button
-                  onClick={startCamera}
-                  className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-neutral-300 min-h-[44px]"
-                >
+                <button onClick={startCamera}
+                  className="px-4 py-2.5 rounded-xl bg-white/5 border border-white/10 text-xs text-neutral-300 min-h-[44px]">
                   Tentar novamente
                 </button>
               </div>
             )}
 
-            {/* Live video — always in DOM, hidden when not active */}
-            <video
-              ref={videoRef}
-              className={cn(
-                "absolute inset-0 w-full h-full object-cover",
-                cameraState !== "active" && "invisible"
-              )}
-              autoPlay
-              playsInline
-              muted
-            />
+            <video ref={videoRef}
+              className={cn("absolute inset-0 w-full h-full object-cover", cameraState !== "active" && "invisible")}
+              autoPlay playsInline muted />
 
-            {/* Ghost silhouette guide — FIX: opacity 20% (was 8%, too faint) */}
+            {/* Ghost silhouette */}
             {cameraState === "active" && (
-              <svg
-                viewBox="0 0 80 120"
-                className="absolute inset-0 w-full h-full opacity-20 pointer-events-none"
-                preserveAspectRatio="xMidYMid meet"
-                fill="white"
-              >
-                <circle cx="40" cy="10" r="9" />
-                <line x1="40" y1="19" x2="40" y2="65" stroke="white" strokeWidth="3" />
-                <line x1="18" y1="32" x2="62" y2="32" stroke="white" strokeWidth="3" />
-                <line x1="40" y1="65" x2="24" y2="105" stroke="white" strokeWidth="3" />
-                <line x1="40" y1="65" x2="56" y2="105" stroke="white" strokeWidth="3" />
+              <svg viewBox="0 0 80 120" className="absolute inset-0 w-full h-full opacity-20 pointer-events-none"
+                preserveAspectRatio="xMidYMid meet" fill="white">
+                {step === "camera_front" ? (
+                  <>
+                    <circle cx="40" cy="10" r="9" />
+                    <line x1="40" y1="19" x2="40" y2="65" stroke="white" strokeWidth="3" />
+                    <line x1="18" y1="32" x2="62" y2="32" stroke="white" strokeWidth="3" />
+                    <line x1="40" y1="65" x2="24" y2="105" stroke="white" strokeWidth="3" />
+                    <line x1="40" y1="65" x2="56" y2="105" stroke="white" strokeWidth="3" />
+                  </>
+                ) : (
+                  <>
+                    <circle cx="40" cy="10" r="9" />
+                    <line x1="40" y1="19" x2="42" y2="65" stroke="white" strokeWidth="3" />
+                    <line x1="42" y1="32" x2="55" y2="48" stroke="white" strokeWidth="2.5" />
+                    <line x1="42" y1="65" x2="38" y2="105" stroke="white" strokeWidth="3" />
+                    <line x1="42" y1="65" x2="46" y2="105" stroke="white" strokeWidth="3" />
+                  </>
+                )}
               </svg>
             )}
 
-            {/* Switch camera — FIX: min 44x44 touch target */}
             {cameraState === "active" && (
-              <button
-                onClick={switchCamera}
-                className="absolute top-3 right-3 w-11 h-11 rounded-xl bg-black/50 backdrop-blur-sm flex items-center justify-center text-white active:scale-95 transition-transform"
-                aria-label="Trocar câmera"
-              >
+              <button onClick={switchCamera} aria-label="Trocar câmera"
+                className="absolute top-3 right-3 w-11 h-11 rounded-xl bg-black/50 backdrop-blur-sm flex items-center justify-center text-white active:scale-95 transition-transform">
                 <SwitchCamera className="w-5 h-5" />
               </button>
             )}
 
-            {/* Error toast overlay when camera is active */}
             {errorMsg && cameraState === "active" && (
               <div className="absolute bottom-24 inset-x-4 bg-black/80 backdrop-blur-sm rounded-xl p-3 border border-amber-500/30">
                 <p className="text-xs text-amber-200 text-center">{errorMsg}</p>
               </div>
             )}
 
-            {/* Capture button — 72x72 = well above 44px minimum */}
             {cameraState === "active" && (
               <div className="absolute bottom-5 inset-x-0 flex justify-center">
                 <button
-                  onClick={captureAndAnalyze}
+                  onClick={step === "camera_front" ? captureFront : captureSide}
                   disabled={processing}
                   className="w-[72px] h-[72px] rounded-full bg-red-600 border-4 border-white/25 flex items-center justify-center shadow-2xl shadow-red-600/50 hover:bg-red-500 active:scale-95 transition-all disabled:opacity-50"
-                  aria-label="Capturar e analisar"
-                >
-                  {processing ? (
-                    <Loader2 className="w-7 h-7 text-white animate-spin" />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-white/20" />
-                  )}
+                  aria-label="Capturar">
+                  {processing ? <Loader2 className="w-7 h-7 text-white animate-spin" /> : <div className="w-9 h-9 rounded-full bg-white/20" />}
                 </button>
               </div>
             )}
           </div>
 
-          {/* Processing status bar */}
+          {/* Skip side button */}
+          {step === "camera_side" && !processing && (
+            <button onClick={skipSide}
+              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-xs text-neutral-500 hover:text-neutral-300 transition-colors">
+              <ChevronRight className="w-3.5 h-3.5" />
+              Pular foto lateral (menos preciso)
+            </button>
+          )}
+
           {processing && processingStage && (
             <div className="bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 flex items-center gap-3">
               <Loader2 className="w-4 h-4 text-red-400 animate-spin shrink-0" />
@@ -828,7 +1046,6 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
             </div>
           )}
 
-          {/* Detection error (non-blocking) */}
           {errorMsg && !processing && cameraState !== "active" && cameraState !== "error" && (
             <div className="bg-amber-900/20 border border-amber-500/20 rounded-xl px-3 py-2.5 flex items-start gap-2">
               <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
@@ -838,15 +1055,11 @@ export function BodyScanAnalyzer({ weight, height, gender, birthDate }: {
         </>
       )}
 
-      {/* FIX: Canvas ALWAYS in DOM — never unmounts, content persists through step changes.
-          Hidden via CSS when in camera view (canvas ref stable = drawn image preserved). */}
-      <canvas
-        ref={canvasRef}
-        className={cn(
-          "w-full rounded-2xl border border-white/5",
-          step === "result" ? "block" : "hidden"
-        )}
-      />
+      {/* Canvases — always in DOM */}
+      <canvas ref={frontCanvasRef}
+        className={cn("w-full rounded-2xl border border-white/5", step === "result" && showFrontPhoto ? "block" : "hidden")} />
+      <canvas ref={canvasRef}
+        className={cn("w-full rounded-2xl border border-white/5", step === "result" && !showFrontPhoto ? "block" : "hidden")} />
     </div>
   )
 }
