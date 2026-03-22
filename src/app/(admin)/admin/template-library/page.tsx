@@ -60,7 +60,6 @@ export default function TemplateLibraryPage() {
   const [copying, setCopying] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
-  const [exerciseNames, setExerciseNames] = useState<Record<string, string>>({})
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true)
@@ -80,29 +79,8 @@ export default function TemplateLibraryPage() {
 
   useEffect(() => { fetchTemplates() }, [fetchTemplates])
 
-  // Resolve exercise names when expanding a template
-  async function toggleExpand(t: Template) {
-    if (expandedId === t.id) { setExpandedId(null); return }
-    setExpandedId(t.id)
-
-    const exercises = Array.isArray(t.exercises) ? t.exercises as { exerciseId?: string; exerciseName?: string }[] : []
-    const unknownIds = exercises
-      .map(e => e.exerciseId)
-      .filter((id): id is string => !!id && !exerciseNames[id])
-
-    if (unknownIds.length > 0) {
-      try {
-        const res = await fetch(`/api/admin/exercises?ids=${unknownIds.join(",")}`)
-        if (res.ok) {
-          const data = await res.json()
-          const nameMap: Record<string, string> = { ...exerciseNames }
-          for (const ex of data.exercises || []) {
-            nameMap[ex.id] = ex.name
-          }
-          setExerciseNames(nameMap)
-        }
-      } catch { /* ignore */ }
-    }
+  function toggleExpand(t: Template) {
+    setExpandedId(expandedId === t.id ? null : t.id)
   }
 
   async function copyTemplate(id: string) {
@@ -220,14 +198,14 @@ export default function TemplateLibraryPage() {
                   <div className="px-4 pb-4 space-y-3 border-t border-white/[0.06] pt-3">
                     {/* Exercise list */}
                     <div className="space-y-1">
-                      {(exercises as { exerciseId?: string; exerciseName?: string; sets?: number; reps?: string; technique?: string }[]).map((ex, idx) => (
+                      {(exercises as { name?: string; exerciseName?: string; exerciseId?: string; sets?: number; reps?: string; technique?: string }[]).map((ex, idx) => (
                         <div key={idx} className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-white/[0.02]">
                           <div className="w-5 h-5 rounded-md bg-red-600/15 flex items-center justify-center text-[9px] font-bold text-red-400 shrink-0">
                             {idx + 1}
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="text-xs text-white truncate">
-                              {exerciseNames[ex.exerciseId || ""] || ex.exerciseName || "Carregando..."}
+                              {ex.name || ex.exerciseName || "—"}
                             </p>
                           </div>
                           <span className="text-[10px] text-neutral-500 shrink-0">
