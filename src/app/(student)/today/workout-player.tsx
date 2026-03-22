@@ -10,6 +10,7 @@ import { useSwipe } from "@/hooks/use-swipe"
 import { BodyFocusBadges } from "@/components/student/muscle-info-card"
 import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
 import { useCelebration, type CelebrationType } from "@/components/student/celebration"
+import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
 
 // ═══ TYPES ═══
 
@@ -458,6 +459,9 @@ export function WorkoutPlayer({
             </div>
           ))}
         </div>
+
+        {/* ═══ SPOTIFY — Já pode escolher a playlist antes de treinar ═══ */}
+        <SpotifyMiniPlayer />
 
         <button
           onClick={handleStart}

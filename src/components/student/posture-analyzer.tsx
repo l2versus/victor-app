@@ -29,12 +29,12 @@ import {
   ALL_EXERCISE_RULES as EXERCISE_RULES,
   TOTAL_EXERCISES_WITH_POSTURE,
 } from "@/lib/posture-rules-all"
-import dynamic from "next/dynamic"
-
-const Machine3DGuide = dynamic(
-  () => import("@/components/student/machine-3d-guide").then(m => ({ default: m.Machine3DGuide })),
-  { ssr: false }
-)
+// Machine3DGuide — disabled until 3D models are properly mapped to exercises
+// import dynamic from "next/dynamic"
+// const Machine3DGuide = dynamic(
+//   () => import("@/components/student/machine-3d-guide").then(m => ({ default: m.Machine3DGuide })),
+//   { ssr: false }
+// )
 
 type AnalyzerState = "idle" | "loading" | "ready" | "analyzing" | "error"
 
@@ -69,8 +69,7 @@ export function PostureAnalyzer() {
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null)
   const recordedBlobRef = useRef<Blob | null>(null)
   const recordedMimeRef = useRef<string>("video/mp4")
-  // ═══ 3D Machine Guide ═══
-  const [show3DGuide, setShow3DGuide] = useState(false)
+  // ═══ 3D Machine Guide — disabled until models are mapped ═══
 
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -617,25 +616,7 @@ export function PostureAnalyzer() {
               <p className="text-sm text-neutral-300 font-medium">{selectedExercise.name}</p>
               <p className="text-xs text-neutral-500 mt-1">{selectedExercise.positioningTip}</p>
             </div>
-            {/* 3D Machine Guide — shows inline when model exists */}
-            {show3DGuide && (
-              <div className="w-full px-4">
-                <Machine3DGuide
-                  modelSlug={selectedExercise.id}
-                  machineName={selectedExercise.name}
-                  onClose={() => setShow3DGuide(false)}
-                />
-              </div>
-            )}
-            {!show3DGuide && (
-              <button
-                onClick={() => setShow3DGuide(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600/10 border border-red-500/20 text-xs text-red-400 hover:bg-red-600/20 transition-colors active:scale-95"
-              >
-                <Info className="w-3.5 h-3.5" />
-                Ver maquina 3D
-              </button>
-            )}
+            {/* 3D Machine Guide — hidden until models are properly mapped to exercises */}
             {/* Camera toggle in idle */}
             <button
               onClick={switchCamera}

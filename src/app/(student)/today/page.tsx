@@ -3,6 +3,7 @@ import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import { WorkoutPlayer } from "./workout-player"
+import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
 import { Moon, Dumbbell, Droplets, Heart, BedDouble, ChevronRight } from "lucide-react"
 
 export const metadata: Metadata = {
@@ -270,6 +271,9 @@ function EmptyDay({
           ))}
         </div>
       </div>
+
+      {/* ═══ Spotify — Até no descanso tem música ═══ */}
+      <SpotifyMiniPlayer />
 
       {/* ═══ Session count ═══ */}
       {totalSessions > 0 && (

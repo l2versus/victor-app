@@ -268,29 +268,27 @@ export function EvolutionClient() {
       "</body></html>",
     ].join("\n")
 
-    // Use Blob URL + iframe (no pop-up block, works on mobile)
+    // Open HTML in new tab — user can print manually (avoids iOS "auto-print blocked" popup)
     const blob = new Blob([html], { type: "text/html" })
     const url = URL.createObjectURL(blob)
+    const win = window.open(url, "_blank")
 
-    const iframe = document.createElement("iframe")
-    iframe.style.cssText = "position:fixed;top:-10000px;left:-10000px;width:800px;height:600px"
-    iframe.src = url
-    document.body.appendChild(iframe)
+    // Clean up after a delay
+    setTimeout(() => {
+      URL.revokeObjectURL(url)
+      setExportingPdf(false)
+    }, 1000)
 
-    iframe.onload = () => {
+    if (!win) {
+      // Fallback: download as HTML file if popup blocked
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "evolucao-vo-personal.html"
+      a.click()
       setTimeout(() => {
-        try {
-          iframe.contentWindow?.print()
-        } catch {
-          // Fallback: open blob URL in new tab
-          window.open(url, "_blank")
-        }
-        setTimeout(() => {
-          document.body.removeChild(iframe)
-          URL.revokeObjectURL(url)
-          setExportingPdf(false)
-        }, 1000)
-      }, 300)
+        URL.revokeObjectURL(url)
+        setExportingPdf(false)
+      }, 500)
     }
   }
 
