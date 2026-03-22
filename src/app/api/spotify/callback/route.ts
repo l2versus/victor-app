@@ -66,7 +66,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const tokens = await exchangeCodeForTokens(code, origin)
+    const tokens = await exchangeCodeForTokens(code)
     console.log("[Spotify Callback] tokens received, fetching profile...")
 
     const profile = await getSpotifyProfile(tokens.access_token)

@@ -48,6 +48,7 @@ export function SpotifyMiniPlayer() {
   const [size, setSize] = useState<PlayerSize>("compact")
   const [loading, setLoading] = useState(true)
   const [expanded, setExpanded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   // Check connection on mount
   function checkConnection() {
@@ -56,21 +57,48 @@ export function SpotifyMiniPlayer() {
       .then((r) => r.json())
       .then((d) => {
         setConnected(d.connected)
-        if (d.connected) setProfile(d.profile)
+        if (d.connected) {
+          setProfile(d.profile)
+          setError(null)
+        }
       })
       .catch(() => setConnected(false))
       .finally(() => setLoading(false))
   }
 
   useEffect(() => {
-    checkConnection()
-
-    // Se voltou do Spotify com ?spotify=connected, limpa a URL
     const params = new URLSearchParams(window.location.search)
-    if (params.get("spotify") === "connected") {
+    const spotifyResult = params.get("spotify")
+    const reason = params.get("reason")
+
+    // Mostrar erro se voltou do OAuth com falha
+    if (spotifyResult && spotifyResult !== "connected") {
+      setError(
+        spotifyResult === "denied"
+          ? "Acesso negado no Spotify"
+          : reason === "token"
+            ? "Erro ao conectar — tente novamente"
+            : reason === "student"
+              ? "Conta não encontrada"
+              : "Erro ao conectar"
+      )
+    }
+
+    // Limpar query params do OAuth
+    if (spotifyResult) {
       const url = new URL(window.location.href)
       url.searchParams.delete("spotify")
+      url.searchParams.delete("reason")
       window.history.replaceState({}, "", url.pathname)
+    }
+
+    checkConnection()
+
+    // Mobile: retry após 1.5s — iOS Safari e Android Chrome podem
+    // ter delay de propagação de cookie após redirect cross-site
+    if (spotifyResult === "connected") {
+      const retryTimer = setTimeout(() => checkConnection(), 1500)
+      return () => clearTimeout(retryTimer)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
@@ -118,21 +146,28 @@ export function SpotifyMiniPlayer() {
   // ═══ NOT CONNECTED — Login Button ═══
   if (!connected) {
     return (
-      <a
-        href="/api/spotify/login"
-        className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl hover:border-[#1DB954]/30 hover:bg-[#1DB954]/[0.04] transition-all active:scale-[0.98] group"
-      >
-        <div className="w-10 h-10 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/20 flex items-center justify-center shrink-0 group-hover:bg-[#1DB954]/20 transition-colors">
-          <SpotifyIcon />
-        </div>
-        <div className="flex-1">
-          <p className="text-sm font-medium text-white">Conectar Spotify</p>
-          <p className="text-[11px] text-neutral-500">Suas músicas durante o treino</p>
-        </div>
-        <div className="px-3 py-1.5 rounded-full bg-[#1DB954] text-black text-[11px] font-bold shrink-0">
-          Login
-        </div>
-      </a>
+      <div>
+        <a
+          href="/api/spotify/login"
+          className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl hover:border-[#1DB954]/30 hover:bg-[#1DB954]/[0.04] transition-all active:scale-[0.98] group"
+        >
+          <div className="w-10 h-10 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/20 flex items-center justify-center shrink-0 group-hover:bg-[#1DB954]/20 transition-colors">
+            <SpotifyIcon />
+          </div>
+          <div className="flex-1">
+            <p className="text-sm font-medium text-white">Conectar Spotify</p>
+            <p className="text-[11px] text-neutral-500">Suas músicas durante o treino</p>
+          </div>
+          <div className="px-3 py-1.5 rounded-full bg-[#1DB954] text-black text-[11px] font-bold shrink-0">
+            Login
+          </div>
+        </a>
+        {error && (
+          <div className="mt-2 px-3 py-2 rounded-xl bg-red-500/10 border border-red-500/20">
+            <p className="text-[11px] text-red-400">{error}</p>
+          </div>
+        )}
+      </div>
     )
   }
 
