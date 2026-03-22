@@ -21,7 +21,35 @@ export async function GET(req: NextRequest) {
       orderBy: { usageCount: "desc" },
     })
 
-    return NextResponse.json({ templates })
+    // Resolve exercise names so the client doesn't need a separate fetch
+    const allExerciseIds = new Set<string>()
+    for (const t of templates) {
+      const exercises = Array.isArray(t.exercises) ? t.exercises as { exerciseId?: string }[] : []
+      for (const ex of exercises) {
+        if (ex.exerciseId) allExerciseIds.add(ex.exerciseId)
+      }
+    }
+
+    let exerciseNamesMap: Record<string, string> = {}
+    if (allExerciseIds.size > 0) {
+      const dbExercises = await prisma.exercise.findMany({
+        where: { id: { in: Array.from(allExerciseIds) } },
+        select: { id: true, name: true },
+      })
+      exerciseNamesMap = Object.fromEntries(dbExercises.map(ex => [ex.id, ex.name]))
+    }
+
+    const enrichedTemplates = templates.map(t => ({
+      ...t,
+      exercises: Array.isArray(t.exercises)
+        ? (t.exercises as { exerciseId?: string }[]).map(ex => ({
+            ...ex,
+            exerciseName: ex.exerciseId ? exerciseNamesMap[ex.exerciseId] || null : null,
+          }))
+        : t.exercises,
+    }))
+
+    return NextResponse.json({ templates: enrichedTemplates })
   } catch (error) {
     console.error("GET /api/admin/template-library error:", error)
     return NextResponse.json({ error: "Failed to fetch templates" }, { status: 500 })

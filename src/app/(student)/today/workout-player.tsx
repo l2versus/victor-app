@@ -60,6 +60,8 @@ interface WorkoutPlayerProps {
     durationMin: number | null
     rpe: number | null
   } | null
+  isScheduledToday?: boolean
+  viewingDayName?: string
 }
 
 type Phase = "preview" | "active" | "rest" | "summary" | "done"
@@ -101,6 +103,8 @@ export function WorkoutPlayer({
   totalSets,
   activeSession,
   completedToday,
+  isScheduledToday = true,
+  viewingDayName,
 }: WorkoutPlayerProps) {
   const [phase, setPhase] = useState<Phase>(
     completedToday ? "done" : activeSession ? "active" : "preview"
@@ -430,33 +434,76 @@ export function WorkoutPlayer({
           return <BodyFocusBadges muscles={muscles} />
         })()}
 
-        <div className="space-y-2">
+        <div className="space-y-3">
           {exercises.map((ex, i) => (
             <div
               key={ex.id}
-              className="flex items-center gap-3 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4 hover:border-white/[0.1] transition-all duration-300"
+              className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden hover:border-white/[0.1] transition-all duration-300"
             >
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600/15 to-red-900/5 flex items-center justify-center text-red-400 text-xs font-bold border border-red-500/10 shrink-0">
-                {i + 1}
+              {/* Header */}
+              <div className="flex items-center gap-3 p-4 pb-2">
+                <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-600/15 to-red-900/5 flex items-center justify-center text-red-400 text-xs font-bold border border-red-500/10 shrink-0">
+                  {i + 1}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <p className="text-sm font-medium text-white truncate">{ex.name}</p>
+                    <TechniqueBadge technique={ex.technique} />
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <p className="text-[11px] text-neutral-500">{ex.muscle} · {ex.equipment}</p>
+                    <Exercise3DButton exerciseName={ex.name} />
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium text-white truncate">{ex.name}</p>
-                  <TechniqueBadge technique={ex.technique} />
+
+              {/* Details — MFIT-style */}
+              <div className="px-4 pb-4 space-y-2">
+                {/* Sets / Reps / Load / Rest */}
+                <div className="flex items-center gap-2 flex-wrap text-[11px]">
+                  <span className="px-2 py-1 rounded-lg bg-red-500/10 text-red-400 font-semibold">
+                    {ex.sets} × {ex.reps}
+                  </span>
+                  {ex.loadKg != null && ex.loadKg > 0 && (
+                    <span className="px-2 py-1 rounded-lg bg-white/[0.04] text-neutral-400 font-medium">
+                      {ex.loadKg}kg
+                    </span>
+                  )}
+                  {ex.restSeconds > 0 && (
+                    <span className="text-neutral-600">
+                      ⏱ {ex.restSeconds}s descanso
+                    </span>
+                  )}
                 </div>
-                <div className="flex items-center gap-2 mt-0.5">
-                  <p className="text-[11px] text-neutral-500">{ex.muscle} · {ex.sets}×{ex.reps}</p>
-                  <Exercise3DButton exerciseName={ex.name} />
-                </div>
+
+                {/* Machine location */}
                 {ex.suggestedMachine && (
-                  <p className="text-[10px] text-amber-400/70 mt-0.5 truncate">📍 {ex.suggestedMachine}</p>
+                  <p className="text-[10px] text-amber-400/70 truncate">📍 {ex.suggestedMachine}</p>
+                )}
+
+                {/* Instructions */}
+                {ex.instructions && (
+                  <div className="border-l-2 border-red-500/20 pl-3">
+                    <p className="text-[11px] text-neutral-400 leading-relaxed">{ex.instructions}</p>
+                  </div>
+                )}
+
+                {/* Trainer notes */}
+                {ex.notes && (
+                  <div className="flex items-start gap-2 px-2 py-1.5 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                    <Zap className="w-3 h-3 text-amber-400 mt-0.5 shrink-0" />
+                    <p className="text-[10px] text-amber-300/80">{ex.notes}</p>
+                  </div>
+                )}
+
+                {/* Technique description */}
+                {ex.technique !== "NORMAL" && (
+                  <div className="flex items-start gap-2 px-2 py-1.5 rounded-lg bg-purple-500/5 border border-purple-500/10">
+                    <Zap className="w-3 h-3 text-purple-400 mt-0.5 shrink-0" />
+                    <p className="text-[10px] text-purple-300/80">{TECHNIQUE_INFO[ex.technique].description}</p>
+                  </div>
                 )}
               </div>
-              {ex.loadKg && (
-                <span className="text-[10px] text-neutral-600 px-2 py-0.5 rounded-full bg-white/[0.04]">
-                  {ex.loadKg}kg
-                </span>
-              )}
             </div>
           ))}
         </div>
@@ -464,12 +511,21 @@ export function WorkoutPlayer({
         {/* ═══ SPOTIFY — Já pode escolher a playlist antes de treinar ═══ */}
         <SpotifyMiniPlayer />
 
+        {!isScheduledToday && viewingDayName && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/15">
+            <Dumbbell className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <p className="text-xs text-amber-300/80">
+              Treino de <span className="font-semibold text-amber-300">{viewingDayName}</span> — você pode treinar agora se quiser
+            </p>
+          </div>
+        )}
+
         <button
           onClick={handleStart}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base shadow-xl shadow-red-600/25 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all duration-300"
         >
           <Play className="w-5 h-5" fill="currentColor" />
-          Iniciar Treino
+          {isScheduledToday ? "Iniciar Treino" : "Treinar Agora"}
         </button>
       </div>
     )

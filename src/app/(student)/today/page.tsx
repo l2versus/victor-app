@@ -2,124 +2,134 @@ import type { Metadata } from "next"
 import { getSession } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
+import Link from "next/link"
 import { WorkoutPlayer } from "./workout-player"
 import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
 import { Moon, Dumbbell, Droplets, Heart, BedDouble, ChevronRight } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Treino de Hoje",
   robots: { index: false, follow: false },
 }
 
-export default async function TodayPage() {
+const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
+const DAY_NAMES_FULL = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
+
+export default async function TodayPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ day?: string }>
+}) {
   const session = await getSession()
   if (!session) redirect("/login")
 
   const student = await prisma.student.findUnique({
     where: { userId: session.userId },
   })
-
   if (!student) redirect("/login")
 
-  const dayOfWeek = new Date().getDay()
+  const today = new Date().getDay()
+  const params = await searchParams
+  const rawDay = params.day !== undefined ? parseInt(params.day) : today
+  const dayOfWeek = isNaN(rawDay) || rawDay < 0 || rawDay > 6 ? today : rawDay
+  const isScheduledToday = dayOfWeek === today
 
-  // Find today's plan
-  const plan = await prisma.studentWorkoutPlan.findUnique({
-    where: { studentId_dayOfWeek: { studentId: student.id, dayOfWeek } },
-    include: {
-      template: {
-        include: {
-          exercises: {
-            include: {
-              exercise: {
-                select: { id: true, name: true, muscle: true, equipment: true, instructions: true },
+  // Fetch all week plans (for day selector) + selected day's full plan in parallel
+  const [weekPlans, plan] = await Promise.all([
+    prisma.studentWorkoutPlan.findMany({
+      where: { studentId: student.id, active: true },
+      include: { template: { select: { name: true } } },
+      orderBy: { dayOfWeek: "asc" },
+    }),
+    prisma.studentWorkoutPlan.findUnique({
+      where: { studentId_dayOfWeek: { studentId: student.id, dayOfWeek } },
+      include: {
+        template: {
+          include: {
+            exercises: {
+              include: {
+                exercise: {
+                  select: { id: true, name: true, muscle: true, equipment: true, instructions: true },
+                },
               },
+              orderBy: { order: "asc" },
             },
-            orderBy: { order: "asc" },
           },
         },
       },
-    },
-  })
+    }),
+  ])
+
+  const weekSchedule = Array.from({ length: 7 }, (_, i) => ({
+    day: i,
+    hasWorkout: weekPlans.some((p) => p.dayOfWeek === i),
+    templateName: weekPlans.find((p) => p.dayOfWeek === i)?.template.name || null,
+  }))
 
   if (!plan || !plan.active) {
-    // Query extra data for a richer rest day screen
-    const [weekPlans, totalSessions] = await Promise.all([
-      prisma.studentWorkoutPlan.findMany({
-        where: { studentId: student.id, active: true },
-        include: { template: { select: { name: true } } },
-        orderBy: { dayOfWeek: "asc" },
-      }),
-      prisma.workoutSession.count({
-        where: { studentId: student.id, completedAt: { not: null } },
-      }),
-    ])
+    const totalSessions = await prisma.workoutSession.count({
+      where: { studentId: student.id, completedAt: { not: null } },
+    })
 
-    // Build week schedule
-    const weekSchedule = Array.from({ length: 7 }, (_, i) => ({
-      day: i,
-      hasWorkout: weekPlans.some((p) => p.dayOfWeek === i),
-    }))
-
-    // Find the next workout day
     let nextWorkout: { day: string; name: string } | null = null
-    const dayNamesFull = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
     for (let offset = 1; offset <= 7; offset++) {
       const checkDay = (dayOfWeek + offset) % 7
       const found = weekPlans.find((p) => p.dayOfWeek === checkDay)
       if (found) {
-        nextWorkout = { day: dayNamesFull[checkDay], name: found.template.name }
+        nextWorkout = { day: DAY_NAMES_FULL[checkDay], name: found.template.name }
         break
       }
     }
 
     return (
-      <EmptyDay
-        dayOfWeek={dayOfWeek}
-        weekSchedule={weekSchedule}
-        nextWorkout={nextWorkout}
-        totalSessions={totalSessions}
-      />
+      <div className="space-y-4">
+        <WeekDaySelector weekSchedule={weekSchedule} selectedDay={dayOfWeek} today={today} />
+        <EmptyDay
+          dayOfWeek={dayOfWeek}
+          isToday={isScheduledToday}
+          nextWorkout={nextWorkout}
+          totalSessions={totalSessions}
+        />
+      </div>
     )
   }
 
-  // Check for active session today
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today)
+  // Check for active/completed sessions today (regardless of which day's workout we're viewing)
+  const todayDate = new Date()
+  todayDate.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(todayDate)
   tomorrow.setDate(tomorrow.getDate() + 1)
 
-  const activeSession = await prisma.workoutSession.findFirst({
-    where: {
-      studentId: student.id,
-      templateId: plan.templateId,
-      startedAt: { gte: today, lt: tomorrow },
-      completedAt: null,
-    },
-    include: { sets: true },
-  })
-
-  // Completed session today?
-  const completedToday = await prisma.workoutSession.findFirst({
-    where: {
-      studentId: student.id,
-      templateId: plan.templateId,
-      startedAt: { gte: today, lt: tomorrow },
-      completedAt: { not: null },
-    },
-    select: { id: true, durationMin: true, rpe: true },
-  })
-
-  // Last session load suggestions
-  const lastSession = await prisma.workoutSession.findFirst({
-    where: {
-      studentId: student.id,
-      templateId: plan.templateId,
-      completedAt: { not: null },
-    },
-    orderBy: { completedAt: "desc" },
-    include: { sets: true },
-  })
+  const [activeSession, completedToday, lastSession] = await Promise.all([
+    prisma.workoutSession.findFirst({
+      where: {
+        studentId: student.id,
+        templateId: plan.templateId,
+        startedAt: { gte: todayDate, lt: tomorrow },
+        completedAt: null,
+      },
+      include: { sets: true },
+    }),
+    prisma.workoutSession.findFirst({
+      where: {
+        studentId: student.id,
+        templateId: plan.templateId,
+        startedAt: { gte: todayDate, lt: tomorrow },
+        completedAt: { not: null },
+      },
+      select: { id: true, durationMin: true, rpe: true },
+    }),
+    prisma.workoutSession.findFirst({
+      where: {
+        studentId: student.id,
+        templateId: plan.templateId,
+        completedAt: { not: null },
+      },
+      orderBy: { completedAt: "desc" },
+      include: { sets: true },
+    }),
+  ])
 
   const lastSetsMap: Record<string, { setNumber: number; reps: number; loadKg: number; technique: string }[]> = {}
   if (lastSession) {
@@ -149,49 +159,115 @@ export default async function TodayPage() {
   const totalSets = exercises.reduce((sum, ex) => sum + ex.sets, 0)
 
   return (
-    <WorkoutPlayer
-      studentId={student.id}
-      templateId={plan.templateId}
-      templateName={plan.template.name}
-      templateType={plan.template.type}
-      exercises={exercises}
-      totalSets={totalSets}
-      activeSession={activeSession ? {
-        id: activeSession.id,
-        startedAt: activeSession.startedAt.toISOString(),
-        completedSets: activeSession.sets.map((s) => ({
-          id: s.id,
-          exerciseId: s.exerciseId,
-          setNumber: s.setNumber,
-          reps: s.reps,
-          loadKg: s.loadKg,
-          technique: s.technique,
-          isExtra: s.isExtra,
-        })),
-      } : null}
-      completedToday={completedToday ? {
-        durationMin: completedToday.durationMin,
-        rpe: completedToday.rpe,
-      } : null}
-    />
+    <div className="space-y-4">
+      <WeekDaySelector weekSchedule={weekSchedule} selectedDay={dayOfWeek} today={today} />
+      <WorkoutPlayer
+        studentId={student.id}
+        templateId={plan.templateId}
+        templateName={plan.template.name}
+        templateType={plan.template.type}
+        exercises={exercises}
+        totalSets={totalSets}
+        activeSession={activeSession ? {
+          id: activeSession.id,
+          startedAt: activeSession.startedAt.toISOString(),
+          completedSets: activeSession.sets.map((s) => ({
+            id: s.id,
+            exerciseId: s.exerciseId,
+            setNumber: s.setNumber,
+            reps: s.reps,
+            loadKg: s.loadKg,
+            technique: s.technique,
+            isExtra: s.isExtra,
+          })),
+        } : null}
+        completedToday={completedToday ? {
+          durationMin: completedToday.durationMin,
+          rpe: completedToday.rpe,
+        } : null}
+        isScheduledToday={isScheduledToday}
+        viewingDayName={DAY_NAMES_FULL[dayOfWeek]}
+      />
+    </div>
   )
 }
 
-/* ═══ EMPTY DAY — Professional Rest Day Screen ═══ */
+/* ═══ WEEK DAY SELECTOR — Navigate between workout days ═══ */
+function WeekDaySelector({
+  weekSchedule,
+  selectedDay,
+  today,
+}: {
+  weekSchedule: { day: number; hasWorkout: boolean; templateName: string | null }[]
+  selectedDay: number
+  today: number
+}) {
+  return (
+    <div className="flex gap-1 justify-center pt-3 pb-1">
+      {weekSchedule.map((ws) => {
+        const isSelected = ws.day === selectedDay
+        const isToday = ws.day === today
+        const href = ws.day === today ? "/today" : `/today?day=${ws.day}`
+
+        return (
+          <Link
+            key={ws.day}
+            href={href}
+            scroll={false}
+            prefetch={true}
+            className={cn(
+              "flex flex-col items-center gap-1 flex-1 max-w-12 py-2 rounded-xl transition-all relative",
+              isSelected
+                ? ws.hasWorkout
+                  ? "bg-red-600/15 border border-red-500/25"
+                  : "bg-blue-600/10 border border-blue-500/20"
+                : ws.hasWorkout
+                ? "bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12]"
+                : "border border-transparent hover:bg-white/[0.02]"
+            )}
+          >
+            <span className={cn(
+              "text-[9px] font-medium uppercase tracking-wider",
+              isSelected ? "text-white" : isToday ? "text-neutral-300" : "text-neutral-600"
+            )}>
+              {DAY_NAMES[ws.day]}
+            </span>
+            {ws.hasWorkout ? (
+              <Dumbbell className={cn(
+                "w-3.5 h-3.5",
+                isSelected ? "text-red-400" : "text-neutral-500"
+              )} />
+            ) : (
+              <span className={cn(
+                "text-[10px]",
+                isSelected ? "text-blue-400" : "text-neutral-700"
+              )}>—</span>
+            )}
+            {isToday && (
+              <div className={cn(
+                "absolute -bottom-0.5 w-1 h-1 rounded-full",
+                isSelected ? "bg-white shadow-[0_0_4px_rgba(255,255,255,0.5)]" : "bg-red-500 shadow-[0_0_4px_rgba(220,38,38,0.6)]"
+              )} />
+            )}
+          </Link>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ═══ EMPTY DAY — Rest day / no workout assigned ═══ */
 function EmptyDay({
   dayOfWeek,
-  weekSchedule,
+  isToday,
   nextWorkout,
   totalSessions,
 }: {
   dayOfWeek: number
-  weekSchedule: { day: number; hasWorkout: boolean }[]
+  isToday: boolean
   nextWorkout: { day: string; name: string } | null
   totalSessions: number
 }) {
-  const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
-  const dayNamesFull = ["Domingo", "Segunda-feira", "Terça-feira", "Quarta-feira", "Quinta-feira", "Sexta-feira", "Sábado"]
-
   const tips = [
     { icon: Droplets, text: "Hidrate-se — ao menos 2L de água ao longo do dia" },
     { icon: BedDouble, text: "Priorize 7-9h de sono para recuperação muscular" },
@@ -200,47 +276,18 @@ function EmptyDay({
 
   return (
     <div className="space-y-5">
-      {/* ═══ Hero ═══ */}
-      <div className="flex flex-col items-center pt-6 pb-1 text-center">
+      <div className="flex flex-col items-center pt-4 pb-1 text-center">
         <div className="w-20 h-20 rounded-3xl bg-gradient-to-br from-blue-600/15 to-indigo-800/10 border border-blue-500/15 flex items-center justify-center mb-5">
           <Moon className="w-9 h-9 text-blue-400" />
         </div>
-        <h2 className="text-xl font-bold text-white mb-1">Dia de Recuperação</h2>
+        <h2 className="text-xl font-bold text-white mb-1">
+          {isToday ? "Dia de Recuperação" : "Sem Treino"}
+        </h2>
         <p className="text-neutral-500 text-sm">
-          {dayNamesFull[dayOfWeek]} — sem treino prescrito
+          {DAY_NAMES_FULL[dayOfWeek]} — sem treino prescrito
         </p>
       </div>
 
-      {/* ═══ Week overview ═══ */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5">
-        <h3 className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-3">Sua semana</h3>
-        <div className="grid grid-cols-7 gap-2">
-          {weekSchedule.map((ws) => (
-            <div key={ws.day} className="flex flex-col items-center gap-1.5">
-              <span className={`text-[10px] ${ws.day === dayOfWeek ? "text-white font-bold" : "text-neutral-600"}`}>
-                {dayNames[ws.day]}
-              </span>
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${
-                ws.day === dayOfWeek
-                  ? "bg-blue-500/15 border border-blue-500/25"
-                  : ws.hasWorkout
-                  ? "bg-red-600/10 border border-red-500/15"
-                  : "bg-white/[0.03] border border-white/[0.04]"
-              }`}>
-                {ws.day === dayOfWeek ? (
-                  <Moon className="w-3.5 h-3.5 text-blue-400" />
-                ) : ws.hasWorkout ? (
-                  <Dumbbell className="w-3.5 h-3.5 text-red-400" />
-                ) : (
-                  <span className="text-neutral-700 text-[10px]">—</span>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ═══ Next workout card ═══ */}
       {nextWorkout && (
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4 hover:border-white/[0.1] transition-all duration-300">
           <div className="flex items-center gap-3">
@@ -257,25 +304,24 @@ function EmptyDay({
         </div>
       )}
 
-      {/* ═══ Recovery tips ═══ */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5">
-        <h3 className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-4">Dicas de recuperação</h3>
-        <div className="space-y-3">
-          {tips.map((tip, i) => (
-            <div key={i} className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
-                <tip.icon className="w-4 h-4 text-neutral-400" />
+      {isToday && (
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5">
+          <h3 className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-4">Dicas de recuperação</h3>
+          <div className="space-y-3">
+            {tips.map((tip, i) => (
+              <div key={i} className="flex items-start gap-3">
+                <div className="w-8 h-8 rounded-lg bg-white/[0.04] border border-white/[0.06] flex items-center justify-center shrink-0">
+                  <tip.icon className="w-4 h-4 text-neutral-400" />
+                </div>
+                <p className="text-sm text-neutral-400 leading-relaxed pt-1">{tip.text}</p>
               </div>
-              <p className="text-sm text-neutral-400 leading-relaxed pt-1">{tip.text}</p>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* ═══ Spotify — Até no descanso tem música ═══ */}
       <SpotifyMiniPlayer />
 
-      {/* ═══ Session count ═══ */}
       {totalSessions > 0 && (
         <div className="text-center py-2">
           <p className="text-xs text-neutral-600">
