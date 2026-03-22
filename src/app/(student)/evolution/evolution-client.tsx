@@ -415,6 +415,7 @@ export function EvolutionClient() {
                   data={evo.volumeTrend}
                   margin={{ top: 4, right: 4, left: -24, bottom: 0 }}
                   onClick={(e) => {
+                    if (volumeDetail !== null) return // modal already open, ignore chart clicks
                     if (e?.activeTooltipIndex != null) setVolumeDetail(Number(e.activeTooltipIndex))
                   }}
                 >
