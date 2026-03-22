@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth"
-import { Settings, Globe, CreditCard, Bell, Palette } from "lucide-react"
+import { Settings, Globe, CreditCard, Bell, Palette, Crown, DollarSign, BarChart3, UserPlus } from "lucide-react"
 import Link from "next/link"
 import { SettingsLogout } from "./settings-logout"
 
@@ -25,23 +25,45 @@ export default async function SettingsPage() {
           <span>Visitar Site (Landing Page)</span>
         </Link>
 
-        <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-neutral-500 text-sm cursor-not-allowed">
-          <CreditCard className="w-4 h-4" />
-          <span>Planos e Cobranca</span>
-          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-600/20 text-amber-400">Em breve</span>
-        </div>
+        <Link
+          href="/admin/plans"
+          className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-neutral-300 text-sm hover:bg-white/[0.06] transition-all active:scale-[0.98]"
+        >
+          <Crown className="w-4 h-4 text-neutral-500" />
+          <span>Planos e Assinaturas</span>
+        </Link>
 
-        <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-neutral-500 text-sm cursor-not-allowed">
-          <Bell className="w-4 h-4" />
-          <span>Notificacoes</span>
-          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-600/20 text-amber-400">Em breve</span>
-        </div>
+        <Link
+          href="/admin/payment-reminders"
+          className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-neutral-300 text-sm hover:bg-white/[0.06] transition-all active:scale-[0.98]"
+        >
+          <CreditCard className="w-4 h-4 text-neutral-500" />
+          <span>Cobranças</span>
+        </Link>
 
-        <div className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-neutral-500 text-sm cursor-not-allowed">
-          <Palette className="w-4 h-4" />
-          <span>Personalizacao</span>
-          <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-amber-600/20 text-amber-400">Em breve</span>
-        </div>
+        <Link
+          href="/admin/bi-treino"
+          className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-neutral-300 text-sm hover:bg-white/[0.06] transition-all active:scale-[0.98]"
+        >
+          <BarChart3 className="w-4 h-4 text-neutral-500" />
+          <span>BI Treino</span>
+        </Link>
+
+        <Link
+          href="/admin/crm"
+          className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-neutral-300 text-sm hover:bg-white/[0.06] transition-all active:scale-[0.98]"
+        >
+          <UserPlus className="w-4 h-4 text-neutral-500" />
+          <span>CRM — Leads</span>
+        </Link>
+
+        <Link
+          href="/admin/finance"
+          className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-neutral-300 text-sm hover:bg-white/[0.06] transition-all active:scale-[0.98]"
+        >
+          <DollarSign className="w-4 h-4 text-neutral-500" />
+          <span>Financeiro</span>
+        </Link>
       </div>
 
       <SettingsLogout />

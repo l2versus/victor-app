@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Bell, Trophy, MessageSquare, Zap, Megaphone, X, CheckCheck } from "lucide-react"
+import { Bell, Trophy, MessageSquare, Zap, Megaphone, X, CheckCheck, CalendarCheck, CalendarX, Calendar } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Notification {
@@ -19,6 +19,10 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   new_message: <MessageSquare className="w-4 h-4 text-blue-400" />,
   challenge_started: <Zap className="w-4 h-4 text-purple-400" />,
   announcement: <Megaphone className="w-4 h-4 text-red-400" />,
+  schedule_new: <Calendar className="w-4 h-4 text-blue-400" />,
+  schedule_confirmed: <CalendarCheck className="w-4 h-4 text-green-400" />,
+  schedule_cancelled: <CalendarX className="w-4 h-4 text-red-400" />,
+  schedule_completed: <CalendarCheck className="w-4 h-4 text-neutral-400" />,
 }
 
 function timeAgo(date: string): string {

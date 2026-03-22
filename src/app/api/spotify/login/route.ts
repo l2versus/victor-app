@@ -29,8 +29,6 @@ export async function GET(req: NextRequest) {
   const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || req.nextUrl.host
   const origin = `${proto}://${host}`
 
-  console.log("[Spotify Login] origin:", origin, "| student:", student.id)
-
   // State encodes studentId + origin (for callback redirect), but
   // redirect_uri always uses NEXT_PUBLIC_APP_URL (must match Spotify Dashboard)
   const statePayload = `${student.id}::${origin}`
