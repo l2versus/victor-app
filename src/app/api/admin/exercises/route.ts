@@ -8,6 +8,18 @@ export async function GET(req: NextRequest) {
     await requireAdmin()
 
     const { searchParams } = new URL(req.url)
+
+    // Bulk lookup by IDs (for template library exercise resolution)
+    const ids = searchParams.get("ids")
+    if (ids) {
+      const idList = ids.split(",").filter(Boolean)
+      const exercises = await prisma.exercise.findMany({
+        where: { id: { in: idList } },
+        select: { id: true, name: true, muscle: true, equipment: true },
+      })
+      return NextResponse.json({ exercises })
+    }
+
     const muscle = searchParams.get("muscle") || ""
     const search = searchParams.get("search") || ""
     const page = parseInt(searchParams.get("page") || "1")

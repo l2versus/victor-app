@@ -5,7 +5,7 @@ import { motion } from "framer-motion"
 import {
   BookOpen, Copy, Search, Filter, Dumbbell,
   Target, Zap, Heart, Shield, Activity,
-  ChevronDown, Check, Users,
+  ChevronDown, ChevronUp, Check, Users,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -59,6 +59,8 @@ export default function TemplateLibraryPage() {
   const [levelFilter, setLevelFilter] = useState("")
   const [copying, setCopying] = useState<string | null>(null)
   const [copied, setCopied] = useState<string | null>(null)
+  const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [exerciseNames, setExerciseNames] = useState<Record<string, string>>({})
 
   const fetchTemplates = useCallback(async () => {
     setLoading(true)
@@ -77,6 +79,31 @@ export default function TemplateLibraryPage() {
   }, [goalFilter, levelFilter])
 
   useEffect(() => { fetchTemplates() }, [fetchTemplates])
+
+  // Resolve exercise names when expanding a template
+  async function toggleExpand(t: Template) {
+    if (expandedId === t.id) { setExpandedId(null); return }
+    setExpandedId(t.id)
+
+    const exercises = Array.isArray(t.exercises) ? t.exercises as { exerciseId?: string; exerciseName?: string }[] : []
+    const unknownIds = exercises
+      .map(e => e.exerciseId)
+      .filter((id): id is string => !!id && !exerciseNames[id])
+
+    if (unknownIds.length > 0) {
+      try {
+        const res = await fetch(`/api/admin/exercises?ids=${unknownIds.join(",")}`)
+        if (res.ok) {
+          const data = await res.json()
+          const nameMap: Record<string, string> = { ...exerciseNames }
+          for (const ex of data.exercises || []) {
+            nameMap[ex.id] = ex.name
+          }
+          setExerciseNames(nameMap)
+        }
+      } catch { /* ignore */ }
+    }
+  }
 
   async function copyTemplate(id: string) {
     setCopying(id)
@@ -158,42 +185,77 @@ export default function TemplateLibraryPage() {
             const isCopying = copying === t.id
             const isCopied = copied === t.id
 
+            const isExpanded = expandedId === t.id
+
             return (
               <motion.div key={t.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
-                className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex-1">
-                    <h3 className="text-sm font-semibold text-white">{t.name}</h3>
-                    {t.description && <p className="text-xs text-neutral-400 mt-1">{t.description}</p>}
-                    <div className="flex items-center gap-2 mt-2 flex-wrap">
-                      <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider border", goalColor)}>
-                        {GOALS.find(g => g.value === t.goal)?.label || t.goal}
-                      </span>
-                      <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-semibold", levelBadge)}>
-                        {LEVELS.find(l => l.value === t.level)?.label || t.level}
-                      </span>
-                      <span className="text-[10px] text-neutral-500">{t.daysPerWeek}x/semana</span>
-                      <span className="text-[10px] text-neutral-500">{exercises.length} exercícios</span>
+                className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
+                {/* Header — clickable to expand */}
+                <button onClick={() => toggleExpand(t)} className="w-full text-left p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex-1">
+                      <h3 className="text-sm font-semibold text-white">{t.name}</h3>
+                      {t.description && <p className="text-xs text-neutral-400 mt-1">{t.description}</p>}
+                      <div className="flex items-center gap-2 mt-2 flex-wrap">
+                        <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-semibold uppercase tracking-wider border", goalColor)}>
+                          {GOALS.find(g => g.value === t.goal)?.label || t.goal}
+                        </span>
+                        <span className={cn("px-2 py-0.5 rounded-full text-[9px] font-semibold", levelBadge)}>
+                          {LEVELS.find(l => l.value === t.level)?.label || t.level}
+                        </span>
+                        <span className="text-[10px] text-neutral-500">{t.daysPerWeek}x/semana</span>
+                        <span className="text-[10px] text-neutral-500">{exercises.length} exercícios</span>
+                      </div>
                     </div>
+                    {isExpanded ? <ChevronUp className="w-4 h-4 text-neutral-500 shrink-0 mt-1" /> : <ChevronDown className="w-4 h-4 text-neutral-500 shrink-0 mt-1" />}
                   </div>
-                  <button
-                    onClick={() => copyTemplate(t.id)}
-                    disabled={isCopying}
-                    className={cn(
-                      "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold min-h-[44px] transition-all",
-                      isCopied
-                        ? "bg-green-600/20 text-green-400 border border-green-500/20"
-                        : "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/20"
-                    )}
-                  >
-                    {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
-                    {isCopied ? "Copiado!" : isCopying ? "..." : "Copiar"}
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 text-[10px] text-neutral-500">
-                  <Users className="w-3 h-3" />
-                  <span>Usado {t.usageCount}x</span>
-                </div>
+                  <div className="flex items-center gap-2 text-[10px] text-neutral-500">
+                    <Users className="w-3 h-3" />
+                    <span>Usado {t.usageCount}x</span>
+                  </div>
+                </button>
+
+                {/* Expanded — exercises list + actions */}
+                {isExpanded && (
+                  <div className="px-4 pb-4 space-y-3 border-t border-white/[0.06] pt-3">
+                    {/* Exercise list */}
+                    <div className="space-y-1">
+                      {(exercises as { exerciseId?: string; exerciseName?: string; sets?: number; reps?: string; technique?: string }[]).map((ex, idx) => (
+                        <div key={idx} className="flex items-center gap-2 py-1.5 px-2 rounded-lg bg-white/[0.02]">
+                          <div className="w-5 h-5 rounded-md bg-red-600/15 flex items-center justify-center text-[9px] font-bold text-red-400 shrink-0">
+                            {idx + 1}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs text-white truncate">
+                              {exerciseNames[ex.exerciseId || ""] || ex.exerciseName || "Carregando..."}
+                            </p>
+                          </div>
+                          <span className="text-[10px] text-neutral-500 shrink-0">
+                            {ex.sets || 3}x{ex.reps || "10"}
+                            {ex.technique && ex.technique !== "NORMAL" && (
+                              <span className="text-purple-400 ml-1">{ex.technique}</span>
+                            )}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Action button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); copyTemplate(t.id) }}
+                      disabled={isCopying}
+                      className={cn(
+                        "w-full flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all",
+                        isCopied
+                          ? "bg-green-600/20 text-green-400 border border-green-500/20"
+                          : "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/20"
+                      )}
+                    >
+                      {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                      {isCopied ? "Copiado para Meus Treinos!" : isCopying ? "Copiando..." : "Copiar para Meus Treinos"}
+                    </button>
+                  </div>
+                )}
               </motion.div>
             )
           })}
