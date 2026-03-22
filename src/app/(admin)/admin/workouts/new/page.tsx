@@ -4,8 +4,9 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   ArrowLeft, Plus, Trash2,
-  Dumbbell, Search, X, Save, ChevronUp, ChevronDown,
+  Dumbbell, Search, X, Save, ChevronUp, ChevronDown, Mic,
 } from "lucide-react"
+import { VoiceWorkoutPrescriber } from "@/components/admin/voice-workout-prescriber"
 import { Button } from "@/components/ui/button"
 import { Input, Select, Textarea } from "@/components/ui/input"
 import { Modal } from "@/components/ui/modal"
@@ -38,6 +39,7 @@ export default function NewWorkoutPage() {
   const [notes, setNotes] = useState("")
   const [exercises, setExercises] = useState<WorkoutExercise[]>([])
   const [showPicker, setShowPicker] = useState(false)
+  const [showVoice, setShowVoice] = useState(false)
   const [saving, setSaving] = useState(false)
 
   function addExercise(ex: Exercise) {
@@ -127,11 +129,49 @@ export default function NewWorkoutPage() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Link>
-        <div>
+        <div className="flex-1">
           <h1 className="text-xl sm:text-2xl font-bold text-white">Criar Treino</h1>
           <p className="text-neutral-500 text-xs sm:text-sm">Monte um novo modelo de treino</p>
         </div>
+        <button
+          onClick={() => setShowVoice(!showVoice)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600/15 border border-red-500/20 text-red-400 text-xs font-medium hover:bg-red-600/25 transition-colors"
+        >
+          <Mic className="w-3.5 h-3.5" />
+          Por Voz
+        </button>
       </div>
+
+      {/* Voice Prescriber */}
+      {showVoice && (
+        <div className="mb-4 sm:mb-6">
+          <VoiceWorkoutPrescriber
+            onWorkoutParsed={(workout) => {
+              setName(workout.name || "")
+              setType(workout.type || "")
+              setNotes(workout.notes || "")
+              setExercises(
+                workout.exercises
+                  .filter(ex => ex.exerciseId && ex.exercise)
+                  .map((ex, i) => ({
+                    tempId: crypto.randomUUID(),
+                    exerciseId: ex.exerciseId!,
+                    exercise: ex.exercise!,
+                    sets: ex.sets || 3,
+                    reps: ex.reps || "10",
+                    restSeconds: ex.restSeconds || 60,
+                    loadKg: "",
+                    notes: ex.notes || "",
+                    supersetGroup: ex.supersetGroup || "",
+                    suggestedMachine: "",
+                  }))
+              )
+              setShowVoice(false)
+            }}
+            onClose={() => setShowVoice(false)}
+          />
+        </div>
+      )}
 
       {/* Workout Info */}
       <div className="rounded-2xl border border-neutral-800 bg-[#111] p-4 sm:p-6 mb-4 sm:mb-6 backdrop-blur-sm">
