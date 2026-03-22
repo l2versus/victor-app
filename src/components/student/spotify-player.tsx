@@ -1,203 +1,450 @@
 "use client"
 
-import { useState } from "react"
-import { Music, ChevronUp, ChevronDown, X } from "lucide-react"
+import { useState, useEffect } from "react"
+import {
+  Music, ChevronUp, ChevronDown, X, LogOut, Disc3,
+  ListMusic, TrendingUp, ExternalLink, Loader2,
+} from "lucide-react"
 
 // ═══════════════════════════════════════════════════════════════
-// Spotify Interno — Embed player real do Spotify dentro do app
-// O aluno loga no próprio Spotify e toca músicas INTEIRAS
-// Funciona com conta FREE (com ads) e Premium (sem ads)
+// Spotify Player — OAuth completo
+// O aluno loga com a conta dele e ouve música DENTRO do app
+// Top tracks pessoais + playlists + embed player real
 // ═══════════════════════════════════════════════════════════════
 
-// Playlists públicas curadas para treino (Spotify IDs)
-const WORKOUT_PLAYLISTS = [
-  {
-    id: "37i9dQZF1DX76Wlfdnj7AP",  // Beast Mode
-    name: "Beast Mode",
-    emoji: "🔥",
-    desc: "Treino pesado, sem piedade",
-  },
-  {
-    id: "37i9dQZF1DX70RN3TfnE9m",  // Cardio
-    name: "Cardio",
-    emoji: "🏃",
-    desc: "Energia pura pra correr",
-  },
-  {
-    id: "37i9dQZF1DX0HRj9P7NxeE",  // Workout Twerkout
-    name: "Hip Hop Gym",
-    emoji: "🎤",
-    desc: "Trap e rap pro shape",
-  },
-  {
-    id: "37i9dQZF1DX5gQonLbZD9s",  // Power Workout
-    name: "Power Workout",
-    emoji: "⚡",
-    desc: "Eletrônica e energia",
-  },
-  {
-    id: "37i9dQZF1DWTl4y3SSa0vZ",  // Rock Workout
-    name: "Rock & Metal",
-    emoji: "🤘",
-    desc: "Porrada sonora",
-  },
-  {
-    id: "37i9dQZF1DWWOaP4H0w48x",  // Funk Hits
-    name: "Funk & Br",
-    emoji: "🇧🇷",
-    desc: "Funk e hits brasileiros",
-  },
-  {
-    id: "37i9dQZF1DX4eRPd9frC1m",  // Motivação
-    name: "Motivação",
-    emoji: "💪",
-    desc: "Foco e determinação",
-  },
-  {
-    id: "37i9dQZF1DX32NsLKyzScr",  // EDM Workout
-    name: "EDM",
-    emoji: "🎧",
-    desc: "Drops e bass pesado",
-  },
-] as const
+interface Track {
+  id: string
+  name: string
+  artist: string
+  albumArt: string
+  uri: string
+  spotifyUrl: string
+}
 
-type PlayerSize = "compact" | "expanded" | "full"
+interface Playlist {
+  id: string
+  name: string
+  image: string | null
+  trackCount: number
+}
+
+interface Profile {
+  name: string
+  image: string | null
+  product: string
+}
+
+type Tab = "top" | "playlists"
+type PlayerSize = "compact" | "full"
 
 export function SpotifyMiniPlayer() {
-  const [selectedPlaylist, setSelectedPlaylist] = useState<typeof WORKOUT_PLAYLISTS[number] | null>(null)
+  const [connected, setConnected] = useState<boolean | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [tab, setTab] = useState<Tab>("top")
+  const [topTracks, setTopTracks] = useState<Track[]>([])
+  const [playlists, setPlaylists] = useState<Playlist[]>([])
+  const [playingTrackId, setPlayingTrackId] = useState<string | null>(null)
+  const [playingPlaylistId, setPlayingPlaylistId] = useState<string | null>(null)
   const [size, setSize] = useState<PlayerSize>("compact")
-  const [showPicker, setShowPicker] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState(false)
 
-  // ═══ COLLAPSED — Just the Spotify bar ═══
-  if (!selectedPlaylist && !showPicker) {
-    return (
-      <button
-        onClick={() => setShowPicker(true)}
-        className="w-full flex items-center gap-3 p-3.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl hover:border-[#1DB954]/20 hover:bg-[#1DB954]/[0.03] transition-all active:scale-[0.98]"
-      >
-        <div className="w-10 h-10 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/20 flex items-center justify-center shrink-0">
-          <SpotifyIcon />
-        </div>
-        <div className="flex-1 text-left">
-          <p className="text-sm font-medium text-white">Spotify</p>
-          <p className="text-[11px] text-neutral-500">Tocar música durante o treino</p>
-        </div>
-        <Music className="w-4 h-4 text-neutral-600" />
-      </button>
-    )
+  // Check connection on mount
+  useEffect(() => {
+    fetch("/api/spotify/me")
+      .then((r) => r.json())
+      .then((d) => {
+        setConnected(d.connected)
+        if (d.connected) setProfile(d.profile)
+      })
+      .catch(() => setConnected(false))
+      .finally(() => setLoading(false))
+  }, [])
+
+  // Load data when connected
+  useEffect(() => {
+    if (!connected) return
+
+    fetch("/api/spotify/top-tracks")
+      .then((r) => r.json())
+      .then((d) => { if (d.tracks) setTopTracks(d.tracks) })
+      .catch(() => {})
+
+    fetch("/api/spotify/playlists")
+      .then((r) => r.json())
+      .then((d) => { if (d.playlists) setPlaylists(d.playlists) })
+      .catch(() => {})
+  }, [connected])
+
+  // Disconnect
+  async function handleDisconnect() {
+    await fetch("/api/spotify/me", { method: "DELETE" })
+    setConnected(false)
+    setProfile(null)
+    setTopTracks([])
+    setPlaylists([])
+    setPlayingTrackId(null)
+    setPlayingPlaylistId(null)
   }
 
-  // ═══ GENRE PICKER ═══
-  if (!selectedPlaylist && showPicker) {
+  // ═══ LOADING ═══
+  if (loading) {
     return (
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden animate-slide-up">
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-4 pb-2">
-          <div className="flex items-center gap-2">
-            <SpotifyIcon />
-            <span className="text-sm font-medium text-white">Escolha o som</span>
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/20 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 text-[#1DB954] animate-spin" />
           </div>
-          <button
-            onClick={() => setShowPicker(false)}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-600 hover:text-white hover:bg-white/[0.06] transition-all"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Playlist Grid */}
-        <div className="px-3 pb-3 grid grid-cols-2 gap-2">
-          {WORKOUT_PLAYLISTS.map((pl) => (
-            <button
-              key={pl.id}
-              onClick={() => {
-                setSelectedPlaylist(pl)
-                setShowPicker(false)
-                setSize("compact")
-              }}
-              className="flex items-center gap-2.5 p-3 rounded-xl border border-white/[0.06] bg-white/[0.02] hover:bg-[#1DB954]/[0.05] hover:border-[#1DB954]/20 transition-all active:scale-[0.97] text-left"
-            >
-              <span className="text-xl shrink-0">{pl.emoji}</span>
-              <div className="min-w-0">
-                <p className="text-xs font-medium text-white truncate">{pl.name}</p>
-                <p className="text-[10px] text-neutral-600 truncate">{pl.desc}</p>
-              </div>
-            </button>
-          ))}
+          <span className="text-sm text-neutral-500">Verificando Spotify...</span>
         </div>
       </div>
     )
   }
 
-  // ═══ PLAYING — Spotify Embed ═══
-  if (!selectedPlaylist) return null
-  const embedHeight = size === "full" ? 352 : size === "expanded" ? 152 : 80
+  // ═══ NOT CONNECTED — Login Button ═══
+  if (!connected) {
+    return (
+      <a
+        href="/api/spotify/login"
+        className="flex items-center gap-3 p-3.5 rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl hover:border-[#1DB954]/30 hover:bg-[#1DB954]/[0.04] transition-all active:scale-[0.98] group"
+      >
+        <div className="w-10 h-10 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/20 flex items-center justify-center shrink-0 group-hover:bg-[#1DB954]/20 transition-colors">
+          <SpotifyIcon />
+        </div>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-white">Conectar Spotify</p>
+          <p className="text-[11px] text-neutral-500">Suas músicas durante o treino</p>
+        </div>
+        <div className="px-3 py-1.5 rounded-full bg-[#1DB954] text-black text-[11px] font-bold shrink-0">
+          Login
+        </div>
+      </a>
+    )
+  }
+
+  // ═══ CONNECTED — Collapsed bar ═══
+  if (!expanded) {
+    return (
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden">
+        {/* Mini bar */}
+        <button
+          onClick={() => setExpanded(true)}
+          className="w-full flex items-center gap-3 p-3 hover:bg-white/[0.02] transition-colors"
+        >
+          {/* Playing indicator or profile */}
+          {playingTrackId || playingPlaylistId ? (
+            <div className="w-10 h-10 rounded-xl bg-[#1DB954]/15 border border-[#1DB954]/20 flex items-center justify-center shrink-0 relative">
+              <Disc3 className="w-5 h-5 text-[#1DB954] animate-spin" style={{ animationDuration: "3s" }} />
+            </div>
+          ) : (
+            <div className="w-10 h-10 rounded-xl bg-[#1DB954]/10 border border-[#1DB954]/20 flex items-center justify-center shrink-0">
+              <SpotifyIcon />
+            </div>
+          )}
+
+          <div className="flex-1 text-left min-w-0">
+            {playingTrackId ? (
+              <>
+                <p className="text-sm font-medium text-[#1DB954] truncate">
+                  {topTracks.find((t) => t.id === playingTrackId)?.name || "Tocando..."}
+                </p>
+                <p className="text-[11px] text-neutral-500 truncate">
+                  {topTracks.find((t) => t.id === playingTrackId)?.artist || ""}
+                </p>
+              </>
+            ) : playingPlaylistId ? (
+              <>
+                <p className="text-sm font-medium text-[#1DB954] truncate">
+                  {playlists.find((p) => p.id === playingPlaylistId)?.name || "Playlist"}
+                </p>
+                <p className="text-[11px] text-neutral-500">Tocando playlist</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium text-white">Spotify</p>
+                <p className="text-[11px] text-neutral-500">
+                  {profile?.name} · {topTracks.length} top tracks
+                </p>
+              </>
+            )}
+          </div>
+
+          <ChevronUp className="w-4 h-4 text-neutral-600 shrink-0" />
+        </button>
+
+        {/* Embed player (if playing) */}
+        {playingTrackId && (
+          <div className="px-2 pb-2">
+            <iframe
+              src={`https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`}
+              width="100%"
+              height="80"
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              className="rounded-xl"
+            />
+          </div>
+        )}
+
+        {playingPlaylistId && !playingTrackId && (
+          <div className="px-2 pb-2">
+            <iframe
+              src={`https://open.spotify.com/embed/playlist/${playingPlaylistId}?utm_source=generator&theme=0`}
+              width="100%"
+              height="80"
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              className="rounded-xl"
+            />
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ═══ CONNECTED — Expanded Panel ═══
+  const embedHeight = size === "full" ? 352 : 152
 
   return (
     <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden animate-slide-up">
-      {/* Controls bar */}
-      <div className="flex items-center justify-between px-3 py-2">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 pt-3 pb-2">
         <div className="flex items-center gap-2 min-w-0">
           <SpotifyIcon />
-          <span className="text-xs text-neutral-400 truncate">{selectedPlaylist.emoji} {selectedPlaylist.name}</span>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-white truncate">{profile?.name}</p>
+            <p className="text-[10px] text-neutral-600">
+              {profile?.product === "premium" ? "Premium" : "Free"}
+            </p>
+          </div>
         </div>
 
         <div className="flex items-center gap-1 shrink-0">
-          {/* Size toggle */}
           <button
-            onClick={() => {
-              const sizes: PlayerSize[] = ["compact", "expanded", "full"]
-              const curr = sizes.indexOf(size)
-              setSize(sizes[(curr + 1) % sizes.length])
-            }}
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-600 hover:text-[#1DB954] transition-colors"
-            title={size === "full" ? "Compactar" : "Expandir"}
+            onClick={handleDisconnect}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-600 hover:text-red-400 transition-colors"
+            title="Desconectar"
           >
-            {size === "full" ? (
-              <ChevronDown className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronUp className="w-3.5 h-3.5" />
-            )}
+            <LogOut className="w-3.5 h-3.5" />
           </button>
-
-          {/* Change playlist */}
           <button
-            onClick={() => {
-              setSelectedPlaylist(null)
-              setShowPicker(true)
-            }}
+            onClick={() => setExpanded(false)}
             className="w-7 h-7 rounded-lg flex items-center justify-center text-neutral-600 hover:text-white transition-colors"
-            title="Trocar playlist"
           >
-            <X className="w-3.5 h-3.5" />
+            <ChevronDown className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Spotify Embed iframe — the REAL Spotify */}
-      <div
-        className="transition-all duration-300 ease-out overflow-hidden"
-        style={{ height: embedHeight }}
-      >
-        <iframe
-          src={`https://open.spotify.com/embed/playlist/${selectedPlaylist.id}?utm_source=generator&theme=0`}
-          width="100%"
-          height={352}
-          frameBorder="0"
-          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
-          loading="lazy"
-          className="rounded-b-xl"
-          style={{
-            colorScheme: "normal",
-            borderRadius: "0 0 12px 12px",
-          }}
-        />
+      {/* Tabs */}
+      <div className="flex gap-1 px-3 pb-2">
+        <button
+          onClick={() => setTab("top")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+            tab === "top"
+              ? "bg-[#1DB954]/15 text-[#1DB954] border border-[#1DB954]/25"
+              : "bg-white/[0.03] text-neutral-500 border border-white/[0.06] hover:text-white"
+          }`}
+        >
+          <TrendingUp className="w-3 h-3" />
+          Mais Ouvidas
+        </button>
+        <button
+          onClick={() => setTab("playlists")}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[11px] font-medium transition-all ${
+            tab === "playlists"
+              ? "bg-[#1DB954]/15 text-[#1DB954] border border-[#1DB954]/25"
+              : "bg-white/[0.03] text-neutral-500 border border-white/[0.06] hover:text-white"
+          }`}
+        >
+          <ListMusic className="w-3 h-3" />
+          Playlists
+        </button>
       </div>
+
+      {/* ─── Top Tracks Tab ─── */}
+      {tab === "top" && (
+        <div className="px-3 pb-2">
+          {topTracks.length === 0 ? (
+            <p className="text-xs text-neutral-600 text-center py-4">
+              Ouça mais músicas no Spotify para gerar seu ranking
+            </p>
+          ) : (
+            <div className="max-h-52 overflow-y-auto space-y-1 scrollbar-hide">
+              {topTracks.map((track, idx) => (
+                <button
+                  key={track.id}
+                  onClick={() => {
+                    setPlayingTrackId(track.id)
+                    setPlayingPlaylistId(null)
+                    setSize("compact")
+                  }}
+                  className={`w-full flex items-center gap-2.5 py-2 px-2 rounded-lg transition-all ${
+                    playingTrackId === track.id
+                      ? "bg-[#1DB954]/10 border border-[#1DB954]/15"
+                      : "hover:bg-white/[0.03]"
+                  }`}
+                >
+                  {/* Rank number */}
+                  <span className={`text-[10px] font-bold w-4 text-right shrink-0 ${
+                    idx < 3 ? "text-[#1DB954]" : "text-neutral-600"
+                  }`}>
+                    {idx + 1}
+                  </span>
+
+                  {/* Album art */}
+                  {track.albumArt ? (
+                    <img src={track.albumArt} alt="" className="w-9 h-9 rounded-md object-cover shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-md bg-white/[0.05] flex items-center justify-center shrink-0">
+                      <Music className="w-4 h-4 text-neutral-600" />
+                    </div>
+                  )}
+
+                  {/* Track info */}
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className={`text-xs truncate ${
+                      playingTrackId === track.id ? "text-[#1DB954] font-medium" : "text-neutral-300"
+                    }`}>
+                      {track.name}
+                    </p>
+                    <p className="text-[10px] text-neutral-600 truncate">{track.artist}</p>
+                  </div>
+
+                  {/* Playing indicator */}
+                  {playingTrackId === track.id && (
+                    <div className="flex items-end gap-[2px] h-3 shrink-0">
+                      <div className="w-[2px] bg-[#1DB954] rounded-full animate-eq-1" />
+                      <div className="w-[2px] bg-[#1DB954] rounded-full animate-eq-2" />
+                      <div className="w-[2px] bg-[#1DB954] rounded-full animate-eq-3" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Playlists Tab ─── */}
+      {tab === "playlists" && (
+        <div className="px-3 pb-2">
+          {playlists.length === 0 ? (
+            <p className="text-xs text-neutral-600 text-center py-4">
+              Nenhuma playlist encontrada
+            </p>
+          ) : (
+            <div className="max-h-52 overflow-y-auto space-y-1 scrollbar-hide">
+              {playlists.map((pl) => (
+                <button
+                  key={pl.id}
+                  onClick={() => {
+                    setPlayingPlaylistId(pl.id)
+                    setPlayingTrackId(null)
+                    setSize("compact")
+                  }}
+                  className={`w-full flex items-center gap-2.5 py-2 px-2 rounded-lg transition-all ${
+                    playingPlaylistId === pl.id
+                      ? "bg-[#1DB954]/10 border border-[#1DB954]/15"
+                      : "hover:bg-white/[0.03]"
+                  }`}
+                >
+                  {pl.image ? (
+                    <img src={pl.image} alt="" className="w-9 h-9 rounded-md object-cover shrink-0" />
+                  ) : (
+                    <div className="w-9 h-9 rounded-md bg-white/[0.05] flex items-center justify-center shrink-0">
+                      <ListMusic className="w-4 h-4 text-neutral-600" />
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className={`text-xs truncate ${
+                      playingPlaylistId === pl.id ? "text-[#1DB954] font-medium" : "text-neutral-300"
+                    }`}>
+                      {pl.name}
+                    </p>
+                    <p className="text-[10px] text-neutral-600">{pl.trackCount} músicas</p>
+                  </div>
+
+                  {playingPlaylistId === pl.id && (
+                    <div className="flex items-end gap-[2px] h-3 shrink-0">
+                      <div className="w-[2px] bg-[#1DB954] rounded-full animate-eq-1" />
+                      <div className="w-[2px] bg-[#1DB954] rounded-full animate-eq-2" />
+                      <div className="w-[2px] bg-[#1DB954] rounded-full animate-eq-3" />
+                    </div>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Embed Player ─── */}
+      {(playingTrackId || playingPlaylistId) && (
+        <div className="px-2 pb-2">
+          {/* Size toggle */}
+          <div className="flex items-center justify-between px-1 pb-1.5">
+            <span className="text-[10px] text-neutral-600 uppercase tracking-wider">Player</span>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setSize(size === "full" ? "compact" : "full")}
+                className="text-[10px] text-neutral-600 hover:text-[#1DB954] transition-colors px-1.5 py-0.5 rounded"
+              >
+                {size === "full" ? "Compactar" : "Expandir"}
+              </button>
+              {playingTrackId && (
+                <a
+                  href={topTracks.find((t) => t.id === playingTrackId)?.spotifyUrl || "#"}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-5 h-5 flex items-center justify-center text-neutral-600 hover:text-[#1DB954] transition-colors"
+                >
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
+            </div>
+          </div>
+
+          {/* The real Spotify embed */}
+          <div
+            className="transition-all duration-300 ease-out overflow-hidden rounded-xl"
+            style={{ height: embedHeight }}
+          >
+            <iframe
+              key={playingTrackId || playingPlaylistId}
+              src={
+                playingTrackId
+                  ? `https://open.spotify.com/embed/track/${playingTrackId}?utm_source=generator&theme=0`
+                  : `https://open.spotify.com/embed/playlist/${playingPlaylistId}?utm_source=generator&theme=0`
+              }
+              width="100%"
+              height={352}
+              frameBorder="0"
+              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+              loading="lazy"
+              className="rounded-xl"
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Equalizer CSS */}
+      <style jsx>{`
+        @keyframes eq-1 { 0%, 100% { height: 4px; } 50% { height: 12px; } }
+        @keyframes eq-2 { 0%, 100% { height: 8px; } 50% { height: 4px; } }
+        @keyframes eq-3 { 0%, 100% { height: 6px; } 50% { height: 12px; } }
+        .animate-eq-1 { animation: eq-1 0.8s ease-in-out infinite; }
+        .animate-eq-2 { animation: eq-2 0.6s ease-in-out infinite 0.2s; }
+        .animate-eq-3 { animation: eq-3 0.7s ease-in-out infinite 0.1s; }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+      `}</style>
     </div>
   )
 }
 
-// Spotify green icon
 function SpotifyIcon() {
   return (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="#1DB954">

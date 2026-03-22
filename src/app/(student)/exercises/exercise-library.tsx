@@ -4,6 +4,7 @@ import { useState } from "react"
 import { Search, Dumbbell, ChevronDown, Info, X, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
+import Link from "next/link"
 import { MuscleBadge } from "@/components/student/muscle-info-card"
 import { find3DModel } from "@/lib/exercise-3d-models"
 import dynamic from "next/dynamic"
@@ -62,6 +63,23 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
           {exercises.length} exercícios · Toque para aprender
         </p>
       </div>
+
+      {/* Ironberg 3D Machines banner */}
+      <Link
+        href="/exercises/machines"
+        className="flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-red-600/15 to-red-900/10 border border-red-500/20 hover:from-red-600/20 transition-all active:scale-[0.98]"
+      >
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl bg-red-600/20 flex items-center justify-center">
+            <span className="text-sm">🏋️</span>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-red-400">Maquinas Ironberg 3D</p>
+            <p className="text-[10px] text-neutral-500">Visualize as maquinas em 3D</p>
+          </div>
+        </div>
+        <ChevronDown className="w-4 h-4 text-red-500/50 -rotate-90" />
+      </Link>
 
       {/* Search */}
       <div className="relative">
