@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Standalone output for Docker deployment (Coolify)
+  output: "standalone",
+
   // Image optimization — serve modern formats, smaller sizes
   images: {
     formats: ["image/avif", "image/webp"],
