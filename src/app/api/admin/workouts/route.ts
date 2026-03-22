@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
           create: validExercises as Array<{
             exerciseId: string; sets: number; reps: string; restSeconds: number;
             loadKg: number | null; notes: string | null; order: number; supersetGroup: string | null;
-            suggestedMachine: string | null;
+            suggestedMachine: string | null; technique: ExerciseTechnique;
           }>,
         },
       },

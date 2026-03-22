@@ -8,8 +8,8 @@ declare global {
   }
 }
 
-import { useState, useRef, useEffect } from "react"
-import { Mic, MicOff, Loader2, CheckCircle2, Wand2, RotateCcw, Volume2 } from "lucide-react"
+import { useState, useRef, useCallback } from "react"
+import { Mic, MicOff, Loader2, CheckCircle2, Wand2, RotateCcw, Volume2, Pause, Play } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface ParsedExercise {
@@ -37,6 +37,7 @@ interface Props {
 
 export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
   const [isRecording, setIsRecording] = useState(false)
+  const [isPaused, setIsPaused] = useState(false)
   const [transcription, setTranscription] = useState("")
   const [interimText, setInterimText] = useState("")
   const [processing, setProcessing] = useState(false)
@@ -47,12 +48,17 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
 
   const recognitionRef = useRef<any>(null)
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const isRecordingRef = useRef(false)
+  const isPausedRef = useRef(false)
+  const initedRef = useRef(false)
 
-  useEffect(() => {
+  const initRecognition = useCallback(() => {
+    if (initedRef.current && recognitionRef.current) return true
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!SpeechRecognition) {
       setSupported(false)
-      return
+      return false
     }
 
     const recognition = new SpeechRecognition()
@@ -79,50 +85,43 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
     }
 
     recognition.onerror = (event: any) => {
-      if (event.error === "no-speech") return
+      if (event.error === "no-speech" || event.error === "aborted") return
       console.error("Speech recognition error:", event.error)
       if (event.error === "not-allowed") {
         setError("Permissão de microfone negada. Habilite nas configurações do navegador.")
+        stopRecording()
       }
     }
 
     recognition.onend = () => {
-      // Auto-restart if still recording
-      if (isRecording && recognitionRef.current) {
-        try { recognitionRef.current.start() } catch { /* ignore */ }
+      // Only auto-restart if actively recording AND not paused
+      if (isRecordingRef.current && !isPausedRef.current) {
+        try {
+          recognition.start()
+        } catch {
+          // Already started or other error — ignore
+        }
       }
     }
 
     recognitionRef.current = recognition
-
-    return () => {
-      recognition.stop()
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    initedRef.current = true
+    return true
   }, [])
 
-  // Update isRecording ref for onend handler
-  useEffect(() => {
-    if (recognitionRef.current) {
-      recognitionRef.current.onend = () => {
-        if (isRecording && recognitionRef.current) {
-          try { recognitionRef.current.start() } catch { /* ignore */ }
-        }
-      }
-    }
-  }, [isRecording])
-
   function startRecording() {
-    if (!recognitionRef.current) return
+    if (!initRecognition()) return
     setError("")
     setTranscription("")
     setInterimText("")
     setParsedWorkout(null)
     setDuration(0)
+    setIsPaused(false)
 
     try {
       recognitionRef.current.start()
+      isRecordingRef.current = true
+      isPausedRef.current = false
       setIsRecording(true)
       timerRef.current = setInterval(() => {
         setDuration(prev => prev + 1)
@@ -133,12 +132,45 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
     }
   }
 
-  function stopRecording() {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop()
-    }
-    setIsRecording(false)
+  function pauseRecording() {
+    if (!recognitionRef.current) return
+    isPausedRef.current = true
+    setIsPaused(true)
     setInterimText("")
+    try {
+      recognitionRef.current.stop()
+    } catch { /* ignore */ }
+    // Pause timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+  }
+
+  function resumeRecording() {
+    if (!recognitionRef.current) return
+    isPausedRef.current = false
+    setIsPaused(false)
+    try {
+      recognitionRef.current.start()
+    } catch { /* ignore */ }
+    // Resume timer
+    timerRef.current = setInterval(() => {
+      setDuration(prev => prev + 1)
+    }, 1000)
+  }
+
+  function stopRecording() {
+    isRecordingRef.current = false
+    isPausedRef.current = false
+    setIsRecording(false)
+    setIsPaused(false)
+    setInterimText("")
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop()
+      } catch { /* ignore */ }
+    }
     if (timerRef.current) {
       clearInterval(timerRef.current)
       timerRef.current = null
@@ -175,6 +207,14 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
     } finally {
       setProcessing(false)
     }
+  }
+
+  function handleStopAndProcess() {
+    stopRecording()
+    // Auto-process after a brief delay to ensure transcription state is settled
+    setTimeout(() => {
+      processTranscription()
+    }, 300)
   }
 
   function confirmWorkout() {
@@ -215,7 +255,7 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
             <p className="text-[10px] text-neutral-500">Fale o treino e a IA monta a ficha</p>
           </div>
         </div>
-        <button onClick={onClose}
+        <button onClick={() => { stopRecording(); onClose() }}
           className="text-xs text-neutral-500 hover:text-white transition-colors px-2 py-1">
           Fechar
         </button>
@@ -225,7 +265,7 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
       {!isRecording && !transcription && !parsedWorkout && (
         <div className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
           <p className="text-[11px] text-neutral-400 leading-relaxed">
-            <span className="text-white font-medium">Como usar:</span> Aperte gravar e fale naturalmente. Exemplo:
+            <span className="text-white font-medium">Como usar:</span> Aperte gravar e fale naturalmente. Você pode <span className="text-red-300">pausar</span> e continuar quando quiser.
           </p>
           <p className="text-[11px] text-red-300/70 mt-1.5 italic leading-relaxed">
             &quot;Treino A, Peito e Tríceps. Supino reto, 4 séries de 10, 60 segundos. Crucifixo inclinado, 3 séries de 12. Tríceps corda, 3 de 15, bi-set com tríceps testa...&quot;
@@ -234,38 +274,79 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
       )}
 
       {/* Recording controls */}
-      {!parsedWorkout && (
+      {!parsedWorkout && !processing && (
         <div className="flex flex-col items-center gap-3">
-          {/* Mic button */}
-          <button
-            onClick={isRecording ? stopRecording : startRecording}
-            disabled={processing}
-            className={cn(
-              "w-20 h-20 rounded-full flex items-center justify-center transition-all active:scale-95",
-              isRecording
-                ? "bg-red-600 shadow-lg shadow-red-600/40 animate-pulse"
-                : "bg-white/[0.06] border border-white/[0.1] hover:bg-red-600/20 hover:border-red-500/30"
+          {/* Main controls row */}
+          <div className="flex items-center gap-4">
+            {/* Pause/Resume button — only when recording */}
+            {isRecording && (
+              <button
+                onClick={isPaused ? resumeRecording : pauseRecording}
+                className={cn(
+                  "w-12 h-12 rounded-full flex items-center justify-center transition-all",
+                  isPaused
+                    ? "bg-green-600/20 border border-green-500/30 hover:bg-green-600/30"
+                    : "bg-amber-600/20 border border-amber-500/30 hover:bg-amber-600/30"
+                )}
+              >
+                {isPaused ? (
+                  <Play className="w-5 h-5 text-green-400" />
+                ) : (
+                  <Pause className="w-5 h-5 text-amber-400" />
+                )}
+              </button>
             )}
-          >
-            {processing ? (
-              <Loader2 className="w-8 h-8 text-white animate-spin" />
-            ) : isRecording ? (
-              <MicOff className="w-8 h-8 text-white" />
-            ) : (
-              <Mic className="w-8 h-8 text-neutral-400" />
-            )}
-          </button>
 
+            {/* Main mic button */}
+            <button
+              onClick={() => {
+                if (isRecording) {
+                  // Stop and auto-process
+                  handleStopAndProcess()
+                } else {
+                  startRecording()
+                }
+              }}
+              className={cn(
+                "w-20 h-20 rounded-full flex items-center justify-center transition-all active:scale-95",
+                isRecording && !isPaused
+                  ? "bg-red-600 shadow-lg shadow-red-600/40 animate-pulse"
+                  : isRecording && isPaused
+                    ? "bg-red-600/60 shadow-lg shadow-red-600/20"
+                    : "bg-white/[0.06] border border-white/[0.1] hover:bg-red-600/20 hover:border-red-500/30"
+              )}
+            >
+              {isRecording ? (
+                <MicOff className="w-8 h-8 text-white" />
+              ) : (
+                <Mic className="w-8 h-8 text-neutral-400" />
+              )}
+            </button>
+
+            {/* Spacer for alignment when recording */}
+            {isRecording && <div className="w-12" />}
+          </div>
+
+          {/* Status text */}
           {isRecording && (
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              <div className={cn("w-2 h-2 rounded-full", isPaused ? "bg-amber-500" : "bg-red-500 animate-pulse")} />
               <span className="text-xs text-red-400 font-mono">{formatDuration(duration)}</span>
-              <span className="text-[10px] text-neutral-500">Gravando...</span>
+              <span className="text-[10px] text-neutral-500">
+                {isPaused ? "Pausado — toque ▶ para continuar" : "Gravando... toque ⏸ para pausar"}
+              </span>
             </div>
           )}
 
           {!isRecording && !transcription && (
             <p className="text-xs text-neutral-500">Toque para gravar</p>
+          )}
+
+          {/* Stop hint when recording */}
+          {isRecording && (
+            <p className="text-[10px] text-neutral-600">
+              Toque no mic para parar e processar com IA
+            </p>
           )}
         </div>
       )}
@@ -281,7 +362,7 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
         </div>
       )}
 
-      {/* Process button */}
+      {/* Manual process button — only if stopped with transcription and not auto-processing */}
       {transcription && !isRecording && !parsedWorkout && !processing && (
         <div className="flex gap-2">
           <button onClick={processTranscription}
@@ -298,8 +379,8 @@ export function VoiceWorkoutPrescriber({ onWorkoutParsed, onClose }: Props) {
 
       {/* Processing */}
       {processing && (
-        <div className="flex items-center justify-center gap-2 py-3">
-          <Loader2 className="w-4 h-4 text-red-400 animate-spin" />
+        <div className="flex items-center justify-center gap-2 py-4">
+          <Loader2 className="w-5 h-5 text-red-400 animate-spin" />
           <p className="text-xs text-neutral-400">IA montando a ficha...</p>
         </div>
       )}
