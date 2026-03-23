@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth"
-import { Settings, Globe, CreditCard, Bell, Palette, Crown, DollarSign, BarChart3, UserPlus } from "lucide-react"
+import { Settings, Globe, CreditCard, Bell, Palette, Crown, DollarSign, BarChart3, UserPlus, Smartphone } from "lucide-react"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/back-button"
 import { SettingsLogout } from "./settings-logout"
@@ -65,6 +65,15 @@ export default async function SettingsPage() {
         >
           <DollarSign className="w-4 h-4 text-neutral-500" />
           <span>Financeiro</span>
+        </Link>
+
+        <Link
+          href="/admin/crm?tab=whatsapp"
+          className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-green-500/20 text-neutral-300 text-sm hover:bg-white/[0.06] transition-all active:scale-[0.98]"
+        >
+          <Smartphone className="w-4 h-4 text-green-500" />
+          <span>WhatsApp (Conectar)</span>
+          <span className="ml-auto text-[10px] text-green-500/60 font-medium">Evolution API</span>
         </Link>
       </div>
 

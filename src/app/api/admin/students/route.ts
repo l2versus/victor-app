@@ -17,6 +17,18 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")))
     const skip = (page - 1) * limit
 
+    // Auto-fix: link orphan STUDENT users (registered via public signup) to this trainer
+    const orphans = await prisma.user.findMany({
+      where: { role: "STUDENT", student: null },
+      select: { id: true },
+    })
+    if (orphans.length > 0) {
+      await prisma.student.createMany({
+        data: orphans.map((o) => ({ userId: o.id, trainerId: trainer.id, status: "ACTIVE" as const })),
+        skipDuplicates: true,
+      })
+    }
+
     // Build where clause
     const where: Record<string, unknown> = { trainerId: trainer.id }
 

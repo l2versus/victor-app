@@ -13,6 +13,7 @@ import {
 import { Badge } from "@/components/ui/badge"
 import { StudentDetailActions } from "./student-detail-actions"
 import { WorkoutPlans } from "./workout-plans"
+import { StudentSubscription } from "./student-subscription"
 import { StudentTools } from "./student-tools"
 
 export default async function StudentDetailPage({
@@ -182,6 +183,9 @@ export default async function StudentDetailPage({
 
         {/* Right Column — Plans + Sessions */}
         <div className="space-y-6">
+          {/* Subscription / Plan */}
+          <StudentSubscription studentId={student.id} />
+
           {/* Workout Plans */}
           <WorkoutPlans studentId={student.id} />
 

@@ -217,15 +217,29 @@ export async function getStudentContextByPhone(phone: string): Promise<{
 }
 
 // ═══════════════════════════════════════════════════════════════
-// ENVIAR MENSAGEM VIA WHATSAPP CLOUD API
+// ENVIAR MENSAGEM VIA WHATSAPP
+// Tenta Evolution API primeiro, fallback pra Meta Cloud API
 // ═══════════════════════════════════════════════════════════════
 
 export async function sendWhatsAppMessage(to: string, message: string): Promise<boolean> {
+  // Tentar Evolution API primeiro (se configurada)
+  if (process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY) {
+    try {
+      const { sendTextMessage, INSTANCE_NAME } = await import("./evolution-api")
+      const sent = await sendTextMessage(INSTANCE_NAME, to, message)
+      if (sent) return true
+      console.warn("[WhatsApp] Evolution API failed, trying Meta Cloud API...")
+    } catch (err) {
+      console.warn("[WhatsApp] Evolution API error, fallback:", err)
+    }
+  }
+
+  // Fallback: Meta Cloud API
   const token = process.env.WHATSAPP_ACCESS_TOKEN
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
 
   if (!token || !phoneNumberId) {
-    console.warn("[WhatsApp] Missing WHATSAPP_ACCESS_TOKEN or WHATSAPP_PHONE_NUMBER_ID")
+    console.warn("[WhatsApp] No provider configured (neither Evolution nor Meta Cloud API)")
     return false
   }
 
@@ -250,13 +264,13 @@ export async function sendWhatsAppMessage(to: string, message: string): Promise<
 
     if (!res.ok) {
       const error = await res.text()
-      console.error("[WhatsApp] Send failed:", error)
+      console.error("[WhatsApp] Meta send failed:", error)
       return false
     }
 
     return true
   } catch (error) {
-    console.error("[WhatsApp] Send error:", error)
+    console.error("[WhatsApp] Meta send error:", error)
     return false
   }
 }

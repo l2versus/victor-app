@@ -15,8 +15,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Email ja cadastrado" }, { status: 409 })
     }
 
+    // Find the trainer to auto-link the student
+    const trainer = await prisma.trainerProfile.findFirst({
+      select: { id: true },
+    })
+
+    if (!trainer) {
+      return NextResponse.json({ error: "Nenhum personal cadastrado ainda" }, { status: 500 })
+    }
+
     const hashedPassword = await hashPassword(password)
 
+    // Create User + Student in a single transaction
     const user = await prisma.user.create({
       data: {
         name,
@@ -24,6 +34,12 @@ export async function POST(req: NextRequest) {
         password: hashedPassword,
         phone: phone || null,
         role: "STUDENT",
+        student: {
+          create: {
+            trainerId: trainer.id,
+            status: "ACTIVE",
+          },
+        },
       },
     })
 
@@ -31,6 +47,7 @@ export async function POST(req: NextRequest) {
       userId: user.id,
       email: user.email,
       role: user.role,
+      sv: user.sessionVersion,
     })
 
     const response = NextResponse.json({

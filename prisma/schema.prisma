@@ -69,6 +69,10 @@ model TrainerProfile {
   scheduleSlots ScheduleSlot[]
   checkIns      CheckIn[]
   leads         Lead[]
+  crmTemplates  CrmTemplate[]
+  crmWebhooks   CrmWebhook[]
+  crmBroadcasts CrmBroadcast[]
+  crmBotFlows   CrmBotFlow[]
   knowledge     KnowledgeDocument[]
 
   createdAt DateTime @default(now())
@@ -920,28 +924,48 @@ enum LeadSource {
   INSTAGRAM
   WHATSAPP
   WEBSITE
+  MANYCHAT
+  FACEBOOK
+  TIKTOK
   OTHER
 }
 
-model Lead {
-  id        String     @id @default(cuid())
-  trainerId String
-  name      String
-  phone     String?
-  email     String?
-  source    LeadSource @default(OTHER)
-  status    LeadStatus @default(NEW)
-  notes     String?
-  value     Float?     // potential monthly value
+enum LeadTemperature {
+  HOT
+  WARM
+  COLD
+}
 
-  trainer   TrainerProfile @relation(fields: [trainerId], references: [id])
-  followUps LeadFollowUp[]
+model Lead {
+  id             String          @id @default(cuid())
+  trainerId      String
+  name           String
+  phone          String?
+  email          String?
+  source         LeadSource      @default(OTHER)
+  status         LeadStatus      @default(NEW)
+  temperature    LeadTemperature @default(COLD)
+  notes          String?
+  value          Float?          // potential monthly value
+  score          Int             @default(0)  // 0-100 AI score
+  tags           String[]        // ex: ["bodybuilder", "emagrecimento"]
+  lastContactAt  DateTime?
+  assignedTo     String?         // team member id
+  convertedAt    DateTime?
+  lostReason     String?
+
+  trainer        TrainerProfile    @relation(fields: [trainerId], references: [id])
+  followUps      LeadFollowUp[]
+  activities     CrmActivity[]
+  conversations  CrmConversation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
   @@index([status])
+  @@index([temperature])
+  @@index([score])
   @@index([createdAt])
 }
 
@@ -958,6 +982,167 @@ model LeadFollowUp {
 
   @@index([leadId])
   @@index([dueDate])
+}
+
+// ═══════════════════════════════════════
+// CRM — Activities, Templates, Webhooks, Conversations, Broadcasts, Bots
+// ═══════════════════════════════════════
+
+model CrmActivity {
+  id       String  @id @default(cuid())
+  leadId   String
+  action   String  // CREATED, STATUS_CHANGED, NOTE_ADDED, SCORED, TEMPERATURE_CHANGED, CONVERTED
+  details  String?
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+  @@index([createdAt])
+}
+
+model CrmTemplate {
+  id        String   @id @default(cuid())
+  trainerId String
+  name      String
+  content   String
+  type      String   @default("whatsapp") // whatsapp, email, sms
+  category  String?
+  variables String[] // detected {{var}} placeholders
+
+  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+}
+
+model CrmWebhook {
+  id        String  @id @default(cuid())
+  trainerId String
+  name      String
+  token     String  @unique @default(cuid())
+  action    String  @default("create_lead") // create_lead, update_lead, custom
+  active    Boolean @default(true)
+  config    Json?   // field mapping, default values
+
+  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+  logs    CrmWebhookLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+  @@index([token])
+}
+
+model CrmWebhookLog {
+  id        String @id @default(cuid())
+  webhookId String
+  payload   Json
+  status    String // success, error
+  response  String?
+
+  webhook CrmWebhook @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([webhookId])
+  @@index([createdAt])
+}
+
+model CrmConversation {
+  id            String    @id @default(cuid())
+  leadId        String
+  channel       String    @default("WHATSAPP")
+  status        String    @default("OPEN") // OPEN, CLOSED, ARCHIVED
+  assignedTo    String?
+  unreadCount   Int       @default(0)
+  lastMessage   String?
+  lastMessageAt DateTime?
+
+  lead     Lead         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  messages CrmMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([status])
+  @@index([lastMessageAt])
+}
+
+model CrmMessage {
+  id             String  @id @default(cuid())
+  conversationId String
+  content        String
+  fromMe         Boolean @default(false)
+  type           String  @default("text") // text, image, audio, document
+  status         String  @default("sent") // sent, delivered, read, failed
+
+  conversation CrmConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([conversationId])
+  @@index([createdAt])
+}
+
+model CrmBroadcast {
+  id          String    @id @default(cuid())
+  trainerId   String
+  name        String
+  content     String
+  templateId  String?
+  status      String    @default("DRAFT") // DRAFT, SENDING, COMPLETED, CANCELLED, FAILED
+  filters     Json?     // { statuses[], temperatures[], tags[], minScore }
+  sentCount   Int       @default(0)
+  failedCount Int       @default(0)
+  scheduledAt DateTime?
+
+  trainer    TrainerProfile        @relation(fields: [trainerId], references: [id])
+  recipients CrmBroadcastRecipient[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+  @@index([status])
+}
+
+model CrmBroadcastRecipient {
+  id          String    @id @default(cuid())
+  broadcastId String
+  leadId      String
+  status      String    @default("pending") // pending, sent, delivered, read, failed
+  sentAt      DateTime?
+
+  broadcast CrmBroadcast @relation(fields: [broadcastId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([broadcastId])
+  @@index([status])
+}
+
+model CrmBotFlow {
+  id        String  @id @default(cuid())
+  trainerId String
+  name      String
+  trigger   String  @default("new_lead") // new_lead, keyword, status_change, manual
+  nodes     Json    @default("[]")
+  edges     Json    @default("[]")
+  active    Boolean @default(false)
+
+  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([trainerId])
+  @@index([active])
 }
 
 // ═══════════════════════════════════════

@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 
-// GET /api/admin/crm — list leads
+// GET /api/admin/crm — list leads with filters
 export async function GET(req: NextRequest) {
   try {
     const session = await requireAdmin()
@@ -11,16 +11,26 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url)
     const status = searchParams.get("status")
+    const temperature = searchParams.get("temperature")
+    const tag = searchParams.get("tag")
+    const search = searchParams.get("search")
 
     const where: Record<string, unknown> = { trainerId: trainer.id }
     if (status) where.status = status
+    if (temperature) where.temperature = temperature
+    if (tag) where.tags = { has: tag }
+    if (search) where.OR = [
+      { name: { contains: search, mode: "insensitive" } },
+      { phone: { contains: search } },
+      { email: { contains: search, mode: "insensitive" } },
+    ]
 
-    const [leads, stats] = await Promise.all([
+    const [leads, stats, tempStats] = await Promise.all([
       prisma.lead.findMany({
         where,
         include: {
-          followUps: { orderBy: { createdAt: "desc" }, take: 1 },
-          _count: { select: { followUps: true } },
+          followUps: { orderBy: { createdAt: "desc" }, take: 5 },
+          _count: { select: { followUps: true, activities: true, conversations: true } },
         },
         orderBy: { updatedAt: "desc" },
       }),
@@ -33,6 +43,12 @@ export async function GET(req: NextRequest) {
         prisma.lead.count({ where: { trainerId: trainer.id, status: "CONVERTED" } }),
         prisma.lead.count({ where: { trainerId: trainer.id, status: "LOST" } }),
       ]),
+      // Temperature stats
+      Promise.all([
+        prisma.lead.count({ where: { trainerId: trainer.id, temperature: "HOT", status: { notIn: ["CONVERTED", "LOST"] } } }),
+        prisma.lead.count({ where: { trainerId: trainer.id, temperature: "WARM", status: { notIn: ["CONVERTED", "LOST"] } } }),
+        prisma.lead.count({ where: { trainerId: trainer.id, temperature: "COLD", status: { notIn: ["CONVERTED", "LOST"] } } }),
+      ]),
     ])
 
     const pipeline = {
@@ -41,7 +57,9 @@ export async function GET(req: NextRequest) {
       total: stats.reduce((a, b) => a + b, 0),
     }
 
-    return NextResponse.json({ leads, pipeline })
+    const temperatures = { HOT: tempStats[0], WARM: tempStats[1], COLD: tempStats[2] }
+
+    return NextResponse.json({ leads, pipeline, temperatures })
   } catch (error) {
     console.error("GET /api/admin/crm error:", error)
     return NextResponse.json({ error: "Failed" }, { status: 500 })
@@ -55,7 +73,7 @@ export async function POST(req: NextRequest) {
     const trainer = await getTrainerProfile(session.userId)
     const body = await req.json()
 
-    const { name, phone, email, source, notes, value } = body
+    const { name, phone, email, source, notes, value, temperature, tags } = body
     if (!name) return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
 
     const lead = await prisma.lead.create({
@@ -65,9 +83,16 @@ export async function POST(req: NextRequest) {
         phone: phone || null,
         email: email || null,
         source: source || "OTHER",
+        temperature: temperature || "COLD",
         notes: notes || null,
         value: value ? parseFloat(value) : null,
+        tags: tags || [],
       },
+    })
+
+    // Log activity
+    await prisma.crmActivity.create({
+      data: { leadId: lead.id, action: "CREATED", details: `Lead criado via ${source || "manual"}` },
     })
 
     return NextResponse.json({ lead }, { status: 201 })
@@ -94,18 +119,46 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Lead não encontrado" }, { status: 404 })
     }
 
+    // Track changes for activity log
+    const changes: string[] = []
+    if (body.status && body.status !== existing.status) changes.push(`Status: ${existing.status} → ${body.status}`)
+    if (body.temperature && body.temperature !== existing.temperature) changes.push(`Temp: ${existing.temperature} → ${body.temperature}`)
+
+    const updateData: Record<string, unknown> = {
+      name: body.name ?? undefined,
+      phone: body.phone ?? undefined,
+      email: body.email ?? undefined,
+      source: body.source ?? undefined,
+      status: body.status ?? undefined,
+      temperature: body.temperature ?? undefined,
+      notes: body.notes ?? undefined,
+      tags: body.tags ?? undefined,
+      assignedTo: body.assignedTo ?? undefined,
+      lostReason: body.lostReason ?? undefined,
+      value: body.value !== undefined ? (body.value ? parseFloat(body.value) : null) : undefined,
+    }
+
+    // Track conversion
+    if (body.status === "CONVERTED" && existing.status !== "CONVERTED") {
+      updateData.convertedAt = new Date()
+    }
+
+    // Update lastContactAt on follow-up
+    if (body.followUp) {
+      updateData.lastContactAt = new Date()
+    }
+
     const lead = await prisma.lead.update({
       where: { id },
-      data: {
-        name: body.name ?? undefined,
-        phone: body.phone ?? undefined,
-        email: body.email ?? undefined,
-        source: body.source ?? undefined,
-        status: body.status ?? undefined,
-        notes: body.notes ?? undefined,
-        value: body.value !== undefined ? (body.value ? parseFloat(body.value) : null) : undefined,
-      },
+      data: updateData,
     })
+
+    // Log activity
+    if (changes.length > 0) {
+      await prisma.crmActivity.create({
+        data: { leadId: id, action: "STATUS_CHANGED", details: changes.join("; ") },
+      })
+    }
 
     // If adding a follow-up
     if (body.followUp) {
@@ -116,6 +169,9 @@ export async function PATCH(req: NextRequest) {
           content: body.followUp.content,
           dueDate: body.followUp.dueDate ? new Date(body.followUp.dueDate) : null,
         },
+      })
+      await prisma.crmActivity.create({
+        data: { leadId: id, action: "NOTE_ADDED", details: body.followUp.content.substring(0, 100) },
       })
     }
 
