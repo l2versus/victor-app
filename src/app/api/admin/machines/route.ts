@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
-import { readFile, writeFile } from "fs/promises"
+import { readFile, writeFile, access } from "fs/promises"
 import { join } from "path"
 
 const INDEX_PATH = join(process.cwd(), "public/models/machines/index.json")
@@ -12,19 +12,28 @@ async function loadIndex(): Promise<Record<string, MachineEntry>> {
   return JSON.parse(raw)
 }
 
+function fileExists(path: string): Promise<boolean> {
+  return access(join(process.cwd(), "public", path)).then(() => true, () => false)
+}
+
 // GET /api/admin/machines — list all 3D machines
 export async function GET() {
   try {
     await requireAdmin()
     const index = await loadIndex()
 
-    const machines = Object.entries(index).map(([slug, entry]) => ({
-      slug,
-      file: entry.file,
-      name: entry.name,
-      addedAt: entry.addedAt,
-      videoUrl: entry.videoUrl || null,
-    }))
+    // Filter out entries whose .glb files don't actually exist
+    const entries = Object.entries(index)
+    const checks = await Promise.all(entries.map(([, e]) => fileExists(e.file)))
+    const machines = entries
+      .filter((_, i) => checks[i])
+      .map(([slug, entry]) => ({
+        slug,
+        file: entry.file,
+        name: entry.name,
+        addedAt: entry.addedAt,
+        videoUrl: entry.videoUrl || null,
+      }))
 
     return NextResponse.json({ machines })
   } catch (error) {
