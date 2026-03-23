@@ -15,16 +15,16 @@ export default async function AdminLayout({ children }: { children: React.ReactN
     <div className="flex h-[100dvh] bg-[#060606] relative overflow-hidden">
       {/* ═══ PREMIUM BACKGROUND — Ironberg gym + subtle cinematic layers ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Ironberg gym photo — more visible */}
+        {/* Ironberg gym photo — visible enough to see the gym */}
         <img
           src="/img/ironberg.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: "brightness(0.12) saturate(0.3)" }}
+          style={{ filter: "brightness(0.22) saturate(0.4)" }}
         />
 
-        {/* Single clean overlay — less layers = less muddy */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#060606]/40 via-[#060606]/70 to-[#060606]/90" />
+        {/* Light overlay — just enough to keep text readable */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#060606]/20 via-[#060606]/50 to-[#060606]/75" />
 
         {/* Subtle ember glow — one accent only */}
         <div
