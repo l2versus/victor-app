@@ -6,6 +6,7 @@ import { HomeHeader } from "@/components/student/home-header"
 import { getStudentFeatures } from "@/lib/subscription"
 import { ImpersonateHandler } from "@/components/admin/impersonate-handler"
 import { ImpersonateBanner } from "@/components/admin/impersonate-banner"
+import { AiChatFab } from "@/components/student/ai-chat-fab"
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -110,6 +111,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
       <main className="relative z-10 max-w-lg mx-auto px-4 pb-24">
         {children}
       </main>
+
+      {/* ═══ AI Chat FAB ═══ */}
+      <AiChatFab />
 
       {/* ═══ Navigation ═══ */}
       <StudentNav hasNutrition={features?.hasNutrition ?? false} />
