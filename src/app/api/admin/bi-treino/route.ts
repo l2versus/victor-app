@@ -44,7 +44,7 @@ export async function GET() {
       prisma.student.findMany({
         where: { trainerId },
         include: {
-          user: { select: { name: true, email: true, image: true } },
+          user: { select: { name: true, email: true, avatar: true } },
           workoutPlans: { where: { active: true }, select: { id: true, createdAt: true } },
           subscriptions: {
             where: { status: "ACTIVE" },
@@ -182,7 +182,7 @@ export async function GET() {
         id: s.id,
         name: s.user.name,
         email: s.user.email,
-        image: s.user.image,
+        avatar: s.user.avatar,
         status: s.status as string,
         hasPlan: s.workoutPlans.length > 0,
         isUpToDate: upToDateIds.has(s.id),
