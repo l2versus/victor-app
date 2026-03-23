@@ -133,6 +133,48 @@ export async function POST(req: NextRequest) {
       return student
     })
 
+    // Auto-send WhatsApp welcome message if student has phone
+    if (phone) {
+      try {
+        const clean = phone.replace(/[\s\-\(\)]/g, "")
+        const number = clean.startsWith("+") ? clean.slice(1) : clean.startsWith("55") ? clean : `55${clean}`
+
+        const welcomeMsg = `Olá ${name.split(" ")[0]}! 💪\n\nSou o Victor, seu personal trainer. Bem-vindo(a) ao time!\n\nJá criei sua conta no app. Acesse com:\n📧 Email: ${email}\n🔑 Senha: ${password || generatedPassword}\n\n🔗 ${process.env.NEXT_PUBLIC_APP_URL || "https://victor-app-seven.vercel.app"}/login\n\nQualquer dúvida é só me chamar aqui! Bora treinar? 🔥`
+
+        // Send via WhatsApp Cloud API if configured
+        const whatsappToken = process.env.WHATSAPP_TOKEN
+        const whatsappPhoneId = process.env.WHATSAPP_PHONE_NUMBER_ID
+
+        if (whatsappToken && whatsappPhoneId) {
+          await fetch(`https://graph.facebook.com/v18.0/${whatsappPhoneId}/messages`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${whatsappToken}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: number,
+              type: "text",
+              text: { body: welcomeMsg },
+            }),
+          })
+        }
+
+        // Save welcome message in DirectMessage for admin to see
+        await prisma.directMessage.create({
+          data: {
+            senderId: session.userId,
+            receiverId: student.userId,
+            content: welcomeMsg,
+            channel: whatsappToken ? "WHATSAPP" : "APP",
+          },
+        })
+      } catch {
+        // Don't fail student creation if WhatsApp fails
+      }
+    }
+
     return NextResponse.json({
       student,
       generatedPassword: password ? undefined : generatedPassword,
