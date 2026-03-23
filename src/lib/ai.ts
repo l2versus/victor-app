@@ -1,9 +1,9 @@
 import { createAnthropic } from "@ai-sdk/anthropic"
-import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { createGroq } from "@ai-sdk/groq"
 
 // ─── Dual AI System ──────────────────────────────────────────────────────────
 // Premium model (Claude) → Pro/Elite features: chat aluno, treino, anamnese, nutrição, body scan
-// Free model (Gemini Flash) → Landing page chat, engagement messages
+// Free model (Groq/Llama) → Landing page chat, engagement messages, broadcasts
 
 function getPremiumModel() {
   const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
@@ -11,14 +11,14 @@ function getPremiumModel() {
 }
 
 function getFreeModel() {
-  const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
-  return google(process.env.GOOGLE_AI_MODEL || "gemini-2.0-flash")
+  const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
+  return groq(process.env.GROQ_MODEL || "llama-3.3-70b-versatile")
 }
 
 /** Claude — para features premium (Pro/Elite) */
 export const premiumModel = getPremiumModel()
 
-/** Gemini Flash — para features gratuitas (landing, engagement) */
+/** Groq/Llama 3.3 70B — para features gratuitas (landing, engagement, broadcasts) */
 export const freeModel = getFreeModel()
 
 /** @deprecated Use premiumModel ou freeModel diretamente */

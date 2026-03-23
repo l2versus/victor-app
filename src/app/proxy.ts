@@ -32,6 +32,17 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next()
   }
 
+  // Impersonation: swap token via query param before any auth check
+  const impersonateToken = request.nextUrl.searchParams.get("_impersonate")
+  if (impersonateToken) {
+    const url = request.nextUrl.clone()
+    url.searchParams.delete("_impersonate")
+    const response = NextResponse.redirect(url)
+    response.cookies.set("token", impersonateToken, { path: "/", maxAge: 3600, sameSite: "lax" })
+    response.cookies.set("_admin_return", token || "", { path: "/", maxAge: 3600, sameSite: "lax" })
+    return response
+  }
+
   // Page routes — redirect to login if no token
   if (!token) {
     return NextResponse.redirect(new URL("/login", request.url))
