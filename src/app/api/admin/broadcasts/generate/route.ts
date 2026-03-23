@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { generateText } from "ai"
-import { freeModel } from "@/lib/ai"
+import { freeModel, premiumModel } from "@/lib/ai"
 
 // POST /api/admin/broadcasts/generate — AI generates broadcast text
 export async function POST(req: NextRequest) {
   try {
     await requireAdmin()
-
-    if (!process.env.GOOGLE_AI_API_KEY) {
-      console.error("GOOGLE_AI_API_KEY not configured")
-      return NextResponse.json({ error: "API de IA não configurada" }, { status: 500 })
-    }
 
     const body = await req.json()
     const { occasion, audience, tone, customPrompt } = body as {
@@ -68,15 +63,19 @@ Regras:
 
 Responda APENAS com a mensagem, sem explicações.`
 
-    const result = await generateText({
-      model: freeModel,
-      prompt,
-    })
+    // Try Gemini first (free), fallback to Claude if quota exceeded
+    let result
+    try {
+      result = await generateText({ model: freeModel, prompt, maxRetries: 1 })
+    } catch {
+      console.warn("Gemini failed, falling back to Claude")
+      result = await generateText({ model: premiumModel, prompt })
+    }
 
     return NextResponse.json({ text: result.text.trim() })
   } catch (error) {
     const errMsg = error instanceof Error ? error.message : String(error)
-    console.error("Broadcast AI generate error:", errMsg, error)
-    return NextResponse.json({ error: `Erro ao gerar texto: ${errMsg}` }, { status: 500 })
+    console.error("Broadcast AI generate error:", errMsg)
+    return NextResponse.json({ error: "Erro ao gerar texto" }, { status: 500 })
   }
 }
