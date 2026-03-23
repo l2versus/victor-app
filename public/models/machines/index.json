@@ -73,26 +73,26 @@
   },
   "b2a82f82-ab7b-48d9-bc43-58160569acf3": {
     "file": "/models/machines/b2a82f82-ab7b-48d9-bc43-58160569acf3.glb",
-    "name": "b2a82f82-ab7b-48d9-bc43-58160569acf3",
-    "brand": null,
+    "name": "Panatta Cable Crossover / Multi Flight",
+    "brand": "Panatta",
     "addedAt": "2026-03-22"
   },
   "bd798fd3-0866-46a7-a133-f271b48586a4": {
     "file": "/models/machines/bd798fd3-0866-46a7-a133-f271b48586a4.glb",
-    "name": "Panatta Rosca Bíceps (Plate-Loaded)",
+    "name": "Panatta Multi-Hip (Glúteo)",
     "brand": "Panatta",
     "addedAt": "2026-03-22"
   },
   "d5f71ecb-5183-4f06-9392-c129c909c9e6": {
     "file": "/models/machines/d5f71ecb-5183-4f06-9392-c129c909c9e6.glb",
-    "name": "d5f71ecb-5183-4f06-9392-c129c909c9e6",
-    "brand": null,
+    "name": "Life Fitness Leg Press Sentado (Selectorizado)",
+    "brand": "Life Fitness",
     "addedAt": "2026-03-22"
   },
   "e3a18abe-2c7b-4e2b-a1c2-24fcf9b207cd": {
     "file": "/models/machines/e3a18abe-2c7b-4e2b-a1c2-24fcf9b207cd.glb",
-    "name": "e3a18abe-2c7b-4e2b-a1c2-24fcf9b207cd",
-    "brand": null,
+    "name": "Cybex Prestige Lat Pulldown",
+    "brand": "Cybex Prestige",
     "addedAt": "2026-03-22"
   },
   "flexora": {
@@ -109,8 +109,8 @@
   },
   "bb85c27b-e67d-46e8-adba-f990077c8462": {
     "file": "/models/machines/bb85c27b-e67d-46e8-adba-f990077c8462.glb",
-    "name": "bb85c27b-e67d-46e8-adba-f990077c8462",
-    "brand": null,
+    "name": "Matrix Pec Deck / Fly Reverso (Dual)",
+    "brand": "Matrix",
     "addedAt": "2026-03-22"
   }
 }
