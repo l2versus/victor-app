@@ -8,7 +8,7 @@ import { Dumbbell, TrendingUp, User, Trophy, Camera, Utensils, ImageIcon, Activi
 
 const BASE_NAV = [
   { href: "/today", label: "Treino", icon: Dumbbell },
-  { href: "/schedule", label: "Agenda", icon: CalendarCheck },
+  { href: "/posture", label: "Postura", icon: Camera },
   { href: "/community", label: "Comunidade", icon: Trophy },
   { href: "/evolution", label: "Evolução", icon: TrendingUp },
   { href: "/profile", label: "Perfil", icon: User },
@@ -18,10 +18,10 @@ const NUTRITION_ITEM = { href: "/nutrition", label: "Nutrição", icon: Utensils
 
 // Extra student pages accessible via profile or deep links
 export const EXTRA_STUDENT_PAGES = [
+  { href: "/schedule", label: "Agenda", icon: CalendarCheck },
   { href: "/progress", label: "Fotos Progresso", icon: ImageIcon },
   { href: "/extra", label: "Atividades Extra", icon: Activity },
   { href: "/nutrition", label: "Nutrição", icon: Utensils },
-  { href: "/posture", label: "Postura", icon: Camera },
 ]
 
 interface StudentNavProps {
