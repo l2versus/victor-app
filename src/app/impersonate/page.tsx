@@ -13,7 +13,7 @@ function ImpersonateClient() {
       window.location.href = "/admin/students"
       return
     }
-    document.cookie = `session=${token}; path=/; max-age=3600; SameSite=Lax`
+    document.cookie = `token=${token}; path=/; max-age=3600; SameSite=Lax`
     window.location.href = "/today"
   }, [searchParams])
 
