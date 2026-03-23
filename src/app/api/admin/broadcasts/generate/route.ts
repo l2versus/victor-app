@@ -7,6 +7,12 @@ import { freeModel } from "@/lib/ai"
 export async function POST(req: NextRequest) {
   try {
     await requireAdmin()
+
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      console.error("GOOGLE_AI_API_KEY not configured")
+      return NextResponse.json({ error: "API de IA não configurada" }, { status: 500 })
+    }
+
     const body = await req.json()
     const { occasion, audience, tone, customPrompt } = body as {
       occasion: string
@@ -69,7 +75,8 @@ Responda APENAS com a mensagem, sem explicações.`
 
     return NextResponse.json({ text: result.text.trim() })
   } catch (error) {
-    console.error("Broadcast AI generate error:", error)
-    return NextResponse.json({ error: "Erro ao gerar texto" }, { status: 500 })
+    const errMsg = error instanceof Error ? error.message : String(error)
+    console.error("Broadcast AI generate error:", errMsg, error)
+    return NextResponse.json({ error: `Erro ao gerar texto: ${errMsg}` }, { status: 500 })
   }
 }

@@ -75,9 +75,16 @@ self.addEventListener("fetch", (event) => {
     return
   }
 
-  // Everything else: Network-first
+  // Skip non-GET requests (POST, PUT, DELETE) — cannot be cached
+  if (event.request.method !== "GET") return
+
+  // Everything else: Network-first (GET only)
   event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
+    fetch(event.request).catch(() =>
+      caches.match(event.request).then((cached) =>
+        cached || new Response("Offline", { status: 503 })
+      )
+    )
   )
 })
 
