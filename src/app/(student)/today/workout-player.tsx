@@ -12,6 +12,7 @@ import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
 import { useCelebration, type CelebrationType } from "@/components/student/celebration"
 import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
 import { RMCalculatorButton } from "@/components/student/rm-calculator"
+import { ExerciseDetailModal } from "@/components/student/exercise-detail-modal"
 
 // ═══ TYPES ═══
 
@@ -113,6 +114,7 @@ export function WorkoutPlayer({
     completedToday ? "done" : activeSession ? "active" : "preview"
   )
   const [videoModal, setVideoModal] = useState<{ url: string; name: string } | null>(null)
+  const [exerciseDetail, setExerciseDetail] = useState<ExerciseData | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(activeSession?.id || null)
   const [currentExIdx, setCurrentExIdx] = useState(0)
   const [completedSets, setCompletedSets] = useState<Map<string, CompletedSet[]>>(
@@ -446,7 +448,8 @@ export function WorkoutPlayer({
             return (
               <div
                 key={ex.id}
-                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden hover:border-white/[0.1] transition-all duration-300"
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden hover:border-white/[0.1] transition-all duration-300 cursor-pointer active:scale-[0.99]"
+                onClick={() => setExerciseDetail(ex)}
               >
                 {/* Main row — info left, thumbnail right (MFIT-style) */}
                 <div className="flex gap-3 p-4">
@@ -562,6 +565,11 @@ export function WorkoutPlayer({
           <Play className="w-5 h-5" fill="currentColor" />
           {isScheduledToday ? "Iniciar Treino" : "Treinar Agora"}
         </button>
+
+        {/* ═══ EXERCISE DETAIL MODAL ═══ */}
+        {exerciseDetail && (
+          <ExerciseDetailModal exercise={exerciseDetail} onClose={() => setExerciseDetail(null)} />
+        )}
 
         {/* ═══ VIDEO MODAL ═══ */}
         {videoModal && (

@@ -43,7 +43,7 @@ async function fetchTranscript(videoId: string): Promise<string | null> {
     const xml = await captionRes.text()
 
     // Parse XML captions → plain text
-    const textParts = xml.match(/<text[^>]*>(.*?)<\/text>/gs)
+    const textParts = xml.match(/<text[^>]*>([\s\S]*?)<\/text>/g)
     if (!textParts) return null
 
     const transcript = textParts
