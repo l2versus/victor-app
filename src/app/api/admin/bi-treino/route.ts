@@ -25,13 +25,9 @@ export async function GET() {
 
     // All queries in parallel
     const [
-      totalStudents,
-      activeStudents,
-      inactiveStudents,
-      studentsWithPlan,
-      studentsWithoutPlan,
-      plansExpiringSoon,
-      expiredPlans,
+      allStudents,
+      plansExpiringSoonList,
+      expiredPlansList,
       sessionsThisWeek,
       sessionsThisMonth,
       sessionsToday,
@@ -40,47 +36,49 @@ export async function GET() {
       totalScheduleSlots,
       confirmedSlots,
       noShowSlots,
-      pendingPaymentsCount,
+      pendingPaymentsList,
       pendingPaymentsTotal,
+      recentlyRenewedList,
     ] = await Promise.all([
-      // Students
-      prisma.student.count({ where: { trainerId } }),
-      prisma.student.count({ where: { trainerId, status: "ACTIVE" } }),
-      prisma.student.count({ where: { trainerId, status: "INACTIVE" } }),
-
-      // Students with active workout plans
-      prisma.student.count({
-        where: {
-          trainerId,
-          status: "ACTIVE",
-          workoutPlans: { some: { active: true } },
+      // ALL students with their data for drill-down
+      prisma.student.findMany({
+        where: { trainerId },
+        include: {
+          user: { select: { name: true, email: true, image: true } },
+          workoutPlans: { where: { active: true }, select: { id: true, createdAt: true } },
+          subscriptions: {
+            where: { status: "ACTIVE" },
+            include: { plan: { select: { name: true, price: true } } },
+            orderBy: { endDate: "desc" },
+            take: 1,
+          },
         },
+        orderBy: { user: { name: "asc" } },
       }),
 
-      // Students without any workout plan
-      prisma.student.count({
-        where: {
-          trainerId,
-          status: "ACTIVE",
-          workoutPlans: { none: {} },
-        },
-      }),
-
-      // Plans expiring in next 7 days (using subscriptions)
-      prisma.subscription.count({
+      // Plans expiring in next 7 days (with student data)
+      prisma.subscription.findMany({
         where: {
           student: { trainerId },
           status: "ACTIVE",
           endDate: { gte: now, lte: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000) },
         },
+        include: {
+          student: { include: { user: { select: { name: true } } } },
+          plan: { select: { name: true, price: true } },
+        },
       }),
 
-      // Expired plans (subscriptions past endDate but still active)
-      prisma.subscription.count({
+      // Expired plans
+      prisma.subscription.findMany({
         where: {
           student: { trainerId },
           status: "ACTIVE",
           endDate: { lt: now },
+        },
+        include: {
+          student: { include: { user: { select: { name: true } } } },
+          plan: { select: { name: true, price: true } },
         },
       }),
 
@@ -106,10 +104,34 @@ export async function GET() {
       prisma.scheduleSlot.count({ where: { trainerId, date: { gte: weekStart }, status: "CONFIRMED" } }),
       prisma.scheduleSlot.count({ where: { trainerId, date: { gte: weekStart }, status: "NO_SHOW" } }),
 
-      // Payments
-      prisma.payment.count({ where: { student: { trainerId }, status: "PENDING" } }),
+      // Payments (with student data)
+      prisma.payment.findMany({
+        where: { student: { trainerId }, status: "PENDING" },
+        include: { student: { include: { user: { select: { name: true } } } } },
+        orderBy: { dueDate: "asc" },
+      }),
       prisma.payment.aggregate({ where: { student: { trainerId }, status: "PENDING" }, _sum: { amount: true } }),
+
+      // Recently renewed (with student data)
+      prisma.subscription.findMany({
+        where: { student: { trainerId }, createdAt: { gte: thirtyDaysAgo } },
+        include: {
+          student: { include: { user: { select: { name: true } } } },
+          plan: { select: { name: true, price: true } },
+        },
+        orderBy: { createdAt: "desc" },
+      }),
     ])
+
+    // Derived counts
+    const totalStudents = allStudents.length
+    const activeStudents = allStudents.filter(s => s.status === "ACTIVE").length
+    const inactiveStudents = allStudents.filter(s => s.status === "INACTIVE").length
+
+    // Students with/without workout plans
+    const studentsWithPlanIds = new Set(allStudents.filter(s => s.status === "ACTIVE" && s.workoutPlans.length > 0).map(s => s.id))
+    const studentsWithPlan = studentsWithPlanIds.size
+    const studentsWithoutPlan = activeStudents - studentsWithPlan
 
     // Calculate average session duration
     let avgDurationMinutes = 0
@@ -123,7 +145,8 @@ export async function GET() {
     }
 
     // Unique students who trained this month
-    const studentsTrainedThisMonth = new Set(recentSessions.map(s => s.studentId)).size
+    const trainedThisMonthIds = new Set(recentSessions.map(s => s.studentId))
+    const studentsTrainedThisMonth = trainedThisMonthIds.size
 
     // Students "em dia" (trained in last 7 days)
     const recentSessionsByStudent = new Map<string, Date>()
@@ -134,20 +157,82 @@ export async function GET() {
       }
     })
 
-    // Students who trained in last 7 days = "em dia"
-    const studentsUpToDate = Array.from(recentSessionsByStudent.entries())
-      .filter(([, lastSession]) => lastSession >= weekStart).length
+    const upToDateIds = new Set(
+      Array.from(recentSessionsByStudent.entries())
+        .filter(([, lastSession]) => lastSession >= weekStart)
+        .map(([id]) => id)
+    )
+    const studentsUpToDate = upToDateIds.size
 
-    // "Não acompanhados" = active students who never trained (no sessions at all in last 30 days)
+    // "Não acompanhados" = active students who never trained in last 30 days
     const studentsNotFollowed = activeStudents - studentsTrainedThisMonth
 
-    // Recently renewed (new subscriptions in last 30 days)
-    const recentlyRenewed = await prisma.subscription.count({
-      where: {
-        student: { trainerId },
-        createdAt: { gte: thirtyDaysAgo },
-      },
+    // Session count per student (for drill-down)
+    const sessionCountByStudent = new Map<string, number>()
+    recentSessions.forEach(s => {
+      sessionCountByStudent.set(s.studentId, (sessionCountByStudent.get(s.studentId) || 0) + 1)
     })
+
+    // Build student lists for drill-down
+    const studentsList = allStudents.map(s => {
+      const lastSession = recentSessionsByStudent.get(s.id)
+      const sessionCount = sessionCountByStudent.get(s.id) || 0
+      const sub = s.subscriptions[0]
+      return {
+        id: s.id,
+        name: s.user.name,
+        email: s.user.email,
+        image: s.user.image,
+        status: s.status as string,
+        hasPlan: s.workoutPlans.length > 0,
+        isUpToDate: upToDateIds.has(s.id),
+        trainedThisMonth: trainedThisMonthIds.has(s.id),
+        sessionsLast30d: sessionCount,
+        lastSessionAt: lastSession?.toISOString() || null,
+        subscription: sub ? {
+          planName: sub.plan.name,
+          planPrice: sub.plan.price,
+          endDate: sub.endDate.toISOString(),
+          daysLeft: Math.ceil((sub.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+        } : null,
+      }
+    })
+
+    // Expiring plans list
+    const expiringList = plansExpiringSoonList.map(sub => ({
+      studentName: sub.student.user.name,
+      planName: sub.plan.name,
+      planPrice: sub.plan.price,
+      endDate: sub.endDate.toISOString(),
+      daysLeft: Math.ceil((sub.endDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)),
+    }))
+
+    // Expired list
+    const expiredList = expiredPlansList.map(sub => ({
+      studentName: sub.student.user.name,
+      planName: sub.plan.name,
+      planPrice: sub.plan.price,
+      endDate: sub.endDate.toISOString(),
+      daysOverdue: Math.ceil((now.getTime() - sub.endDate.getTime()) / (1000 * 60 * 60 * 24)),
+    }))
+
+    // Pending payments list
+    const pendingList = pendingPaymentsList.map(p => ({
+      id: p.id,
+      studentName: p.student.user.name,
+      amount: p.amount,
+      method: p.method,
+      dueDate: p.dueDate.toISOString(),
+      description: p.description,
+    }))
+
+    // Recently renewed list
+    const renewedList = recentlyRenewedList.map(sub => ({
+      studentName: sub.student.user.name,
+      planName: sub.plan.name,
+      planPrice: sub.plan.price,
+      createdAt: sub.createdAt.toISOString(),
+    }))
 
     // Training days distribution (for chart)
     const dayOfWeekCounts = [0, 0, 0, 0, 0, 0, 0] // Sun-Sat
@@ -183,9 +268,9 @@ export async function GET() {
         trainedThisMonth: studentsTrainedThisMonth,
       },
       plans: {
-        expiringSoon: plansExpiringSoon,
-        expired: expiredPlans,
-        recentlyRenewed,
+        expiringSoon: plansExpiringSoonList.length,
+        expired: expiredPlansList.length,
+        recentlyRenewed: recentlyRenewedList.length,
       },
       sessions: {
         today: sessionsToday,
@@ -199,12 +284,20 @@ export async function GET() {
         noShow: noShowSlots,
       },
       payments: {
-        pendingCount: pendingPaymentsCount,
+        pendingCount: pendingPaymentsList.length,
         pendingTotal: pendingPaymentsTotal._sum.amount || 0,
       },
       charts: {
         dayOfWeek: dayOfWeekCounts,
         timePercentages,
+      },
+      // Drill-down lists
+      lists: {
+        students: studentsList,
+        expiring: expiringList,
+        expired: expiredList,
+        pending: pendingList,
+        renewed: renewedList,
       },
       updatedAt: now.toISOString(),
     })

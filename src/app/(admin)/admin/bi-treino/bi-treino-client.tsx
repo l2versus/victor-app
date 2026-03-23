@@ -15,6 +15,13 @@ import { cn } from "@/lib/utils"
 // TYPES
 // ═══════════════════════════════════════
 
+type StudentItem = {
+  id: string; name: string; email: string | null; image: string | null
+  status: string; hasPlan: boolean; isUpToDate: boolean; trainedThisMonth: boolean
+  sessionsLast30d: number; lastSessionAt: string | null
+  subscription: { planName: string; planPrice: number; endDate: string; daysLeft: number } | null
+}
+
 type BiData = {
   students: {
     total: number; active: number; inactive: number
@@ -26,6 +33,13 @@ type BiData = {
   schedule: { total: number; confirmed: number; noShow: number }
   payments: { pendingCount: number; pendingTotal: number }
   charts: { dayOfWeek: number[]; timePercentages: { morning: number; afternoon: number; evening: number } }
+  lists: {
+    students: StudentItem[]
+    expiring: { studentName: string; planName: string; planPrice: number; endDate: string; daysLeft: number }[]
+    expired: { studentName: string; planName: string; planPrice: number; endDate: string; daysOverdue: number }[]
+    pending: { id: string; studentName: string; amount: number; method: string; dueDate: string; description: string | null }[]
+    renewed: { studentName: string; planName: string; planPrice: number; createdAt: string }[]
+  }
   updatedAt: string
 }
 
@@ -762,187 +776,293 @@ export function BiTreinoClient() {
       </div>
 
       {/* ═══════════════════════════════════════ */}
-      {/* ═══ MODALS ═══ */}
+      {/* ═══ MODALS — DRILL-DOWN COM LISTA ═══ */}
       {/* ═══════════════════════════════════════ */}
 
-      {/* ALUNOS MODAL */}
+      {/* ALUNOS MODAL — Lista completa */}
       <DetailModal
         open={modalAlunos}
         onClose={() => setModalAlunos(false)}
-        title="Visao Detalhada — Alunos"
+        title="Todos os Alunos"
         icon={Users}
         iconColor="text-blue-400 bg-blue-500/10 border-blue-500/20"
-        maxWidth="max-w-md"
+        maxWidth="max-w-xl"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl bg-blue-500/[0.06] border border-blue-500/10 text-center">
-              <p className="text-2xl font-black text-blue-400">{data.students.total}</p>
-              <p className="text-[9px] text-blue-400/60">Total</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2.5 rounded-xl bg-blue-500/[0.06] border border-blue-500/10 text-center">
+              <p className="text-xl font-black text-blue-400">{data.students.total}</p>
+              <p className="text-[8px] text-blue-400/60">Total</p>
             </div>
-            <div className="p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/10 text-center">
-              <p className="text-2xl font-black text-emerald-400">{data.students.active}</p>
-              <p className="text-[9px] text-emerald-400/60">Ativos</p>
+            <div className="p-2.5 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/10 text-center">
+              <p className="text-xl font-black text-emerald-400">{data.students.active}</p>
+              <p className="text-[8px] text-emerald-400/60">Ativos</p>
+            </div>
+            <div className="p-2.5 rounded-xl bg-red-500/[0.06] border border-red-500/10 text-center">
+              <p className="text-xl font-black text-red-400">{data.students.inactive}</p>
+              <p className="text-[8px] text-red-400/60">Inativos</p>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-            <p className="text-[9px] text-neutral-500 uppercase font-medium mb-2">Taxa de retencao</p>
-            <div className="flex items-center gap-3">
-              <p className={cn("text-2xl font-black", retentionRate >= 70 ? "text-emerald-400" : "text-amber-400")}>
-                {retentionRate.toFixed(0)}%
-              </p>
-              <div className="flex-1">
-                <div className="h-2 rounded-full bg-white/[0.05] overflow-hidden">
-                  <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${retentionRate}%` }} />
+          {/* Student list */}
+          <div className="space-y-1.5 max-h-[50vh] overflow-y-auto pr-1">
+            {data.lists.students.map(s => (
+              <div key={s.id} className={cn(
+                "flex items-center gap-3 p-3 rounded-xl border transition-all hover:bg-white/[0.04]",
+                s.status === "INACTIVE" ? "border-white/[0.03] opacity-50" : "border-white/[0.06]"
+              )}>
+                {/* Avatar */}
+                <div className={cn(
+                  "w-9 h-9 rounded-full flex items-center justify-center text-xs font-bold shrink-0 border",
+                  s.isUpToDate ? "bg-emerald-500/15 border-emerald-500/20 text-emerald-400" :
+                  s.trainedThisMonth ? "bg-blue-500/15 border-blue-500/20 text-blue-400" :
+                  s.status === "INACTIVE" ? "bg-neutral-500/15 border-neutral-500/20 text-neutral-500" :
+                  "bg-amber-500/15 border-amber-500/20 text-amber-400"
+                )}>
+                  {s.name.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-white truncate">{s.name}</p>
+                  <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                    {/* Status badges */}
+                    <span className={cn("text-[8px] px-1.5 py-0.5 rounded font-medium",
+                      s.status === "ACTIVE" ? "bg-emerald-500/10 text-emerald-400" : "bg-neutral-500/10 text-neutral-500"
+                    )}>
+                      {s.status === "ACTIVE" ? "Ativo" : "Inativo"}
+                    </span>
+                    {s.status === "ACTIVE" && !s.hasPlan && (
+                      <span className="text-[8px] px-1.5 py-0.5 rounded font-medium bg-red-500/10 text-red-400">Sem ficha</span>
+                    )}
+                    {s.isUpToDate && (
+                      <span className="text-[8px] px-1.5 py-0.5 rounded font-medium bg-emerald-500/10 text-emerald-400">Em dia</span>
+                    )}
+                    {s.status === "ACTIVE" && !s.trainedThisMonth && (
+                      <span className="text-[8px] px-1.5 py-0.5 rounded font-medium bg-amber-500/10 text-amber-400">Sem treinar</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right side stats */}
+                <div className="text-right shrink-0">
+                  <p className="text-xs font-semibold text-white">{s.sessionsLast30d} treinos</p>
+                  <p className="text-[9px] text-neutral-600">
+                    {s.lastSessionAt ? `Ultimo: ${new Date(s.lastSessionAt).toLocaleDateString("pt-BR")}` : "Nunca treinou"}
+                  </p>
+                  {s.subscription && (
+                    <p className={cn("text-[8px] mt-0.5",
+                      s.subscription.daysLeft <= 0 ? "text-red-400" :
+                      s.subscription.daysLeft <= 7 ? "text-amber-400" : "text-neutral-500"
+                    )}>
+                      {s.subscription.planName} · {s.subscription.daysLeft <= 0 ? "Expirado" : `${s.subscription.daysLeft}d restantes`}
+                    </p>
+                  )}
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <StatRow label="Inativos" value={data.students.inactive} icon={UserX} color="text-red-400" />
-            <StatRow label="Sem treinar (30d)" value={data.students.notFollowed} icon={UserMinus} color="text-amber-400" />
-            <StatRow label="Treinaram este mes" value={data.students.trainedThisMonth} icon={Target} color="text-emerald-400" />
-            <StatRow label="Com ficha de treino" value={data.students.withPlan} icon={Dumbbell} color="text-blue-400" />
-            <StatRow label="Sem ficha" value={data.students.withoutPlan} icon={AlertTriangle} color="text-red-400" />
-            <StatRow label="Em dia (semana)" value={data.students.upToDate} icon={CalendarCheck} color="text-emerald-400" />
+            ))}
           </div>
         </div>
       </DetailModal>
 
-      {/* TREINOS MODAL */}
+      {/* TREINOS MODAL — Com listas de alunos */}
       <DetailModal
         open={modalTreinos}
         onClose={() => setModalTreinos(false)}
         title="Status de Treinos & Planos"
         icon={Dumbbell}
         iconColor="text-amber-400 bg-amber-500/10 border-amber-500/20"
-        maxWidth="max-w-md"
+        maxWidth="max-w-xl"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-3">
-            <div className="p-3 rounded-xl bg-red-500/[0.06] border border-red-500/10 text-center">
-              <p className="text-2xl font-black text-red-400">{data.plans.expired}</p>
-              <p className="text-[9px] text-red-400/60">Vencidos</p>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="p-2.5 rounded-xl bg-red-500/[0.06] border border-red-500/10 text-center">
+              <p className="text-xl font-black text-red-400">{data.plans.expired}</p>
+              <p className="text-[8px] text-red-400/60">Vencidos</p>
             </div>
-            <div className="p-3 rounded-xl bg-amber-500/[0.06] border border-amber-500/10 text-center">
-              <p className="text-2xl font-black text-amber-400">{data.plans.expiringSoon}</p>
-              <p className="text-[9px] text-amber-400/60">A vencer</p>
+            <div className="p-2.5 rounded-xl bg-amber-500/[0.06] border border-amber-500/10 text-center">
+              <p className="text-xl font-black text-amber-400">{data.plans.expiringSoon}</p>
+              <p className="text-[8px] text-amber-400/60">A vencer</p>
             </div>
-            <div className="p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/10 text-center">
-              <p className="text-2xl font-black text-emerald-400">{data.students.upToDate}</p>
-              <p className="text-[9px] text-emerald-400/60">Em dia</p>
+            <div className="p-2.5 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/10 text-center">
+              <p className="text-xl font-black text-emerald-400">{data.students.upToDate}</p>
+              <p className="text-[8px] text-emerald-400/60">Em dia</p>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-            <p className="text-[9px] text-neutral-500 uppercase font-medium mb-2">Cobertura de fichas</p>
-            <ProgressBar value={data.students.withPlan} max={data.students.active} color="#f59e0b" />
-            <p className="text-[10px] text-neutral-500 mt-2">
-              {data.students.withPlan} de {data.students.active} alunos ativos tem ficha de treino
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <StatRow label="Alunos sem ficha" value={data.students.withoutPlan} icon={AlertTriangle} color="text-red-400" />
-            <StatRow label="Assinaturas expiradas" value={data.plans.expired} icon={CalendarX} color="text-red-400" />
-            <StatRow label="Expirando em 7 dias" value={data.plans.expiringSoon} icon={Clock} color="text-amber-400" />
-            <StatRow label="Renovacoes recentes" value={data.plans.recentlyRenewed} icon={RefreshCw} color="text-emerald-400" />
-          </div>
-
+          {/* Alunos sem ficha */}
           {data.students.withoutPlan > 0 && (
-            <div className="p-3 rounded-xl bg-red-500/[0.04] border border-red-500/10">
-              <p className="text-xs text-red-300 flex items-center gap-1.5">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                Acao necessaria: {data.students.withoutPlan} aluno{data.students.withoutPlan > 1 ? "s" : ""} precisa{data.students.withoutPlan > 1 ? "m" : ""} de ficha
+            <div>
+              <p className="text-[10px] text-red-400 uppercase font-semibold mb-2 flex items-center gap-1.5">
+                <AlertTriangle className="w-3 h-3" /> Alunos sem ficha de treino
               </p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {data.lists.students.filter(s => s.status === "ACTIVE" && !s.hasPlan).map(s => (
+                  <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-red-500/[0.04] border border-red-500/10">
+                    <div className="w-7 h-7 rounded-full bg-red-500/15 flex items-center justify-center text-[10px] font-bold text-red-400">{s.name.charAt(0)}</div>
+                    <span className="text-xs text-white flex-1 truncate">{s.name}</span>
+                    <span className="text-[9px] text-red-400/60">Criar ficha</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Assinaturas expiradas */}
+          {data.lists.expired.length > 0 && (
+            <div>
+              <p className="text-[10px] text-red-400 uppercase font-semibold mb-2 flex items-center gap-1.5">
+                <CalendarX className="w-3 h-3" /> Assinaturas expiradas
+              </p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {data.lists.expired.map((e, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-red-500/[0.04] border border-red-500/10">
+                    <div>
+                      <p className="text-xs text-white">{e.studentName}</p>
+                      <p className="text-[9px] text-neutral-500">{e.planName} · R$ {fmt(e.planPrice)}</p>
+                    </div>
+                    <span className="text-[10px] text-red-400 font-semibold">{e.daysOverdue}d atrasado</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Expirando em 7 dias */}
+          {data.lists.expiring.length > 0 && (
+            <div>
+              <p className="text-[10px] text-amber-400 uppercase font-semibold mb-2 flex items-center gap-1.5">
+                <Clock className="w-3 h-3" /> Expirando em 7 dias
+              </p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {data.lists.expiring.map((e, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-amber-500/[0.04] border border-amber-500/10">
+                    <div>
+                      <p className="text-xs text-white">{e.studentName}</p>
+                      <p className="text-[9px] text-neutral-500">{e.planName} · R$ {fmt(e.planPrice)}</p>
+                    </div>
+                    <span className="text-[10px] text-amber-400 font-semibold">{e.daysLeft}d restantes</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Renovacoes recentes */}
+          {data.lists.renewed.length > 0 && (
+            <div>
+              <p className="text-[10px] text-emerald-400 uppercase font-semibold mb-2 flex items-center gap-1.5">
+                <RefreshCw className="w-3 h-3" /> Renovacoes recentes (30d)
+              </p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {data.lists.renewed.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/[0.04] border border-emerald-500/10">
+                    <div>
+                      <p className="text-xs text-white">{r.studentName}</p>
+                      <p className="text-[9px] text-neutral-500">{r.planName} · R$ {fmt(r.planPrice)}</p>
+                    </div>
+                    <span className="text-[9px] text-emerald-400/60">{new Date(r.createdAt).toLocaleDateString("pt-BR")}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
       </DetailModal>
 
-      {/* SESSIONS MODAL */}
+      {/* SESSIONS MODAL — Com alunos que treinaram */}
       <DetailModal
         open={modalSessions}
         onClose={() => setModalSessions(false)}
         title="Sessoes de Treino"
         icon={Activity}
         iconColor="text-blue-400 bg-blue-500/10 border-blue-500/20"
-        maxWidth="max-w-md"
+        maxWidth="max-w-xl"
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl bg-blue-500/[0.06] border border-blue-500/10 text-center">
-              <p className="text-2xl font-black text-blue-400">{data.sessions.today}</p>
-              <p className="text-[9px] text-blue-400/60">Hoje</p>
+          <div className="grid grid-cols-4 gap-2">
+            <div className="p-2.5 rounded-xl bg-blue-500/[0.06] border border-blue-500/10 text-center">
+              <p className="text-lg font-black text-blue-400">{data.sessions.today}</p>
+              <p className="text-[8px] text-blue-400/60">Hoje</p>
             </div>
-            <div className="p-3 rounded-xl bg-blue-500/[0.06] border border-blue-500/10 text-center">
-              <p className="text-2xl font-black text-blue-400">{data.sessions.thisWeek}</p>
-              <p className="text-[9px] text-blue-400/60">Esta semana</p>
+            <div className="p-2.5 rounded-xl bg-blue-500/[0.06] border border-blue-500/10 text-center">
+              <p className="text-lg font-black text-blue-400">{data.sessions.thisWeek}</p>
+              <p className="text-[8px] text-blue-400/60">Semana</p>
             </div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/10 text-center">
-              <p className="text-2xl font-black text-emerald-400">{data.sessions.thisMonth}</p>
-              <p className="text-[9px] text-emerald-400/60">Este mes</p>
+            <div className="p-2.5 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/10 text-center">
+              <p className="text-lg font-black text-emerald-400">{data.sessions.thisMonth}</p>
+              <p className="text-[8px] text-emerald-400/60">Mes</p>
             </div>
-            <div className="p-3 rounded-xl bg-purple-500/[0.06] border border-purple-500/10 text-center">
-              <p className="text-2xl font-black text-purple-400">{data.sessions.avgDurationMinutes}<span className="text-sm ml-0.5">min</span></p>
-              <p className="text-[9px] text-purple-400/60">Duracao media</p>
+            <div className="p-2.5 rounded-xl bg-purple-500/[0.06] border border-purple-500/10 text-center">
+              <p className="text-lg font-black text-purple-400">{data.sessions.avgDurationMinutes}<span className="text-[10px]">m</span></p>
+              <p className="text-[8px] text-purple-400/60">Media</p>
             </div>
           </div>
 
-          <div className="p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-            <p className="text-[9px] text-neutral-500 uppercase font-medium mb-2">Distribuicao por periodo</p>
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Sunrise className="w-4 h-4 text-yellow-400 shrink-0" />
-                <span className="text-xs text-neutral-400 w-12">Manha</span>
-                <div className="flex-1 h-2 rounded-full bg-white/[0.05] overflow-hidden">
-                  <div className="h-full rounded-full bg-yellow-400 transition-all duration-700" style={{ width: `${data.charts.timePercentages.morning}%` }} />
-                </div>
-                <span className="text-xs font-bold text-yellow-400 w-8 text-right">{data.charts.timePercentages.morning}%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Sun className="w-4 h-4 text-orange-400 shrink-0" />
-                <span className="text-xs text-neutral-400 w-12">Tarde</span>
-                <div className="flex-1 h-2 rounded-full bg-white/[0.05] overflow-hidden">
-                  <div className="h-full rounded-full bg-orange-400 transition-all duration-700" style={{ width: `${data.charts.timePercentages.afternoon}%` }} />
-                </div>
-                <span className="text-xs font-bold text-orange-400 w-8 text-right">{data.charts.timePercentages.afternoon}%</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Moon className="w-4 h-4 text-purple-400 shrink-0" />
-                <span className="text-xs text-neutral-400 w-12">Noite</span>
-                <div className="flex-1 h-2 rounded-full bg-white/[0.05] overflow-hidden">
-                  <div className="h-full rounded-full bg-purple-400 transition-all duration-700" style={{ width: `${data.charts.timePercentages.evening}%` }} />
-                </div>
-                <span className="text-xs font-bold text-purple-400 w-8 text-right">{data.charts.timePercentages.evening}%</span>
-              </div>
+          {/* Alunos que treinaram — ranking por sessoes */}
+          <div>
+            <p className="text-[10px] text-neutral-400 uppercase font-semibold mb-2">Ranking de treinos (30 dias)</p>
+            <div className="space-y-1 max-h-60 overflow-y-auto">
+              {data.lists.students
+                .filter(s => s.sessionsLast30d > 0)
+                .sort((a, b) => b.sessionsLast30d - a.sessionsLast30d)
+                .map((s, i) => {
+                  const maxSessions = data.lists.students.reduce((m, x) => Math.max(m, x.sessionsLast30d), 1)
+                  return (
+                    <div key={s.id} className="flex items-center gap-2.5 p-2 rounded-lg bg-white/[0.03] hover:bg-white/[0.05] transition-all">
+                      <span className={cn(
+                        "w-6 h-6 rounded-lg flex items-center justify-center text-[9px] font-bold",
+                        i === 0 ? "bg-amber-500/20 text-amber-400" :
+                        i === 1 ? "bg-neutral-400/20 text-neutral-300" :
+                        i === 2 ? "bg-orange-500/20 text-orange-400" :
+                        "bg-white/[0.04] text-neutral-500"
+                      )}>
+                        {i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}
+                      </span>
+                      <span className="text-xs text-white flex-1 truncate">{s.name}</span>
+                      <div className="w-20">
+                        <div className="h-1.5 rounded-full bg-white/[0.05] overflow-hidden">
+                          <div className="h-full rounded-full bg-blue-500/60" style={{ width: `${(s.sessionsLast30d / maxSessions) * 100}%` }} />
+                        </div>
+                      </div>
+                      <span className="text-xs font-bold text-blue-400 w-6 text-right">{s.sessionsLast30d}</span>
+                    </div>
+                  )
+                })
+              }
             </div>
           </div>
 
-          {data.schedule.total > 0 && (
-            <div className="space-y-2">
-              <p className="text-[10px] text-neutral-500 uppercase font-medium">Agenda da semana</p>
-              <StatRow label="Slots agendados" value={data.schedule.total} icon={Calendar} color="text-blue-400" />
-              <StatRow label="Confirmados" value={data.schedule.confirmed} icon={CalendarCheck} color="text-emerald-400" />
-              <StatRow label="Faltaram" value={data.schedule.noShow} icon={UserX} color="text-red-400" />
+          {/* Alunos que NAO treinaram */}
+          {data.lists.students.filter(s => s.status === "ACTIVE" && !s.trainedThisMonth).length > 0 && (
+            <div>
+              <p className="text-[10px] text-amber-400 uppercase font-semibold mb-2 flex items-center gap-1.5">
+                <UserMinus className="w-3 h-3" /> Nao treinaram (30 dias)
+              </p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {data.lists.students.filter(s => s.status === "ACTIVE" && !s.trainedThisMonth).map(s => (
+                  <div key={s.id} className="flex items-center gap-2 p-2 rounded-lg bg-amber-500/[0.04] border border-amber-500/10">
+                    <div className="w-7 h-7 rounded-full bg-amber-500/15 flex items-center justify-center text-[10px] font-bold text-amber-400">{s.name.charAt(0)}</div>
+                    <span className="text-xs text-white flex-1 truncate">{s.name}</span>
+                    <span className="text-[9px] text-amber-400/60">
+                      {s.lastSessionAt ? `Ultimo: ${new Date(s.lastSessionAt).toLocaleDateString("pt-BR")}` : "Nunca treinou"}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
         </div>
       </DetailModal>
 
-      {/* PAGAMENTOS MODAL */}
+      {/* PAGAMENTOS MODAL — Com lista de pendentes */}
       <DetailModal
         open={modalPagamentos}
         onClose={() => setModalPagamentos(false)}
         title="Financeiro Rapido"
         icon={CreditCard}
         iconColor="text-emerald-400 bg-emerald-500/10 border-emerald-500/20"
-        maxWidth="max-w-md"
+        maxWidth="max-w-xl"
       >
         <div className="space-y-4">
           <div className="p-4 rounded-xl bg-gradient-to-br from-emerald-500/[0.08] to-blue-500/[0.08] border border-white/[0.08]">
@@ -951,10 +1071,48 @@ export function BiTreinoClient() {
             <p className="text-xs text-neutral-500 mt-1">{data.payments.pendingCount} pagamento{data.payments.pendingCount !== 1 ? "s" : ""} pendente{data.payments.pendingCount !== 1 ? "s" : ""}</p>
           </div>
 
-          <div className="space-y-2">
-            <StatRow label="Renovacoes (30d)" value={data.plans.recentlyRenewed} icon={RefreshCw} color="text-emerald-400" />
-            <StatRow label="Pagamentos pendentes" value={data.payments.pendingCount} icon={Clock} color="text-amber-400" />
-          </div>
+          {/* Lista de pagamentos pendentes */}
+          {data.lists.pending.length > 0 && (
+            <div>
+              <p className="text-[10px] text-amber-400 uppercase font-semibold mb-2 flex items-center gap-1.5">
+                <Clock className="w-3 h-3" /> Pagamentos pendentes
+              </p>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {data.lists.pending.map(p => (
+                  <div key={p.id} className="flex items-center justify-between p-2.5 rounded-lg bg-amber-500/[0.04] border border-amber-500/10">
+                    <div>
+                      <p className="text-xs text-white font-medium">{p.studentName}</p>
+                      <p className="text-[9px] text-neutral-500">
+                        {p.method} · Vence: {new Date(p.dueDate).toLocaleDateString("pt-BR")}
+                        {p.description && ` · ${p.description}`}
+                      </p>
+                    </div>
+                    <span className="text-sm font-bold text-amber-400">R$ {fmt(p.amount)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Renovacoes recentes */}
+          {data.lists.renewed.length > 0 && (
+            <div>
+              <p className="text-[10px] text-emerald-400 uppercase font-semibold mb-2 flex items-center gap-1.5">
+                <RefreshCw className="w-3 h-3" /> Renovacoes recentes
+              </p>
+              <div className="space-y-1 max-h-40 overflow-y-auto">
+                {data.lists.renewed.map((r, i) => (
+                  <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-emerald-500/[0.04] border border-emerald-500/10">
+                    <div>
+                      <p className="text-xs text-white">{r.studentName}</p>
+                      <p className="text-[9px] text-neutral-500">{r.planName}</p>
+                    </div>
+                    <span className="text-xs font-semibold text-emerald-400">R$ {fmt(r.planPrice)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <a
             href="/admin/finance"
