@@ -14,6 +14,17 @@ import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
 import { RMCalculatorButton } from "@/components/student/rm-calculator"
 import { ExerciseDetailModal } from "@/components/student/exercise-detail-modal"
 
+// ═══ BRAND FLAGS ═══
+const BRAND_FLAGS: Record<string, string> = {
+  "Hammer Strength": "🇺🇸", "Hammer Strength MTS": "🇺🇸",
+  "Hoist": "🇺🇸", "Hoist ROC-IT": "🇺🇸",
+  "Nautilus": "🇺🇸", "Nautilus Impact": "🇺🇸", "Nautilus Inspiration": "🇺🇸",
+  "Life Fitness": "🇺🇸", "Life Fitness Insignia": "🇺🇸",
+  "Cybex Prestige": "🇺🇸", "Matrix": "🇹🇼",
+  "Panatta": "🇮🇹", "Panatta Monolith": "🇮🇹", "Panatta Inspiration": "🇮🇹",
+  "Stark Strong": "🇧🇷", "ICG": "🇩🇪",
+}
+
 // ═══ TYPES ═══
 
 type Technique = "NORMAL" | "DROP_SET" | "REST_PAUSE" | "PYRAMID" | "REVERSE_PYRAMID" | "FST7" | "MYO_REPS"
@@ -444,8 +455,9 @@ export function WorkoutPlayer({
 
         <div className="space-y-3">
           {exercises.map((ex, i) => {
-            const thumbnail = ex.gifUrl || ex.imageUrl || null
+            const thumbnail = ex.imageUrl || null
             const hasVideo = !!ex.videoUrl
+            const brandFlag = ex.machineBrand ? BRAND_FLAGS[ex.machineBrand] : null
 
             return (
               <div
@@ -498,32 +510,34 @@ export function WorkoutPlayer({
                     )}
                   </div>
 
-                  {/* Right: thumbnail (clickable for video) */}
-                  {thumbnail ? (
-                    <button
-                      type="button"
-                      onClick={() => hasVideo && ex.videoUrl ? setVideoModal({ url: ex.videoUrl, name: ex.name }) : undefined}
-                      className={`w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 relative bg-neutral-900 ${hasVideo ? "cursor-pointer active:scale-95 transition-transform" : ""}`}
-                    >
-                      <img
-                        src={thumbnail}
-                        alt={ex.name}
-                        className="w-full h-full object-cover"
-                        loading="lazy"
-                      />
-                      {hasVideo && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                          <div className="w-8 h-8 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                            <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
-                          </div>
+                  {/* Right: machine thumbnail or exercise image */}
+                  <div
+                    className="w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 relative bg-neutral-900 cursor-pointer active:scale-95 transition-transform"
+                    onClick={e => { e.stopPropagation(); setExerciseDetail(ex) }}
+                  >
+                    {thumbnail ? (
+                      <img src={thumbnail} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-white/[0.02]">
+                        <Dumbbell className="w-6 h-6 text-neutral-700" />
+                      </div>
+                    )}
+                    {/* Play overlay when video exists */}
+                    {hasVideo && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                        <div className="w-9 h-9 rounded-full bg-red-600/80 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-red-600/30">
+                          <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
                         </div>
-                      )}
-                    </button>
-                  ) : (
-                    <div className="w-24 h-24 rounded-xl border border-white/[0.06] bg-white/[0.02] shrink-0 flex items-center justify-center">
-                      <Dumbbell className="w-6 h-6 text-neutral-700" />
-                    </div>
-                  )}
+                      </div>
+                    )}
+                    {/* Brand badge */}
+                    {brandFlag && (
+                      <div className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded-md bg-black/70 backdrop-blur-sm text-[9px] font-bold text-white flex items-center gap-1">
+                        <span>{brandFlag}</span>
+                        <span className="truncate max-w-[60px]">{ex.machineBrand}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Extra info row */}

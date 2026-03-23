@@ -128,7 +128,8 @@ const BRAND_ORIGINS: Record<string, { origin: string; flag: string; desc: string
 }
 
 export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalProps) {
-  const [tab, setTab] = useState<"info" | "video" | "3d">("info")
+  // Open on video tab by default if video exists (6-8s teaching clip)
+  const [tab, setTab] = useState<"info" | "video" | "3d">(exercise.videoUrl ? "video" : "info")
   const muscleInfo = getMuscleInfo(exercise.muscle)
   const model3D = find3DModel(exercise.name)
   const heroImage = exercise.gifUrl || exercise.imageUrl
@@ -356,7 +357,7 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
                     Ver vídeo no Instagram
                   </a>
                 ) : (
-                  <video src={exercise.videoUrl} controls playsInline className="w-full aspect-video" preload="metadata" />
+                  <video src={exercise.videoUrl} controls playsInline loop autoPlay muted className="w-full aspect-video" preload="auto" />
                 )}
               </div>
               <p className="text-center text-[10px] text-neutral-600 mt-2">Vídeo demonstrativo — observe a técnica</p>
