@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useMemo } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Calendar, Clock, User, ChevronLeft, ChevronRight,
@@ -39,15 +39,21 @@ export function ScheduleStudentClient() {
     return d
   })
 
-  const weekEnd = new Date(currentWeekStart)
-  weekEnd.setDate(weekEnd.getDate() + 6)
-  weekEnd.setHours(23, 59, 59, 999)
+  const weekEnd = useMemo(() => {
+    const d = new Date(currentWeekStart)
+    d.setDate(d.getDate() + 6)
+    d.setHours(23, 59, 59, 999)
+    return d
+  }, [currentWeekStart])
 
   const fetchSlots = useCallback(async () => {
     setLoading(true)
     try {
+      const end = new Date(currentWeekStart)
+      end.setDate(end.getDate() + 6)
+      end.setHours(23, 59, 59, 999)
       const res = await fetch(
-        `/api/student/schedule?start=${currentWeekStart.toISOString()}&end=${weekEnd.toISOString()}`
+        `/api/student/schedule?start=${currentWeekStart.toISOString()}&end=${end.toISOString()}`
       )
       if (res.ok) {
         const data = await res.json()
@@ -55,7 +61,7 @@ export function ScheduleStudentClient() {
       }
     } catch { /* ignore */ }
     setLoading(false)
-  }, [currentWeekStart, weekEnd])
+  }, [currentWeekStart])
 
   useEffect(() => { fetchSlots() }, [fetchSlots])
 

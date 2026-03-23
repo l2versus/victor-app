@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { sendWhatsAppMessage } from "@/lib/whatsapp-bot"
 import webpush from "web-push"
 
 // GET /api/admin/broadcasts — list past broadcasts
@@ -116,7 +117,10 @@ export async function POST(req: NextRequest) {
       // 3) WhatsApp
       if (channels.includes("whatsapp") && student.user.phone) {
         try {
-          const sent = await sendWhatsApp(student.user.phone, personalizedMsg)
+          let formatted = student.user.phone.replace(/\D/g, "")
+          if (formatted.startsWith("0")) formatted = "55" + formatted.slice(1)
+          if (!formatted.startsWith("55")) formatted = "55" + formatted
+          const sent = await sendWhatsAppMessage(formatted, personalizedMsg)
           if (sent) results.whatsapp++
         } catch { results.failed++ }
       }
@@ -157,27 +161,3 @@ async function sendPushToStudent(studentId: string, payload: { title: string; bo
   return sent
 }
 
-// ═══ WHATSAPP HELPER ═══
-async function sendWhatsApp(phone: string, message: string): Promise<boolean> {
-  const token = process.env.WHATSAPP_TOKEN
-  const phoneId = process.env.WHATSAPP_PHONE_ID
-  if (!token || !phoneId) return false
-
-  // Format phone: remove non-digits, ensure country code
-  let formatted = phone.replace(/\D/g, "")
-  if (formatted.startsWith("0")) formatted = "55" + formatted.slice(1)
-  if (!formatted.startsWith("55")) formatted = "55" + formatted
-
-  const res = await fetch(`https://graph.facebook.com/v18.0/${phoneId}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to: formatted,
-      type: "text",
-      text: { body: message },
-    }),
-  })
-
-  return res.ok
-}

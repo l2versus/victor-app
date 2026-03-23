@@ -64,14 +64,49 @@ export async function POST(req: NextRequest) {
     const studentData = await getStudentContextByPhone(from)
 
     if (!studentData) {
-      // Unknown number — not a registered student
+      // Unknown number → auto-capture as Lead in CRM
+      const trainer = await prisma.trainerProfile.findFirst({ select: { id: true, userId: true } })
+      if (trainer) {
+        // Check if lead already exists with this phone
+        const existingLead = await prisma.lead.findFirst({
+          where: { trainerId: trainer.id, phone: { contains: from.slice(-8) } },
+        })
+
+        if (!existingLead) {
+          // Extract name from WhatsApp profile if available
+          const contactName = value?.contacts?.[0]?.profile?.name || `WhatsApp ${from.slice(-4)}`
+
+          await prisma.lead.create({
+            data: {
+              trainerId: trainer.id,
+              name: contactName,
+              phone: from,
+              source: "WHATSAPP",
+              status: "NEW",
+              notes: `Primeira mensagem: "${messageText.slice(0, 200)}"`,
+            },
+          })
+
+          // Notify admin about new lead
+          await prisma.notification.create({
+            data: {
+              userId: trainer.userId,
+              type: "new_lead",
+              title: "Novo lead via WhatsApp!",
+              body: `${contactName} (${from}) mandou mensagem. Adicionado ao CRM automaticamente.`,
+              metadata: { phone: from, message: messageText.slice(0, 100) },
+            },
+          })
+        }
+      }
+
       await sendWhatsAppMessage(from,
         "Oi! Sou o Victor Oliveira, personal trainer. " +
-        "Não encontrei seu número no meu sistema. " +
-        "Se já é meu aluno, me fala seu email de cadastro. " +
-        "Se quer conhecer meu trabalho, acessa victorapp.com.br 💪"
+        "Vi que ainda não é meu aluno — vou te responder em breve! " +
+        "Se quiser conhecer meu trabalho: " +
+        `${process.env.NEXT_PUBLIC_APP_URL || "victorapp.com.br"}/site 💪`
       )
-      return NextResponse.json({ received: true })
+      return NextResponse.json({ received: true, leadCaptured: true })
     }
 
     // ─── Get trainer user ID ─────────────────────────────────

@@ -25,6 +25,7 @@ import {
   QrCode,
   UserPlus,
   Send,
+  Zap,
 } from "lucide-react"
 
 const navItems = [
@@ -34,6 +35,7 @@ const navItems = [
   { href: "/admin/schedule", label: "Agenda", icon: Calendar },
   { href: "/admin/checkin", label: "Presença", icon: QrCode },
   { href: "/admin/crm", label: "CRM", icon: UserPlus },
+  { href: "/admin/automations", label: "Automações", icon: Zap },
   { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
   { href: "/admin/template-library", label: "Templates", icon: BookOpen },
   { href: "/admin/exercises", label: "Exercícios", icon: Library },
