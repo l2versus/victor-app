@@ -5,7 +5,7 @@ import { join } from "path"
 
 const INDEX_PATH = join(process.cwd(), "public/models/machines/index.json")
 
-type MachineEntry = { file: string; name: string; addedAt: string }
+type MachineEntry = { file: string; name: string; addedAt: string; videoUrl?: string }
 
 async function loadIndex(): Promise<Record<string, MachineEntry>> {
   const raw = await readFile(INDEX_PATH, "utf-8")
@@ -23,6 +23,7 @@ export async function GET() {
       file: entry.file,
       name: entry.name,
       addedAt: entry.addedAt,
+      videoUrl: entry.videoUrl || null,
     }))
 
     return NextResponse.json({ machines })
@@ -36,10 +37,10 @@ export async function GET() {
 export async function PATCH(req: NextRequest) {
   try {
     await requireAdmin()
-    const { slug, name } = await req.json()
+    const { slug, name, videoUrl } = await req.json()
 
-    if (!slug || !name?.trim()) {
-      return NextResponse.json({ error: "Slug e nome são obrigatórios" }, { status: 400 })
+    if (!slug) {
+      return NextResponse.json({ error: "Slug obrigatório" }, { status: 400 })
     }
 
     const index = await loadIndex()
@@ -47,7 +48,8 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: "Máquina não encontrada" }, { status: 404 })
     }
 
-    index[slug].name = name.trim()
+    if (name?.trim()) index[slug].name = name.trim()
+    if (videoUrl !== undefined) index[slug].videoUrl = videoUrl || undefined
     await writeFile(INDEX_PATH, JSON.stringify(index, null, 2), "utf-8")
 
     return NextResponse.json({ success: true, machine: { slug, name: name.trim() } })
