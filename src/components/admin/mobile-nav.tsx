@@ -82,41 +82,43 @@ export function AdminMobileNav() {
       {/* More Menu Panel */}
       {moreOpen && (
         <div className="fixed bottom-[68px] inset-x-0 z-50 px-3 pb-2 animate-in slide-in-from-bottom-4 fade-in duration-200">
-          <div className="rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-2xl p-3 shadow-2xl">
-            <div className="flex items-center justify-between px-2 mb-2">
+          <div className="rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-2xl p-3 shadow-2xl max-h-[70vh] flex flex-col">
+            <div className="flex items-center justify-between px-2 mb-2 shrink-0">
               <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium">Menu</p>
               <button onClick={handleClose} className="text-neutral-600 hover:text-white transition-colors p-1">
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="grid grid-cols-3 gap-1.5">
-              {moreItems.map((item) => {
-                const isActive = pathname.startsWith(item.href)
-                return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    className={cn(
-                      "flex flex-col items-center gap-1.5 px-2 py-3 rounded-xl transition-all duration-200",
-                      isActive
-                        ? "bg-red-600/10 border border-red-500/15 text-white"
-                        : "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.04] border border-transparent"
-                    )}
-                  >
-                    <item.icon className={cn("w-5 h-5", isActive && "text-red-400")} />
-                    <span className="text-[10px] font-medium tracking-wide">{item.label}</span>
-                  </Link>
-                )
-              })}
+            <div className="overflow-y-auto flex-1 -mx-0.5 px-0.5">
+              <div className="grid grid-cols-4 gap-1.5">
+                {moreItems.map((item) => {
+                  const isActive = pathname.startsWith(item.href)
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={cn(
+                        "flex flex-col items-center gap-1 px-1.5 py-2.5 rounded-xl transition-all duration-200",
+                        isActive
+                          ? "bg-red-600/10 border border-red-500/15 text-white"
+                          : "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.04] border border-transparent"
+                      )}
+                    >
+                      <item.icon className={cn("w-5 h-5", isActive && "text-red-400")} />
+                      <span className="text-[9px] font-medium tracking-wide text-center leading-tight">{item.label}</span>
+                    </Link>
+                  )
+                })}
+              </div>
             </div>
 
-            {/* Quick actions */}
-            <div className="mt-2 pt-2 border-t border-white/[0.04] flex gap-1.5">
+            {/* Quick actions — always visible at bottom */}
+            <div className="mt-2 pt-2 border-t border-white/[0.04] flex gap-1.5 shrink-0">
               <a
                 href="/?site=true"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-neutral-600 hover:text-neutral-400 hover:bg-white/[0.03] transition-all text-[11px]"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.04] transition-all text-[11px] font-medium"
               >
                 <Globe className="w-3.5 h-3.5" />
                 Ver Site
@@ -126,7 +128,7 @@ export function AdminMobileNav() {
                   await fetch("/api/auth/logout", { method: "POST" })
                   window.location.href = "/login"
                 }}
-                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-red-500/50 hover:text-red-400 hover:bg-red-500/5 transition-all text-[11px]"
+                className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-red-400/70 hover:text-red-300 hover:bg-red-500/10 transition-all text-[11px] font-medium border border-red-500/10"
               >
                 <LogOut className="w-3.5 h-3.5" />
                 Sair

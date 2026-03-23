@@ -60,7 +60,7 @@ export function AdminSidebar({ userName }: { userName: string }) {
   }
 
   return (
-    <aside className="w-[260px] border-r border-white/[0.06] bg-[#060606]/80 backdrop-blur-xl flex flex-col shrink-0 relative">
+    <aside className="w-[260px] h-full border-r border-white/[0.06] bg-[#060606]/80 backdrop-blur-xl flex flex-col shrink-0 relative overflow-hidden">
       {/* Sidebar ember glow */}
       <div className="absolute top-0 right-0 w-32 h-64 bg-gradient-to-l from-red-600/[0.03] to-transparent pointer-events-none" />
       {/* Logo — Titanium */}
