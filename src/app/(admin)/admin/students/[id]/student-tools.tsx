@@ -74,10 +74,8 @@ export function StudentTools({ studentId, studentName, studentPhone }: { student
       const res = await fetch(`/api/admin/students/${studentId}/impersonate`, { method: "POST" })
       if (res.ok) {
         const { token } = await res.json()
-        // Open student app in new tab with impersonation token
-        const url = new URL("/today", window.location.origin)
-        url.searchParams.set("_impersonate", token)
-        window.open(url.toString(), "_blank")
+        // Open impersonate page that sets cookie then redirects to student app
+        window.open(`/impersonate?token=${token}`, "_blank")
       }
     } catch { /* ignore */ }
     setImpersonating(false)
