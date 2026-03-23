@@ -69,6 +69,7 @@ model TrainerProfile {
   scheduleSlots ScheduleSlot[]
   checkIns      CheckIn[]
   leads         Lead[]
+  knowledge     KnowledgeDocument[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -957,4 +958,39 @@ model LeadFollowUp {
 
   @@index([leadId])
   @@index([dueDate])
+}
+
+// ═══════════════════════════════════════
+// RAG — Knowledge Base for AI
+// ═══════════════════════════════════════
+
+enum KnowledgeCategory {
+  EXERCISE       // Exercícios — execução, biomecânica, variações
+  MACHINE        // Máquinas — manuais, ajustes, uso correto
+  POSTURE        // Postura — correção, alinhamento, ângulos
+  NUTRITION      // Nutrição — dietas, macros, suplementos
+  SCIENCE        // Ciência — artigos, estudos, evidências
+  PROTOCOL       // Protocolos — periodização, métodos de treino
+  INJURY         // Lesões — prevenção, reabilitação, contraindicações
+  GENERAL        // Geral — outros conhecimentos fitness
+}
+
+model KnowledgeDocument {
+  id          String            @id @default(cuid())
+  trainerId   String
+  title       String
+  content     String            // texto do documento
+  category    KnowledgeCategory @default(GENERAL)
+  tags        String[]          // tags de busca (ex: ["supino", "peitoral", "ironberg"])
+  imageUrl    String?           // foto/infográfico associado
+  sourceUrl   String?           // link do artigo original
+  embedding   Float[]           // Google text-embedding-004 = 768 dims, stored as JSON array
+
+  trainer     TrainerProfile @relation(fields: [trainerId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([trainerId])
+  @@index([category])
 }

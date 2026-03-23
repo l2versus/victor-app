@@ -3,6 +3,7 @@ import { premiumModel } from "@/lib/ai"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkFeature } from "@/lib/subscription"
+import { searchKnowledge, buildRAGContext } from "@/lib/rag"
 import { NextRequest } from "next/server"
 
 export async function POST(req: NextRequest) {
@@ -226,6 +227,18 @@ Sets completados: ${currentWorkout.sets.length}`
 
     const planName = student.subscriptions[0]?.plan?.name || "Sem plano"
 
+    // ─── RAG: Search knowledge base for relevant context ────────────────
+    let ragContext = ""
+    try {
+      const lastUserMsg = safeMessages.filter(m => m.role === "user").at(-1)?.content || ""
+      if (lastUserMsg.length > 5) {
+        const ragResults = await searchKnowledge(student.trainerId, lastUserMsg, { limit: 3, minScore: 0.35 })
+        ragContext = buildRAGContext(ragResults)
+      }
+    } catch (err) {
+      console.warn("[RAG] Search failed, continuing without:", err)
+    }
+
     // ─── Build system prompt ─────────────────────────────────────────────
     const systemPrompt = `Voce e o Victor Oliveira, personal trainer de elite em Fortaleza/CE (CREF 016254-G/CE).
 Voce NAO e um robo. Voce e o VICTOR. Fale como um coach de verdade que conhece o aluno pessoalmente.
@@ -269,7 +282,9 @@ REGRAS:
 - Se o aluno perguntar algo fora do escopo (politica, etc), redirecione para treino
 - Se nao souber algo especifico, diga "vou verificar e te passo pelo WhatsApp"
 - Maximo 2-4 frases por resposta, seja direto
-- Use dados reais do aluno para personalizar CADA resposta`
+- Use dados reais do aluno para personalizar CADA resposta
+- Se houver informacoes da base de conhecimento abaixo, USE-AS para responder com precisao cientifica
+${ragContext}`
 
     const result = streamText({
       model: premiumModel,

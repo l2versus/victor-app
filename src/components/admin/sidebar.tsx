@@ -46,6 +46,7 @@ const navItems = [
   { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
+  { href: "/admin/knowledge", label: "Base IA", icon: BookOpen },
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },
   { href: "/admin/finance", label: "Financeiro", icon: DollarSign },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
