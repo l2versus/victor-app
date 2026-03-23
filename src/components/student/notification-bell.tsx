@@ -126,6 +126,9 @@ export function NotificationBell() {
 
       {/* Dropdown panel — fixed to escape overflow-hidden parents */}
       {open && (
+        <>
+        {/* Backdrop — blocks content behind */}
+        <div className="fixed inset-0 z-[199] bg-black/60" onClick={() => setOpen(false)} />
         <div
           style={panelStyle}
           className="fixed w-[min(320px,calc(100vw-2rem))] max-h-96 flex flex-col z-200 rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl shadow-black/80 overflow-hidden"
@@ -190,6 +193,7 @@ export function NotificationBell() {
             )}
           </div>
         </div>
+        </>
       )}
     </div>
   )
