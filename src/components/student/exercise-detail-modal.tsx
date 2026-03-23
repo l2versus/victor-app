@@ -137,7 +137,8 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
   const muscleInfo = getMuscleInfo(exercise.muscle)
   const model3D = find3DModel(exercise.name)
   const heroImage = exercise.gifUrl || exercise.imageUrl
-  const brandInfo = exercise.machineBrand ? BRAND_ORIGINS[exercise.machineBrand] : null
+  const [machineBrand, setMachineBrand] = useState<string | null>(exercise.machineBrand || null)
+  const brandInfo = machineBrand ? BRAND_ORIGINS[machineBrand] : null
   const hasMachine3D = !!exercise.suggestedMachine
 
   return (
@@ -373,7 +374,11 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
           {/* TAB: Machine 3D */}
           {tab === "machine" && hasMachine3D && (
             <div className="p-4 space-y-4">
-              <MachineViewer slug={exercise.suggestedMachine!} machineName={exercise.suggestedMachine!} />
+              <MachineViewer
+                slug={exercise.suggestedMachine!}
+                machineName={exercise.suggestedMachine!}
+                onBrandLoaded={(b) => { if (b && !machineBrand) setMachineBrand(b) }}
+              />
 
               {/* Brand info card below 3D */}
               {exercise.machineBrand && brandInfo && (

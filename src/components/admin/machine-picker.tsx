@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils"
 type MachineEntry = {
   slug: string
   name: string
+  brand: string | null
   file: string
   addedAt: string
 }
@@ -56,10 +57,11 @@ export function MachinePicker({ value, onChange, className }: MachinePickerProps
   useEffect(() => {
     fetch("/models/machines/index.json")
       .then(r => r.json())
-      .then((data: Record<string, { file: string; name: string; addedAt: string }>) => {
+      .then((data: Record<string, { file: string; name: string; brand?: string | null; addedAt: string }>) => {
         setMachines(Object.entries(data).map(([slug, info]) => ({
           slug,
           name: info.name,
+          brand: info.brand || null,
           file: info.file,
           addedAt: info.addedAt,
         })))
@@ -170,7 +172,7 @@ export function MachinePicker({ value, onChange, className }: MachinePickerProps
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-white font-medium truncate">{machine.name}</p>
-                        <p className="text-[10px] text-neutral-600 truncate">{machine.file}</p>
+                        <p className="text-[10px] text-neutral-600 truncate">{machine.brand || "Sem marca"}</p>
                       </div>
                       <span className="px-1 py-0.5 rounded bg-amber-500/10 text-[8px] text-amber-400 font-bold border border-amber-500/15 shrink-0">3D</span>
                     </button>

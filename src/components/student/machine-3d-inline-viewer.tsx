@@ -13,19 +13,35 @@ function Model({ url }: { url: string }) {
 interface Props {
   slug: string
   machineName?: string
+  onBrandLoaded?: (brand: string | null) => void
 }
 
-export default function MachineInlineViewer({ slug, machineName }: Props) {
+export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }: Props) {
   const [exists, setExists] = useState(false)
   const [loading, setLoading] = useState(true)
   const [fullscreen, setFullscreen] = useState(false)
+  const [resolvedName, setResolvedName] = useState(machineName || slug)
+  const [brand, setBrand] = useState<string | null>(null)
   const modelUrl = `/models/machines/${slug}.glb`
 
   useEffect(() => {
-    fetch(modelUrl, { method: "HEAD" })
-      .then(r => { setExists(r.ok); setLoading(false) })
-      .catch(() => setLoading(false))
-  }, [modelUrl])
+    // Load machine info from index.json
+    Promise.all([
+      fetch(modelUrl, { method: "HEAD" }).then(r => r.ok).catch(() => false),
+      fetch("/models/machines/index.json").then(r => r.json()).catch(() => ({})),
+    ]).then(([fileExists, index]) => {
+      setExists(fileExists)
+      const info = index[slug]
+      if (info) {
+        if (info.name && !info.name.includes("-")) setResolvedName(info.name)
+        if (info.brand) {
+          setBrand(info.brand)
+          onBrandLoaded?.(info.brand)
+        }
+      }
+      setLoading(false)
+    })
+  }, [modelUrl, slug, onBrandLoaded])
 
   if (loading) {
     return (
@@ -76,8 +92,11 @@ export default function MachineInlineViewer({ slug, machineName }: Props) {
         </div>
       </div>
 
-      {machineName && (
-        <p className="text-center text-xs text-neutral-500 mt-2">{machineName}</p>
+      {resolvedName && (
+        <div className="text-center mt-2">
+          <p className="text-xs text-white font-medium">{resolvedName}</p>
+          {brand && <p className="text-[10px] text-neutral-500">{brand}</p>}
+        </div>
       )}
 
       {/* Fullscreen Modal */}
@@ -102,7 +121,7 @@ export default function MachineInlineViewer({ slug, machineName }: Props) {
           </button>
           <div className="absolute bottom-6 left-0 right-0 text-center">
             <span className="px-3 py-1.5 rounded-xl bg-red-600/20 text-xs text-red-400 font-bold border border-red-500/20 backdrop-blur-sm">3D IRONBERG</span>
-            {machineName && <p className="text-neutral-500 text-xs mt-2">{machineName}</p>}
+            {resolvedName && <p className="text-neutral-500 text-xs mt-2">{resolvedName}</p>}
           </div>
         </div>
       )}
