@@ -103,6 +103,21 @@
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
+/* ═══ SELECT DROPDOWN DARK MODE — fix white dropdown in all browsers ═══ */
+select {
+  color-scheme: dark;
+  background-color: #0a0a0a;
+}
+select option {
+  background-color: #0a0a0a;
+  color: #e5e5e5;
+  padding: 8px;
+}
+select:focus {
+  outline: none;
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
 /* ═══ SELECTION ═══ */
 ::selection { background: rgba(220, 38, 38, 0.3); color: #fff; }
 
