@@ -26,6 +26,7 @@ import {
   UserPlus,
   Send,
   Zap,
+  GraduationCap,
 } from "lucide-react"
 
 const navItems = [
@@ -46,6 +47,7 @@ const navItems = [
   { href: "/admin/challenges", label: "Desafios", icon: Target },
   { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
+  { href: "/admin/academy", label: "Academia", icon: GraduationCap },
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/admin/knowledge", label: "Base IA", icon: BookOpen },
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },
