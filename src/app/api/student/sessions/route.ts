@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireStudent } from "@/lib/student"
+import { getBrazilTodayRange } from "@/lib/timezone"
 
 export async function POST(req: NextRequest) {
   try {
@@ -19,11 +20,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Treino não encontrado" }, { status: 404 })
     }
 
-    // Check if there's already an active session today
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    // Check if there's already an active session today (Brazil timezone)
+    const { start: today, end: tomorrow } = getBrazilTodayRange()
 
     const existing = await prisma.workoutSession.findFirst({
       where: {

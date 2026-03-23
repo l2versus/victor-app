@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { requireStudent } from "@/lib/student"
+import { getBrazilDayOfWeek, getBrazilTodayRange } from "@/lib/timezone"
 
 export async function GET() {
   try {
     const { student } = await requireStudent()
 
-    const dayOfWeek = new Date().getDay()
+    const dayOfWeek = getBrazilDayOfWeek()
 
     // Find today's assigned plan
     const plan = await prisma.studentWorkoutPlan.findUnique({
@@ -27,11 +28,8 @@ export async function GET() {
       return NextResponse.json({ plan: null, template: null, activeSession: null })
     }
 
-    // Check for active (uncompleted) session today
-    const today = new Date()
-    today.setHours(0, 0, 0, 0)
-    const tomorrow = new Date(today)
-    tomorrow.setDate(tomorrow.getDate() + 1)
+    // Check for active (uncompleted) session today (Brazil timezone)
+    const { start: today, end: tomorrow } = getBrazilTodayRange()
 
     const activeSession = await prisma.workoutSession.findFirst({
       where: {

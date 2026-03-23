@@ -7,6 +7,7 @@ import { WorkoutPlayer } from "./workout-player"
 import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
 import { Moon, Dumbbell, Droplets, Heart, BedDouble, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getBrazilDayOfWeek, getBrazilTodayRange } from "@/lib/timezone"
 
 export const metadata: Metadata = {
   title: "Treino de Hoje",
@@ -29,7 +30,7 @@ export default async function TodayPage({
   })
   if (!student) redirect("/login")
 
-  const today = new Date().getDay()
+  const today = getBrazilDayOfWeek()
   const params = await searchParams
   const rawDay = params.day !== undefined ? parseInt(params.day) : today
   const dayOfWeek = isNaN(rawDay) || rawDay < 0 || rawDay > 6 ? today : rawDay
@@ -95,11 +96,8 @@ export default async function TodayPage({
     )
   }
 
-  // Check for active/completed sessions today (regardless of which day's workout we're viewing)
-  const todayDate = new Date()
-  todayDate.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(todayDate)
-  tomorrow.setDate(tomorrow.getDate() + 1)
+  // Check for active/completed sessions today (Brazil timezone)
+  const { start: todayDate, end: tomorrow } = getBrazilTodayRange()
 
   const [activeSession, completedToday, lastSession] = await Promise.all([
     prisma.workoutSession.findFirst({
