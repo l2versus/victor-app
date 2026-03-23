@@ -72,12 +72,15 @@ export function StudentTools({ studentId, studentName, studentPhone }: { student
     setImpersonating(true)
     try {
       const res = await fetch(`/api/admin/students/${studentId}/impersonate`, { method: "POST" })
-      if (res.ok) {
-        const { token } = await res.json()
-        // Open impersonate page that sets cookie then redirects to student app
-        window.open(`/impersonate?token=${token}`, "_blank")
+      const data = await res.json()
+      if (res.ok && data.token) {
+        window.open(`/impersonate?token=${data.token}`, "_blank")
+      } else {
+        alert(`Erro ao navegar como aluno: ${data.error || data.detail || res.status}`)
       }
-    } catch { /* ignore */ }
+    } catch (e) {
+      alert(`Erro de conexão: ${e instanceof Error ? e.message : "tente novamente"}`)
+    }
     setImpersonating(false)
   }
 

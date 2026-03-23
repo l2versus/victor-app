@@ -33,7 +33,9 @@ export async function POST(
 
     return NextResponse.json({ token })
   } catch (error) {
+    console.error("Impersonate error:", error)
     const msg = error instanceof Error ? error.message : "Erro interno"
-    return NextResponse.json({ error: msg }, { status: msg === "Unauthorized" ? 401 : 500 })
+    const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500
+    return NextResponse.json({ error: msg, detail: String(error) }, { status })
   }
 }
