@@ -31,6 +31,14 @@ interface Overview {
   costsByCategory: Record<string, number>
   revenueByMethod: { method: string; label: string; total: number; count: number }[]
   revenueByMonth: { month: string; revenue: number; costs: number }[]
+  // NEW
+  currentMRR: number
+  projection: { month: string; projected: number; best: number; worst: number }[]
+  churn: { id: string; studentName: string; phone: string | null; planName: string; planPrice: number; endDate: string; daysLeft: number; severity: string }[]
+  studentLtv: { name: string; totalPaid: number; paymentCount: number; monthsActive: number; avgMonthly: number }[]
+  avgLtv: number
+  costPerStudent: number
+  revenuePerStudent: number
 }
 
 interface Cost {
@@ -397,6 +405,193 @@ export function FinanceClient({ students }: { students: { id: string; name: stri
                 Plano Essencial não gera custo de IA.
               </p>
             </div>
+          </div>
+
+          {/* ═══ NEW: MRR + Revenue Projection ═══ */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="rounded-2xl border border-neutral-800 bg-[#111]/80 p-5">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+                <TrendingUp className="w-4 h-4 text-emerald-400" />
+                Projeção de Receita (3 meses)
+              </h3>
+              <div className="mb-3 flex items-baseline gap-2">
+                <p className="text-2xl font-black text-white">R$ {fmt(overview.currentMRR)}</p>
+                <p className="text-xs text-neutral-500">MRR atual</p>
+              </div>
+              {overview.projection && overview.projection.length > 0 ? (
+                <div className="space-y-2">
+                  {overview.projection.map((p, i) => (
+                    <div key={i} className="flex items-center gap-3">
+                      <span className="text-[10px] text-neutral-500 w-8 uppercase">{p.month}</span>
+                      <div className="flex-1 h-6 bg-neutral-900 rounded-full overflow-hidden relative">
+                        <div
+                          className="h-full bg-gradient-to-r from-emerald-600/40 to-emerald-500/20 rounded-full"
+                          style={{ width: `${overview.currentMRR > 0 ? Math.min(100, (p.projected / overview.currentMRR) * 80) : 0}%` }}
+                        />
+                        <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[10px] text-emerald-400 font-bold">
+                          R$ {p.projected.toLocaleString("pt-BR")}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-neutral-600">Sem assinaturas ativas para projetar</p>
+              )}
+            </div>
+
+            {/* ═══ NEW: Cost per Student + Revenue per Student ═══ */}
+            <div className="rounded-2xl border border-neutral-800 bg-[#111]/80 p-5">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+                <Users className="w-4 h-4 text-blue-400" />
+                Métricas por Aluno
+              </h3>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <div className="p-3 rounded-xl bg-emerald-500/[0.06] border border-emerald-500/10">
+                  <p className="text-xl font-black text-emerald-400">R$ {fmt(overview.revenuePerStudent)}</p>
+                  <p className="text-[10px] text-emerald-400/60">Receita/aluno/mês</p>
+                </div>
+                <div className="p-3 rounded-xl bg-red-500/[0.06] border border-red-500/10">
+                  <p className="text-xl font-black text-red-400">R$ {fmt(overview.costPerStudent)}</p>
+                  <p className="text-[10px] text-red-400/60">Custo/aluno/mês</p>
+                </div>
+              </div>
+              <div className="p-3 rounded-xl bg-amber-500/[0.06] border border-amber-500/10">
+                <p className="text-xl font-black text-amber-400">R$ {overview.avgLtv.toLocaleString("pt-BR")}</p>
+                <p className="text-[10px] text-amber-400/60">LTV médio (valor total por aluno)</p>
+              </div>
+              {overview.revenuePerStudent > 0 && overview.costPerStudent > 0 && (
+                <p className="text-[10px] text-neutral-600 mt-3">
+                  Margem por aluno: <span className="text-emerald-400 font-semibold">R$ {fmt(overview.revenuePerStudent - overview.costPerStudent)}</span> /mês
+                </p>
+              )}
+            </div>
+          </div>
+
+          {/* ═══ NEW: Churn Alerts ═══ */}
+          {overview.churn && overview.churn.length > 0 && (
+            <div className="rounded-2xl border border-neutral-800 bg-[#111]/80 p-5">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+                <AlertTriangle className="w-4 h-4 text-yellow-400" />
+                Risco de Churn — {overview.churn.length} assinatura{overview.churn.length !== 1 ? "s" : ""} expirando
+              </h3>
+              <div className="space-y-2">
+                {overview.churn.map(c => (
+                  <div key={c.id} className={cn(
+                    "flex items-center justify-between p-3 rounded-xl border",
+                    c.severity === "critical" ? "bg-red-500/5 border-red-500/15" :
+                    c.severity === "warning" ? "bg-yellow-500/5 border-yellow-500/15" :
+                    "bg-blue-500/5 border-blue-500/15"
+                  )}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-white truncate">{c.studentName}</p>
+                      <p className="text-[10px] text-neutral-500">{c.planName} · R$ {fmt(c.planPrice)}</p>
+                    </div>
+                    <div className="text-right shrink-0 ml-3">
+                      <p className={cn(
+                        "text-xs font-bold",
+                        c.severity === "critical" ? "text-red-400" :
+                        c.severity === "warning" ? "text-yellow-400" : "text-blue-400"
+                      )}>
+                        {c.daysLeft === 0 ? "Expira hoje!" : `${c.daysLeft} dias`}
+                      </p>
+                      {c.phone && (
+                        <a
+                          href={`https://wa.me/55${c.phone.replace(/\D/g, "")}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[9px] text-green-400 hover:text-green-300"
+                        >
+                          Cobrar via WhatsApp
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ NEW: Top Students by LTV ═══ */}
+          {overview.studentLtv && overview.studentLtv.length > 0 && (
+            <div className="rounded-2xl border border-neutral-800 bg-[#111]/80 p-5">
+              <h3 className="text-sm font-semibold text-white flex items-center gap-2 mb-4">
+                <ArrowUpRight className="w-4 h-4 text-amber-400" />
+                Top Alunos por Valor (LTV)
+              </h3>
+              <div className="space-y-1.5">
+                {overview.studentLtv.slice(0, 10).map((s, i) => {
+                  const maxLtv = overview.studentLtv[0]?.totalPaid || 1
+                  return (
+                    <div key={i} className="flex items-center gap-3 py-1.5">
+                      <span className={cn(
+                        "w-6 h-6 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0",
+                        i === 0 ? "bg-amber-500/20 text-amber-400" :
+                        i === 1 ? "bg-neutral-400/20 text-neutral-300" :
+                        i === 2 ? "bg-orange-500/20 text-orange-400" :
+                        "bg-white/[0.04] text-neutral-500"
+                      )}>
+                        {i + 1}
+                      </span>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-0.5">
+                          <p className="text-xs text-white truncate">{s.name}</p>
+                          <p className="text-xs font-bold text-emerald-400 shrink-0">R$ {s.totalPaid.toLocaleString("pt-BR")}</p>
+                        </div>
+                        <div className="w-full h-1.5 bg-neutral-900 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-gradient-to-r from-amber-600 to-amber-400 rounded-full"
+                            style={{ width: `${(s.totalPaid / maxLtv) * 100}%` }}
+                          />
+                        </div>
+                        <p className="text-[9px] text-neutral-600 mt-0.5">
+                          {s.monthsActive} meses · {s.paymentCount} pagamentos · ~R$ {s.avgMonthly}/mês
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ═══ NEW: Export CSV Button ═══ */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => {
+                if (!overview) return
+                const rows = [
+                  ["Métrica", "Valor"],
+                  ["Receita do Mês", `R$ ${fmt(overview.monthRevenue)}`],
+                  ["Custos Mensais", `R$ ${fmt(overview.monthlyCosts)}`],
+                  ["Lucro Líquido", `R$ ${fmt(overview.monthProfit)}`],
+                  ["Margem", `${overview.profitMargin}%`],
+                  ["MRR", `R$ ${fmt(overview.currentMRR)}`],
+                  ["Assinaturas Ativas", String(overview.activeSubscriptions)],
+                  ["Alunos Ativos", String(overview.activeStudents)],
+                  ["LTV Médio", `R$ ${overview.avgLtv}`],
+                  ["Custo/Aluno", `R$ ${fmt(overview.costPerStudent)}`],
+                  ["Receita/Aluno", `R$ ${fmt(overview.revenuePerStudent)}`],
+                  ["Pendente", `R$ ${fmt(overview.pendingAmount)}`],
+                  ["Risco Churn", `${overview.churn?.length || 0} alunos`],
+                  [],
+                  ["Aluno", "LTV Total", "Meses Ativo", "Média Mensal"],
+                  ...(overview.studentLtv || []).map(s => [s.name, `R$ ${s.totalPaid}`, String(s.monthsActive), `R$ ${s.avgMonthly}`]),
+                ]
+                const csv = rows.map(r => r.join(",")).join("\n")
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" })
+                const url = URL.createObjectURL(blob)
+                const a = document.createElement("a")
+                a.href = url
+                a.download = `financeiro-victor-${new Date().toISOString().slice(0, 10)}.csv`
+                a.click()
+                URL.revokeObjectURL(url)
+              }}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.06] text-neutral-400 text-xs font-medium hover:bg-white/[0.08] hover:text-white transition-all"
+            >
+              <ArrowUpRight className="w-3.5 h-3.5" />
+              Exportar CSV para Contador
+            </button>
           </div>
         </div>
       )}
