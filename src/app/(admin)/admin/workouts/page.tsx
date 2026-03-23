@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { Dumbbell, Plus, ArrowRight, ClipboardList } from "lucide-react"
 import Link from "next/link"
 import { format } from "date-fns"
+import { BackButton } from "@/components/ui/back-button"
 
 export default async function WorkoutsPage() {
   const session = await requireAdmin()
@@ -29,6 +30,7 @@ export default async function WorkoutsPage() {
 
   return (
     <div>
+      <BackButton />
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">

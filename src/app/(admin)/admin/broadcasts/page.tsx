@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import {
   Send, Sparkles, Users, Filter, MessageSquare, Bell, Smartphone,
   Loader2, Check, RefreshCw, Heart, Gift, Star, Zap, Calendar,
-  UserCheck, Baby, ChevronDown,
+  UserCheck, Baby, ChevronDown, Search,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -39,9 +39,11 @@ const TONES = [
 ]
 
 type Stats = { total: number; active: number; male: number; female: number; seniors: number; withPhone: number }
+type StudentItem = { id: string; name: string; status: string; phone: string | null }
 
 export default function BroadcastsPage() {
   const [stats, setStats] = useState<Stats | null>(null)
+  const [allStudents, setAllStudents] = useState<StudentItem[]>([])
   const [occasion, setOccasion] = useState("motivacional")
   const [audience, setAudience] = useState("todos")
   const [tone, setTone] = useState("casual")
@@ -52,9 +54,15 @@ export default function BroadcastsPage() {
   const [generating, setGenerating] = useState(false)
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<{ app: number; push: number; whatsapp: number; total: number } | null>(null)
+  const [selectedStudents, setSelectedStudents] = useState<Set<string>>(new Set())
+  const [showStudentPicker, setShowStudentPicker] = useState(false)
+  const [studentSearch, setStudentSearch] = useState("")
 
   useEffect(() => {
-    fetch("/api/admin/broadcasts").then(r => r.json()).then(d => setStats(d.stats)).catch(() => {})
+    fetch("/api/admin/broadcasts").then(r => r.json()).then(d => {
+      setStats(d.stats)
+      if (d.students) setAllStudents(d.students)
+    }).catch(() => {})
   }, [])
 
   const toggleChannel = (ch: string) => {
@@ -108,7 +116,13 @@ export default function BroadcastsPage() {
       const res = await fetch("/api/admin/broadcasts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, message, channels: Array.from(channels), filters }),
+        body: JSON.stringify({
+          title,
+          message,
+          channels: Array.from(channels),
+          filters,
+          ...(selectedStudents.size > 0 ? { studentIds: Array.from(selectedStudents) } : {}),
+        }),
       })
       const data = await res.json()
       if (data.results) setResult(data.results)
@@ -119,15 +133,24 @@ export default function BroadcastsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-600/20">
-          <Send className="w-5 h-5 text-white" />
-        </div>
-        <div>
-          <h1 className="text-2xl font-bold text-white">Mensagens em Massa</h1>
-          <p className="text-neutral-500 text-sm">
-            {stats ? `${stats.active} alunos ativos · ${stats.withPhone} com WhatsApp` : "Carregando..."}
-          </p>
+      <div>
+        <button
+          onClick={() => window.history.back()}
+          className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-white transition-colors group mb-3"
+        >
+          <svg className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
+          Voltar
+        </button>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center shadow-lg shadow-purple-600/20">
+            <Send className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold text-white">Mensagens em Massa</h1>
+            <p className="text-neutral-500 text-sm">
+              {stats ? `${stats.active} alunos ativos · ${stats.withPhone} com WhatsApp` : "Carregando..."}
+            </p>
+          </div>
         </div>
       </div>
 
@@ -202,10 +225,10 @@ export default function BroadcastsPage() {
                 return (
                   <button
                     key={a.value}
-                    onClick={() => setAudience(a.value)}
+                    onClick={() => { setAudience(a.value); setSelectedStudents(new Set()); setShowStudentPicker(false) }}
                     className={cn(
                       "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all",
-                      audience === a.value
+                      audience === a.value && selectedStudents.size === 0
                         ? "bg-blue-600/15 border border-blue-500/25 text-white"
                         : "bg-white/[0.02] border border-white/[0.06] text-neutral-500 hover:border-white/[0.12]"
                     )}
@@ -215,9 +238,93 @@ export default function BroadcastsPage() {
                   </button>
                 )
               })}
+
+              {/* Individual student selection toggle */}
+              <button
+                onClick={() => { setShowStudentPicker(!showStudentPicker); if (!showStudentPicker) setAudience("custom") }}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all",
+                  showStudentPicker || selectedStudents.size > 0
+                    ? "bg-purple-600/15 border border-purple-500/25 text-purple-400"
+                    : "bg-white/[0.02] border border-white/[0.06] text-neutral-500 hover:border-white/[0.12]"
+                )}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                Selecionar Alunos
+                {selectedStudents.size > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-purple-500/20 text-[9px] font-bold">{selectedStudents.size}</span>
+                )}
+              </button>
             </div>
+
+            {/* Student Picker */}
+            {showStudentPicker && (
+              <div className="mt-3 space-y-2">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600" />
+                  <input
+                    value={studentSearch}
+                    onChange={e => setStudentSearch(e.target.value)}
+                    placeholder="Buscar aluno..."
+                    className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06] text-sm text-white placeholder:text-neutral-600 outline-none focus:border-purple-500/30"
+                  />
+                </div>
+                <div className="flex gap-2 mb-1">
+                  <button
+                    onClick={() => setSelectedStudents(new Set(allStudents.map(s => s.id)))}
+                    className="text-[10px] text-purple-400 hover:text-purple-300 transition-colors"
+                  >
+                    Selecionar todos
+                  </button>
+                  <span className="text-neutral-700">·</span>
+                  <button
+                    onClick={() => setSelectedStudents(new Set())}
+                    className="text-[10px] text-neutral-500 hover:text-neutral-300 transition-colors"
+                  >
+                    Limpar seleção
+                  </button>
+                </div>
+                <div className="max-h-48 overflow-y-auto space-y-0.5 rounded-xl border border-white/[0.06] bg-white/[0.02] p-1.5">
+                  {allStudents
+                    .filter(s => !studentSearch || s.name.toLowerCase().includes(studentSearch.toLowerCase()))
+                    .map(s => {
+                      const isSelected = selectedStudents.has(s.id)
+                      return (
+                        <button
+                          key={s.id}
+                          onClick={() => {
+                            const next = new Set(selectedStudents)
+                            if (isSelected) next.delete(s.id); else next.add(s.id)
+                            setSelectedStudents(next)
+                          }}
+                          className={cn(
+                            "w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-left text-xs transition-all",
+                            isSelected ? "bg-purple-600/10 text-white" : "text-neutral-400 hover:bg-white/[0.04]"
+                          )}
+                        >
+                          <div className={cn(
+                            "w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-all",
+                            isSelected ? "bg-purple-600 border-purple-500" : "border-neutral-700"
+                          )}>
+                            {isSelected && <Check className="w-2.5 h-2.5 text-white" />}
+                          </div>
+                          <span className="flex-1 truncate">{s.name}</span>
+                          {s.status !== "ACTIVE" && (
+                            <span className="text-[9px] text-neutral-600 uppercase">{s.status === "INACTIVE" ? "Inativo" : s.status}</span>
+                          )}
+                          {s.phone && <MessageSquare className="w-3 h-3 text-green-500/50" />}
+                        </button>
+                      )
+                    })}
+                </div>
+              </div>
+            )}
+
             <p className="text-[10px] text-neutral-600 mt-2">
-              {audienceCount} aluno{audienceCount !== 1 ? "s" : ""} serão notificados
+              {selectedStudents.size > 0
+                ? `${selectedStudents.size} aluno${selectedStudents.size !== 1 ? "s" : ""} selecionado${selectedStudents.size !== 1 ? "s" : ""}`
+                : `${audienceCount} aluno${audienceCount !== 1 ? "s" : ""} serão notificados`
+              }
             </p>
           </div>
 
@@ -330,7 +437,7 @@ export default function BroadcastsPage() {
             className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base shadow-xl shadow-red-600/25 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
-            {sending ? "Enviando..." : `Enviar para ${audienceCount} aluno${audienceCount !== 1 ? "s" : ""}`}
+            {sending ? "Enviando..." : `Enviar para ${selectedStudents.size > 0 ? selectedStudents.size : audienceCount} aluno${(selectedStudents.size > 0 ? selectedStudents.size : audienceCount) !== 1 ? "s" : ""}`}
           </button>
 
           {/* Result */}

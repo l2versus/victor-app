@@ -93,7 +93,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      {/* ═══ STAT CARDS — Glass with colored accents ═══ */}
+      {/* ═══ STAT CARDS — Clean glass ═══ */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <AliveStatCard icon={Users} label="Total de Alunos" value={totalStudents} detail={`${activeStudents} ativos`} accent="red" />
         <AliveStatCard icon={Calendar} label="Sessões" value={sessionsThisWeek} detail="esta semana" accent="orange" />
@@ -101,8 +101,8 @@ export default async function DashboardPage() {
         <AliveStatCard icon={DollarSign} label="Pagamentos" value={pendingPayments} detail="pendentes" accent="orange" />
       </div>
 
-      {/* ═══ QUICK ACTIONS — Alive hover ═══ */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      {/* ═══ QUICK ACTIONS ═══ */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <AliveAction href="/admin/students" icon={Plus} title="Novo Aluno" desc="Cadastrar um novo aluno" />
         <AliveAction href="/admin/workouts/new" icon={Dumbbell} title="Criar Treino" desc="Montar um plano de treino" />
         <AliveAction href="/admin/exercises" icon={Activity} title="Biblioteca" desc={`${totalExercises} exercícios`} />
@@ -201,7 +201,7 @@ export default async function DashboardPage() {
   )
 }
 
-/* ═══ ALIVE STAT CARD — Glass with colored ember glow ═══ */
+/* ═══ STAT CARD — Clean glass ═══ */
 function AliveStatCard({
   icon: Icon, label, value, detail, accent,
 }: {
@@ -209,19 +209,14 @@ function AliveStatCard({
 }) {
   const isRed = accent === "red"
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-6 transition-all duration-500 hover:border-white/[0.12] hover:bg-white/[0.04] active:scale-[0.98]">
-      {/* Hover ember glow */}
-      <div className={`absolute -top-10 -right-10 w-28 h-28 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity duration-700 ${isRed ? 'bg-red-600/15' : 'bg-orange-600/15'}`} />
-      {/* Bottom accent line */}
-      <div className={`absolute bottom-0 left-6 right-6 h-px bg-gradient-to-r from-transparent ${isRed ? 'via-red-600/25' : 'via-orange-600/25'} to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-
+    <div className="group relative overflow-hidden rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-4 sm:p-6 transition-all duration-300 hover:border-white/[0.1] hover:bg-white/[0.04]">
       <div className="relative z-10">
-        <div className="mb-3 sm:mb-5">
-          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center ${isRed ? 'text-red-500/70' : 'text-orange-500/70'} group-hover:border-white/[0.12] group-hover:scale-105 transition-all duration-300`}>
+        <div className="mb-3 sm:mb-4">
+          <div className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center ${isRed ? 'bg-red-600/10 text-red-500' : 'bg-orange-600/10 text-orange-500'}`}>
             <Icon className="w-4 h-4 sm:w-[18px] sm:h-[18px]" />
           </div>
         </div>
-        <p className="text-2xl sm:text-[32px] font-bold text-white/90 tracking-tight leading-none mb-1">{value}</p>
+        <p className="text-2xl sm:text-[32px] font-bold text-white tracking-tight leading-none mb-1">{value}</p>
         <p className="text-[9px] sm:text-[10px] text-neutral-400 uppercase tracking-[0.12em] font-medium">{label}</p>
         <p className="text-[9px] text-neutral-600 mt-0.5 hidden sm:block">{detail}</p>
       </div>

@@ -13,38 +13,30 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex h-[100dvh] bg-[#060606] relative overflow-hidden">
-      {/* ═══ PREMIUM BACKGROUND — Ironberg gym + cinematic layers ═══ */}
+      {/* ═══ PREMIUM BACKGROUND — Ironberg gym + subtle cinematic layers ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Ironberg gym photo — base layer */}
+        {/* Ironberg gym photo — more visible */}
         <img
           src="/img/ironberg.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: "brightness(0.08) saturate(0.2)" }}
+          style={{ filter: "brightness(0.12) saturate(0.3)" }}
         />
 
-        {/* Multi-layer overlay for depth */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#060606]/60 via-[#060606]/80 to-[#060606]/95" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#060606]/90 via-transparent to-[#060606]/70" />
+        {/* Single clean overlay — less layers = less muddy */}
+        <div className="absolute inset-0 bg-gradient-to-b from-[#060606]/40 via-[#060606]/70 to-[#060606]/90" />
 
-        {/* Ember glow accents */}
+        {/* Subtle ember glow — one accent only */}
         <div
-          className="absolute w-[600px] h-[600px] rounded-full blur-[160px]"
+          className="absolute w-[500px] h-[500px] rounded-full blur-[200px]"
           style={{
-            background: 'radial-gradient(circle, rgba(220,38,38,0.08) 0%, transparent 60%)',
-            top: '-15%', right: '-8%',
-          }}
-        />
-        <div
-          className="absolute w-[400px] h-[400px] rounded-full blur-[120px]"
-          style={{
-            background: 'radial-gradient(circle, rgba(220,38,38,0.05) 0%, transparent 60%)',
-            bottom: '10%', left: '-5%',
+            background: 'radial-gradient(circle, rgba(220,38,38,0.06) 0%, transparent 60%)',
+            top: '-10%', right: '-5%',
           }}
         />
 
         {/* Top accent line */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/30 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/20 to-transparent" />
       </div>
 
       {/* ═══ DESKTOP SIDEBAR ═══ */}

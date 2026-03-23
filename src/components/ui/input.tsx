@@ -60,11 +60,12 @@ const Select = forwardRef<HTMLSelectElement, SelectProps>(
         <select
           ref={ref}
           className={cn(
-            "flex h-11 w-full rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-2 pr-10 text-sm text-white transition-all duration-200 cursor-pointer",
+            "flex h-11 w-full rounded-xl border border-neutral-800 bg-neutral-900 px-4 py-2 pr-10 text-sm text-white transition-all duration-200 cursor-pointer appearance-none",
             "hover:border-neutral-700",
-            "focus:outline-none focus:ring-2 focus:ring-red-500/40 focus:border-red-500/60",
+            "focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-neutral-600",
             "disabled:cursor-not-allowed disabled:opacity-50",
-            "[&>option]:bg-neutral-900 [&>option]:text-white",
+            "[&>option]:bg-neutral-900 [&>option]:text-white [&>option]:py-2",
+            "[color-scheme:dark]",
             className
           )}
           {...props}

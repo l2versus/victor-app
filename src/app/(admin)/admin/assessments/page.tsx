@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { BackButton } from "@/components/ui/back-button"
 import { AssessmentsManager } from "./assessments-manager"
 
 export default async function AssessmentsPage() {
@@ -24,7 +25,9 @@ export default async function AssessmentsPage() {
   ])
 
   return (
-    <AssessmentsManager
+    <div>
+      <BackButton />
+      <AssessmentsManager
       students={students.map(s => ({
         id: s.id,
         name: s.user.name,
@@ -42,6 +45,7 @@ export default async function AssessmentsPage() {
         notes: a.notes,
         createdAt: a.createdAt.toISOString(),
       }))}
-    />
+      />
+    </div>
   )
 }

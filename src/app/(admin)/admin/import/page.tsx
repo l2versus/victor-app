@@ -1,5 +1,6 @@
 import { getSession } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
+import { BackButton } from "@/components/ui/back-button"
 import { ImportClient } from "./import-client"
 
 export default async function ImportPage() {
@@ -16,5 +17,10 @@ export default async function ImportPage() {
     )
   }
 
-  return <ImportClient />
+  return (
+    <div>
+      <BackButton />
+      <ImportClient />
+    </div>
+  )
 }

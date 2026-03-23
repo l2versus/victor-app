@@ -1,6 +1,7 @@
 import { requireAdmin } from "@/lib/auth"
 import { Settings, Globe, CreditCard, Bell, Palette, Crown, DollarSign, BarChart3, UserPlus } from "lucide-react"
 import Link from "next/link"
+import { BackButton } from "@/components/ui/back-button"
 import { SettingsLogout } from "./settings-logout"
 
 export default async function SettingsPage() {
@@ -8,6 +9,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="p-4 md:p-8 max-w-2xl mx-auto space-y-6">
+      <BackButton />
       <div>
         <h1 className="text-xl font-bold text-white flex items-center gap-2">
           <Settings className="w-5 h-5 text-neutral-400" />

@@ -4,6 +4,7 @@ import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { DollarSign } from "lucide-react"
 import { FinanceClient } from "./finance-client"
+import { BackButton } from "@/components/ui/back-button"
 
 export const metadata: Metadata = {
   title: "Financeiro",
@@ -28,6 +29,7 @@ export default async function FinancePage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      <BackButton />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">

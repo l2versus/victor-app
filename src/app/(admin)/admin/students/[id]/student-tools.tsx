@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useCallback } from "react"
-import { Eye, TrendingUp, Download, X, Dumbbell, Smartphone, ChevronDown, Loader2, MessageCircle } from "lucide-react"
+import { Eye, TrendingUp, Download, X, Dumbbell, Smartphone, ChevronDown, Loader2, MessageCircle, ExternalLink } from "lucide-react"
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts"
 
 const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
@@ -66,11 +66,29 @@ export function StudentTools({ studentId, studentName, studentPhone }: { student
     window.open(`https://wa.me/${number}`, "_blank")
   }
 
+  const [impersonating, setImpersonating] = useState(false)
+
+  const handleImpersonate = async () => {
+    setImpersonating(true)
+    try {
+      const res = await fetch(`/api/admin/students/${studentId}/impersonate`, { method: "POST" })
+      if (res.ok) {
+        const { token } = await res.json()
+        // Open student app in new tab with impersonation token
+        const url = new URL("/today", window.location.origin)
+        url.searchParams.set("_impersonate", token)
+        window.open(url.toString(), "_blank")
+      }
+    } catch { /* ignore */ }
+    setImpersonating(false)
+  }
+
   return (
     <>
       {/* Quick Actions Bar */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
         <ToolButton icon={Eye} label="Visão do Aluno" color="blue" onClick={() => openModal("preview")} loading={loading && modal === null} />
+        <ToolButton icon={ExternalLink} label="Navegar como Aluno" color="blue" onClick={handleImpersonate} loading={impersonating} />
         <ToolButton icon={TrendingUp} label="Evolução" color="emerald" onClick={() => openModal("evolution")} loading={loading && modal === null} />
         <ToolButton icon={Download} label="Baixar PDF" color="amber" onClick={handlePDF} loading={loading && modal === null} />
         <ToolButton icon={MessageCircle} label={studentPhone ? "WhatsApp" : "Sem tel."} color="green" onClick={openWhatsApp} loading={false} />
@@ -283,7 +301,7 @@ function LoadEvolution({ evolution }: { evolution: EvolutionEntry[] }) {
         <select
           value={selectedEx || ""}
           onChange={e => setSelectedEx(e.target.value)}
-          className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-3 text-sm text-white outline-none focus:border-red-500/30 appearance-none cursor-pointer"
+          className="w-full rounded-xl border border-white/[0.08] bg-[#111] px-4 py-3 text-sm text-white outline-none focus:border-neutral-600 appearance-none cursor-pointer [color-scheme:dark] [&>option]:bg-[#111] [&>option]:text-white"
         >
           {evolution.map(e => (
             <option key={e.exerciseId} value={e.exerciseId}>{e.exerciseName} ({e.history.length} sessões)</option>

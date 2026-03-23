@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { ArrowLeft } from "lucide-react"
 
 export default function Page() {
   const [Component, setComponent] = useState<React.ComponentType | null>(null)
@@ -17,5 +18,13 @@ export default function Page() {
     )
   }
 
-  return <Component />
+  return (
+    <div>
+      <button onClick={() => window.history.back()} className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-white transition-colors group">
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        Voltar
+      </button>
+      <Component />
+    </div>
+  )
 }

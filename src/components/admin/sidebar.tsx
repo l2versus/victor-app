@@ -99,23 +99,23 @@ export function AdminSidebar({ userName }: { userName: string }) {
       </nav>
 
       {/* Footer */}
-      <div className="px-4 py-5 border-t border-white/[0.04]">
-        <p className="text-[11px] text-neutral-600 truncate px-3.5 mb-2 tracking-wide">{userName}</p>
+      <div className="px-4 py-5 border-t border-white/[0.06]">
+        <p className="text-[11px] text-neutral-600 truncate px-3.5 mb-3 tracking-wide">{userName}</p>
         <a
           href="/?site=true"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.03] transition-all duration-300 w-full border border-transparent hover:border-white/[0.06] mb-1"
+          className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.04] transition-all duration-300 w-full border border-transparent hover:border-white/[0.06] mb-1.5"
         >
           <ExternalLink className="w-[18px] h-[18px]" />
           Ver Site
         </a>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.03] transition-all duration-300 w-full border border-transparent hover:border-white/[0.06]"
+          className="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-[13px] font-medium text-red-400/70 hover:text-red-300 hover:bg-red-500/10 transition-all duration-300 w-full border border-red-500/10 hover:border-red-500/20"
         >
           <LogOut className="w-[18px] h-[18px]" />
-          Sair
+          Sair da Conta
         </button>
       </div>
     </aside>

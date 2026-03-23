@@ -31,7 +31,15 @@ export async function GET() {
       withPhone: students.filter(s => !!s.user.phone).length,
     }
 
-    return NextResponse.json({ stats })
+    // Return student list for individual selection
+    const studentList = students.map(s => ({
+      id: s.id,
+      name: s.user.name,
+      status: s.status,
+      phone: s.user.phone,
+    })).sort((a, b) => a.name.localeCompare(b.name))
+
+    return NextResponse.json({ stats, students: studentList })
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Erro interno"
     return NextResponse.json({ error: msg }, { status: msg === "Unauthorized" ? 401 : 500 })
@@ -45,10 +53,11 @@ export async function POST(req: NextRequest) {
     const trainer = await getTrainerProfile(session.userId)
     const body = await req.json()
 
-    const { title, message, channels, filters } = body as {
+    const { title, message, channels, filters, studentIds } = body as {
       title: string
       message: string
       channels: ("app" | "push" | "whatsapp")[]
+      studentIds?: string[]
       filters: {
         gender?: "MALE" | "FEMALE" | "OTHER" | null
         status?: "ACTIVE" | "INACTIVE" | null
@@ -63,8 +72,13 @@ export async function POST(req: NextRequest) {
 
     // Build student filter
     const where: Record<string, unknown> = { trainerId: trainer.id }
-    if (filters?.status) where.status = filters.status
-    if (filters?.gender) where.gender = filters.gender
+    if (studentIds && studentIds.length > 0) {
+      // Individual student selection overrides group filters
+      where.id = { in: studentIds }
+    } else {
+      if (filters?.status) where.status = filters.status
+      if (filters?.gender) where.gender = filters.gender
+    }
 
     const students = await prisma.student.findMany({
       where,
@@ -74,7 +88,7 @@ export async function POST(req: NextRequest) {
     // Age filter (needs post-query filtering since it's calculated)
     const now = new Date()
     let filtered = students
-    if (filters?.ageMin || filters?.ageMax) {
+    if (!studentIds?.length && (filters?.ageMin || filters?.ageMax)) {
       filtered = students.filter(s => {
         if (!s.birthDate) return false
         const age = Math.floor((now.getTime() - s.birthDate.getTime()) / (365.25 * 24 * 60 * 60 * 1000))

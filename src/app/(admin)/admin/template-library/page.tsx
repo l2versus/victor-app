@@ -6,8 +6,10 @@ import {
   BookOpen, Copy, Search, Filter, Dumbbell,
   Target, Zap, Heart, Shield, Activity,
   ChevronDown, ChevronUp, Check, Users,
+  Plus, Sparkles, ArrowLeft,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import Link from "next/link"
 
 type Template = {
   id: string
@@ -103,14 +105,43 @@ export default function TemplateLibraryPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/20">
-            <BookOpen className="w-5 h-5 text-white" />
-          </div>
-          Templates Prontos
-        </h1>
-        <p className="text-xs text-neutral-500 mt-1">Copie treinos prontos para seus alunos</p>
+      {/* Back button */}
+      <button
+        onClick={() => window.history.back()}
+        className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-white transition-colors group"
+      >
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        Voltar
+      </button>
+
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-purple-700 flex items-center justify-center shadow-lg shadow-purple-500/20">
+              <BookOpen className="w-5 h-5 text-white" />
+            </div>
+            Templates Prontos
+          </h1>
+          <p className="text-xs text-neutral-500 mt-1">Copie treinos prontos ou crie os seus</p>
+        </div>
+
+        {/* Create New Template */}
+        <div className="flex gap-2 shrink-0">
+          <Link
+            href="/admin/workouts/new"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-semibold shadow-lg shadow-red-600/20 hover:from-red-500 hover:to-red-600 active:scale-[0.97] transition-all"
+          >
+            <Plus className="w-4 h-4" />
+            <span className="hidden sm:inline">Criar Novo</span>
+          </Link>
+          <Link
+            href="/admin/ai"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-purple-600 to-pink-600 text-white text-sm font-semibold shadow-lg shadow-purple-600/20 hover:from-purple-500 hover:to-pink-500 active:scale-[0.97] transition-all"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span className="hidden sm:inline">Gerar com IA</span>
+          </Link>
+        </div>
       </div>
 
       {/* Goal filter chips */}

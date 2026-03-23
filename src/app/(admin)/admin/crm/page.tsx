@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth"
+import { BackButton } from "@/components/ui/back-button"
 import { CrmClient } from "./crm-client"
 
 export const metadata: Metadata = {
@@ -11,5 +12,10 @@ export const metadata: Metadata = {
 export default async function CrmPage() {
   const session = await getSession()
   if (!session || session.role !== "ADMIN") redirect("/login")
-  return <CrmClient />
+  return (
+    <div>
+      <BackButton />
+      <CrmClient />
+    </div>
+  )
 }

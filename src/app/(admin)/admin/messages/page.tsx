@@ -205,6 +205,10 @@ export default function AdminMessagesPage() {
   // Conversations list
   return (
     <div className="space-y-6">
+      <button onClick={() => window.history.back()} className="inline-flex items-center gap-1.5 text-sm text-neutral-500 hover:text-white transition-colors group">
+        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-0.5 transition-transform" />
+        Voltar
+      </button>
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-bold text-white tracking-tight">Mensagens</h1>

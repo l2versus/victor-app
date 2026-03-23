@@ -4,6 +4,7 @@ import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { Crown, Plus, Users, Sparkles, Camera, MessageCircle, Salad } from "lucide-react"
 import { PlansClient } from "./plans-client"
+import { BackButton } from "@/components/ui/back-button"
 
 export const metadata: Metadata = {
   title: "Planos",
@@ -36,6 +37,7 @@ export default async function PlansPage() {
 
   return (
     <div className="space-y-6 sm:space-y-8">
+      <BackButton />
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-3">

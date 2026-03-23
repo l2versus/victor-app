@@ -4,6 +4,8 @@ import { prisma } from "@/lib/prisma"
 import { StudentNav } from "@/components/student/nav"
 import { HomeHeader } from "@/components/student/home-header"
 import { getStudentFeatures } from "@/lib/subscription"
+import { ImpersonateHandler } from "@/components/admin/impersonate-handler"
+import { ImpersonateBanner } from "@/components/admin/impersonate-banner"
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -61,6 +63,10 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
   return (
     <div className="min-h-screen bg-[#030303] relative overflow-x-hidden">
+      {/* Impersonation support */}
+      <ImpersonateHandler />
+      <ImpersonateBanner studentName={userName} />
+
       {/* ═══ Premium Background — Ironberg hero + cinematic overlay ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
         {/* Ironberg gym photo — fixed, covers viewport */}

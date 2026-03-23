@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { redirect } from "next/navigation"
 import { getSession } from "@/lib/auth"
+import { BackButton } from "@/components/ui/back-button"
 import { BiTreinoClient } from "./bi-treino-client"
 
 export const metadata: Metadata = {
@@ -14,6 +15,7 @@ export default async function BiTreinoPage() {
 
   return (
     <div className="space-y-6">
+      <BackButton />
       <BiTreinoClient />
     </div>
   )

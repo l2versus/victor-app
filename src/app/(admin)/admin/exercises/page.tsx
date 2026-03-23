@@ -2,6 +2,7 @@ import { requireAdmin } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { Dumbbell } from "lucide-react"
 import { ExerciseList } from "@/components/admin/exercises/exercise-list"
+import { BackButton } from "@/components/ui/back-button"
 
 export default async function ExercisesPage() {
   await requireAdmin()
@@ -22,6 +23,7 @@ export default async function ExercisesPage() {
 
   return (
     <div>
+      <BackButton />
       {/* Page Header */}
       <div className="flex items-center justify-between mb-8">
         <div className="flex items-center gap-3">
