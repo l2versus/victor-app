@@ -101,8 +101,30 @@ interface ExerciseDetailModalProps {
     loadKg: number | null
     technique: string
     suggestedMachine: string | null
+    machineBrand?: string | null
+    machine3dModel?: string | null
   }
   onClose: () => void
+}
+
+// Machine brand origins
+const BRAND_ORIGINS: Record<string, { origin: string; flag: string; desc: string }> = {
+  "Hammer Strength": { origin: "EUA", flag: "🇺🇸", desc: "Referência mundial em placas — design biomecânico convergente" },
+  "Hammer Strength MTS": { origin: "EUA", flag: "🇺🇸", desc: "Linha selectorizada premium — Multi-Adjustable" },
+  "Hoist": { origin: "EUA", flag: "🇺🇸", desc: "Engenharia de precisão — ROC-IT cam system" },
+  "Hoist ROC-IT": { origin: "EUA", flag: "🇺🇸", desc: "Range of Control — curva de resistência natural" },
+  "Nautilus": { origin: "EUA", flag: "🇺🇸", desc: "Inventora da resistência variável — cam espiral" },
+  "Nautilus Impact": { origin: "EUA", flag: "🇺🇸", desc: "Linha comercial de alto tráfego" },
+  "Nautilus Inspiration": { origin: "EUA", flag: "🇺🇸", desc: "Linha premium selectorizada" },
+  "Life Fitness": { origin: "EUA", flag: "🇺🇸", desc: "Maior fabricante mundial — presente em 100+ países" },
+  "Life Fitness Insignia": { origin: "EUA", flag: "🇺🇸", desc: "Linha top de linha — biomecânica avançada" },
+  "Cybex Prestige": { origin: "EUA", flag: "🇺🇸", desc: "Engenharia ortopédica — foco em segurança articular" },
+  "Matrix": { origin: "Taiwan", flag: "🇹🇼", desc: "Design inovador — Johnson Health Tech" },
+  "Panatta": { origin: "Itália", flag: "🇮🇹", desc: "Design italiano — Free Weight & Plate Loaded premium" },
+  "Panatta Monolith": { origin: "Itália", flag: "🇮🇹", desc: "Linha profissional bodybuilding — estrutura monolítica" },
+  "Panatta Inspiration": { origin: "Itália", flag: "🇮🇹", desc: "Selectorizada premium italiana" },
+  "Stark Strong": { origin: "Brasil", flag: "🇧🇷", desc: "Fabricação nacional — custo-benefício profissional" },
+  "ICG": { origin: "Alemanha", flag: "🇩🇪", desc: "Indoor Cycling Group — bikes premium" },
 }
 
 export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalProps) {
@@ -110,6 +132,7 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
   const muscleInfo = getMuscleInfo(exercise.muscle)
   const model3D = find3DModel(exercise.name)
   const heroImage = exercise.gifUrl || exercise.imageUrl
+  const brandInfo = exercise.machineBrand ? BRAND_ORIGINS[exercise.machineBrand] : null
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
@@ -202,6 +225,34 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
                   <p className="text-[9px] text-neutral-500 uppercase tracking-wider">Equipamento</p>
                 </div>
               </div>
+
+              {/* Machine Brand & Origin */}
+              {exercise.machineBrand && (
+                <div className="rounded-xl bg-gradient-to-r from-white/[0.03] to-transparent border border-white/[0.06] p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-red-600/10 border border-red-500/10 flex items-center justify-center shrink-0">
+                      <span className="text-lg">{brandInfo?.flag || "🏭"}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-white">{exercise.machineBrand}</p>
+                        {brandInfo && (
+                          <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-[9px] text-neutral-400 font-medium uppercase tracking-wider">{brandInfo.origin}</span>
+                        )}
+                      </div>
+                      {brandInfo && (
+                        <p className="text-[11px] text-neutral-500 mt-0.5 leading-relaxed">{brandInfo.desc}</p>
+                      )}
+                    </div>
+                  </div>
+                  {exercise.suggestedMachine && (
+                    <div className="mt-2.5 pt-2.5 border-t border-white/[0.04] flex items-center gap-2">
+                      <span className="text-amber-400 text-xs">📍</span>
+                      <p className="text-xs text-amber-300/70">Localização: <span className="text-amber-300 font-medium">{exercise.suggestedMachine}</span></p>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Instructions */}
               {exercise.instructions && (

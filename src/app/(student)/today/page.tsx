@@ -51,7 +51,7 @@ export default async function TodayPage({
             exercises: {
               include: {
                 exercise: {
-                  select: { id: true, name: true, muscle: true, equipment: true, instructions: true, imageUrl: true, gifUrl: true, videoUrl: true },
+                  select: { id: true, name: true, muscle: true, equipment: true, instructions: true, imageUrl: true, gifUrl: true, videoUrl: true, machineBrand: true, machine3dModel: true },
                 },
               },
               orderBy: { order: "asc" },
@@ -146,6 +146,8 @@ export default async function TodayPage({
     imageUrl: we.exercise.imageUrl,
     gifUrl: we.exercise.gifUrl,
     videoUrl: we.exercise.videoUrl,
+    machineBrand: we.exercise.machineBrand,
+    machine3dModel: we.exercise.machine3dModel,
     sets: we.sets,
     reps: we.reps,
     restSeconds: we.restSeconds,

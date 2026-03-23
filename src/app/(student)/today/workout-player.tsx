@@ -27,6 +27,8 @@ interface ExerciseData {
   imageUrl: string | null
   gifUrl: string | null
   videoUrl: string | null
+  machineBrand: string | null
+  machine3dModel: string | null
   sets: number
   reps: string
   restSeconds: number
