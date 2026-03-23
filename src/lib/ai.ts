@@ -15,6 +15,12 @@ export const premiumModel = getGroqModel()
 /** Modelo gratuito — mesmo Groq/Llama */
 export const freeModel = getGroqModel()
 
+/** Modelo com visão — Groq/Llama 3.2 Vision (OCR de imagens) */
+export const visionModel = (() => {
+  const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
+  return groq("llama-3.2-11b-vision-preview")
+})()
+
 /** @deprecated Use premiumModel ou freeModel diretamente */
 export const aiModel = premiumModel
 

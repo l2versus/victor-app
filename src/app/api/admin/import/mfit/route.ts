@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin, hashPassword } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
-import { freeModel } from "@/lib/ai"
+import { freeModel, visionModel } from "@/lib/ai"
 import { generateText } from "ai"
 import { z } from "zod"
 import crypto from "crypto"
@@ -95,16 +95,21 @@ export async function POST(req: NextRequest) {
     let rawText: string
 
     if (isImage) {
-      // Image OCR — extract text from screenshot using vision model
+      // Image OCR — extract text from screenshot using Groq Vision (Llama 3.2 11B)
       const base64Data = content.slice(7, -1) // Remove "[IMAGE:" and "]"
+      // base64Data is like "data:image/png;base64,iVBOR..." — need to extract just the base64 part
+      const base64Only = base64Data.includes(",") ? base64Data.split(",")[1] : base64Data
+      const mimeMatch = base64Data.match(/data:([^;]+);/)
+      const mimeType = mimeMatch ? mimeMatch[1] : "image/png"
+
       const { text } = await generateText({
-        model: freeModel,
+        model: visionModel,
         messages: [
           {
             role: "user",
             content: [
-              { type: "text", text: `${MFIT_PARSE_PROMPT}\n\nA imagem abaixo é um screenshot/foto do app MFIT. Extraia TODOS os dados visíveis (alunos, treinos, exercícios, séries, cargas, etc.) e converta para o JSON solicitado.` },
-              { type: "image", image: base64Data },
+              { type: "text", text: `${MFIT_PARSE_PROMPT}\n\nA imagem abaixo é um screenshot/foto do app MFIT. Extraia TODOS os dados visíveis (alunos, treinos, exercícios, séries, cargas, etc.) e converta para o JSON solicitado. Responda APENAS com JSON válido.` },
+              { type: "image", image: base64Only },
             ],
           },
         ],
