@@ -1,25 +1,19 @@
-import { createAnthropic } from "@ai-sdk/anthropic"
 import { createGroq } from "@ai-sdk/groq"
 
-// ─── Dual AI System ──────────────────────────────────────────────────────────
-// Premium model (Claude) → Pro/Elite features: chat aluno, treino, anamnese, nutrição, body scan
-// Free model (Groq/Llama) → Landing page chat, engagement messages, broadcasts
+// ─── AI System (Groq — Llama 3.3 70B, free tier) ────────────────────────────
+// Todas as features usam Groq/Llama (14.400 req/dia grátis)
+// Quando houver crédito Claude/Gemini, trocar premiumModel de volta
 
-function getPremiumModel() {
-  const anthropic = createAnthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-  return anthropic(process.env.ANTHROPIC_MODEL || "claude-sonnet-4-5-20250514")
-}
-
-function getFreeModel() {
+function getGroqModel() {
   const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
   return groq(process.env.GROQ_MODEL || "llama-3.3-70b-versatile")
 }
 
-/** Claude — para features premium (Pro/Elite) */
-export const premiumModel = getPremiumModel()
+/** Modelo principal — Groq/Llama 3.3 70B (todas as features) */
+export const premiumModel = getGroqModel()
 
-/** Groq/Llama 3.3 70B — para features gratuitas (landing, engagement, broadcasts) */
-export const freeModel = getFreeModel()
+/** Modelo gratuito — mesmo Groq/Llama */
+export const freeModel = getGroqModel()
 
 /** @deprecated Use premiumModel ou freeModel diretamente */
 export const aiModel = premiumModel
