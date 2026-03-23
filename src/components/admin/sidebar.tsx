@@ -39,6 +39,7 @@ const navItems = [
   { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
   { href: "/admin/template-library", label: "Templates", icon: BookOpen },
   { href: "/admin/exercises", label: "Exercícios", icon: Library },
+  { href: "/admin/machines", label: "Equipamentos 3D", icon: Dumbbell },
   { href: "/admin/plans", label: "Planos", icon: Crown },
   { href: "/admin/messages", label: "Mensagens", icon: MessageCircle },
   { href: "/admin/broadcasts", label: "Broadcast", icon: Send },

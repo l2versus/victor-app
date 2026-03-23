@@ -54,6 +54,7 @@ const moreItems = [
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },
   { href: "/admin/finance", label: "Financeiro", icon: DollarSign },
   { href: "/admin/exercises", label: "Exercícios", icon: Dumbbell },
+  { href: "/admin/machines", label: "Equip. 3D", icon: Dumbbell },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ]
 

@@ -117,6 +117,9 @@ export async function PATCH(req: NextRequest) {
     const exercise = await prisma.exercise.update({
       where: { id },
       data: {
+        name: body.name ?? undefined,
+        instructions: body.instructions ?? undefined,
+        machine3dModel: body.machine3dModel ?? undefined,
         gifUrl: body.gifUrl ?? undefined,
         videoUrl: body.videoUrl ?? undefined,
         imageUrl: body.imageUrl ?? undefined,

@@ -50,7 +50,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
   const [showForm, setShowForm] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
-  const [editMedia, setEditMedia] = useState({ gifUrl: "", videoUrl: "", imageUrl: "", machineBrand: "" })
+  const [editMedia, setEditMedia] = useState({ name: "", instructions: "", machine3dModel: "", gifUrl: "", videoUrl: "", imageUrl: "", machineBrand: "" })
   const [savingMedia, setSavingMedia] = useState(false)
 
   const fetchExercises = useCallback(async (s: string, m: string, p: number) => {
@@ -256,7 +256,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                           {exs.map((ex) => (
                             <button
                               key={ex.id}
-                              onClick={() => { setSelectedExercise(ex); setEditMedia({ gifUrl: ex.gifUrl || "", videoUrl: ex.videoUrl || "", imageUrl: ex.imageUrl || "", machineBrand: ex.machineBrand || "" }) }}
+                              onClick={() => { setSelectedExercise(ex); setEditMedia({ name: ex.name, instructions: ex.instructions || "", machine3dModel: (ex as Record<string, unknown>).machine3dModel as string || "", gifUrl: ex.gifUrl || "", videoUrl: ex.videoUrl || "", imageUrl: ex.imageUrl || "", machineBrand: ex.machineBrand || "" }) }}
                               className="group/item flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors w-full text-left cursor-pointer"
                             >
                               {/* Thumbnail */}
@@ -371,6 +371,40 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                   <Pencil className="w-3 h-3" /> Editar Exercício
                 </p>
 
+                {/* Nome do exercício */}
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Nome do exercício</label>
+                  <input
+                    value={editMedia.name}
+                    onChange={e => setEditMedia({ ...editMedia, name: e.target.value })}
+                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none focus:border-red-500/30"
+                  />
+                </div>
+
+                {/* Instruções */}
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Instruções de execução</label>
+                  <textarea
+                    value={editMedia.instructions}
+                    onChange={e => setEditMedia({ ...editMedia, instructions: e.target.value })}
+                    placeholder="Descreva a execução correta..."
+                    rows={3}
+                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30 resize-none"
+                  />
+                </div>
+
+                {/* Modelo 3D */}
+                <div>
+                  <label className="text-xs text-neutral-500 mb-1 block">Modelo 3D (slug do arquivo .glb)</label>
+                  <input
+                    value={editMedia.machine3dModel}
+                    onChange={e => setEditMedia({ ...editMedia, machine3dModel: e.target.value })}
+                    placeholder="ex: flexora, leg-press-45"
+                    className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
+                  />
+                  <p className="text-[9px] text-neutral-600 mt-1">Nome do arquivo em /models/machines/ (sem .glb)</p>
+                </div>
+
                 {/* Marca da máquina — dropdown com marcas da Ironberg */}
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Marca da máquina</label>
@@ -470,6 +504,9 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
+                          name: editMedia.name || undefined,
+                          instructions: editMedia.instructions || null,
+                          machine3dModel: editMedia.machine3dModel || null,
                           gifUrl: editMedia.gifUrl || null,
                           videoUrl: editMedia.videoUrl || null,
                           imageUrl: editMedia.imageUrl || null,
@@ -480,6 +517,8 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                         setExercises(prev => prev.map(ex =>
                           ex.id === selectedExercise.id ? {
                             ...ex,
+                            name: editMedia.name || ex.name,
+                            instructions: editMedia.instructions || null,
                             gifUrl: editMedia.gifUrl || null,
                             videoUrl: editMedia.videoUrl || null,
                             imageUrl: editMedia.imageUrl || null,
