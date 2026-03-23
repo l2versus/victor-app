@@ -3,7 +3,7 @@ import { requireAdmin, hashPassword } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
 import { freeModel } from "@/lib/ai"
-import { generateText, Output } from "ai"
+import { generateText } from "ai"
 import { z } from "zod"
 import crypto from "crypto"
 
@@ -81,7 +81,10 @@ export async function POST(req: NextRequest) {
       )
     }
 
-    if (content.length > 500_000) {
+    // Check if content is an image (base64)
+    const isImage = content.startsWith("[IMAGE:")
+
+    if (!isImage && content.length > 500_000) {
       return NextResponse.json(
         { error: "Arquivo muito grande. Máximo 500KB de texto." },
         { status: 400 }
@@ -89,13 +92,40 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 1: Use AI to parse the MFIT data
-    const { output: parsedData } = await generateText({
-      model: freeModel,
-      output: Output.object({ schema: MfitDataSchema }),
-      prompt: `${MFIT_PARSE_PROMPT}\n\nNome do arquivo: ${fileName || "desconhecido"}\n\nCONTEÚDO:\n${content}`,
-    })
+    let rawText: string
 
-    if (!parsedData) {
+    if (isImage) {
+      // Image OCR — extract text from screenshot using vision model
+      const base64Data = content.slice(7, -1) // Remove "[IMAGE:" and "]"
+      const { text } = await generateText({
+        model: freeModel,
+        messages: [
+          {
+            role: "user",
+            content: [
+              { type: "text", text: `${MFIT_PARSE_PROMPT}\n\nA imagem abaixo é um screenshot/foto do app MFIT. Extraia TODOS os dados visíveis (alunos, treinos, exercícios, séries, cargas, etc.) e converta para o JSON solicitado.` },
+              { type: "image", image: base64Data },
+            ],
+          },
+        ],
+      })
+      rawText = text
+    } else {
+      // Text content — CSV, TXT, pasted text
+      const { text } = await generateText({
+        model: freeModel,
+        prompt: `${MFIT_PARSE_PROMPT}\n\nNome do arquivo: ${fileName || "desconhecido"}\n\nCONTEÚDO:\n${content}`,
+      })
+      rawText = text
+    }
+
+    // Extract JSON from response (handles markdown code blocks)
+    let parsedData: z.infer<typeof MfitDataSchema>
+    try {
+      const jsonStr = rawText.replace(/```json?\n?/g, "").replace(/```\n?/g, "").trim()
+      const raw = JSON.parse(jsonStr)
+      parsedData = MfitDataSchema.parse(raw)
+    } catch {
       return NextResponse.json(
         { error: "Não foi possível extrair dados do arquivo. Verifique se o formato está correto." },
         { status: 422 }

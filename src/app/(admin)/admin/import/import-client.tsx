@@ -88,33 +88,42 @@ export function ImportClient() {
       return
     }
 
-    const validTypes = [
-      "text/csv",
-      "text/plain",
-      "application/csv",
-      "text/tab-separated-values",
-    ]
-    const validExtensions = [".csv", ".txt", ".tsv"]
+    const textTypes = ["text/csv", "text/plain", "application/csv", "text/tab-separated-values"]
+    const textExts = [".csv", ".txt", ".tsv"]
+    const imageExts = [".png", ".jpg", ".jpeg", ".webp"]
     const ext = file.name.substring(file.name.lastIndexOf(".")).toLowerCase()
+    const isImage = file.type.startsWith("image/") || imageExts.includes(ext)
+    const isText = textTypes.includes(file.type) || textExts.includes(ext)
 
-    if (!validTypes.includes(file.type) && !validExtensions.includes(ext)) {
-      setError("Formato não suportado. Use CSV ou TXT.")
+    if (!isImage && !isText) {
+      setError("Use CSV, TXT, ou foto/screenshot (PNG, JPG).")
       return
     }
 
     setFileName(file.name)
 
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const text = e.target?.result as string
-      if (!text || text.trim().length < 10) {
-        setError("Arquivo parece estar vazio ou corrompido.")
-        return
+    if (isImage) {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const base64 = e.target?.result as string
+        if (!base64) { setError("Erro ao ler a imagem."); return }
+        setFileContent(`[IMAGE:${base64}]`)
       }
-      setFileContent(text)
+      reader.onerror = () => setError("Erro ao ler a imagem.")
+      reader.readAsDataURL(file)
+    } else {
+      const reader = new FileReader()
+      reader.onload = (e) => {
+        const text = e.target?.result as string
+        if (!text || text.trim().length < 10) {
+          setError("Arquivo parece estar vazio ou corrompido.")
+          return
+        }
+        setFileContent(text)
+      }
+      reader.onerror = () => setError("Erro ao ler o arquivo.")
+      reader.readAsText(file, "UTF-8")
     }
-    reader.onerror = () => setError("Erro ao ler o arquivo.")
-    reader.readAsText(file, "UTF-8")
   }, [])
 
   const handleDrop = useCallback(
@@ -293,7 +302,7 @@ export function ImportClient() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".csv,.txt,.tsv"
+              accept=".csv,.txt,.tsv,.png,.jpg,.jpeg,.webp,image/*"
               onChange={handleFileSelect}
               className="hidden"
             />
@@ -330,7 +339,7 @@ export function ImportClient() {
                     Arraste o arquivo aqui ou clique para selecionar
                   </p>
                   <p className="text-xs text-neutral-500 mt-1">
-                    CSV, TXT — Exportado do MFIT
+                    CSV, TXT, ou foto/screenshot do MFIT
                   </p>
                 </div>
               </div>
