@@ -13,30 +13,23 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
   return (
     <div className="flex h-[100dvh] bg-[#060606] relative overflow-hidden">
-      {/* ═══ PREMIUM BACKGROUND — Ironberg gym + subtle cinematic layers ═══ */}
+      {/* ═══ PREMIUM BACKGROUND — Ironberg gym photo, clearly visible ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Ironberg gym photo — visible enough to see the gym */}
+        {/* Ironberg gym photo — high visibility */}
         <img
           src="/img/ironberg.webp"
           alt=""
           className="absolute inset-0 w-full h-full object-cover"
-          style={{ filter: "brightness(0.22) saturate(0.4)" }}
+          style={{ filter: "brightness(0.35) saturate(0.5)" }}
         />
 
-        {/* Light overlay — just enough to keep text readable */}
-        <div className="absolute inset-0 bg-gradient-to-b from-[#060606]/20 via-[#060606]/50 to-[#060606]/75" />
-
-        {/* Subtle ember glow — one accent only */}
-        <div
-          className="absolute w-[500px] h-[500px] rounded-full blur-[200px]"
-          style={{
-            background: 'radial-gradient(circle, rgba(220,38,38,0.06) 0%, transparent 60%)',
-            top: '-10%', right: '-5%',
-          }}
-        />
+        {/* Minimal vignette — darken only edges for text readability */}
+        <div className="absolute inset-0" style={{
+          background: "radial-gradient(ellipse at center, transparent 30%, rgba(6,6,6,0.6) 100%)"
+        }} />
 
         {/* Top accent line */}
-        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/20 to-transparent" />
+        <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-red-600/30 to-transparent" />
       </div>
 
       {/* ═══ DESKTOP SIDEBAR ═══ */}
