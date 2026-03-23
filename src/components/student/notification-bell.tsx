@@ -128,7 +128,7 @@ export function NotificationBell() {
       {open && (
         <div
           style={panelStyle}
-          className="fixed w-[min(320px,calc(100vw-2rem))] max-h-96 flex flex-col z-200 rounded-2xl bg-[#0f0f0f] border border-white/[0.07] shadow-2xl shadow-black/60 overflow-hidden"
+          className="fixed w-[min(320px,calc(100vw-2rem))] max-h-96 flex flex-col z-200 rounded-2xl bg-[#0a0a0a]/98 backdrop-blur-xl border border-white/[0.08] shadow-2xl shadow-black/80 overflow-hidden"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
