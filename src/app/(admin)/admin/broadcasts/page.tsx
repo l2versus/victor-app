@@ -418,17 +418,24 @@ export default function BroadcastsPage() {
             </p>
           </div>
 
-          {/* Preview */}
-          {message && (
-            <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
-              <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-2">Preview</p>
-              <div className="rounded-xl bg-emerald-900/20 border border-emerald-500/10 p-3">
-                <p className="text-xs text-emerald-200 leading-relaxed whitespace-pre-wrap">
-                  {message.replace(/\{nome\}/g, "João")}
+          {/* Preview — uses real student name from selected audience */}
+          {message && (() => {
+            const previewName = allStudents.length > 0
+              ? allStudents[0].name.split(" ")[0]
+              : "Aluno"
+            return (
+              <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider font-medium mb-2">
+                  Preview <span className="text-neutral-600 normal-case">(cada aluno recebe com seu nome)</span>
                 </p>
+                <div className="rounded-xl bg-emerald-900/20 border border-emerald-500/10 p-3">
+                  <p className="text-xs text-emerald-200 leading-relaxed whitespace-pre-wrap">
+                    {message.replace(/\{nome\}/g, previewName)}
+                  </p>
+                </div>
               </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* Send button */}
           <button
