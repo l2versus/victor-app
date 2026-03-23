@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import { Input, Select, Textarea } from "@/components/ui/input"
 import { Modal } from "@/components/ui/modal"
 import Link from "next/link"
+import { MachinePicker } from "@/components/admin/machine-picker"
 
 type Exercise = {
   id: string
@@ -486,10 +487,10 @@ export default function EditWorkoutPage() {
                         </div>
                       )}
 
-                      {/* Notes + Machine */}
+                      {/* Notes + Machine 3D Picker */}
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 sm:gap-3">
                         <Input value={ex.notes} onChange={(e) => updateExercise(ex.tempId, "notes", e.target.value)} placeholder="Notas (ex: foco na excêntrica)" className="h-8 sm:h-9 text-xs sm:text-sm" />
-                        <Input value={ex.suggestedMachine} onChange={(e) => updateExercise(ex.tempId, "suggestedMachine", e.target.value)} placeholder="Máquina (ex: Hammer vermelho)" className="h-8 sm:h-9 text-xs sm:text-sm" />
+                        <MachinePicker value={ex.suggestedMachine} onChange={(v) => updateExercise(ex.tempId, "suggestedMachine", v)} />
                       </div>
                     </div>
                   )}
