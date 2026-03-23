@@ -81,6 +81,89 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
 
+    // Handle subscription (preapproval) notifications
+    if (body.type === "subscription_preapproval" || body.action?.startsWith("subscription_preapproval")) {
+      const preapprovalId = body.data?.id
+      if (!preapprovalId) return NextResponse.json({ received: true })
+
+      const accessToken = process.env.MERCADOPAGO_ACCESS_TOKEN
+      if (!accessToken) return NextResponse.json({ received: true })
+
+      // Fetch preapproval details
+      const preRes = await fetch(`https://api.mercadopago.com/preapproval/${preapprovalId}`, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      })
+
+      if (preRes.ok) {
+        const preapproval = await preRes.json()
+        const status = preapproval.status // "authorized", "paused", "cancelled"
+
+        let refData: { planId?: string; buyerEmail?: string; buyerName?: string; type?: string }
+        try {
+          refData = JSON.parse(preapproval.external_reference || "{}")
+        } catch {
+          refData = {}
+        }
+
+        if (refData.planId && refData.buyerEmail) {
+          // Find user by email
+          const user = await prisma.user.findUnique({ where: { email: refData.buyerEmail } })
+          if (user) {
+            const student = await prisma.student.findUnique({ where: { userId: user.id } })
+            if (student) {
+              if (status === "authorized") {
+                // Activate or renew subscription
+                const plan = await prisma.plan.findUnique({ where: { id: refData.planId } })
+                if (plan) {
+                  // Deactivate old subscriptions
+                  await prisma.subscription.updateMany({
+                    where: { studentId: student.id, status: "ACTIVE" },
+                    data: { status: "EXPIRED" },
+                  })
+                  // Create new subscription with auto-renew
+                  await prisma.subscription.create({
+                    data: {
+                      studentId: student.id,
+                      planId: plan.id,
+                      status: "ACTIVE",
+                      startDate: new Date(),
+                      endDate: calculateEndDate(new Date(), plan.interval),
+                      autoRenew: true,
+                    },
+                  })
+                  // Notify
+                  await prisma.notification.create({
+                    data: {
+                      userId: user.id,
+                      type: "subscription_renewed",
+                      title: "Assinatura ativada!",
+                      body: `Seu plano ${plan.name} foi ativado com renovação automática.`,
+                    },
+                  })
+                }
+              } else if (status === "cancelled" || status === "paused") {
+                // Cancel subscription
+                await prisma.subscription.updateMany({
+                  where: { studentId: student.id, status: "ACTIVE" },
+                  data: { status: "CANCELLED", autoRenew: false },
+                })
+                await prisma.notification.create({
+                  data: {
+                    userId: user.id,
+                    type: "subscription_cancelled",
+                    title: "Assinatura cancelada",
+                    body: "Sua assinatura foi cancelada. Você pode reativar a qualquer momento.",
+                  },
+                })
+              }
+            }
+          }
+        }
+      }
+
+      return NextResponse.json({ received: true, type: "subscription" })
+    }
+
     // Only process payment notifications
     if (body.type !== "payment" && body.action !== "payment.created" && body.action !== "payment.updated") {
       return NextResponse.json({ received: true })
