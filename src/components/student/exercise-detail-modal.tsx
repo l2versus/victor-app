@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { X, Play, AlertTriangle, Dumbbell, Target, ShieldAlert, ChevronDown, Box } from "lucide-react"
+import { useState, useEffect, Suspense } from "react"
+import { X, Play, AlertTriangle, Dumbbell, Target, ShieldAlert, ChevronDown, Box, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { find3DModel, getSketchfabEmbedUrl } from "@/lib/exercise-3d-models"
 import dynamic from "next/dynamic"
@@ -9,6 +9,11 @@ import dynamic from "next/dynamic"
 const Machine3DGuide = dynamic(
   () => import("@/components/student/machine-3d-guide").then(m => ({ default: m.Machine3DGuide })),
   { ssr: false }
+)
+
+const MachineViewer = dynamic(
+  () => import("./machine-3d-inline-viewer"),
+  { ssr: false, loading: () => <div className="w-full h-75 rounded-2xl bg-[#080808] flex items-center justify-center"><RotateCcw className="w-5 h-5 text-neutral-700 animate-spin" /></div> }
 )
 
 // ─── Muscle Data: Synergists & Antagonists ───────────────────────────────────
@@ -128,12 +133,12 @@ const BRAND_ORIGINS: Record<string, { origin: string; flag: string; desc: string
 }
 
 export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalProps) {
-  // Open on video tab by default if video exists (6-8s teaching clip)
-  const [tab, setTab] = useState<"info" | "video" | "3d">(exercise.videoUrl ? "video" : "info")
+  const [tab, setTab] = useState<"info" | "video" | "3d" | "machine">(exercise.videoUrl ? "video" : "info")
   const muscleInfo = getMuscleInfo(exercise.muscle)
   const model3D = find3DModel(exercise.name)
   const heroImage = exercise.gifUrl || exercise.imageUrl
   const brandInfo = exercise.machineBrand ? BRAND_ORIGINS[exercise.machineBrand] : null
+  const hasMachine3D = !!exercise.suggestedMachine
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
@@ -185,6 +190,7 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
           {[
             { key: "info" as const, label: "Detalhes", icon: Target },
             ...(exercise.videoUrl ? [{ key: "video" as const, label: "Vídeo", icon: Play }] : []),
+            ...(hasMachine3D ? [{ key: "machine" as const, label: "Máquina", icon: Dumbbell }] : []),
             ...(model3D ? [{ key: "3d" as const, label: "3D Músculos", icon: Box }] : []),
           ].map(t => {
             const Icon = t.icon
@@ -361,6 +367,33 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
                 )}
               </div>
               <p className="text-center text-[10px] text-neutral-600 mt-2">Vídeo demonstrativo — observe a técnica</p>
+            </div>
+          )}
+
+          {/* TAB: Machine 3D */}
+          {tab === "machine" && hasMachine3D && (
+            <div className="p-4 space-y-4">
+              <MachineViewer slug={exercise.suggestedMachine!} machineName={exercise.suggestedMachine!} />
+
+              {/* Brand info card below 3D */}
+              {exercise.machineBrand && brandInfo && (
+                <div className="rounded-xl bg-gradient-to-r from-white/[0.03] to-transparent border border-white/[0.06] p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-11 h-11 rounded-xl bg-red-600/10 border border-red-500/10 flex items-center justify-center shrink-0">
+                      <span className="text-lg">{brandInfo.flag}</span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-bold text-white">{exercise.machineBrand}</p>
+                        <span className="px-1.5 py-0.5 rounded bg-neutral-800 text-[9px] text-neutral-400 font-medium uppercase tracking-wider">{brandInfo.origin}</span>
+                      </div>
+                      <p className="text-[11px] text-neutral-500 mt-0.5 leading-relaxed">{brandInfo.desc}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-center text-[10px] text-neutral-600">Toque na tela para girar • Pinça para zoom • Fullscreen no canto superior</p>
             </div>
           )}
 
