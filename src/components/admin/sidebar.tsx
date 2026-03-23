@@ -76,8 +76,8 @@ export function AdminSidebar({ userName }: { userName: string }) {
         </div>
       </Link>
 
-      {/* Nav — surgical spacing */}
-      <nav className="flex-1 px-4 py-6 space-y-0.5">
+      {/* Nav — scrollable so footer is always visible */}
+      <nav className="flex-1 overflow-y-auto px-4 py-6 space-y-0.5">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href)
           return (
