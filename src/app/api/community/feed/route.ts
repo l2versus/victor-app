@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       orderBy: { createdAt: "desc" },
-      ...(trainerId ? { where: { student: { trainerId } } } : {}),
+      ...(trainerId ? { where: { OR: [{ student: { trainerId } }, { studentId: null }] } } : {}),
       include: {
         student: {
           include: {
@@ -120,9 +120,6 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAuth()
-    if (session.role !== "STUDENT") {
-      return NextResponse.json({ error: "Apenas alunos podem reagir" }, { status: 403 })
-    }
 
     const body = await req.json()
     const { postId, type } = body
@@ -131,12 +128,24 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "postId e type (CLAP|FIRE|MUSCLE) obrigatórios" }, { status: 400 })
     }
 
-    const student = await prisma.student.findUnique({
+    // Resolve student (admin gets community proxy)
+    let student = await prisma.student.findUnique({
       where: { userId: session.userId },
       select: { id: true },
     })
+    if (!student && session.role === "ADMIN") {
+      const trainer = await prisma.trainerProfile.findUnique({ where: { userId: session.userId }, select: { id: true } })
+      if (trainer) {
+        student = await prisma.student.upsert({
+          where: { userId: session.userId },
+          create: { userId: session.userId, trainerId: trainer.id, goals: "Personal Trainer", status: "ACTIVE" },
+          update: {},
+          select: { id: true },
+        })
+      }
+    }
     if (!student) {
-      return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 })
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
     // Toggle reaction (upsert/delete)

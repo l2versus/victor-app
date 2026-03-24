@@ -9,18 +9,37 @@ export async function POST(
 ) {
   try {
     const session = await requireAuth()
-    if (session.role !== "STUDENT") {
-      return NextResponse.json({ error: "Apenas alunos" }, { status: 403 })
-    }
-
     const { id: postId } = await params
 
-    const student = await prisma.student.findUnique({
+    // Resolve student (or create proxy for admin to participate in community)
+    let student = await prisma.student.findUnique({
       where: { userId: session.userId },
       select: { id: true },
     })
+
+    // Admin gets a "community proxy" student record to interact
+    if (!student && session.role === "ADMIN") {
+      const trainer = await prisma.trainerProfile.findUnique({
+        where: { userId: session.userId },
+        select: { id: true },
+      })
+      if (trainer) {
+        student = await prisma.student.upsert({
+          where: { userId: session.userId },
+          create: {
+            userId: session.userId,
+            trainerId: trainer.id,
+            goals: "Personal Trainer",
+            status: "ACTIVE",
+          },
+          update: {},
+          select: { id: true },
+        })
+      }
+    }
+
     if (!student) {
-      return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 })
+      return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
     }
 
     const body = await req.json()

@@ -6,17 +6,18 @@ import { prisma } from "@/lib/prisma"
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAuth()
-    if (session.role !== "STUDENT") {
-      return NextResponse.json({ error: "Apenas alunos podem postar" }, { status: 403 })
-    }
 
-    const student = await prisma.student.findUnique({
-      where: { userId: session.userId },
-      select: { id: true },
-    })
-    if (!student) {
-      return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 })
+    // Resolve author: student or admin (trainer)
+    let studentId: string | null = null
+    if (session.role === "STUDENT") {
+      const student = await prisma.student.findUnique({
+        where: { userId: session.userId },
+        select: { id: true },
+      })
+      if (!student) return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 })
+      studentId = student.id
     }
+    // Admin posts with studentId: null → shows as trainer/system post
 
     const body = await req.json()
     const { content, imageUrl } = body
@@ -25,20 +26,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Post precisa de texto ou foto" }, { status: 400 })
     }
 
-    // Limit image size (base64 ~1.37x original, so 2MB image ≈ 2.7MB base64)
-    if (imageUrl && imageUrl.length > 3 * 1024 * 1024) {
-      return NextResponse.json({ error: "Imagem muito grande. Máximo 2MB." }, { status: 400 })
+    if (imageUrl && imageUrl.length > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "Arquivo muito grande. Máximo 5MB." }, { status: 400 })
     }
 
-    // Limit text length
     if (content && content.length > 2000) {
       return NextResponse.json({ error: "Texto muito longo. Máximo 2000 caracteres." }, { status: 400 })
     }
 
     const post = await prisma.communityPost.create({
       data: {
-        studentId: student.id,
-        type: "USER_POST",
+        studentId,
+        type: session.role === "ADMIN" ? "ANNOUNCEMENT" : "USER_POST",
         content: content?.trim() || "",
         imageUrl: imageUrl || null,
       },

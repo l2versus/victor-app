@@ -44,6 +44,7 @@ const navItems = [
   { href: "/admin/plans", label: "Planos", icon: Crown },
   { href: "/admin/messages", label: "Mensagens", icon: MessageCircle },
   { href: "/admin/broadcasts", label: "Broadcast", icon: Send },
+  { href: "/admin/community", label: "Comunidade", icon: Users },
   { href: "/admin/challenges", label: "Desafios", icon: Target },
   { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
