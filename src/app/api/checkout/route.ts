@@ -1,29 +1,50 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getPreferenceClient } from "@/lib/mercadopago"
+import { getSession } from "@/lib/auth"
 
 // POST /api/checkout — Create Mercado Pago checkout preference
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { planId, buyerName, buyerEmail, buyerPhone } = body
+    const { planId, planSlug, buyerName, buyerEmail, buyerPhone } = body
 
-    if (!planId || !buyerEmail || !buyerName) {
-      return NextResponse.json(
-        { error: "Plano, nome e email são obrigatórios" },
-        { status: 400 }
-      )
+    const planKey = planSlug || planId
+
+    // If logged in, use session data as fallback
+    const session = await getSession().catch(() => null)
+    let name = buyerName
+    let email = buyerEmail
+    let phone = buyerPhone
+
+    if (session && (!name || !email)) {
+      const user = await prisma.user.findUnique({
+        where: { id: session.userId },
+        select: { name: true, email: true, phone: true },
+      })
+      if (user) {
+        name = name || user.name
+        email = email || user.email
+        phone = phone || user.phone
+      }
+    }
+
+    if (!planKey) {
+      return NextResponse.json({ error: "Plano é obrigatório" }, { status: 400 })
+    }
+    if (!name || !email) {
+      return NextResponse.json({ error: "Nome e email são obrigatórios" }, { status: 400 })
     }
 
     // Find plan by: slug → id → name+interval fallback
-    // Landing page sends "pro_semiannual" = tier name + interval
-    let plan = await prisma.plan.findUnique({ where: { slug: planId } })
+    let plan = await prisma.plan.findUnique({ where: { slug: planKey } })
     if (!plan) {
-      plan = await prisma.plan.findUnique({ where: { id: planId } }).catch(() => null)
+      plan = await prisma.plan.findUnique({ where: { id: planKey } }).catch(() => null)
     }
     if (!plan) {
-      // Fallback: parse "pro_semiannual" → name="Pro", interval="SEMIANNUAL"
-      const parts = planId.split("_")
+      // Fallback: parse "elite-semiannual" or "pro_quarterly" → name + interval
+      const sep = planKey.includes("-") ? "-" : "_"
+      const parts = planKey.split(sep)
       if (parts.length >= 2) {
         const tierName = parts[0]
         const intervalKey = parts.slice(1).join("_").toUpperCase()
@@ -37,12 +58,11 @@ export async function POST(req: NextRequest) {
       }
     }
     if (!plan || !plan.active) {
-      return NextResponse.json({ error: `Plano não encontrado: ${planId}` }, { status: 404 })
+      return NextResponse.json({ error: `Plano não encontrado: ${planKey}` }, { status: 404 })
     }
 
-    const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"
+    const appUrl = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || "https://victor-app-seven.vercel.app"
 
-    // Create Mercado Pago preference
     const preference = await getPreferenceClient().create({
       body: {
         items: [
@@ -56,9 +76,9 @@ export async function POST(req: NextRequest) {
           },
         ],
         payer: {
-          name: buyerName,
-          email: buyerEmail,
-          phone: buyerPhone ? { number: buyerPhone } : undefined,
+          name,
+          email,
+          phone: phone ? { number: phone } : undefined,
         },
         back_urls: {
           success: `${appUrl}/checkout/success`,
@@ -69,9 +89,10 @@ export async function POST(req: NextRequest) {
         notification_url: `${appUrl}/api/webhooks/mercadopago`,
         external_reference: JSON.stringify({
           planId: plan.id,
-          buyerName,
-          buyerEmail,
-          buyerPhone: buyerPhone || null,
+          buyerName: name,
+          buyerEmail: email,
+          buyerPhone: phone || null,
+          userId: session?.userId || null,
         }),
         statement_descriptor: "VICTOR APP",
         payment_methods: {

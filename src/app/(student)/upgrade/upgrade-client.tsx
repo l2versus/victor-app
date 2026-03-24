@@ -93,9 +93,38 @@ interface UpgradeClientProps {
 export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientProps) {
   const [duration, setDuration] = useState<Duration>("SEMIANNUAL")
   const [showPostureDetail, setShowPostureDetail] = useState(false)
+  const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const currentTier = getTierIndex(currentPlan)
 
   const whatsappBase = "https://wa.me/5585996985823"
+
+  async function handleCheckout(tierName: string) {
+    setCheckoutLoading(tierName)
+    try {
+      const slug = `${tierName.toLowerCase()}-${duration.toLowerCase()}`
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ planSlug: slug }),
+      })
+      const data = await res.json()
+      if (data.checkoutUrl) {
+        window.location.href = data.checkoutUrl
+      } else if (data.sandboxUrl) {
+        window.location.href = data.sandboxUrl
+      } else {
+        // Fallback to WhatsApp if checkout fails
+        const price = getPrice(tiers.find(t => t.name === tierName)!.monthly, duration)
+        const msg = encodeURIComponent(`Ola Victor! Quero assinar o plano ${tierName} ${durations.find(d => d.key === duration)!.label} por R$ ${price.monthly.toFixed(2)}/mes`)
+        window.open(`${whatsappBase}?text=${msg}`, "_blank")
+      }
+    } catch {
+      // Fallback to WhatsApp on error
+      window.open(`${whatsappBase}?text=${encodeURIComponent(`Quero assinar o plano ${tierName}`)}`, "_blank")
+    } finally {
+      setCheckoutLoading(null)
+    }
+  }
 
   return (
     <div className="space-y-6 pb-4">
@@ -319,12 +348,11 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
                   Voce esta neste plano
                 </div>
               ) : isUpgrade ? (
-                <a
-                  href={`${whatsappBase}?text=${whatsappMsg}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  onClick={() => handleCheckout(tier.name)}
+                  disabled={checkoutLoading === tier.name}
                   className={cn(
-                    "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-[0.97]",
+                    "w-full flex items-center justify-center gap-2 py-3 rounded-xl text-xs font-bold transition-all active:scale-[0.97] disabled:opacity-60",
                     isElite
                       ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-600/20 hover:from-amber-500 hover:to-orange-500"
                       : isPro
@@ -332,22 +360,28 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
                       : "bg-white/[0.08] text-white hover:bg-white/[0.12]"
                   )}
                 >
-                  <ArrowRight className="w-3.5 h-3.5" />
-                  Fazer upgrade para {tier.name}
-                </a>
+                  {checkoutLoading === tier.name ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  )}
+                  {checkoutLoading === tier.name ? "Abrindo pagamento..." : `Fazer upgrade para ${tier.name}`}
+                </button>
               ) : isDowngrade ? (
                 <div className="text-center py-2 text-neutral-600 text-[10px]">
                   Plano abaixo do seu atual
                 </div>
               ) : (
-                <a
-                  href={`${whatsappBase}?text=${whatsappMsg}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white/[0.06] text-white text-xs font-bold hover:bg-white/[0.1] transition-all active:scale-[0.97]"
+                <button
+                  onClick={() => handleCheckout(tier.name)}
+                  disabled={checkoutLoading === tier.name}
+                  className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-white/[0.06] text-white text-xs font-bold hover:bg-white/[0.1] transition-all active:scale-[0.97] disabled:opacity-60"
                 >
-                  Assinar {tier.name}
-                </a>
+                  {checkoutLoading === tier.name ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : null}
+                  {checkoutLoading === tier.name ? "Abrindo pagamento..." : `Assinar ${tier.name}`}
+                </button>
               )}
             </div>
           )
