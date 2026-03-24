@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
-// GET /api/community/follow?type=following|followers — list who I follow / who follows me
+// GET /api/community/follow?type=following|followers&studentId=xxx
 export async function GET(req: NextRequest) {
   try {
     const session = await requireAuth()
@@ -76,10 +76,26 @@ export async function GET(req: NextRequest) {
     if (!me) return NextResponse.json({ users: [] })
 
     const type = req.nextUrl.searchParams.get("type") || "following"
+    // If studentId provided, show that user's followers/following instead of mine
+    const targetId = req.nextUrl.searchParams.get("studentId") || me.id
+
+    // Get my follows to check "following back" status
+    const myFollows = await prisma.follow.findMany({
+      where: { followerId: me.id },
+      select: { followingId: true },
+    })
+    const myFollowingSet = new Set(myFollows.map(f => f.followingId))
+
+    // Get who follows me to check "follows me" status
+    const myFollowers = await prisma.follow.findMany({
+      where: { followingId: me.id },
+      select: { followerId: true },
+    })
+    const myFollowerSet = new Set(myFollowers.map(f => f.followerId))
 
     if (type === "followers") {
       const followers = await prisma.follow.findMany({
-        where: { followingId: me.id },
+        where: { followingId: targetId },
         include: { follower: { include: { user: { select: { name: true, avatar: true } } } } },
         orderBy: { createdAt: "desc" },
       })
@@ -88,7 +104,9 @@ export async function GET(req: NextRequest) {
           studentId: f.follower.id,
           name: f.follower.user.name,
           avatar: f.follower.user.avatar,
-          since: f.createdAt,
+          isMe: f.follower.id === me.id,
+          iFollow: myFollowingSet.has(f.follower.id),
+          followsMe: myFollowerSet.has(f.follower.id),
         })),
         count: followers.length,
       })
@@ -96,7 +114,7 @@ export async function GET(req: NextRequest) {
 
     // following
     const following = await prisma.follow.findMany({
-      where: { followerId: me.id },
+      where: { followerId: targetId },
       include: { following: { include: { user: { select: { name: true, avatar: true } } } } },
       orderBy: { createdAt: "desc" },
     })
@@ -105,7 +123,9 @@ export async function GET(req: NextRequest) {
         studentId: f.following.id,
         name: f.following.user.name,
         avatar: f.following.user.avatar,
-        since: f.createdAt,
+        isMe: f.following.id === me.id,
+        iFollow: myFollowingSet.has(f.following.id),
+        followsMe: myFollowerSet.has(f.following.id),
       })),
       count: following.length,
     })

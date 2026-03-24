@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
-  ArrowLeft, UserPlus, UserCheck, Dumbbell, Flame,
+  ArrowLeft, UserPlus, UserCheck, Dumbbell, Flame, X,
   Heart, MessageCircle, Grid3X3, Trophy, Calendar,
   Loader2, Target, Briefcase, Link2, ExternalLink,
 } from "lucide-react"
@@ -55,6 +55,19 @@ export default function AdminCommunityProfilePage() {
   const [posts, setPosts] = useState<PostItem[]>([])
   const [loading, setLoading] = useState(true)
   const [followLoading, setFollowLoading] = useState(false)
+  const [showFollowList, setShowFollowList] = useState<"followers" | "following" | null>(null)
+  const [followList, setFollowList] = useState<Array<{ studentId: string; name: string; avatar: string | null; isMe: boolean; iFollow: boolean; followsMe: boolean }>>([])
+  const [loadingFollows, setLoadingFollows] = useState(false)
+
+  async function openFollowList(type: "followers" | "following") {
+    setShowFollowList(type)
+    setLoadingFollows(true)
+    try {
+      const res = await fetch(`/api/community/follow?type=${type}&studentId=${id}`)
+      if (res.ok) { const data = await res.json(); setFollowList(data.users || []) }
+    } catch { /* ignore */ }
+    setLoadingFollows(false)
+  }
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -121,8 +134,12 @@ export default function AdminCommunityProfilePage() {
           </div>
           <div className="flex-1 flex items-center justify-around">
             <div className="text-center"><p className="text-lg font-bold text-white">{profile.stats.posts}</p><p className="text-[10px] text-neutral-500">Posts</p></div>
-            <div className="text-center"><p className="text-lg font-bold text-white">{profile.stats.followers}</p><p className="text-[10px] text-neutral-500">Seguidores</p></div>
-            <div className="text-center"><p className="text-lg font-bold text-white">{profile.stats.following}</p><p className="text-[10px] text-neutral-500">Seguindo</p></div>
+            <button onClick={() => openFollowList("followers")} className="text-center cursor-pointer hover:opacity-70 transition-opacity">
+              <p className="text-lg font-bold text-white">{profile.stats.followers}</p><p className="text-[10px] text-neutral-500">Seguidores</p>
+            </button>
+            <button onClick={() => openFollowList("following")} className="text-center cursor-pointer hover:opacity-70 transition-opacity">
+              <p className="text-lg font-bold text-white">{profile.stats.following}</p><p className="text-[10px] text-neutral-500">Seguindo</p>
+            </button>
           </div>
         </div>
 
@@ -192,6 +209,56 @@ export default function AdminCommunityProfilePage() {
             </div>
           )}
         </>
+      )}
+      {/* Followers/Following Modal */}
+      {showFollowList && (
+        <div className="fixed inset-0 z-[100] bg-black/80" onClick={() => setShowFollowList(null)}>
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            className="absolute inset-x-0 bottom-0 max-w-lg mx-auto bg-[#111] rounded-t-2xl flex flex-col"
+            style={{ maxHeight: "80dvh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] shrink-0">
+              <div />
+              <h3 className="text-sm font-bold text-white">{showFollowList === "followers" ? "Seguidores" : "Seguindo"}</h3>
+              <button onClick={() => setShowFollowList(null)} className="text-neutral-400 p-1"><X className="w-5 h-5" /></button>
+            </div>
+            <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
+              {loadingFollows ? (
+                <div className="flex items-center justify-center py-10"><Loader2 className="w-5 h-5 text-red-500 animate-spin" /></div>
+              ) : followList.length === 0 ? (
+                <p className="text-center text-neutral-500 text-sm py-10">{showFollowList === "followers" ? "Nenhum seguidor" : "Não segue ninguém"}</p>
+              ) : (
+                followList.map((u) => (
+                  <div key={u.studentId} className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03]">
+                    <button onClick={() => { setShowFollowList(null); router.push(`/admin/community/profile/${u.studentId}`) }} className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer">
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold shrink-0 overflow-hidden">
+                        {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white truncate">{u.name}</p>
+                        {u.followsMe && !u.iFollow && <p className="text-[10px] text-neutral-500">Segue você</p>}
+                      </div>
+                    </button>
+                    {!u.isMe && (
+                      <button
+                        onClick={async () => {
+                          await fetch("/api/community/follow", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ studentId: u.studentId }) })
+                          openFollowList(showFollowList)
+                        }}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold min-h-9 ${u.iFollow ? "bg-white/[0.06] border border-white/[0.1] text-neutral-300" : "bg-red-600 text-white"}`}
+                      >
+                        {u.iFollow ? "Seguindo" : u.followsMe ? "Seguir de volta" : "Seguir"}
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </div>
       )}
     </div>
   )

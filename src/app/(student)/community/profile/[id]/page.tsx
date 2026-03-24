@@ -69,7 +69,7 @@ export default function SocialProfilePage() {
   const [editLink, setEditLink] = useState("")
   const [saving, setSaving] = useState(false)
   const [showFollowList, setShowFollowList] = useState<"followers" | "following" | null>(null)
-  const [followList, setFollowList] = useState<Array<{ studentId: string; name: string; avatar: string | null }>>([])
+  const [followList, setFollowList] = useState<Array<{ studentId: string; name: string; avatar: string | null; isMe: boolean; iFollow: boolean; followsMe: boolean }>>([])
   const [loadingFollows, setLoadingFollows] = useState(false)
 
   async function openFollowList(type: "followers" | "following") {
@@ -198,10 +198,10 @@ export default function SocialProfilePage() {
           {/* Stats row — tappable like Instagram */}
           <div className="flex-1 flex items-center justify-around">
             <StatColumn value={profile.stats.posts} label="Posts" />
-            <button onClick={() => openFollowList("followers")}>
+            <button onClick={() => openFollowList("followers")} className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95">
               <StatColumn value={profile.stats.followers} label="Seguidores" />
             </button>
-            <button onClick={() => openFollowList("following")}>
+            <button onClick={() => openFollowList("following")} className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95">
               <StatColumn value={profile.stats.following} label="Seguindo" />
             </button>
           </div>
@@ -412,6 +412,87 @@ export default function SocialProfilePage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Followers/Following Modal — Instagram style */}
+      {showFollowList && (
+        <div className="fixed inset-0 z-[100] bg-black/80" onClick={() => setShowFollowList(null)}>
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            className="absolute inset-x-0 bottom-0 max-w-lg mx-auto bg-[#111] rounded-t-2xl flex flex-col"
+            style={{ maxHeight: "80dvh" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06] shrink-0">
+              <div />
+              <h3 className="text-sm font-bold text-white">
+                {showFollowList === "followers" ? "Seguidores" : "Seguindo"}
+              </h3>
+              <button onClick={() => setShowFollowList(null)} className="text-neutral-400 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* List */}
+            <div className="flex-1 overflow-y-auto overscroll-contain pb-8">
+              {loadingFollows ? (
+                <div className="flex items-center justify-center py-10">
+                  <Loader2 className="w-5 h-5 text-red-500 animate-spin" />
+                </div>
+              ) : followList.length === 0 ? (
+                <p className="text-center text-neutral-500 text-sm py-10">
+                  {showFollowList === "followers" ? "Nenhum seguidor ainda" : "Não segue ninguém ainda"}
+                </p>
+              ) : (
+                followList.map((u) => (
+                  <div key={u.studentId} className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.03]">
+                    <button
+                      onClick={() => { setShowFollowList(null); router.push(`/community/profile/${u.studentId}`) }}
+                      className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
+                    >
+                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold shrink-0 overflow-hidden">
+                        {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-white truncate">{u.name}</p>
+                        {u.followsMe && !u.iFollow && (
+                          <p className="text-[10px] text-neutral-500">Segue você</p>
+                        )}
+                      </div>
+                    </button>
+                    {!u.isMe && (
+                      <button
+                        onClick={async () => {
+                          await fetch("/api/community/follow", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ studentId: u.studentId }),
+                          })
+                          openFollowList(showFollowList)
+                        }}
+                        className={`px-4 py-1.5 rounded-lg text-xs font-semibold min-h-9 transition-all ${
+                          u.iFollow
+                            ? "bg-white/[0.06] border border-white/[0.1] text-neutral-300"
+                            : u.followsMe
+                              ? "bg-red-600 text-white"
+                              : "bg-red-600 text-white"
+                        }`}
+                      >
+                        {u.iFollow
+                          ? "Seguindo"
+                          : u.followsMe
+                            ? "Seguir de volta"
+                            : "Seguir"}
+                      </button>
+                    )}
+                  </div>
+                ))
+              )}
+            </div>
+          </motion.div>
+        </div>
       )}
 
       {/* Post detail modal */}
