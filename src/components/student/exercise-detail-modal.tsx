@@ -146,7 +146,7 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
   // Try to auto-match exercise name to a machine in index.json
   useEffect(() => {
     if (machine3DSlug) return // already have a match
-    fetch("/models/machines/index.json")
+    fetch("/api/machines")
       .then(r => r.json())
       .then((index: Record<string, { name: string; brand?: string | null }>) => {
         const exName = exercise.name.toLowerCase()

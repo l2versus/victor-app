@@ -95,7 +95,7 @@ export default function MachinesGallery() {
   const [selected, setSelected] = useState<ModelEntry | null>(null)
 
   useEffect(() => {
-    fetch("/models/machines/index.json")
+    fetch("/api/machines")
       .then(r => r.json())
       .then((data: Record<string, { file: string; name: string; addedAt: string }>) => {
         const entries = Object.entries(data)

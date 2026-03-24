@@ -116,7 +116,7 @@ export default function MachinesPreview() {
 
   // Load models + saved mappings
   useEffect(() => {
-    fetch("/models/machines/index.json")
+    fetch("/api/machines")
       .then(r => r.json())
       .then((data: Record<string, { file: string; name: string; addedAt: string }>) => {
         const entries = Object.entries(data).map(([slug, info]) => ({ slug, ...info }))

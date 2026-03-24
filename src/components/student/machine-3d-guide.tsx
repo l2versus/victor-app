@@ -103,7 +103,7 @@ export function useMachine3DModel(exerciseId: string): string | null {
   const [modelSlug, setModelSlug] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch("/models/machines/index.json")
+    fetch("/api/machines")
       .then(r => r.json())
       .then((index: Record<string, { file: string; name: string }>) => {
         // Check if any model matches this exercise ID

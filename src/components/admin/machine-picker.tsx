@@ -55,7 +55,7 @@ export function MachinePicker({ value, onChange, className }: MachinePickerProps
   const [preview, setPreview] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch("/models/machines/index.json")
+    fetch("/api/machines")
       .then(r => r.json())
       .then((data: Record<string, { file: string; name: string; brand?: string | null; addedAt: string }>) => {
         setMachines(Object.entries(data).map(([slug, info]) => ({

@@ -28,7 +28,7 @@ export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }
     // Load machine info from index.json
     Promise.all([
       fetch(modelUrl, { method: "HEAD" }).then(r => r.ok).catch(() => false),
-      fetch("/models/machines/index.json").then(r => r.json()).catch(() => ({})),
+      fetch("/api/machines").then(r => r.json()).catch(() => ({})),
     ]).then(([fileExists, index]) => {
       setExists(fileExists)
       const info = index[slug]

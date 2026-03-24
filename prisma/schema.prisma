@@ -1247,6 +1247,17 @@ enum KnowledgeCategory {
   GENERAL        // Geral — outros conhecimentos fitness
 }
 
+model Machine3D {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  file      String   // path relativo: /models/machines/xxx.glb
+  videoUrl  String?
+  addedAt   DateTime @default(now())
+
+  @@index([slug])
+}
+
 model KnowledgeDocument {
   id          String            @id @default(cuid())
   trainerId   String
