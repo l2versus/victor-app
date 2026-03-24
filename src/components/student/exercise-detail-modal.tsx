@@ -133,13 +133,16 @@ const BRAND_ORIGINS: Record<string, { origin: string; flag: string; desc: string
 }
 
 export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalProps) {
-  const [tab, setTab] = useState<"info" | "video" | "3d" | "machine">(exercise.videoUrl ? "video" : "info")
   const muscleInfo = getMuscleInfo(exercise.muscle)
   const model3D = find3DModel(exercise.name)
   const heroImage = exercise.gifUrl || exercise.imageUrl
   const [machineBrand, setMachineBrand] = useState<string | null>(exercise.machineBrand || null)
   const brandInfo = machineBrand ? BRAND_ORIGINS[machineBrand] : null
   const hasMachine3D = !!exercise.suggestedMachine
+
+  // Default tab: machine 3D > video > info
+  const defaultTab = hasMachine3D ? "machine" : exercise.videoUrl ? "video" : "info"
+  const [tab, setTab] = useState<"info" | "video" | "3d" | "machine">(defaultTab)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
@@ -148,12 +151,12 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
 
       {/* Modal — mobile bottom sheet style */}
       <div
-        className="relative w-full sm:max-w-lg max-h-[92vh] rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col animate-slide-up"
+        className="relative w-full sm:max-w-lg max-h-[85vh] rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col animate-slide-up"
         onClick={e => e.stopPropagation()}
       >
-        {/* Hero image */}
+        {/* Hero image — compact on mobile */}
         {heroImage ? (
-          <div className="relative w-full h-48 sm:h-56 shrink-0">
+          <div className="relative w-full h-32 sm:h-48 shrink-0">
             <img src={heroImage} alt={exercise.name} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-transparent" />
             <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white">
@@ -186,8 +189,8 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-1 px-4 py-2 shrink-0 border-b border-white/[0.04]">
+        {/* Tabs — sticky */}
+        <div className="flex gap-1 px-4 py-2 shrink-0 border-b border-white/[0.04] sticky top-0 bg-[#0a0a0a] z-10">
           {[
             { key: "info" as const, label: "Detalhes", icon: Target },
             ...(exercise.videoUrl ? [{ key: "video" as const, label: "Vídeo", icon: Play }] : []),
