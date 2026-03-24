@@ -755,15 +755,23 @@ function FeedCard({
   }
 
   const isUserPost = post.type === "USER_POST"
+  const [showMenu, setShowMenu] = useState(false)
+
+  async function deletePost() {
+    if (!confirm("Deletar este post?")) return
+    const res = await fetch(`/api/community/posts/${post.id}`, { method: "DELETE" })
+    if (res.ok) onCommentAdded() // refresh feed
+    setShowMenu(false)
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden"
+      className="border-b border-white/[0.06] pb-1"
     >
-      {/* Header — tappable to open profile */}
-      <div className="flex items-center gap-3 p-3.5">
+      {/* Header — Instagram style */}
+      <div className="flex items-center gap-3 px-1 py-2.5">
         <button
           onClick={() => post.studentId && router.push(`/community/profile/${post.studentId}`)}
           className="flex items-center gap-3 flex-1 min-w-0 text-left"
@@ -775,6 +783,28 @@ function FeedCard({
           </div>
         </button>
         {!isUserPost && <PostTypeBadge type={post.type} />}
+        {/* 3-dot menu */}
+        <div className="relative">
+          <button onClick={() => setShowMenu(!showMenu)} className="p-1.5 text-neutral-500 hover:text-white">
+            <span className="text-lg leading-none">···</span>
+          </button>
+          {showMenu && (
+            <div className="absolute right-0 top-8 w-40 bg-[#1a1a1a] border border-white/[0.1] rounded-xl shadow-2xl z-20 overflow-hidden">
+              <button
+                onClick={deletePost}
+                className="w-full px-4 py-3 text-left text-sm text-red-400 hover:bg-white/[0.05] transition-colors"
+              >
+                Deletar
+              </button>
+              <button
+                onClick={() => setShowMenu(false)}
+                className="w-full px-4 py-3 text-left text-sm text-neutral-400 hover:bg-white/[0.05] transition-colors border-t border-white/[0.06]"
+              >
+                Cancelar
+              </button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Image */}

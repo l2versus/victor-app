@@ -96,3 +96,41 @@ export async function GET(
     return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
+
+// DELETE /api/community/posts/[id] — delete own post
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await requireAuth()
+    const { id: postId } = await params
+
+    const me = await prisma.student.findUnique({
+      where: { userId: session.userId },
+      select: { id: true },
+    })
+
+    const post = await prisma.communityPost.findUnique({
+      where: { id: postId },
+      select: { studentId: true },
+    })
+
+    if (!post) return NextResponse.json({ error: "Post não encontrado" }, { status: 404 })
+
+    // Only own posts or admin can delete
+    if (post.studentId !== me?.id && session.role !== "ADMIN") {
+      return NextResponse.json({ error: "Sem permissão" }, { status: 403 })
+    }
+
+    await prisma.communityPost.delete({ where: { id: postId } })
+
+    return NextResponse.json({ success: true })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Erro interno"
+    if (msg === "Unauthorized" || msg === "SessionExpired") {
+      return NextResponse.json({ error: msg }, { status: 401 })
+    }
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}
