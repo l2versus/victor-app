@@ -112,6 +112,8 @@ model Student {
   subscriptions  Subscription[]
   communityPosts    CommunityPost[]
   communityReactions CommunityReaction[]
+  communityLikes    CommunityLike[]
+  communityComments CommunityComment[]
   challengeEntries  ChallengeEntry[]
   bodyScans         BodyScan[]
   nutritionLogs     NutritionLog[]
@@ -542,6 +544,7 @@ enum PostType {
   ACHIEVEMENT  // Auto: PR, streak, sessões
   ANNOUNCEMENT // Victor broadcast
   MILESTONE    // Auto: 100 sessões, 1 ano, etc
+  USER_POST    // Post livre do aluno (texto + foto)
 }
 
 model CommunityPost {
@@ -549,10 +552,13 @@ model CommunityPost {
   studentId String?  // null = post do admin/sistema
   type      PostType
   content   String
+  imageUrl  String?  // Foto do post (base64 ou URL)
   metadata  Json?    // { exerciseName, oldPR, newPR, streakDays, etc }
 
   student   Student?           @relation(fields: [studentId], references: [id], onDelete: Cascade)
   reactions CommunityReaction[]
+  comments  CommunityComment[]
+  likes     CommunityLike[]
 
   createdAt DateTime @default(now())
 
@@ -580,6 +586,35 @@ model CommunityReaction {
 
   @@unique([postId, studentId, type])
   @@index([postId])
+}
+
+model CommunityLike {
+  id        String @id @default(cuid())
+  postId    String
+  studentId String
+
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  student Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([postId, studentId])
+  @@index([postId])
+}
+
+model CommunityComment {
+  id        String @id @default(cuid())
+  postId    String
+  studentId String
+  content   String
+
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  student Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([postId])
+  @@index([createdAt])
 }
 
 // ═══════════════════════════════════════

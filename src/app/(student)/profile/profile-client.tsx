@@ -1,11 +1,11 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { useRouter } from "next/navigation"
 import {
   User, Mail, Phone, Calendar, Ruler, Weight, Target, Globe,
   AlertTriangle, LogOut, Dumbbell, Activity, Clock, Edit3, Check, X,
-  Crown, Lock, MapPin, ChevronRight, Eye, EyeOff, Loader2,
+  Crown, Lock, MapPin, ChevronRight, Eye, EyeOff, Loader2, Camera,
 } from "lucide-react"
 import Link from "next/link"
 import { format, formatDistanceToNow } from "date-fns"
@@ -31,6 +31,7 @@ interface ProfileProps {
     id: string
     name: string
     email: string
+    avatar: string | null
     phone: string | null
     birthDate: string | null
     gender: string | null
@@ -57,6 +58,9 @@ type ActiveSheet = null | "personal" | "measurements" | "address" | "password" |
 export function ProfileClient({ student, stats }: ProfileProps) {
   const router = useRouter()
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null)
+  const [avatarUrl, setAvatarUrl] = useState(student.avatar)
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const initials = student.name
     .split(" ")
@@ -64,6 +68,31 @@ export function ProfileClient({ student, stats }: ProfileProps) {
     .join("")
     .slice(0, 2)
     .toUpperCase()
+
+  async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      alert("Imagem muito grande. Máximo 2MB.")
+      return
+    }
+    setUploadingAvatar(true)
+    const reader = new FileReader()
+    reader.onload = async () => {
+      const base64 = reader.result as string
+      const res = await fetch("/api/student/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ avatar: base64 }),
+      })
+      if (res.ok) {
+        setAvatarUrl(base64)
+        router.refresh()
+      }
+      setUploadingAvatar(false)
+    }
+    reader.readAsDataURL(file)
+  }
 
   const bmi = student.weight && student.height
     ? (() => {
@@ -93,10 +122,22 @@ export function ProfileClient({ student, stats }: ProfileProps) {
         {/* ═══ AVATAR + NAME ═══ */}
         <div className="flex flex-col items-center pt-4 pb-2">
           <div className="relative mb-4">
-            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white text-3xl font-bold shadow-xl shadow-red-600/20 animate-pulse-glow">
-              {initials}
+            <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white text-3xl font-bold shadow-xl shadow-red-600/20 overflow-hidden">
+              {avatarUrl ? (
+                <img src={avatarUrl} alt={student.name} className="w-full h-full object-cover" />
+              ) : (
+                initials
+              )}
             </div>
             <div className="absolute inset-0 rounded-3xl border-2 border-red-500/20" />
+            <input ref={avatarInputRef} type="file" accept="image/*" onChange={handleAvatarUpload} className="hidden" />
+            <button
+              onClick={() => avatarInputRef.current?.click()}
+              disabled={uploadingAvatar}
+              className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-red-600 border-2 border-[#030303] flex items-center justify-center text-white shadow-lg hover:bg-red-500 transition-colors"
+            >
+              {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+            </button>
           </div>
           <h1 className="text-xl font-bold text-white mb-0.5">{student.name}</h1>
           <p className="text-neutral-500 text-sm flex items-center gap-1.5">

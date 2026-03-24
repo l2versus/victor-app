@@ -50,6 +50,7 @@ export default async function ProfilePage() {
         id: student.id,
         name: student.user.name,
         email: student.user.email,
+        avatar: student.user.avatar,
         phone: student.user.phone,
         birthDate: (student.birthDate || student.user.birthDate)?.toISOString() || null,
         gender: student.gender,

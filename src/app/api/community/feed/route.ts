@@ -40,13 +40,26 @@ export async function GET(req: NextRequest) {
         reactions: {
           select: { type: true, studentId: true },
         },
+        likes: {
+          select: { studentId: true },
+        },
+        comments: {
+          include: {
+            student: { include: { user: { select: { name: true, avatar: true } } } },
+          },
+          orderBy: { createdAt: "asc" },
+          take: 3, // Preview of latest comments
+        },
+        _count: {
+          select: { likes: true, comments: true },
+        },
       },
     })
 
     const hasMore = posts.length > limit
     const items = hasMore ? posts.slice(0, limit) : posts
 
-    // Get current student id for reaction highlights
+    // Get current student id for reaction/like highlights
     let currentStudentId: string | null = null
     if (session.role === "STUDENT") {
       const student = await prisma.student.findUnique({
@@ -69,11 +82,22 @@ export async function GET(req: NextRequest) {
         id: post.id,
         type: post.type,
         content: post.content,
+        imageUrl: post.imageUrl,
         metadata: post.metadata,
         studentName: post.student?.user.name ?? "Victor Oliveira",
         studentAvatar: post.student?.user.avatar ?? null,
         reactionCounts,
         userReactions,
+        likesCount: post._count.likes,
+        commentsCount: post._count.comments,
+        isLiked: post.likes.some((l) => l.studentId === currentStudentId),
+        comments: post.comments.map((c) => ({
+          id: c.id,
+          content: c.content,
+          studentName: c.student?.user.name ?? "Anônimo",
+          studentAvatar: c.student?.user.avatar ?? null,
+          createdAt: c.createdAt,
+        })),
         createdAt: post.createdAt,
       }
     })
@@ -91,7 +115,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// React to a post
+// React to a post (legacy — keep for backward compat)
 export async function POST(req: NextRequest) {
   try {
     const session = await requireAuth()

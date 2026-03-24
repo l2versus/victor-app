@@ -101,6 +101,11 @@ export async function PATCH(req: NextRequest) {
       }
     }
 
+    // Avatar upload (base64)
+    if (body.avatar !== undefined) {
+      userUpdateData.avatar = body.avatar || null
+    }
+
     // name é obrigatório — não pode ser null
     if (userUpdateData.name === null) {
       return NextResponse.json({ error: "Nome é obrigatório" }, { status: 400 })
