@@ -14,10 +14,10 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const APP_NAME = "Victor App";
+const APP_NAME = "Ironberg App";
 const APP_DESCRIPTION =
-  "Plataforma de treinos personalizados por Victor Oliveira. Treinos sob medida, acompanhamento inteligente e evolução real.";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://victorapp.com.br";
+  "Plataforma de treinos personalizados com máquinas 3D, IA e correção postural. Treinos sob medida, acompanhamento inteligente e evolução real.";
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://victor-app-seven.vercel.app";
 
 export const metadata: Metadata = {
   title: {
