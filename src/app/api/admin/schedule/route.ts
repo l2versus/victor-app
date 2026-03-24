@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
     const trainer = await getTrainerProfile(session.userId)
     const body = await req.json()
 
-    const { studentId, title, date, duration, notes, recurring, color } = body
+    const { studentId, title, date, duration, notes, recurring, color, sessionType, paidOutside } = body
 
     if (!date) {
       return NextResponse.json({ error: "Date is required" }, { status: 400 })
@@ -58,6 +58,8 @@ export async function POST(req: NextRequest) {
         notes: notes || null,
         recurring: recurring || false,
         color: color || null,
+        sessionType: sessionType || "PRESENCIAL",
+        paidOutside: paidOutside || false,
       },
       include: {
         student: {
@@ -122,6 +124,8 @@ export async function PATCH(req: NextRequest) {
         status: body.status ?? undefined,
         notes: body.notes ?? undefined,
         color: body.color ?? undefined,
+        sessionType: body.sessionType ?? undefined,
+        paidOutside: body.paidOutside ?? undefined,
       },
       include: {
         student: {

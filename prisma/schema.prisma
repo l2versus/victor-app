@@ -747,7 +747,7 @@ model ProgressPhoto {
 }
 
 // ═══════════════════════════════════════
-// SCHEDULE — Agenda de sessões presenciais
+// SCHEDULE — Agenda de sessões
 // ═══════════════════════════════════════
 
 enum ScheduleStatus {
@@ -758,17 +758,25 @@ enum ScheduleStatus {
   NO_SHOW
 }
 
+enum SessionType {
+  PRESENCIAL   // treino na academia / in-person
+  ONLINE       // videochamada / remoto
+  CONSULTORIA  // orientação, plano alimentar, avaliação
+}
+
 model ScheduleSlot {
-  id        String         @id @default(cuid())
-  trainerId String
-  studentId String?        // null = horário livre
-  title     String?        // "Treino Força", "Avaliação", etc
-  date      DateTime       // data e hora de início
-  duration  Int            @default(60) // duração em minutos
-  status    ScheduleStatus @default(SCHEDULED)
-  notes     String?
-  recurring Boolean        @default(false) // se repete toda semana
-  color     String?        // cor customizada no calendário
+  id          String         @id @default(cuid())
+  trainerId   String
+  studentId   String?        // null = horário livre
+  title       String?        // "Treino Força", "Avaliação", etc
+  date        DateTime       // data e hora de início
+  duration    Int            @default(60) // duração em minutos
+  status      ScheduleStatus @default(SCHEDULED)
+  sessionType SessionType    @default(PRESENCIAL) // modalidade da sessão
+  paidOutside Boolean        @default(false)      // pagou fora do app (pix/dinheiro)
+  notes       String?
+  recurring   Boolean        @default(false) // se repete toda semana
+  color       String?        // cor customizada no calendário
 
   trainer TrainerProfile @relation(fields: [trainerId], references: [id])
   student Student?       @relation(fields: [studentId], references: [id], onDelete: SetNull)
@@ -780,6 +788,7 @@ model ScheduleSlot {
   @@index([studentId])
   @@index([date])
   @@index([status])
+  @@index([sessionType])
 }
 
 // ═══════════════════════════════════════
@@ -1143,6 +1152,28 @@ model CrmBotFlow {
 
   @@index([trainerId])
   @@index([active])
+}
+
+// ═══════════════════════════════════════
+// AI Token Usage — tracking real de consumo Groq
+// ═══════════════════════════════════════
+
+model AiTokenUsage {
+  id             String   @id @default(cuid())
+  model          String   // llama-3.3-70b-versatile, llama-3.2-11b-vision-preview
+  feature        String   // chat, lead_bot, post_workout, scoring, workout_gen, anamnesis, engagement, body_scan
+  promptTokens   Int      @default(0)
+  completionTokens Int    @default(0)
+  totalTokens    Int      @default(0)
+  latencyMs      Int?     // tempo de resposta
+  success        Boolean  @default(true)
+  error          String?
+
+  createdAt DateTime @default(now())
+
+  @@index([feature])
+  @@index([model])
+  @@index([createdAt])
 }
 
 // ═══════════════════════════════════════
