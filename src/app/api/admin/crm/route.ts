@@ -175,6 +175,11 @@ export async function PATCH(req: NextRequest) {
       })
     }
 
+    // Auto re-score se status ou dados relevantes mudaram
+    if (body.status || body.followUp || body.value) {
+      import("@/lib/lead-scoring").then(m => m.scoreAndNotify(id)).catch(() => {})
+    }
+
     return NextResponse.json({ lead })
   } catch (error) {
     console.error("PATCH /api/admin/crm error:", error)

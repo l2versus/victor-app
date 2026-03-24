@@ -51,7 +51,7 @@ Voce está respondendo pelo WhatsApp. O aluno acha que está falando COM VOCE, n
 Nome: ${context.name}
 Plano: ${context.plan || "Sem plano ativo"}
 Objetivo: ${context.goals || "Não definido"}
-Restrições médicas: ${context.restrictions || "Nenhuma informada"}
+Restrições médicas: ${typeof context.restrictions === "string" ? context.restrictions : context.restrictions ? JSON.stringify(context.restrictions) : "Nenhuma informada"}
 Peso: ${context.weight ? context.weight + "kg" : "Não informado"}
 Altura: ${context.height ? context.height + "m" : "Não informada"}
 Treinos esta semana: ${context.weekSessions}/${context.weekTarget}
@@ -111,8 +111,9 @@ export async function getStudentContextByPhone(phone: string): Promise<{
   userId: string
   context: StudentContext
 } | null> {
-  // Normalizar telefone (remover +55, espaços, hifens)
-  const cleanPhone = phone.replace(/\D/g, "").replace(/^55/, "")
+  // Normalizar telefone
+  const { normalizePhone, phoneSearchSuffix } = await import("./phone")
+  const cleanPhone = normalizePhone(phone).replace(/^55/, "") // sem 55 pra busca local
 
   // Buscar user pelo telefone
   const user = await prisma.user.findFirst({
@@ -198,7 +199,9 @@ export async function getStudentContextByPhone(phone: string): Promise<{
       name: user.name,
       plan: activeSub ? `${activeSub.plan.name} (${activeSub.plan.interval})` : null,
       goals: student.goals,
-      restrictions: student.restrictions as string | null,
+      restrictions: typeof student.restrictions === "string"
+        ? student.restrictions
+        : student.restrictions ? JSON.stringify(student.restrictions) : null,
       weight: student.weight,
       height: student.height,
       weekSessions,
@@ -276,43 +279,60 @@ export async function sendWhatsAppMessage(to: string, message: string): Promise<
 }
 
 // ═══════════════════════════════════════════════════════════════
-// GERAR RESPOSTA COM CLAUDE
+// GERAR RESPOSTA COM GROQ (Llama 3.3 70B) — com tracking de tokens
 // ═══════════════════════════════════════════════════════════════
 
 export async function generateBotResponse(
   userMessage: string,
   context: StudentContext
 ): Promise<string> {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return "Opa, tô com um problema técnico aqui. Me manda de novo daqui a pouco? 🙏"
-  }
+  const { callGroqWithTracking } = await import("./ai-usage")
 
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
+  const result = await callGroqWithTracking({
+    feature: "chat_aluno",
+    messages: [
+      { role: "system", content: buildSystemPrompt(context) },
+      { role: "user", content: userMessage },
+    ],
+    maxTokens: 300,
+  })
+
+  return result.content || "Deu um bug aqui, me manda de novo? 😅"
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GERAR RESPOSTA DE VENDAS PRA LEADS (Groq + persona closer)
+// ═══════════════════════════════════════════════════════════════
+
+export async function generateLeadResponse(
+  userMessage: string,
+  leadName: string,
+  leadHistory: string[]
+): Promise<string> {
+  const { callGroqWithTracking } = await import("./ai-usage")
+  const { SYSTEM_PROMPTS } = await import("./ai")
+
+  const historyContext = leadHistory.length > 0
+    ? `\n\nHistórico da conversa:\n${leadHistory.slice(-6).join("\n")}`
+    : ""
+
+  const result = await callGroqWithTracking({
+    feature: "lead_bot",
+    messages: [
+      {
+        role: "system",
+        content: SYSTEM_PROMPTS.victorVirtual +
+          `\n\nNome do lead: ${leadName}` +
+          `\nCanal: WhatsApp` +
+          `\nVocê está no WhatsApp respondendo um POTENCIAL CLIENTE, não um aluno.` +
+          `\nSeu objetivo: qualificar, gerar interesse, e conduzir pra uma aula experimental ou assinatura.` +
+          `\nRespostas CURTAS (2-4 frases max). Sempre termine com uma pergunta ou CTA.` +
+          historyContext,
       },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 300, // WhatsApp = curto
-        system: buildSystemPrompt(context),
-        messages: [{ role: "user", content: userMessage }],
-      }),
-    })
+      { role: "user", content: userMessage },
+    ],
+    maxTokens: 250,
+  })
 
-    if (!res.ok) {
-      console.error("[Claude] Error:", await res.text())
-      return "Deu um bug aqui, me manda de novo? 😅"
-    }
-
-    const data = await res.json()
-    return data.content?.[0]?.text || "Não entendi, repete pra mim?"
-  } catch (error) {
-    console.error("[Claude] Error:", error)
-    return "Tô sem conexão aqui, te respondo já já 🙏"
-  }
+  return result.content || ""
 }

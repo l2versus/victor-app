@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
       include: {
         lead: { select: { id: true, name: true, phone: true, temperature: true, score: true, status: true } },
       },
-      orderBy: { lastMessageAt: { sort: "desc", nulls: "last" } },
+      orderBy: { lastMessageAt: "desc" },
     })
 
     const unreadTotal = conversations.reduce((s, c) => s + c.unreadCount, 0)

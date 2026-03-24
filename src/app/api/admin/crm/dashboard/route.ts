@@ -74,6 +74,34 @@ export async function GET() {
       select: { id: true, name: true, score: true, temperature: true, value: true, status: true, source: true },
     })
 
+    // ─── Funil de conversão ───
+    const funnelStages = ["NEW", "CONTACTED", "TRIAL", "NEGOTIATING", "CONVERTED"] as const
+    const funnelCounts = await Promise.all(
+      funnelStages.map(status =>
+        prisma.lead.count({ where: { trainerId: tid, status } })
+      )
+    )
+    // Para "CONVERTED", incluir todos que JÁ passaram por estágios anteriores
+    // Calcula taxa: % que avançou de cada etapa pra próxima
+    const funnel = funnelStages.map((stage, i) => {
+      const count = funnelCounts[i]
+      // Cumulativo: leads que chegaram nesse estágio = estão nele + passaram pra próximos
+      const reachedHere = funnelCounts.slice(i).reduce((a, b) => a + b, 0)
+      const reachedPrev = i === 0 ? totalLeads : funnelCounts.slice(i - 1).reduce((a, b) => a + b, 0)
+      const rate = reachedPrev > 0 ? Math.round((reachedHere / reachedPrev) * 100) : 0
+      return { stage, count, reached: reachedHere, rate }
+    })
+
+    // Leads capturados por semana (últimas 4 semanas)
+    const weeksAgo = (w: number) => new Date(now.getTime() - w * 7 * 24 * 60 * 60 * 1000)
+    const weeklyCapture = await Promise.all(
+      [0, 1, 2, 3].map(w =>
+        prisma.lead.count({
+          where: { trainerId: tid, createdAt: { gte: weeksAgo(w + 1), lt: weeksAgo(w) } },
+        })
+      )
+    )
+
     return NextResponse.json({
       overview: {
         totalLeads,
@@ -97,6 +125,8 @@ export async function GET() {
         leadName: a.lead.name,
         createdAt: a.createdAt,
       })),
+      funnel,
+      weeklyCapture: weeklyCapture.reverse(), // [4 sem atrás, 3, 2, esta semana]
     })
   } catch (error) {
     console.error("GET /api/admin/crm/dashboard error:", error)

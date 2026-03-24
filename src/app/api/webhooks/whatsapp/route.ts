@@ -65,11 +65,15 @@ export async function POST(req: NextRequest) {
 
     if (!studentData) {
       // Unknown number → auto-capture as Lead in CRM
-      const trainer = await prisma.trainerProfile.findFirst({ select: { id: true, userId: true } })
+      const trainer = await prisma.trainerProfile.findFirst({
+          select: { id: true, userId: true },
+          orderBy: { createdAt: "asc" },
+        })
       if (trainer) {
         // Check if lead already exists with this phone
+        const { phoneSearchSuffix } = await import("@/lib/phone")
         const existingLead = await prisma.lead.findFirst({
-          where: { trainerId: trainer.id, phone: { contains: from.slice(-8) } },
+          where: { trainerId: trainer.id, phone: { contains: phoneSearchSuffix(from) } },
         })
 
         if (!existingLead) {
@@ -100,18 +104,27 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      await sendWhatsAppMessage(from,
-        "Oi! Sou o Victor Oliveira, personal trainer. " +
-        "Vi que ainda não é meu aluno — vou te responder em breve! " +
-        "Se quiser conhecer meu trabalho: " +
-        `${process.env.NEXT_PUBLIC_APP_URL || "victorapp.com.br"}/site 💪`
-      )
+      // ─── Bot de vendas Groq (IA) pra leads ───
+      const contactName = value?.contacts?.[0]?.profile?.name || `WhatsApp ${from.slice(-4)}`
+      const { generateLeadResponse } = await import("@/lib/whatsapp-bot")
+      let reply = await generateLeadResponse(messageText, contactName, [])
+
+      // Fallback se Groq falhar
+      if (!reply) {
+        const firstName = contactName.split(" ")[0] || "amigo"
+        reply = `Oi ${firstName}! Sou o Victor Oliveira, personal trainer 💪\n\n` +
+          `Me conta: o que tu tá procurando?\n\n` +
+          `1️⃣ Emagrecer\n2️⃣ Ganhar massa\n3️⃣ Condicionamento\n4️⃣ Preços\n5️⃣ Aula experimental grátis`
+      }
+
+      await sendWhatsAppMessage(from, reply)
       return NextResponse.json({ received: true, leadCaptured: true })
     }
 
     // ─── Get trainer user ID ─────────────────────────────────
     const trainer = await prisma.trainerProfile.findFirst({
       select: { userId: true },
+      orderBy: { createdAt: "asc" },
     })
 
     // ─── Save incoming message to DirectMessage ──────────────

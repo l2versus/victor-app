@@ -60,13 +60,14 @@ export async function POST(req: NextRequest) {
         // Check for duplicate by phone
         let lead = null
         if (phone) {
-          const normalizedPhone = phone.replace(/\D/g, "")
-          lead = await prisma.lead.findFirst({
+          const { phoneSearchSuffix } = await import("@/lib/phone")
+          const suffix = phoneSearchSuffix(phone)
+          lead = suffix ? await prisma.lead.findFirst({
             where: {
               trainerId: webhook.trainerId,
-              phone: { contains: normalizedPhone },
+              phone: { contains: suffix },
             },
-          })
+          }) : null
         }
 
         if (!lead) {
@@ -74,7 +75,7 @@ export async function POST(req: NextRequest) {
             data: {
               trainerId: webhook.trainerId,
               name,
-              phone: phone ? phone.replace(/\D/g, "") : null,
+              phone: phone ? (await import("@/lib/phone")).normalizePhone(phone) : null,
               email,
               source: ["WALK_IN", "REFERRAL", "INSTAGRAM", "WHATSAPP", "WEBSITE", "MANYCHAT", "FACEBOOK", "TIKTOK", "OTHER"]
                 .includes(source) ? source : "OTHER",
@@ -95,7 +96,7 @@ export async function POST(req: NextRequest) {
           await prisma.leadFollowUp.create({
             data: {
               leadId: lead.id,
-              type: "WEBHOOK",
+              type: "NOTE",
               content: `Novo contato via ${webhook.name}: ${notes || "sem detalhes"}`,
             },
           })

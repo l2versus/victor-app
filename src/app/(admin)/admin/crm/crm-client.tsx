@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { useSearchParams } from "next/navigation"
+import React, { useState, useEffect } from "react"
+import { useSearchParams, useRouter } from "next/navigation"
 import {
   UserPlus, Phone, Mail, Plus, X, Trash2,
   MessageCircle, Instagram, Globe, Users,
@@ -15,6 +15,31 @@ import {
   Wifi, WifiOff, Power, PowerOff,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+
+// ═══════════════════════════════════════
+// Toast hook — usado por todos os sub-componentes
+// ═══════════════════════════════════════
+
+function useToast() {
+  const [toast, setToast] = useState<{ msg: string; type: "error" | "success" } | null>(null)
+  function showToast(msg: string, type: "error" | "success" = "error") {
+    setToast({ msg, type })
+    setTimeout(() => setToast(null), 4000)
+  }
+  return { toast, showToast }
+}
+
+function ToastUI({ toast }: { toast: { msg: string; type: "error" | "success" } | null }) {
+  if (!toast) return null
+  return (
+    <div className={cn(
+      "fixed bottom-4 right-4 z-50 px-4 py-2.5 rounded-xl text-xs font-medium shadow-2xl animate-slide-up",
+      toast.type === "error" ? "bg-red-500/90 text-white" : "bg-emerald-500/90 text-white"
+    )}>
+      {toast.msg}
+    </div>
+  )
+}
 
 // ═══════════════════════════════════════
 // Types
@@ -58,6 +83,8 @@ type DashboardData = {
   leadsBySource: { source: string; count: number }[]
   topLeads: { id: string; name: string; score: number; temperature: string; value: number | null; status: string; source: string }[]
   recentActivities: { id: string; action: string; details: string | null; leadName: string; createdAt: string }[]
+  funnel?: { stage: string; count: number; reached: number; rate: number }[]
+  weeklyCapture?: number[]
 }
 
 // ═══════════════════════════════════════
@@ -107,8 +134,14 @@ const ACTION_LABELS: Record<string, string> = {
 export function CrmClient() {
   type CrmTab = "pipeline" | "dashboard" | "inbox" | "broadcasts" | "templates" | "webhooks" | "bots" | "whatsapp"
   const searchParams = useSearchParams()
+  const router = useRouter()
   const initialTab = (searchParams.get("tab") as CrmTab) || "pipeline"
-  const [tab, setTab] = useState<CrmTab>(initialTab)
+  const [tab, setTabState] = useState<CrmTab>(initialTab)
+
+  function setTab(newTab: CrmTab) {
+    setTabState(newTab)
+    router.replace(`?tab=${newTab}`, { scroll: false })
+  }
   const [leads, setLeads] = useState<Lead[]>([])
   const [pipeline, setPipeline] = useState<Pipeline | null>(null)
   const [temperatures, setTemperatures] = useState<Temperatures | null>(null)
@@ -124,6 +157,7 @@ export function CrmClient() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterTemp, setFilterTemp] = useState<string | null>(null)
   const [tagInput, setTagInput] = useState("")
+  const { toast, showToast } = useToast()
   const [form, setForm] = useState({
     name: "", phone: "", email: "", source: "OTHER", notes: "", value: "", temperature: "COLD",
   })
@@ -132,7 +166,7 @@ export function CrmClient() {
   async function fetchLeads() {
     try {
       const params = new URLSearchParams()
-      if (searchQuery) params.set("search", searchQuery)
+      if (debouncedSearch) params.set("search", debouncedSearch)
       if (filterTemp) params.set("temperature", filterTemp)
       const res = await fetch(`/api/admin/crm?${params}`)
       if (res.ok) {
@@ -141,7 +175,7 @@ export function CrmClient() {
         setPipeline(data.pipeline)
         setTemperatures(data.temperatures)
       }
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -149,28 +183,46 @@ export function CrmClient() {
     try {
       const res = await fetch("/api/admin/crm/dashboard")
       if (res.ok) setDashboard(await res.json())
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
   }
 
-  useEffect(() => { fetchLeads() }, [searchQuery, filterTemp])
+  // Debounce search — evita spam de requests ao digitar
+  const [debouncedSearch, setDebouncedSearch] = useState(searchQuery)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300)
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+  useEffect(() => { fetchLeads() }, [debouncedSearch, filterTemp])
   useEffect(() => { if (tab === "dashboard") fetchDashboard() }, [tab])
 
   // ─── Actions ───
   async function createLead() {
-    if (!form.name.trim()) return
+    // Validação
+    if (!form.name.trim()) { showToast("Nome é obrigatório"); return }
+    if (form.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) { showToast("Email inválido"); return }
+    if (form.phone && form.phone.replace(/\D/g, "").length < 10) { showToast("Telefone deve ter pelo menos 10 dígitos"); return }
+    if (form.value && (isNaN(Number(form.value)) || Number(form.value) < 0)) { showToast("Valor deve ser um número positivo"); return }
+
     setSaving(true)
     try {
       const res = await fetch("/api/admin/crm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify({
+          ...form,
+          phone: form.phone ? form.phone.replace(/\D/g, "") : "",
+          value: form.value ? String(form.value) : "",
+        }),
       })
       if (res.ok) {
+        showToast("Lead criado!", "success")
         setShowForm(false)
         setForm({ name: "", phone: "", email: "", source: "OTHER", notes: "", value: "", temperature: "COLD" })
         fetchLeads()
+      } else {
+        showToast("Erro ao criar lead")
       }
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setSaving(false)
   }
 
@@ -211,7 +263,7 @@ export function CrmClient() {
       })
       fetchLeads()
       if (tab === "dashboard") fetchDashboard()
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setScoring(false)
   }
 
@@ -227,15 +279,52 @@ export function CrmClient() {
     await updateLead(leadId, { tags: lead.tags.filter(t => t !== tag) })
   }
 
-  // ─── Drag & Drop ───
+  // ─── Drag & Drop (mouse + touch) ───
+  const touchStartRef = React.useRef<{ id: string; x: number; y: number } | null>(null)
+
   function handleDragStart(leadId: string) { setDraggedLead(leadId) }
   function handleDragOver(e: React.DragEvent, status: string) { e.preventDefault(); setDragOverCol(status) }
   function handleDrop(status: string) {
-    if (draggedLead) updateLead(draggedLead, { status })
+    if (draggedLead) {
+      updateLead(draggedLead, { status })
+      showToast(`Lead movido para ${COLUMNS.find(c => c.status === status)?.label || status}`, "success")
+    }
     setDraggedLead(null)
     setDragOverCol(null)
   }
   function handleDragEnd() { setDraggedLead(null); setDragOverCol(null) }
+
+  // Touch: long-press to start drag, move to detect column, release to drop
+  function handleTouchStart(leadId: string, e: React.TouchEvent) {
+    const touch = e.touches[0]
+    touchStartRef.current = { id: leadId, x: touch.clientX, y: touch.clientY }
+  }
+  function handleTouchMove(e: React.TouchEvent) {
+    if (!touchStartRef.current) return
+    const touch = e.touches[0]
+    const dx = Math.abs(touch.clientX - touchStartRef.current.x)
+    // Ativar drag após mover 20px horizontal
+    if (dx > 20 && !draggedLead) {
+      setDraggedLead(touchStartRef.current.id)
+    }
+    if (draggedLead) {
+      // Detectar coluna sob o dedo
+      const el = document.elementFromPoint(touch.clientX, touch.clientY)
+      const colEl = el?.closest("[data-col-status]")
+      if (colEl) {
+        const status = colEl.getAttribute("data-col-status")
+        if (status) setDragOverCol(status)
+      }
+    }
+  }
+  function handleTouchEnd() {
+    if (draggedLead && dragOverCol) {
+      handleDrop(dragOverCol)
+    }
+    touchStartRef.current = null
+    setDraggedLead(null)
+    setDragOverCol(null)
+  }
 
   // ─── Helpers ───
   const grouped = COLUMNS.reduce((acc, col) => {
@@ -276,6 +365,7 @@ export function CrmClient() {
 
   return (
     <div className="space-y-5">
+      <ToastUI toast={toast} />
       {/* ═══ HEADER ═══ */}
       <div className="flex items-center justify-between">
         <div>
@@ -433,6 +523,7 @@ export function CrmClient() {
                   col.color,
                   isDragOver ? "bg-white/[0.04]" : "bg-white/[0.015]"
                 )}
+                data-col-status={col.status}
                 onDragOver={e => handleDragOver(e, col.status)}
                 onDrop={() => handleDrop(col.status)}
                 onDragLeave={() => setDragOverCol(null)}
@@ -462,6 +553,9 @@ export function CrmClient() {
                         draggable
                         onDragStart={() => handleDragStart(lead.id)}
                         onDragEnd={handleDragEnd}
+                        onTouchStart={e => handleTouchStart(lead.id, e)}
+                        onTouchMove={handleTouchMove}
+                        onTouchEnd={handleTouchEnd}
                         onClick={() => setSelectedLead(lead)}
                         className={cn(
                           "rounded-xl bg-[#111] border border-white/[0.06] p-3 cursor-grab active:cursor-grabbing transition-all hover:border-white/[0.12] group",
@@ -730,6 +824,56 @@ function CrmDashboard({ data, onRefresh }: { data: DashboardData | null; onRefre
         </div>
       </div>
 
+      {/* Funil de Conversão */}
+      {data.funnel && (
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-3">Funil de Conversão</p>
+          <div className="space-y-2">
+            {(data.funnel as { stage: string; count: number; reached: number; rate: number }[]).map((step, i) => {
+              const labels: Record<string, string> = { NEW: "Novos", CONTACTED: "Contactados", TRIAL: "Experimental", NEGOTIATING: "Negociando", CONVERTED: "Convertidos" }
+              const colors = ["bg-blue-500", "bg-cyan-500", "bg-yellow-500", "bg-orange-500", "bg-emerald-500"]
+              const maxReached = (data.funnel as { reached: number }[])[0]?.reached || 1
+              const width = Math.max((step.reached / maxReached) * 100, 8)
+              return (
+                <div key={step.stage}>
+                  <div className="flex items-center justify-between text-xs mb-1">
+                    <span className="text-neutral-400">{labels[step.stage] || step.stage}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-neutral-500">{step.reached}</span>
+                      {i > 0 && <span className={cn("text-[9px] font-bold", step.rate >= 50 ? "text-emerald-400" : step.rate >= 25 ? "text-yellow-400" : "text-red-400")}>{step.rate}%</span>}
+                    </div>
+                  </div>
+                  <div className="h-3 bg-white/[0.04] rounded-full overflow-hidden">
+                    <div className={cn("h-full rounded-full transition-all", colors[i])} style={{ width: `${width}%` }} />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* Leads por Semana */}
+      {data.weeklyCapture && (
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
+          <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-3">Captura Semanal (últimas 4 semanas)</p>
+          <div className="flex items-end gap-2 h-24">
+            {(data.weeklyCapture as number[]).map((count, i) => {
+              const max = Math.max(...(data.weeklyCapture as number[]), 1)
+              const height = Math.max((count / max) * 100, 4)
+              const labels = ["4 sem", "3 sem", "2 sem", "Esta"]
+              return (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                  <span className="text-[9px] text-neutral-500 font-bold">{count}</span>
+                  <div className="w-full rounded-t-lg bg-red-500/60 transition-all" style={{ height: `${height}%` }} />
+                  <span className="text-[8px] text-neutral-700">{labels[i]}</span>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Recent Activities */}
       <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
         <p className="text-[10px] text-neutral-500 uppercase tracking-wider mb-3">Atividade Recente</p>
@@ -989,6 +1133,7 @@ type Template = {
 }
 
 function CrmTemplates() {
+  const { toast, showToast } = useToast()
   const [templates, setTemplates] = useState<Template[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -999,7 +1144,7 @@ function CrmTemplates() {
     try {
       const res = await fetch("/api/admin/crm/templates")
       if (res.ok) setTemplates((await res.json()).templates)
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -1034,6 +1179,7 @@ function CrmTemplates() {
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <ToastUI toast={toast} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-white">Templates de Mensagem</h2>
@@ -1138,6 +1284,7 @@ type WebhookLog = {
 }
 
 function CrmWebhooks() {
+  const { toast, showToast } = useToast()
   const [webhooks, setWebhooks] = useState<WebhookData[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -1150,7 +1297,7 @@ function CrmWebhooks() {
     try {
       const res = await fetch("/api/admin/crm/webhooks")
       if (res.ok) setWebhooks((await res.json()).webhooks)
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -1158,7 +1305,7 @@ function CrmWebhooks() {
     try {
       const res = await fetch(`/api/admin/crm/webhooks?logs=1&webhookId=${webhookId}`)
       if (res.ok) setLogs((await res.json()).logs)
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
   }
 
   useEffect(() => { fetchWebhooks() }, [])
@@ -1200,6 +1347,7 @@ function CrmWebhooks() {
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <ToastUI toast={toast} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-white">Webhooks de Entrada</h2>
@@ -1334,6 +1482,7 @@ type CrmMsg = {
 }
 
 function CrmInbox() {
+  const { toast, showToast } = useToast()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [loading, setLoading] = useState(true)
   const [selected, setSelected] = useState<string | null>(null)
@@ -1350,7 +1499,7 @@ function CrmInbox() {
         setConversations(data.conversations)
         setUnreadTotal(data.unreadTotal)
       }
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -1358,7 +1507,7 @@ function CrmInbox() {
     try {
       const res = await fetch(`/api/admin/crm/conversations?id=${convId}`)
       if (res.ok) setMessages((await res.json()).conversation.messages)
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
   }
 
   useEffect(() => { fetchConversations() }, [statusFilter])
@@ -1391,6 +1540,7 @@ function CrmInbox() {
 
   return (
     <div className="animate-slide-up">
+      <ToastUI toast={toast} />
       <div className="flex items-center gap-2 mb-4">
         {["OPEN", "CLOSED", "ALL"].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)}
@@ -1505,6 +1655,7 @@ type Broadcast = {
 }
 
 function CrmBroadcasts() {
+  const { toast, showToast } = useToast()
   const [broadcasts, setBroadcasts] = useState<Broadcast[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
@@ -1516,7 +1667,7 @@ function CrmBroadcasts() {
     try {
       const res = await fetch("/api/admin/crm/broadcasts")
       if (res.ok) setBroadcasts((await res.json()).broadcasts)
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -1581,6 +1732,7 @@ function CrmBroadcasts() {
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <ToastUI toast={toast} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-white">Broadcasts</h2>
@@ -1740,6 +1892,7 @@ const BOT_TEMPLATES = [
 ]
 
 function CrmBots() {
+  const { toast, showToast } = useToast()
   const [flows, setFlows] = useState<BotFlow[]>([])
   const [loading, setLoading] = useState(true)
   const [showTemplates, setShowTemplates] = useState(false)
@@ -1748,7 +1901,7 @@ function CrmBots() {
     try {
       const res = await fetch("/api/admin/crm/bots")
       if (res.ok) setFlows((await res.json()).flows)
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -1787,6 +1940,7 @@ function CrmBots() {
 
   return (
     <div className="space-y-4 animate-slide-up">
+      <ToastUI toast={toast} />
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-sm font-semibold text-white">Automações & Bot Flows</h2>
@@ -1895,6 +2049,7 @@ function CrmBots() {
 // ═══════════════════════════════════════
 
 function WhatsAppConnection() {
+  const { toast, showToast } = useToast()
   const [status, setStatus] = useState<string>("loading")
   const [qrcode, setQrcode] = useState<string | null>(null)
   const [configured, setConfigured] = useState(true)
@@ -1934,7 +2089,7 @@ function WhatsAppConnection() {
             setQrcode(null)
           }
         }
-      } catch { /* ignore */ }
+      } catch { showToast("Erro ao processar. Tente novamente.") }
     }, 5000)
     return () => clearInterval(interval)
   }, [qrcode])
@@ -1956,7 +2111,7 @@ function WhatsAppConnection() {
           setStatus("open")
         }
       }
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -1970,7 +2125,7 @@ function WhatsAppConnection() {
       })
       setStatus("disconnected")
       setQrcode(null)
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -1982,7 +2137,7 @@ function WhatsAppConnection() {
         const data = await res.json()
         if (data.qrcode) setQrcode(data.qrcode)
       }
-    } catch { /* ignore */ }
+    } catch { showToast("Erro ao processar. Tente novamente.") }
     setLoading(false)
   }
 
@@ -1999,6 +2154,7 @@ function WhatsAppConnection() {
           Conecte seu número pessoal via QR code para enviar/receber mensagens
         </p>
       </div>
+      <ToastUI toast={toast} />
 
       {!configured ? (
         <div className="rounded-xl bg-amber-500/5 border border-amber-500/20 p-4">

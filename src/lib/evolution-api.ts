@@ -103,10 +103,9 @@ export async function logoutInstance(instanceName: string) {
 // ═══════════════════════════════════════════════════════════════
 
 export async function sendTextMessage(instanceName: string, to: string, text: string) {
-  // Normalizar número: remover +, espaços, hifens
-  const number = to.replace(/\D/g, "")
-  // Garantir que tem o 55 na frente
-  const formattedNumber = number.startsWith("55") ? number : `55${number}`
+  // Normalizar usando helper central
+  const { normalizePhone } = await import("./phone")
+  const formattedNumber = normalizePhone(to)
 
   const res = await fetch(`${getBaseUrl()}/message/sendText/${instanceName}`, {
     method: "POST",

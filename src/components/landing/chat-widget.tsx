@@ -14,6 +14,10 @@ export function ChatWidget() {
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
   const [isStreaming, setIsStreaming] = useState(false)
+  const [showLeadForm, setShowLeadForm] = useState(false)
+  const [leadCaptured, setLeadCaptured] = useState(false)
+  const [leadForm, setLeadForm] = useState({ name: "", phone: "" })
+  const userMessageCount = useRef(0)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -51,6 +55,12 @@ export function ChatWidget() {
     setMessages(newMessages)
     setInput("")
     setIsStreaming(true)
+    userMessageCount.current++
+
+    // Após 3 msgs do user, pedir contato (se não capturou ainda)
+    if (userMessageCount.current >= 3 && !leadCaptured && !showLeadForm) {
+      setTimeout(() => setShowLeadForm(true), 1500)
+    }
 
     // Add empty assistant message for streaming
     setMessages(prev => [...prev, { role: "assistant", content: "" }])
@@ -184,6 +194,40 @@ export function ChatWidget() {
             ))}
             <div ref={messagesEndRef} />
           </div>
+
+          {/* Lead capture mini-form — aparece após 3 msgs */}
+          {showLeadForm && !leadCaptured && (
+            <div className="px-4 py-3 border-t border-white/[0.06] bg-red-600/5">
+              <p className="text-[10px] text-neutral-400 mb-2">Quer que o Victor te responda pessoalmente?</p>
+              <form onSubmit={async (e) => {
+                e.preventDefault()
+                if (!leadForm.name || !leadForm.phone) return
+                try {
+                  await fetch("/api/leads/capture", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      name: leadForm.name,
+                      phone: leadForm.phone,
+                      source: "WEBSITE",
+                      temperature: "WARM",
+                      notes: `Chat widget: ${messages.filter(m => m.role === "user").map(m => m.content).join(" | ").slice(0, 300)}`,
+                      tags: ["chat_widget"],
+                    }),
+                  })
+                } catch { /* silent */ }
+                setLeadCaptured(true)
+                setShowLeadForm(false)
+                setMessages(prev => [...prev, { role: "assistant", content: "Show! Victor vai te chamar no WhatsApp em breve. Enquanto isso, pode continuar perguntando aqui!" }])
+              }} className="flex gap-2">
+                <input type="text" placeholder="Nome" required value={leadForm.name} onChange={e => setLeadForm(p => ({ ...p, name: e.target.value }))}
+                  className="flex-1 px-2.5 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white text-xs placeholder:text-neutral-600 focus:outline-none focus:border-red-500/40" />
+                <input type="tel" placeholder="WhatsApp" required value={leadForm.phone} onChange={e => setLeadForm(p => ({ ...p, phone: e.target.value }))}
+                  className="flex-1 px-2.5 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white text-xs placeholder:text-neutral-600 focus:outline-none focus:border-red-500/40" />
+                <button type="submit" className="px-3 py-2 rounded-lg bg-red-600 text-white text-xs font-semibold shrink-0">Enviar</button>
+              </form>
+            </div>
+          )}
 
           {/* Input */}
           <form onSubmit={handleSend} className="p-3 border-t border-white/[0.06] flex gap-2">

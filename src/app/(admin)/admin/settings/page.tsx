@@ -1,5 +1,5 @@
 import { requireAdmin } from "@/lib/auth"
-import { Settings, Globe, CreditCard, Bell, Palette, Crown, DollarSign, BarChart3, UserPlus, Smartphone } from "lucide-react"
+import { Settings, Globe, CreditCard, Bell, Palette, Crown, DollarSign, BarChart3, UserPlus, Smartphone, Brain } from "lucide-react"
 import Link from "next/link"
 import { BackButton } from "@/components/ui/back-button"
 import { SettingsLogout } from "./settings-logout"
@@ -74,6 +74,15 @@ export default async function SettingsPage() {
           <Smartphone className="w-4 h-4 text-green-500" />
           <span>WhatsApp (Conectar)</span>
           <span className="ml-auto text-[10px] text-green-500/60 font-medium">Evolution API</span>
+        </Link>
+
+        <Link
+          href="/admin/ai-usage"
+          className="flex items-center gap-3 px-4 py-3.5 rounded-xl bg-white/[0.03] border border-purple-500/20 text-neutral-300 text-sm hover:bg-white/[0.06] transition-all active:scale-[0.98]"
+        >
+          <Brain className="w-4 h-4 text-purple-500" />
+          <span>Consumo IA (Tokens)</span>
+          <span className="ml-auto text-[10px] text-purple-500/60 font-medium">Groq</span>
         </Link>
       </div>
 

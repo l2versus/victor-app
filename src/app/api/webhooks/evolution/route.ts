@@ -68,10 +68,15 @@ export async function POST(req: NextRequest) {
 
     if (!studentData) {
       // Unknown number → auto-capture as Lead in CRM
-      const trainer = await prisma.trainerProfile.findFirst({ select: { id: true, userId: true } })
+      // findFirst sem where: OK pra single-trainer (Victor app). Multi-trainer precisaria de routing.
+      const trainer = await prisma.trainerProfile.findFirst({
+        select: { id: true, userId: true },
+        orderBy: { createdAt: "asc" }, // pega o primeiro trainer cadastrado (owner)
+      })
       if (trainer) {
+        const { phoneSearchSuffix } = await import("@/lib/phone")
         const existingLead = await prisma.lead.findFirst({
-          where: { trainerId: trainer.id, phone: { contains: phone.slice(-8) } },
+          where: { trainerId: trainer.id, phone: { contains: phoneSearchSuffix(phone) } },
         })
 
         if (!existingLead) {
@@ -119,18 +124,52 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      // Respond to non-student
-      await sendTextMessage(INSTANCE_NAME, phone,
-        "Oi! Sou o Victor Oliveira, personal trainer. " +
-        "Vi que ainda não é meu aluno — vou te responder em breve! " +
-        `Se quiser conhecer meu trabalho: ${process.env.NEXT_PUBLIC_APP_URL || "victorapp.com.br"}/site 💪`
-      )
+      // ─── Bot de vendas Groq (IA) pra leads ───
+      const { phoneSearchSuffix: pss } = await import("@/lib/phone")
+      const leadForContext = await prisma.lead.findFirst({
+        where: { phone: { contains: pss(phone) } },
+        include: { followUps: { orderBy: { createdAt: "desc" }, take: 6, select: { content: true, type: true } } },
+      })
+
+      const history = leadForContext?.followUps?.map((f: { content: string }) => `Lead: ${f.content}`).reverse() || []
+
+      // Tentar resposta IA (Groq)
+      const { generateLeadResponse } = await import("@/lib/whatsapp-bot")
+      let reply = await generateLeadResponse(messageContent, pushName, history)
+
+      // Fallback se Groq falhar: menu interativo
+      if (!reply) {
+        reply = `Oi ${pushName.split(" ")[0]}! Sou o Victor Oliveira, personal trainer em Fortaleza 💪\n\n` +
+          `Me conta: o que tu tá procurando?\n\n` +
+          `1️⃣ Emagrecer\n2️⃣ Ganhar massa\n3️⃣ Condicionamento\n4️⃣ Preços\n5️⃣ Aula experimental grátis`
+      }
+
+      // Auto-classificar temperatura pela intenção
+      const msgLower = messageContent.toLowerCase()
+      const isHotIntent = /pre[cç]o|valor|quanto|custa|plano|mensalidade|experiment|testar|aula.*grat|gratis|assinar|comprar|pagar/.test(msgLower)
+      if (isHotIntent && leadForContext) {
+        await prisma.lead.update({
+          where: { id: leadForContext.id },
+          data: { temperature: "HOT" },
+        })
+      }
+
+      await sendTextMessage(INSTANCE_NAME, phone, reply)
+
+      // Auto-score lead recém-criado/atualizado
+      const capturedLead = await prisma.lead.findFirst({
+        where: { phone: { contains: (await import("@/lib/phone")).phoneSearchSuffix(phone) } },
+        select: { id: true },
+      })
+      if (capturedLead) import("@/lib/lead-scoring").then(m => m.scoreAndNotify(capturedLead.id)).catch(() => {})
+
       return NextResponse.json({ received: true, leadCaptured: true })
     }
 
-    // ─── Get trainer ───
+    // ─── Get trainer (owner) ───
     const trainer = await prisma.trainerProfile.findFirst({
       select: { userId: true },
+      orderBy: { createdAt: "asc" },
     })
 
     // ─── Save incoming message ───

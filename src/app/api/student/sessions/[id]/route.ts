@@ -63,7 +63,8 @@ async function triggerPostWorkoutBot(studentId: string, workoutName: string, dur
 
   if (!studentUser?.user?.phone) return
 
-  const phone = studentUser.user.phone.replace(/\D/g, "")
+  const { normalizePhone } = await import("@/lib/phone")
+  const phone = normalizePhone(studentUser.user.phone)
   if (!phone) return
 
   const firstName = studentUser.user.name.split(" ")[0]

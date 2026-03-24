@@ -102,18 +102,46 @@ export async function PATCH(req: NextRequest) {
         })),
       })
 
-      // Mark as sending (actual WhatsApp send would go here)
+      // Marcar como SENDING antes do loop
+      await prisma.crmBroadcast.update({
+        where: { id },
+        data: { status: "SENDING" },
+      })
+
       let sentCount = 0
       let failedCount = 0
 
+      const { sendWhatsAppMessage } = await import("@/lib/whatsapp-bot")
+
       for (const lead of leads) {
         if (lead.phone) {
-          // In production, send via WhatsApp Cloud API
-          sentCount++
-          await prisma.crmBroadcastRecipient.updateMany({
-            where: { broadcastId: id, leadId: lead.id },
-            data: { status: "sent", sentAt: new Date() },
-          })
+          try {
+            // Substituir variáveis no conteúdo
+            const msg = broadcast.content
+              .replace(/\{\{nome\}\}/gi, lead.name.split(" ")[0])
+              .replace(/\{\{nome_completo\}\}/gi, lead.name)
+
+            const sent = await sendWhatsAppMessage(lead.phone, msg)
+            if (sent) {
+              sentCount++
+              await prisma.crmBroadcastRecipient.updateMany({
+                where: { broadcastId: id, leadId: lead.id },
+                data: { status: "sent", sentAt: new Date() },
+              })
+            } else {
+              failedCount++
+              await prisma.crmBroadcastRecipient.updateMany({
+                where: { broadcastId: id, leadId: lead.id },
+                data: { status: "failed" },
+              })
+            }
+          } catch {
+            failedCount++
+            await prisma.crmBroadcastRecipient.updateMany({
+              where: { broadcastId: id, leadId: lead.id },
+              data: { status: "failed" },
+            })
+          }
         } else {
           failedCount++
           await prisma.crmBroadcastRecipient.updateMany({
@@ -125,7 +153,11 @@ export async function PATCH(req: NextRequest) {
 
       await prisma.crmBroadcast.update({
         where: { id },
-        data: { status: "COMPLETED", sentCount, failedCount },
+        data: {
+          status: failedCount === leads.length ? "FAILED" : "COMPLETED",
+          sentCount,
+          failedCount,
+        },
       })
 
       return NextResponse.json({ sent: sentCount, failed: failedCount })

@@ -181,6 +181,82 @@ function Logo({ size = 44, glow = false }: { size?: number; glow?: boolean }) {
 }
 
 /* ═══════════════════════════════════════════
+   LEAD CAPTURE FORM — captura visitantes que não compraram
+   ═══════════════════════════════════════════ */
+function LeadCaptureForm() {
+  const [form, setForm] = useState({ name: "", phone: "" })
+  const [sent, setSent] = useState(false)
+  const [loading, setLoading] = useState(false)
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim() || !form.phone.trim()) return
+    setLoading(true)
+    try {
+      await fetch("/api/leads/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          phone: form.phone,
+          source: "WEBSITE",
+          temperature: "WARM",
+          notes: "Formulário 'Quero experimentar' na landing page",
+          tags: ["landing_page", "experimental"],
+        }),
+      })
+      setSent(true)
+    } catch { /* silent */ }
+    setLoading(false)
+  }
+
+  if (sent) {
+    return (
+      <div className="mt-8 p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 max-w-md mx-auto">
+        <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
+        <p className="text-emerald-400 font-semibold text-sm">Recebemos seu contato!</p>
+        <p className="text-neutral-500 text-xs mt-1">Victor vai te chamar no WhatsApp em breve.</p>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mt-8 max-w-md mx-auto">
+      <div className="relative rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6">
+        <p className="text-neutral-400 text-xs mb-1 uppercase tracking-widest font-semibold">Sem compromisso</p>
+        <p className="text-white text-base font-bold mb-4">Quero experimentar uma aula grátis</p>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="text"
+            placeholder="Seu nome"
+            required
+            value={form.name}
+            onChange={e => setForm(prev => ({ ...prev, name: e.target.value }))}
+            className="w-full px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white text-sm placeholder:text-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
+          />
+          <input
+            type="tel"
+            placeholder="Seu WhatsApp (DDD + número)"
+            required
+            value={form.phone}
+            onChange={e => setForm(prev => ({ ...prev, phone: e.target.value }))}
+            className="w-full px-4 py-3 rounded-xl bg-white/[0.05] border border-white/[0.08] text-white text-sm placeholder:text-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
+          />
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-bold shadow-lg shadow-red-600/20 hover:from-red-500 hover:to-red-600 transition-all disabled:opacity-50"
+          >
+            {loading ? "Enviando..." : "Victor vai me chamar no WhatsApp"}
+          </button>
+        </form>
+        <p className="text-neutral-700 text-[10px] mt-3 text-center">Resposta em até 2 horas · Sem spam</p>
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════
    MAIN
    ═══════════════════════════════════════════ */
 function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duration: Duration; onClose: () => void }) {
@@ -189,6 +265,34 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
   const isElite = tier.name === "Elite"
   const [checkoutLoading, setCheckoutLoading] = useState(false)
   const [checkoutForm, setCheckoutForm] = useState({ name: "", email: "", phone: "" })
+  const didCheckoutRef = useRef(false)
+
+  // Abandono de checkout — captura lead HOT se preencheu dados mas não completou
+  useEffect(() => {
+    return () => {
+      if (didCheckoutRef.current) return // completou checkout, não é abandono
+      const { name, email, phone } = checkoutForm
+      if (!name && !phone && !email) return // não preencheu nada
+
+      // Fire-and-forget: captura como lead HOT
+      fetch("/api/leads/capture", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: name || `Abandono ${email || phone || "checkout"}`,
+          phone: phone || undefined,
+          email: email || undefined,
+          source: "WEBSITE",
+          temperature: "HOT",
+          value: p.monthly,
+          notes: `Abandono checkout: plano ${tier.name} ${duration} — R$ ${p.monthly.toFixed(2)}/mês`,
+          tags: ["abandono_checkout", tier.name.toLowerCase()],
+          planInterest: `${tier.name} ${duration}`,
+        }),
+      }).catch(() => {})
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleCheckout(e: React.FormEvent) {
     e.preventDefault()
@@ -207,8 +311,10 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
       })
       const data = await res.json()
       if (data.checkoutUrl) {
+        didCheckoutRef.current = true
         window.location.href = data.checkoutUrl
       } else if (data.sandboxUrl) {
+        didCheckoutRef.current = true
         window.location.href = data.sandboxUrl
       } else {
         const detail = data.detail || data.error || "Erro desconhecido"
@@ -1080,7 +1186,7 @@ export function LandingPage() {
       {/* ═══ FAQ ═══ */}
       <FaqSection />
 
-      {/* ═══ CTA FINAL ═══ */}
+      {/* ═══ CTA FINAL + CAPTURA DE LEAD ═══ */}
       <section className="py-24 sm:py-36 px-5 sm:px-8 relative">
         <div className="absolute inset-0 overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-red-600/[0.05] blur-[150px]" />
@@ -1095,14 +1201,17 @@ export function LandingPage() {
               <br />
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">começa agora.</span>
             </h2>
-            <p className="text-neutral-500 text-base max-w-md mx-auto mb-10 leading-relaxed">
+            <p className="text-neutral-500 text-base max-w-md mx-auto mb-6 leading-relaxed">
               Não espere a segunda-feira perfeita. Cada dia conta. A partir de{" "}
               <span className="text-white font-bold">R$ 119,94/mês</span>.
             </p>
-            <a href="#planos" className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-red-600 text-white font-bold text-base shadow-2xl shadow-red-600/30 hover:shadow-red-600/50 hover:bg-red-500 transition-all duration-500 hover:scale-105 active:scale-100">
+            <a href="#planos" className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-red-600 text-white font-bold text-base shadow-2xl shadow-red-600/30 hover:shadow-red-600/50 hover:bg-red-500 transition-all duration-500 hover:scale-105 active:scale-100 mb-12">
               Escolher meu plano
               <ArrowRight className="w-5 h-5" />
             </a>
+
+            {/* Mini lead capture form */}
+            <LeadCaptureForm />
           </div>
         </Reveal>
       </section>
