@@ -6,22 +6,19 @@ import { OrbitControls, useGLTF, Environment, Center } from "@react-three/drei"
 import { RotateCcw, Box, AlertTriangle } from "lucide-react"
 
 /* ── Global WebGL context limiter ── */
-const MAX_CONTEXTS = 4
+const MAX_CONTEXTS = 6
 let activeCount = 0
-const waiters: (() => void)[] = []
 
-function acquireSlot(): Promise<void> {
+function acquireSlot(): boolean {
   if (activeCount < MAX_CONTEXTS) {
     activeCount++
-    return Promise.resolve()
+    return true
   }
-  return new Promise<void>(resolve => waiters.push(resolve))
+  return false
 }
 
 function releaseSlot() {
   activeCount = Math.max(0, activeCount - 1)
-  const next = waiters.shift()
-  if (next) { activeCount++; next() }
 }
 
 /* ── Error Boundary — catches GLB load failures ── */
@@ -101,21 +98,30 @@ export default function Machine3DCanvas({ modelUrl, fullscreen }: { modelUrl: st
     return () => observer.disconnect()
   }, [fullscreen])
 
-  // Acquire/release WebGL context slot
+  // Acquire/release WebGL context slot — synchronous, no waiting
   useEffect(() => {
-    if (fullscreen || !visible) {
-      setSlotReady(false)
+    if (fullscreen) return
+    if (!visible) {
+      if (slotReady) { releaseSlot(); setSlotReady(false) }
       return
     }
 
-    let cancelled = false
-    acquireSlot().then(() => {
-      if (!cancelled) setSlotReady(true)
-    })
+    // Visible — try to get a slot
+    if (!slotReady) {
+      const got = acquireSlot()
+      if (got) setSlotReady(true)
+      else {
+        // Retry every 500ms in case slots free up from scrolling
+        const timer = setInterval(() => {
+          const got2 = acquireSlot()
+          if (got2) { setSlotReady(true); clearInterval(timer) }
+        }, 500)
+        return () => clearInterval(timer)
+      }
+    }
 
     return () => {
-      cancelled = true
-      if (slotReady) releaseSlot()
+      if (slotReady) { releaseSlot(); setSlotReady(false) }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [visible, fullscreen])
