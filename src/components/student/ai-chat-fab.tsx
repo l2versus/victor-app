@@ -41,9 +41,6 @@ export function AiChatFab() {
   const hasMoved = useRef(false)
   const startTouch = useRef({ x: 0, y: 0, posX: 0, posY: 0 })
 
-  // Hide on chat page
-  if (pathname === "/chat") return null
-
   // Keep position in bounds on resize
   useEffect(() => {
     function onResize() {
@@ -97,10 +94,13 @@ export function AiChatFab() {
     }
   }, [router])
 
+  // Hide on chat page (MUST be after all hooks — React rules)
+  if (pathname === "/chat") return null
+
   return (
     <div
       ref={ref}
-      className="fixed z-40 touch-none select-none"
+      className="fixed z-60 touch-none select-none"
       style={{ left: pos.x, top: pos.y, transition: dragging.current ? "none" : "left 0.3s ease, top 0.3s ease" }}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}

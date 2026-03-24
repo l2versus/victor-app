@@ -160,7 +160,7 @@ export function WorkoutPlayer({
 
   const totalCompleted = Array.from(completedSets.values()).reduce((sum, arr) => sum + arr.length, 0)
   const progress = totalSets > 0 ? totalCompleted / totalSets : 0
-  const currentEx = exercises[currentExIdx]
+  const currentEx = exercises[currentExIdx] ?? exercises[0]
 
   // Elapsed timer
   useEffect(() => {
@@ -910,8 +910,8 @@ export function WorkoutPlayer({
             suggestedReps={parseInt(currentEx.reps) || 10}
             suggestedLoad={
               exCompletedSets.length > 0
-                ? exCompletedSets[exCompletedSets.length - 1].loadKg
-                : currentEx.loadKg || 0
+                ? (exCompletedSets[exCompletedSets.length - 1]?.loadKg ?? currentEx.loadKg ?? 0)
+                : (currentEx.loadKg ?? 0)
             }
             exerciseTechnique={currentEx.technique}
             onAdd={(reps, loadKg, technique) =>
