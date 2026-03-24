@@ -729,12 +729,12 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.95 }}
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      className="fixed inset-0 z-60 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-sm pt-16 sm:pt-0 px-4"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-lg rounded-2xl bg-[#111] border border-neutral-800 overflow-hidden">
+      <div className="w-full max-w-lg rounded-2xl bg-[#111] border border-neutral-800 overflow-hidden max-h-[80vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-800">
+        <div className="flex items-center justify-between p-4 border-b border-neutral-800 shrink-0">
           <button onClick={onClose} className="text-neutral-500 hover:text-white">
             <X className="w-5 h-5" />
           </button>
@@ -749,12 +749,12 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
         </div>
 
         {/* Content */}
-        <div className="p-4">
+        <div className="p-4 flex-1 overflow-y-auto">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             placeholder="O que está treinando hoje? Compartilhe com a galera..."
-            className="w-full bg-transparent text-sm text-white placeholder:text-neutral-600 outline-none resize-none min-h-[100px]"
+            className="w-full bg-transparent text-sm text-white placeholder:text-neutral-600 outline-none resize-none min-h-[120px]"
             autoFocus
           />
 

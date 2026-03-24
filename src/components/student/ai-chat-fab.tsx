@@ -14,7 +14,7 @@ export function AiChatFab() {
     <Link
       href="/chat"
       prefetch={true}
-      className="fixed z-50 group"
+      className="fixed z-40 group"
       style={{ bottom: "5.5rem", right: "1.25rem" }}
       aria-label="Chat com IA"
     >
