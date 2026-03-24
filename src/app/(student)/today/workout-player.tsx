@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import {
   Play, ChevronLeft, ChevronRight, Check, Dumbbell, Clock,
-  Flame, Trophy, X, Zap, Plus, Pencil, Trash2, ChevronDown,
+  Flame, Trophy, X, Zap, Plus, Pencil, Trash2, ChevronDown, Box,
 } from "lucide-react"
 import { useRestTimer } from "@/hooks/use-rest-timer"
 import { useSwipe } from "@/hooks/use-swipe"
@@ -801,11 +801,21 @@ export function WorkoutPlayer({
           <div className="flex-1 min-w-0 flex items-start gap-3">
             {(() => {
               const thumb = currentEx.gifUrl || currentEx.imageUrl
-              return thumb ? (
+              if (thumb) return (
                 <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 bg-neutral-900">
                   <img src={thumb} alt={currentEx.name} className="w-full h-full object-cover" loading="lazy" />
                 </div>
-              ) : (
+              )
+              if (currentEx.machine3dModel) return (
+                <button
+                  onClick={() => setExerciseDetail(currentEx)}
+                  className="w-14 h-14 rounded-xl overflow-hidden border border-red-500/20 shrink-0 bg-gradient-to-br from-red-600/15 to-red-900/10 flex flex-col items-center justify-center gap-0.5"
+                >
+                  <Box className="w-4 h-4 text-red-400" />
+                  <span className="text-[8px] text-red-400 font-bold">3D</span>
+                </button>
+              )
+              return (
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/10 flex items-center justify-center text-red-400 border border-red-500/15 shrink-0">
                   <Dumbbell className="w-5 h-5" />
                 </div>

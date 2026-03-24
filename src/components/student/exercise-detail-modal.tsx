@@ -139,8 +139,9 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
   const [machineBrand, setMachineBrand] = useState<string | null>(exercise.machineBrand || null)
   const brandInfo = machineBrand ? BRAND_ORIGINS[machineBrand] : null
 
-  // Auto-match machine 3D: suggestedMachine > machine3dModel > match by name in index.json
-  const [machine3DSlug, setMachine3DSlug] = useState<string | null>(exercise.suggestedMachine || exercise.machine3dModel || null)
+  // Auto-match machine 3D: machine3dModel (slug real) > match by name in index.json
+  // suggestedMachine é o NOME da máquina, não o slug do .glb
+  const [machine3DSlug, setMachine3DSlug] = useState<string | null>(exercise.machine3dModel || null)
   const hasMachine3D = !!machine3DSlug
 
   // Try to auto-match exercise name to a machine in index.json

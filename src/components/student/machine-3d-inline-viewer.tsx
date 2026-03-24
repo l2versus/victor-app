@@ -101,7 +101,7 @@ export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }
 
       {/* Fullscreen Modal */}
       {fullscreen && (
-        <div className="fixed inset-0 z-[60] bg-black" onClick={() => setFullscreen(false)}>
+        <div className="fixed inset-0 z-80 bg-black" onClick={() => setFullscreen(false)}>
           <Canvas camera={{ position: [3, 2, 3], fov: 40 }} style={{ background: "#000" }}>
             <ambientLight intensity={0.6} />
             <directionalLight position={[5, 5, 5]} intensity={1.2} />
