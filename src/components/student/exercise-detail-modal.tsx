@@ -189,7 +189,7 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
       {/* Modal — mobile bottom sheet style */}
       <div
         className="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col animate-slide-up"
-        style={{ maxHeight: "85dvh" }}
+        style={{ maxHeight: "92dvh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Hero image — compact on mobile */}

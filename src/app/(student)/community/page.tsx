@@ -904,7 +904,12 @@ function FeedCard({
         >
           <Avatar name={post.studentName} avatar={post.studentAvatar} size="sm" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-white truncate">{post.studentName}</p>
+            <div className="flex items-center gap-2">
+              <p className="text-sm font-semibold text-white truncate">{post.studentName}</p>
+              {!post.studentId && (
+                <span className="px-1.5 py-0.5 rounded bg-amber-500/15 border border-amber-500/20 text-[8px] text-amber-400 font-bold uppercase tracking-wider">Personal</span>
+              )}
+            </div>
             <p className="text-[10px] text-neutral-500">{timeAgo(post.createdAt)}</p>
           </div>
         </button>
@@ -939,7 +944,7 @@ function FeedCard({
           <img
             src={post.imageUrl}
             alt="Post"
-            className="w-full max-h-[500px] object-cover"
+            className="w-full object-contain bg-black"
             onDoubleClick={onLike}
           />
         </div>

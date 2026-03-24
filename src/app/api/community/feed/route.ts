@@ -59,15 +59,12 @@ export async function GET(req: NextRequest) {
     const hasMore = posts.length > limit
     const items = hasMore ? posts.slice(0, limit) : posts
 
-    // Get current student id for reaction/like highlights
-    let currentStudentId: string | null = null
-    if (session.role === "STUDENT") {
-      const student = await prisma.student.findUnique({
-        where: { userId: session.userId },
-        select: { id: true },
-      })
-      currentStudentId = student?.id ?? null
-    }
+    // Get current student id for reaction/like highlights (works for both student and admin)
+    const currentStudent = await prisma.student.findUnique({
+      where: { userId: session.userId },
+      select: { id: true },
+    })
+    const currentStudentId = currentStudent?.id ?? null
 
     const feed = items.map((post) => {
       // Count reactions by type

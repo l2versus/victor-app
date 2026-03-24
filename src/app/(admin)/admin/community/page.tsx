@@ -220,7 +220,7 @@ export default function AdminCommunityPage() {
 
               {/* Image */}
               {post.imageUrl && (
-                <img src={post.imageUrl} alt="" className="w-full max-h-[400px] object-cover" />
+                <img src={post.imageUrl} alt="" className="w-full object-contain bg-black" />
               )}
 
               {/* Actions */}
