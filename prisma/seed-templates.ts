@@ -1,8 +1,8 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const { PrismaClient } = require("../src/generated/prisma/client")
-const { PrismaPg } = require("@prisma/adapter-pg")
+import { PrismaClient } from "../src/generated/prisma/client"
+import { PrismaPg } from "@prisma/adapter-pg"
+import "dotenv/config"
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL })
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
 const prisma = new PrismaClient({ adapter })
 
 // Template library — treinos prontos por objetivo e nível

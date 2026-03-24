@@ -102,6 +102,12 @@ model Student {
   notes        String?
   status       StudentStatus @default(ACTIVE)
 
+  // ── Social Profile ──
+  bio          String?   /// Bio pública do perfil (max 150 chars)
+  profession   String?   /// Profissão (ex: "Engenheiro de Software", "Designer")
+  bioLink      String?   /// Link no perfil (ex: Instagram, LinkedIn)
+  lastSeenAt   DateTime? /// Último acesso — online status
+
   user         User                @relation("UserStudent", fields: [userId], references: [id])
   trainer      TrainerProfile      @relation(fields: [trainerId], references: [id])
   sessions     WorkoutSession[]
@@ -124,6 +130,8 @@ model Student {
   scheduleSlots     ScheduleSlot[]
   extraActivities   ExtraActivity[]
   checkIns          CheckIn[]
+  stories           Story[]
+  storyViews        StoryView[]
 
   // Spotify OAuth tokens (salvo no DB, não em cookies)
   spotifyAccessToken  String?
@@ -557,12 +565,15 @@ model CommunityPost {
   imageUrl  String?  // Foto do post (base64 ou URL)
   metadata  Json?    // { exerciseName, oldPR, newPR, streakDays, etc }
 
+  videoUrl  String?  /// Vídeo do post (URL)
+
   student   Student?           @relation(fields: [studentId], references: [id], onDelete: Cascade)
   reactions CommunityReaction[]
   comments  CommunityComment[]
   likes     CommunityLike[]
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([studentId])
   @@index([type])
@@ -614,6 +625,7 @@ model CommunityComment {
   student Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([postId])
   @@index([createdAt])
@@ -639,7 +651,41 @@ model Follow {
 }
 
 // ═══════════════════════════════════════
-// DIRECT MESSAGES — Victor ↔ Aluno
+// STORIES — Conteúdo 24h (Instagram-style)
+// ═══════════════════════════════════════
+
+model Story {
+  id        String   @id @default(cuid())
+  studentId String
+  imageUrl  String   /// Foto/vídeo do story (base64 ou URL)
+  caption   String?  /// Texto opcional sobre o story
+  expiresAt DateTime /// Auto-remove após 24h
+
+  student Student     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  views   StoryView[]
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([expiresAt])
+}
+
+model StoryView {
+  id        String @id @default(cuid())
+  storyId   String
+  studentId String
+
+  story   Story   @relation(fields: [storyId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  viewedAt DateTime @default(now())
+
+  @@unique([storyId, studentId])
+  @@index([storyId])
+}
+
+// ═══════════════════════════════════════
+// DIRECT MESSAGES — Victor ↔ Aluno + Peer-to-Peer
 // ═══════════════════════════════════════
 
 model DirectMessage {

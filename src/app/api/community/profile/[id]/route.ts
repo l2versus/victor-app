@@ -88,10 +88,14 @@ export async function GET(
     return NextResponse.json({
       profile: {
         studentId: student.id,
+        userId: student.userId,
         name: student.user.name,
         avatar: student.user.avatar,
         memberSince: student.user.createdAt,
         goals: student.goals,
+        bio: student.bio,
+        profession: student.profession,
+        bioLink: student.bioLink,
         isMe: myStudentId === studentId,
         isFollowing,
         stats: {
@@ -113,6 +117,56 @@ export async function GET(
         createdAt: p.createdAt,
       })),
     })
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Erro interno"
+    if (msg === "Unauthorized" || msg === "SessionExpired") {
+      return NextResponse.json({ error: msg }, { status: 401 })
+    }
+    return NextResponse.json({ error: msg }, { status: 500 })
+  }
+}
+
+// PATCH /api/community/profile/[id] — edit own social profile
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const session = await requireAuth()
+    const { id: studentId } = await params
+
+    const me = await prisma.student.findUnique({
+      where: { userId: session.userId },
+      select: { id: true },
+    })
+
+    if (!me || me.id !== studentId) {
+      return NextResponse.json({ error: "Só pode editar o próprio perfil" }, { status: 403 })
+    }
+
+    const body = await req.json()
+    const { name, avatar, bio, profession, bioLink } = body
+
+    // Update Student social fields
+    const studentUpdate: Record<string, unknown> = {}
+    if (bio !== undefined) studentUpdate.bio = (bio as string).slice(0, 150) || null
+    if (profession !== undefined) studentUpdate.profession = (profession as string).slice(0, 60) || null
+    if (bioLink !== undefined) studentUpdate.bioLink = (bioLink as string).slice(0, 200) || null
+
+    if (Object.keys(studentUpdate).length > 0) {
+      await prisma.student.update({ where: { id: studentId }, data: studentUpdate })
+    }
+
+    // Update User fields (name, avatar)
+    const userUpdate: Record<string, unknown> = {}
+    if (name?.trim()) userUpdate.name = (name as string).trim().slice(0, 80)
+    if (avatar !== undefined) userUpdate.avatar = avatar || null
+
+    if (Object.keys(userUpdate).length > 0) {
+      await prisma.user.update({ where: { id: session.userId }, data: userUpdate })
+    }
+
+    return NextResponse.json({ success: true })
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Erro interno"
     if (msg === "Unauthorized" || msg === "SessionExpired") {

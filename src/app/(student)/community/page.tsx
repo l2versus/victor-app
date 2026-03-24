@@ -132,6 +132,25 @@ export default function CommunityPage() {
   const [feedFilter, setFeedFilter] = useState<"all" | "following">("all")
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
 
+  // Stories
+  type StoryGroup = {
+    studentId: string; name: string; avatar: string | null; isMe: boolean; hasUnviewed: boolean
+    stories: { id: string; imageUrl: string; caption: string | null; viewCount: number; isViewed: boolean; createdAt: string; expiresAt: string }[]
+  }
+  const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([])
+  const [viewingStory, setViewingStory] = useState<{ group: StoryGroup; index: number } | null>(null)
+  const [showStoryCreate, setShowStoryCreate] = useState(false)
+
+  const fetchStories = useCallback(async () => {
+    try {
+      const res = await fetch("/api/community/stories")
+      if (res.ok) {
+        const data = await res.json()
+        setStoryGroups(data.storyGroups || [])
+      }
+    } catch { /* ignore */ }
+  }, [])
+
   const fetchFeatures = useCallback(async () => {
     try {
       const [subRes, followRes] = await Promise.all([
@@ -185,7 +204,7 @@ export default function CommunityPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchFeatures() }, [fetchFeatures])
+  useEffect(() => { fetchFeatures(); fetchStories() }, [fetchFeatures, fetchStories])
 
   useEffect(() => {
     if (tab === "ranking") fetchRanking()
@@ -247,6 +266,169 @@ export default function CommunityPage() {
           </div>
         </div>
       </div>
+
+      {/* ═══ Stories Ring — Instagram style ═══ */}
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4">
+        {/* Add story button */}
+        <button
+          onClick={() => setShowStoryCreate(true)}
+          className="flex flex-col items-center gap-1 shrink-0"
+        >
+          <div className="w-16 h-16 rounded-full bg-white/[0.04] border-2 border-dashed border-white/[0.15] flex items-center justify-center">
+            <Plus className="w-5 h-5 text-neutral-400" />
+          </div>
+          <span className="text-[10px] text-neutral-500 w-16 text-center truncate">Seu story</span>
+        </button>
+
+        {/* Story rings */}
+        {storyGroups.map((group) => (
+          <button
+            key={group.studentId}
+            onClick={() => {
+              setViewingStory({ group, index: 0 })
+              // Mark first story as viewed
+              fetch("/api/community/stories/view", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ storyId: group.stories[0].id }),
+              })
+            }}
+            className="flex flex-col items-center gap-1 shrink-0"
+          >
+            <div className={`w-16 h-16 rounded-full p-[2.5px] ${
+              group.hasUnviewed
+                ? "bg-gradient-to-tr from-red-600 via-orange-500 to-yellow-400"
+                : "bg-neutral-700"
+            }`}>
+              <div className="w-full h-full rounded-full bg-[#030303] p-[2px]">
+                <div className="w-full h-full rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center text-neutral-400 text-xs font-bold">
+                  {group.avatar ? (
+                    <img src={group.avatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    group.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+                  )}
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] text-neutral-400 w-16 text-center truncate">
+              {group.isMe ? "Você" : group.name.split(" ")[0]}
+            </span>
+          </button>
+        ))}
+      </div>
+
+      {/* Story Viewer Modal */}
+      {viewingStory && (
+        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => { setViewingStory(null); fetchStories() }}>
+          <div className="w-full max-w-lg h-full relative" onClick={(e) => e.stopPropagation()}>
+            {/* Progress bars */}
+            <div className="absolute top-2 left-3 right-3 flex gap-1 z-10">
+              {viewingStory.group.stories.map((s, i) => (
+                <div key={s.id} className="flex-1 h-0.5 rounded-full bg-white/20 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-300 ${
+                    i < viewingStory.index ? "bg-white w-full" : i === viewingStory.index ? "bg-white w-full" : "w-0"
+                  }`} />
+                </div>
+              ))}
+            </div>
+
+            {/* Header */}
+            <div className="absolute top-6 left-3 right-3 flex items-center gap-2 z-10">
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center text-neutral-300 text-xs font-bold">
+                {viewingStory.group.avatar ? (
+                  <img src={viewingStory.group.avatar} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  viewingStory.group.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+                )}
+              </div>
+              <span className="text-white text-sm font-semibold">{viewingStory.group.name.split(" ")[0]}</span>
+              <span className="text-white/50 text-xs">
+                {timeAgo(viewingStory.group.stories[viewingStory.index].createdAt)}
+              </span>
+              <button onClick={() => { setViewingStory(null); fetchStories() }} className="ml-auto text-white/70 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Story image */}
+            <img
+              src={viewingStory.group.stories[viewingStory.index].imageUrl}
+              alt=""
+              className="w-full h-full object-contain"
+            />
+
+            {/* Caption */}
+            {viewingStory.group.stories[viewingStory.index].caption && (
+              <div className="absolute bottom-16 left-0 right-0 px-4">
+                <p className="text-white text-sm bg-black/50 px-3 py-2 rounded-lg backdrop-blur-sm">
+                  {viewingStory.group.stories[viewingStory.index].caption}
+                </p>
+              </div>
+            )}
+
+            {/* Navigation tap zones */}
+            <button
+              className="absolute left-0 top-0 w-1/3 h-full"
+              onClick={() => {
+                if (viewingStory.index > 0) {
+                  setViewingStory({ ...viewingStory, index: viewingStory.index - 1 })
+                } else {
+                  setViewingStory(null); fetchStories()
+                }
+              }}
+            />
+            <button
+              className="absolute right-0 top-0 w-2/3 h-full"
+              onClick={() => {
+                const nextIdx = viewingStory.index + 1
+                if (nextIdx < viewingStory.group.stories.length) {
+                  setViewingStory({ ...viewingStory, index: nextIdx })
+                  fetch("/api/community/stories/view", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ storyId: viewingStory.group.stories[nextIdx].id }),
+                  })
+                } else {
+                  setViewingStory(null); fetchStories()
+                }
+              }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Story Create Modal */}
+      {showStoryCreate && (
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-end justify-center" onClick={() => setShowStoryCreate(false)}>
+          <div className="w-full max-w-lg bg-[#111] border-t border-white/[0.08] rounded-t-2xl p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white">Novo Story</h3>
+              <button onClick={() => setShowStoryCreate(false)} className="text-neutral-500"><X className="w-5 h-5" /></button>
+            </div>
+            <p className="text-xs text-neutral-500">Escolha uma foto para compartilhar por 24h</p>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files?.[0]
+                if (!file) return
+                const reader = new FileReader()
+                reader.onload = async () => {
+                  const imageUrl = reader.result as string
+                  const res = await fetch("/api/community/stories", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ imageUrl }),
+                  })
+                  if (res.ok) { setShowStoryCreate(false); fetchStories() }
+                }
+                reader.readAsDataURL(file)
+              }}
+              className="w-full text-sm text-neutral-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-red-600 file:text-white file:font-semibold file:text-sm"
+            />
+          </div>
+        </div>
+      )}
 
       {/* Tabs */}
       <div className="flex gap-1.5 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">

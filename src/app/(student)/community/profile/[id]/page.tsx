@@ -6,15 +6,20 @@ import { motion } from "framer-motion"
 import {
   ArrowLeft, UserPlus, UserCheck, Dumbbell, Flame,
   Heart, MessageCircle, Grid3X3, Trophy, Calendar,
-  Loader2, Target,
+  Loader2, Target, Send, Pencil, X, Check, Link2, Briefcase,
+  ExternalLink,
 } from "lucide-react"
 
 type ProfileData = {
   studentId: string
+  userId: string
   name: string
   avatar: string | null
   memberSince: string
   goals: string | null
+  bio: string | null
+  profession: string | null
+  bioLink: string | null
   isMe: boolean
   isFollowing: boolean
   stats: {
@@ -58,6 +63,11 @@ export default function SocialProfilePage() {
   const [loading, setLoading] = useState(true)
   const [followLoading, setFollowLoading] = useState(false)
   const [selectedPost, setSelectedPost] = useState<PostItem | null>(null)
+  const [editing, setEditing] = useState(false)
+  const [editBio, setEditBio] = useState("")
+  const [editProfession, setEditProfession] = useState("")
+  const [editLink, setEditLink] = useState("")
+  const [saving, setSaving] = useState(false)
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -90,6 +100,31 @@ export default function SocialProfilePage() {
       body: JSON.stringify({ studentId: id }),
     })
     setFollowLoading(false)
+  }
+
+  function startEditing() {
+    if (!profile) return
+    setEditBio(profile.bio || "")
+    setEditProfession(profile.profession || "")
+    setEditLink(profile.bioLink || "")
+    setEditing(true)
+  }
+
+  async function saveProfile() {
+    if (!profile || saving) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/community/profile/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ bio: editBio, profession: editProfession, bioLink: editLink }),
+      })
+      if (res.ok) {
+        setProfile(prev => prev ? { ...prev, bio: editBio || null, profession: editProfession || null, bioLink: editLink || null } : null)
+        setEditing(false)
+      }
+    } catch { /* ignore */ }
+    setSaving(false)
   }
 
   async function toggleLike(postId: string) {
@@ -152,10 +187,31 @@ export default function SocialProfilePage() {
           </div>
         </div>
 
-        {/* Name + bio */}
+        {/* Name + bio + profession */}
         <div className="mt-3">
           <p className="text-sm font-semibold text-white">{profile.name}</p>
-          {profile.goals && (
+          {profile.profession && (
+            <p className="text-xs text-neutral-400 mt-0.5 flex items-center gap-1">
+              <Briefcase className="w-3 h-3 text-neutral-500" />
+              {profile.profession}
+            </p>
+          )}
+          {profile.bio && (
+            <p className="text-xs text-neutral-300 mt-1 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
+          )}
+          {profile.bioLink && (
+            <a
+              href={profile.bioLink.startsWith("http") ? profile.bioLink : `https://${profile.bioLink}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-blue-400 mt-1 flex items-center gap-1 hover:underline"
+            >
+              <Link2 className="w-3 h-3" />
+              {profile.bioLink.replace(/^https?:\/\//, "").slice(0, 40)}
+              <ExternalLink className="w-2.5 h-2.5" />
+            </a>
+          )}
+          {!profile.bio && !profile.profession && profile.goals && (
             <p className="text-xs text-neutral-400 mt-0.5 flex items-center gap-1">
               <Target className="w-3 h-3" />
               {profile.goals}
@@ -179,29 +235,97 @@ export default function SocialProfilePage() {
           </span>
         </div>
 
-        {/* Follow button */}
-        {!profile.isMe && (
-          <motion.button
-            onClick={toggleFollow}
-            whileTap={{ scale: 0.97 }}
-            className={`w-full mt-4 py-2.5 rounded-lg text-sm font-semibold transition-all min-h-[44px] ${
-              profile.isFollowing
-                ? "bg-white/[0.06] border border-white/[0.1] text-neutral-300"
-                : "bg-red-600 text-white shadow-lg shadow-red-600/20"
-            }`}
+        {/* Action buttons */}
+        <div className="flex gap-2 mt-4">
+          {profile.isMe ? (
+            <motion.button
+              onClick={startEditing}
+              whileTap={{ scale: 0.97 }}
+              className="flex-1 py-2.5 rounded-lg text-sm font-semibold bg-white/[0.06] border border-white/[0.1] text-neutral-300 flex items-center justify-center gap-2 min-h-[44px]"
+            >
+              <Pencil className="w-4 h-4" />
+              Editar perfil
+            </motion.button>
+          ) : (
+            <>
+              <motion.button
+                onClick={toggleFollow}
+                whileTap={{ scale: 0.97 }}
+                className={`flex-1 py-2.5 rounded-lg text-sm font-semibold transition-all min-h-[44px] ${
+                  profile.isFollowing
+                    ? "bg-white/[0.06] border border-white/[0.1] text-neutral-300"
+                    : "bg-red-600 text-white shadow-lg shadow-red-600/20"
+                }`}
+              >
+                {profile.isFollowing ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <UserCheck className="w-4 h-4" />
+                    Seguindo
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center gap-2">
+                    <UserPlus className="w-4 h-4" />
+                    Seguir
+                  </span>
+                )}
+              </motion.button>
+              <motion.button
+                whileTap={{ scale: 0.97 }}
+                onClick={() => router.push(`/community/dm/${profile.userId}`)}
+                className="px-4 py-2.5 rounded-lg text-sm font-semibold bg-white/[0.06] border border-white/[0.1] text-neutral-300 min-h-[44px]"
+              >
+                <Send className="w-4 h-4" />
+              </motion.button>
+            </>
+          )}
+        </div>
+
+        {/* Edit profile modal */}
+        {editing && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 p-4 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-3"
           >
-            {profile.isFollowing ? (
-              <span className="flex items-center justify-center gap-2">
-                <UserCheck className="w-4 h-4" />
-                Seguindo
-              </span>
-            ) : (
-              <span className="flex items-center justify-center gap-2">
-                <UserPlus className="w-4 h-4" />
-                Seguir
-              </span>
-            )}
-          </motion.button>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1 block">Bio</label>
+              <textarea
+                value={editBio}
+                onChange={(e) => setEditBio(e.target.value.slice(0, 150))}
+                placeholder="Conte sobre você..."
+                rows={2}
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 resize-none focus:outline-none focus:border-red-500/50"
+              />
+              <p className="text-[10px] text-neutral-600 text-right">{editBio.length}/150</p>
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1 block">Profissão</label>
+              <input
+                value={editProfession}
+                onChange={(e) => setEditProfession(e.target.value.slice(0, 60))}
+                placeholder="Ex: Engenheiro, Designer, Estudante..."
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/50"
+              />
+            </div>
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1 block">Link</label>
+              <input
+                value={editLink}
+                onChange={(e) => setEditLink(e.target.value.slice(0, 200))}
+                placeholder="instagram.com/seuuser"
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/50"
+              />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={() => setEditing(false)} className="flex-1 py-2 rounded-lg bg-white/[0.04] border border-white/[0.08] text-neutral-400 text-sm flex items-center justify-center gap-1">
+                <X className="w-3.5 h-3.5" /> Cancelar
+              </button>
+              <button onClick={saveProfile} disabled={saving} className="flex-1 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold flex items-center justify-center gap-1 disabled:opacity-50">
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
+                Salvar
+              </button>
+            </div>
+          </motion.div>
         )}
       </div>
 
