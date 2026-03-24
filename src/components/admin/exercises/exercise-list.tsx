@@ -323,7 +323,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
 
       {/* Exercise Detail / Edit Media Modal */}
       {selectedExercise && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setSelectedExercise(null)}>
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setSelectedExercise(null)}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
           <div className="relative w-full max-w-lg rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
             <button onClick={() => setSelectedExercise(null)} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.1] transition-all">

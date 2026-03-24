@@ -925,7 +925,7 @@ function LeadDetailModal({
   const tempCfg = TEMP_CONFIG[lead.temperature as keyof typeof TEMP_CONFIG] || TEMP_CONFIG.COLD
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={onClose}>
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
       <div
         className="relative w-full max-w-lg rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden animate-slide-up"

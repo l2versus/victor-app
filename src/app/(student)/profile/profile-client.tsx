@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import {
   User, Mail, Phone, Calendar, Ruler, Weight, Target, Globe,
@@ -358,10 +358,15 @@ function SectionCard({ icon: Icon, iconColor, iconBg, title, onEdit, children }:
 /* ═══════════════════════════════════════ */
 
 function BottomSheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = "" }
+  }, [])
+
   return (
     <div className="fixed inset-0 z-9999 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-lg bg-neutral-900 border-t border-white/10 rounded-t-3xl max-h-[85vh] flex flex-col animate-slide-up">
+      <div className="relative w-full max-w-lg bg-neutral-900 border-t border-white/10 rounded-t-3xl max-h-[85dvh] flex flex-col animate-slide-up">
         <div className="px-6 pt-6 pb-0 shrink-0">
           <div className="w-10 h-1 rounded-full bg-white/20 mx-auto mb-5" />
           <div className="flex items-center justify-between mb-6">

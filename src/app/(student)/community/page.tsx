@@ -695,6 +695,12 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
   const [posting, setPosting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = "" }
+  }, [])
+
   function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
@@ -726,30 +732,42 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
 
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.95 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.95 }}
-      className="fixed inset-0 z-60 flex items-start sm:items-center justify-center bg-black/70 backdrop-blur-sm pt-16 sm:pt-0 px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
-      <div className="w-full max-w-lg rounded-2xl bg-[#111] border border-neutral-800 overflow-hidden max-h-[80vh] flex flex-col">
+      <motion.div
+        initial={{ y: "100%" }}
+        animate={{ y: 0 }}
+        exit={{ y: "100%" }}
+        transition={{ type: "spring", damping: 25, stiffness: 300 }}
+        className="absolute inset-x-0 bottom-0 w-full max-w-lg mx-auto rounded-t-2xl bg-[#111] border border-neutral-800 border-b-0 flex flex-col"
+        style={{ maxHeight: "85dvh" }}
+      >
+        {/* Drag handle */}
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
+          <div className="w-10 h-1 rounded-full bg-neutral-700" />
+        </div>
+
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-neutral-800 shrink-0">
-          <button onClick={onClose} className="text-neutral-500 hover:text-white">
+        <div className="flex items-center justify-between px-4 pb-3 border-b border-neutral-800 shrink-0">
+          <button onClick={onClose} className="text-neutral-500 hover:text-white p-1">
             <X className="w-5 h-5" />
           </button>
           <h3 className="text-sm font-semibold text-white">Novo Post</h3>
           <button
             onClick={submit}
             disabled={(!text.trim() && !imagePreview) || posting}
-            className="text-sm font-semibold text-red-400 disabled:text-neutral-700 flex items-center gap-1.5"
+            className="text-sm font-semibold text-red-400 disabled:text-neutral-700 flex items-center gap-1.5 p-1"
           >
             {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Publicar"}
           </button>
         </div>
 
-        {/* Content */}
-        <div className="p-4 flex-1 overflow-y-auto">
+        {/* Content — scrollable */}
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4">
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
@@ -772,25 +790,25 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
           )}
         </div>
 
-        {/* Actions */}
-        <div className="flex items-center gap-3 px-4 py-3 border-t border-neutral-800">
+        {/* Actions — fixed at bottom with safe area */}
+        <div className="flex items-center gap-3 px-4 py-3 border-t border-neutral-800 shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
           <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors p-2"
           >
             <ImageIcon className="w-5 h-5" />
             <span className="text-xs">Foto</span>
           </button>
           <button
             onClick={() => { if (fileRef.current) fileRef.current.capture = "environment"; fileRef.current?.click() }}
-            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors"
+            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors p-2"
           >
             <Camera className="w-5 h-5" />
             <span className="text-xs">Câmera</span>
           </button>
         </div>
-      </div>
+      </motion.div>
     </motion.div>
   )
 }

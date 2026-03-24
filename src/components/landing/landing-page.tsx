@@ -332,7 +332,7 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={onClose} role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/80 backdrop-blur-md" />
       <div
-        className="relative w-full max-w-lg rounded-3xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden max-h-[90vh] overflow-y-auto"
+        className="relative w-full max-w-lg rounded-3xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden max-h-[90dvh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Glow top */}

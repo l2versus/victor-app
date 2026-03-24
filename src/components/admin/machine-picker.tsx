@@ -101,10 +101,10 @@ export function MachinePicker({ value, onChange, className }: MachinePickerProps
 
       {/* Picker Modal */}
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={() => setOpen(false)}>
+        <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
           <div
-            className="relative w-full sm:max-w-md max-h-[85vh] rounded-t-3xl sm:rounded-2xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col"
+            className="relative w-full sm:max-w-md max-h-[85dvh] rounded-t-3xl sm:rounded-2xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col"
             onClick={e => e.stopPropagation()}
           >
             {/* Header */}

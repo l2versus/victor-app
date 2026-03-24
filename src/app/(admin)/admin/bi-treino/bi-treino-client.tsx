@@ -113,10 +113,10 @@ function DetailModal({ open, onClose, title, icon: Icon, iconColor, children, ma
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
       <div className={cn(
-        "relative z-10 w-full rounded-2xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl overflow-hidden max-h-[85vh] overflow-y-auto",
+        "relative z-10 w-full rounded-2xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl overflow-hidden max-h-[85dvh] overflow-y-auto",
         "animate-in fade-in slide-in-from-bottom-4 duration-300",
         maxWidth
       )}>

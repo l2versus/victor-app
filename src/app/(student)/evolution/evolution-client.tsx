@@ -448,9 +448,9 @@ export function EvolutionClient() {
             const session = evo.volumeTrend[volumeDetail]
             const exercises = session.exercises || []
             return (
-              <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setVolumeDetail(null)}>
+              <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/60 backdrop-blur-sm" onClick={() => setVolumeDetail(null)}>
                 <div
-                  className="w-full max-w-lg rounded-t-3xl bg-[#0c0c0c] border-t border-white/[0.08] p-5 pb-8 max-h-[75vh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
+                  className="w-full max-w-lg rounded-t-3xl bg-[#0c0c0c] border-t border-white/[0.08] p-5 pb-8 max-h-[75dvh] overflow-y-auto animate-in slide-in-from-bottom duration-300"
                   onClick={(e) => e.stopPropagation()}
                 >
                   {/* Handle */}

@@ -141,7 +141,7 @@ function ModalOverlay({ onClose, title, subtitle, children }: {
   onClose: () => void; title: string; subtitle: string; children: React.ReactNode
 }) {
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-start justify-center overflow-y-auto" onClick={onClose}>
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
       <div
         className="relative w-full max-w-2xl my-8 mx-4 rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden animate-slide-up"
@@ -156,7 +156,7 @@ function ModalOverlay({ onClose, title, subtitle, children }: {
             <X className="w-4 h-4" />
           </button>
         </div>
-        <div className="p-5 max-h-[70vh] overflow-y-auto">
+        <div className="p-5 max-h-[70dvh] overflow-y-auto">
           {children}
         </div>
       </div>

@@ -589,7 +589,7 @@ export function WorkoutPlayer({
 
         {/* ═══ VIDEO MODAL ═══ */}
         {videoModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4" onClick={() => setVideoModal(null)}>
+          <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setVideoModal(null)}>
             <div className="absolute inset-0 bg-black/90 backdrop-blur-sm" />
             <div className="relative w-full max-w-lg rounded-2xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden animate-slide-up" onClick={e => e.stopPropagation()}>
               <div className="flex items-center justify-between p-4 border-b border-white/[0.06]">
@@ -629,7 +629,7 @@ export function WorkoutPlayer({
     const offset = circumference * (1 - restTimer.progress)
 
     return (
-      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#050505]/95 backdrop-blur-xl animate-slide-up">
+      <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[#050505]/95 backdrop-blur-xl animate-slide-up">
         <div className="relative w-48 h-48 mb-8 animate-timer-pulse">
           <svg className="w-full h-full timer-circle" viewBox="0 0 120 120">
             <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="4" />

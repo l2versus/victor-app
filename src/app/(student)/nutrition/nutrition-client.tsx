@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useEffect } from "react"
 import {
   Utensils, Plus, Droplets, Sparkles, ChevronRight, X, Check,
   Coffee, Sun, Moon, Apple, Zap, Dumbbell, Trash2, TrendingUp,
@@ -206,6 +206,11 @@ function AddFoodModal({
   onAdd: (food: Food) => void
   onClose: () => void
 }) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = "" }
+  }, [])
+
   const [tab, setTab] = useState<"quick" | "manual">("quick")
   const [search, setSearch] = useState("")
   const [quantity, setQuantity] = useState(1)
@@ -275,9 +280,9 @@ function AddFoodModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-black/60" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-end bg-black/60" onClick={onClose}>
       <div
-        className="w-full max-h-[85vh] bg-[#0f0f0f] border-t border-white/5 rounded-t-2xl overflow-hidden flex flex-col"
+        className="w-full max-h-[85dvh] bg-[#0f0f0f] border-t border-white/5 rounded-t-2xl overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}

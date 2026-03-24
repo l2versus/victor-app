@@ -174,14 +174,21 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
     if (machine3DSlug && tab === "info") setTab("machine")
   }, [machine3DSlug, tab])
 
+  // Lock body scroll
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = "" }
+  }, [])
+
   return (
-    <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
       {/* Modal — mobile bottom sheet style */}
       <div
-        className="relative w-full sm:max-w-lg max-h-[85vh] rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col animate-slide-up"
+        className="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col animate-slide-up"
+        style={{ maxHeight: "85dvh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Hero image — compact on mobile */}

@@ -205,7 +205,7 @@ function MachineShowcase({
   ]
 
   return (
-    <div className="fixed inset-0 z-50 bg-black flex flex-col">
+    <div className="fixed inset-0 z-[70] bg-black flex flex-col">
       {/* Header — Premium */}
       <div className="shrink-0 border-b border-white/[0.06]">
         <div className="flex items-center justify-between px-6 py-4">

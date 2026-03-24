@@ -191,7 +191,7 @@ function DetailModal({ open, onClose, title, icon: Icon, iconColor, children, ma
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
       <div className={cn(
         "relative z-10 w-full rounded-2xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl overflow-hidden",
@@ -1600,7 +1600,7 @@ function AddCostModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="p-6">
@@ -1742,7 +1742,7 @@ function AddPaymentModal({ students, onClose, onSaved }: {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="p-6">

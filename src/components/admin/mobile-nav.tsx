@@ -86,7 +86,7 @@ export function AdminMobileNav() {
       {/* More Menu Panel */}
       {moreOpen && (
         <div className="fixed bottom-[68px] inset-x-0 z-50 px-3 pb-2 animate-in slide-in-from-bottom-4 fade-in duration-200">
-          <div className="rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-2xl p-3 shadow-2xl max-h-[70vh] flex flex-col">
+          <div className="rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-2xl p-3 shadow-2xl max-h-[70dvh] flex flex-col">
             <div className="flex items-center justify-between px-2 mb-2 shrink-0">
               <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium">Menu</p>
               <button onClick={handleClose} className="text-neutral-600 hover:text-white transition-colors p-1">

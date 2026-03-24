@@ -34,7 +34,7 @@ export function Modal({ open = true, onClose, title, children, className }: Moda
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className="fixed inset-0 z-[70] flex items-center justify-center px-4">
       {/* Overlay */}
       <div
         className="absolute inset-0 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
@@ -44,10 +44,11 @@ export function Modal({ open = true, onClose, title, children, className }: Moda
       {/* Content */}
       <div
         className={cn(
-          "relative z-10 w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#111] p-6 shadow-2xl",
+          "relative z-10 w-full max-w-lg rounded-2xl border border-neutral-800 bg-[#111] p-6 shadow-2xl overflow-y-auto",
           "animate-in fade-in zoom-in-95 duration-200",
           className
         )}
+        style={{ maxHeight: "85dvh" }}
       >
         {/* Header */}
         <div className="mb-4 flex items-center justify-between">

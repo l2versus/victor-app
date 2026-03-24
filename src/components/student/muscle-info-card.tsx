@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { X, Target, Zap, Shield, Lightbulb, ChevronDown, Info } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getMuscleInfo, type MuscleInfo } from "@/lib/muscle-data"
@@ -48,6 +48,11 @@ export function MuscleBadge({
    MUSCLE INFO SHEET — Full educational card
    ═══════════════════════════════════════════ */
 function MuscleInfoSheet({ info, onClose }: { info: MuscleInfo; onClose: () => void }) {
+  useEffect(() => {
+    document.body.style.overflow = "hidden"
+    return () => { document.body.style.overflow = "" }
+  }, [])
+
   return (
     <div
       className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center"
@@ -58,7 +63,7 @@ function MuscleInfoSheet({ info, onClose }: { info: MuscleInfo; onClose: () => v
 
       {/* Sheet — slides up on mobile */}
       <div
-        className="relative w-full sm:max-w-md max-h-[85vh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl animate-slide-up"
+        className="relative w-full sm:max-w-md max-h-[85dvh] overflow-y-auto rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl animate-slide-up"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drag handle (mobile) */}
