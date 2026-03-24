@@ -157,13 +157,21 @@ export default async function StudentDetailPage({
                 <AlertTriangle className="w-3.5 h-3.5 text-yellow-400" />
                 Restrições
               </h4>
-              <p className="text-sm text-neutral-400 leading-relaxed">
+              <div className="text-sm text-neutral-400 leading-relaxed space-y-1.5">
                 {student.restrictions
                   ? typeof student.restrictions === "string"
-                    ? student.restrictions
-                    : JSON.stringify(student.restrictions)
-                  : "Nenhuma restrição listada."}
-              </p>
+                    ? <p>{student.restrictions}</p>
+                    : (() => {
+                        const r = student.restrictions as Record<string, unknown>
+                        return Object.entries(r).map(([key, val]) => (
+                          <p key={key}>
+                            <span className="text-neutral-500 capitalize">{key.replace(/([A-Z])/g, " $1").replace(/^./, s => s.toUpperCase())}:</span>{" "}
+                            {Array.isArray(val) ? val.join(", ") : String(val)}
+                          </p>
+                        ))
+                      })()
+                  : <p>Nenhuma restrição listada.</p>}
+              </div>
             </div>
           </div>
 

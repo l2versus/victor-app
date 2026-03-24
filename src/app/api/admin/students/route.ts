@@ -17,12 +17,13 @@ export async function GET(req: NextRequest) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")))
     const skip = (page - 1) * limit
 
-    // Auto-fix: link orphan STUDENT users (registered via public signup) to this trainer
-    const orphans = await prisma.user.findMany({
-      where: { role: "STUDENT", student: null },
-      select: { id: true },
-    })
-    if (orphans.length > 0) {
+    // Auto-fix orphans: only on first load per deploy (lightweight check)
+    const orphanCount = await prisma.user.count({ where: { role: "STUDENT", student: null } })
+    if (orphanCount > 0) {
+      const orphans = await prisma.user.findMany({
+        where: { role: "STUDENT", student: null },
+        select: { id: true },
+      })
       await prisma.student.createMany({
         data: orphans.map((o) => ({ userId: o.id, trainerId: trainer.id, status: "ACTIVE" as const })),
         skipDuplicates: true,

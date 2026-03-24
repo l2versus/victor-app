@@ -60,6 +60,7 @@ export function ProfileClient({ student, stats }: ProfileProps) {
   const [activeSheet, setActiveSheet] = useState<ActiveSheet>(null)
   const [avatarUrl, setAvatarUrl] = useState(student.avatar)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [avatarMsg, setAvatarMsg] = useState<{ text: string; ok: boolean } | null>(null)
   const avatarInputRef = useRef<HTMLInputElement>(null)
 
   const initials = student.name
@@ -73,10 +74,12 @@ export function ProfileClient({ student, stats }: ProfileProps) {
     const file = e.target.files?.[0]
     if (!file) return
     if (file.size > 2 * 1024 * 1024) {
-      alert("Imagem muito grande. Máximo 2MB.")
+      setAvatarMsg({ text: "Imagem muito grande. Máximo 2MB.", ok: false })
+      setTimeout(() => setAvatarMsg(null), 3000)
       return
     }
     setUploadingAvatar(true)
+    setAvatarMsg(null)
     const reader = new FileReader()
     reader.onload = async () => {
       const base64 = reader.result as string
@@ -87,9 +90,13 @@ export function ProfileClient({ student, stats }: ProfileProps) {
       })
       if (res.ok) {
         setAvatarUrl(base64)
+        setAvatarMsg({ text: "Foto atualizada!", ok: true })
         router.refresh()
+      } else {
+        setAvatarMsg({ text: "Erro ao salvar foto.", ok: false })
       }
       setUploadingAvatar(false)
+      setTimeout(() => setAvatarMsg(null), 3000)
     }
     reader.readAsDataURL(file)
   }
@@ -139,6 +146,11 @@ export function ProfileClient({ student, stats }: ProfileProps) {
               {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
             </button>
           </div>
+          {avatarMsg && (
+            <p className={`text-xs font-medium mt-1 ${avatarMsg.ok ? "text-emerald-400" : "text-red-400"}`}>
+              {avatarMsg.text}
+            </p>
+          )}
           <h1 className="text-xl font-bold text-white mb-0.5">{student.name}</h1>
           <p className="text-neutral-500 text-sm flex items-center gap-1.5">
             <Mail className="w-3.5 h-3.5" />

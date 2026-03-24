@@ -59,23 +59,25 @@ export async function POST(req: NextRequest) {
       break
   }
 
-  // Cancel any existing active subscription for this student under this trainer
-  await prisma.subscription.updateMany({
-    where: { studentId, status: "ACTIVE", student: { trainerId: trainer.id } },
-    data: { status: "CANCELLED" },
-  })
+  // Atomic: cancel old + create new in a single transaction
+  const subscription = await prisma.$transaction(async (tx) => {
+    await tx.subscription.updateMany({
+      where: { studentId, status: "ACTIVE", student: { trainerId: trainer.id } },
+      data: { status: "CANCELLED" },
+    })
 
-  const subscription = await prisma.subscription.create({
-    data: {
-      studentId,
-      planId,
-      startDate: start,
-      endDate: end,
-      status: "ACTIVE",
-    },
-    include: {
-      plan: { select: { name: true, interval: true, price: true } },
-    },
+    return tx.subscription.create({
+      data: {
+        studentId,
+        planId,
+        startDate: start,
+        endDate: end,
+        status: "ACTIVE",
+      },
+      include: {
+        plan: { select: { name: true, interval: true, price: true } },
+      },
+    })
   })
 
   return Response.json(subscription, { status: 201 })

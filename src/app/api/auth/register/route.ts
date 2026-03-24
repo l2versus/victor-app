@@ -10,7 +10,18 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Nome, email e senha sao obrigatorios" }, { status: 400 })
     }
 
-    const existing = await prisma.user.findUnique({ where: { email } })
+    // Email format validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(email)) {
+      return NextResponse.json({ error: "Formato de email invalido" }, { status: 400 })
+    }
+
+    // Password strength
+    if (password.length < 6) {
+      return NextResponse.json({ error: "Senha deve ter pelo menos 6 caracteres" }, { status: 400 })
+    }
+
+    const existing = await prisma.user.findUnique({ where: { email: email.toLowerCase().trim() } })
     if (existing) {
       return NextResponse.json({ error: "Email ja cadastrado" }, { status: 409 })
     }
@@ -29,8 +40,8 @@ export async function POST(req: NextRequest) {
     // Create User + Student in a single transaction
     const user = await prisma.user.create({
       data: {
-        name,
-        email,
+        name: name.trim(),
+        email: email.toLowerCase().trim(),
         password: hashedPassword,
         phone: phone || null,
         role: "STUDENT",

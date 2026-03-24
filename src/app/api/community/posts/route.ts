@@ -25,6 +25,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Post precisa de texto ou foto" }, { status: 400 })
     }
 
+    // Limit image size (base64 ~1.37x original, so 2MB image ≈ 2.7MB base64)
+    if (imageUrl && imageUrl.length > 3 * 1024 * 1024) {
+      return NextResponse.json({ error: "Imagem muito grande. Máximo 2MB." }, { status: 400 })
+    }
+
+    // Limit text length
+    if (content && content.length > 2000) {
+      return NextResponse.json({ error: "Texto muito longo. Máximo 2000 caracteres." }, { status: 400 })
+    }
+
     const post = await prisma.communityPost.create({
       data: {
         studentId: student.id,

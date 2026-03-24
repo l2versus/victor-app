@@ -596,7 +596,7 @@ function FeedCard({
 
         {/* Caption */}
         {post.content && (
-          <p className="text-sm text-neutral-300 mt-1.5 leading-relaxed">
+          <p className="text-sm text-neutral-300 mt-1.5 leading-relaxed break-words whitespace-pre-wrap">
             <span className="font-semibold text-white mr-1.5">{post.studentName.split(" ")[0]}</span>
             {post.content}
           </p>
@@ -627,7 +627,7 @@ function FeedCard({
                 <div key={c.id} className="flex gap-2">
                   <Avatar name={c.studentName} avatar={c.studentAvatar} size="xs" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-neutral-300">
+                    <p className="text-xs text-neutral-300 break-words">
                       <span className="font-semibold text-white mr-1">{c.studentName.split(" ")[0]}</span>
                       {c.content}
                     </p>
