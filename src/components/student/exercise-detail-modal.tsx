@@ -138,14 +138,44 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
   const heroImage = exercise.gifUrl || exercise.imageUrl
   const [machineBrand, setMachineBrand] = useState<string | null>(exercise.machineBrand || null)
   const brandInfo = machineBrand ? BRAND_ORIGINS[machineBrand] : null
-  const hasMachine3D = !!exercise.suggestedMachine
+
+  // Auto-match machine 3D: suggestedMachine > machine3dModel > match by name in index.json
+  const [machine3DSlug, setMachine3DSlug] = useState<string | null>(exercise.suggestedMachine || exercise.machine3dModel || null)
+  const hasMachine3D = !!machine3DSlug
+
+  // Try to auto-match exercise name to a machine in index.json
+  useEffect(() => {
+    if (machine3DSlug) return // already have a match
+    fetch("/models/machines/index.json")
+      .then(r => r.json())
+      .then((index: Record<string, { name: string; brand?: string | null }>) => {
+        const exName = exercise.name.toLowerCase()
+        for (const [slug, info] of Object.entries(index)) {
+          const mName = info.name.toLowerCase()
+          // Match if exercise name contains machine name or vice versa
+          if (exName.includes(mName) || mName.includes(exName) ||
+              // Match by key words (brand + type)
+              (info.brand && exName.includes(info.brand.toLowerCase()))) {
+            setMachine3DSlug(slug)
+            if (info.brand && !machineBrand) setMachineBrand(info.brand)
+            break
+          }
+        }
+      })
+      .catch(() => {})
+  }, [exercise.name, machine3DSlug, machineBrand])
 
   // Default tab: machine 3D > video > info
   const defaultTab = hasMachine3D ? "machine" : exercise.videoUrl ? "video" : "info"
   const [tab, setTab] = useState<"info" | "video" | "3d" | "machine">(defaultTab)
 
+  // Update tab when machine3DSlug resolves async
+  useEffect(() => {
+    if (machine3DSlug && tab === "info") setTab("machine")
+  }, [machine3DSlug, tab])
+
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" onClick={onClose}>
+    <div className="fixed inset-0 z-60 flex items-end sm:items-center justify-center" onClick={onClose}>
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
@@ -375,11 +405,11 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
           )}
 
           {/* TAB: Machine 3D */}
-          {tab === "machine" && hasMachine3D && (
+          {tab === "machine" && machine3DSlug && (
             <div className="p-4 space-y-4">
               <MachineViewer
-                slug={exercise.suggestedMachine!}
-                machineName={exercise.suggestedMachine!}
+                slug={machine3DSlug}
+                machineName={machine3DSlug}
                 onBrandLoaded={(b) => { if (b && !machineBrand) setMachineBrand(b) }}
               />
 
