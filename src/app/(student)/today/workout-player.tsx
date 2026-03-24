@@ -14,6 +14,12 @@ import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
 import { RMCalculatorButton } from "@/components/student/rm-calculator"
 import { ExerciseDetailModal } from "@/components/student/exercise-detail-modal"
 
+// ═══ HELPERS ═══
+/** Format kg: 80 → "80", 80.5 → "80.5", 80.0 → "80" */
+function fmtKg(v: number): string {
+  return v % 1 === 0 ? v.toFixed(0) : v.toFixed(1)
+}
+
 // ═══ BRAND FLAGS ═══
 const BRAND_FLAGS: Record<string, string> = {
   "Hammer Strength": "🇺🇸", "Hammer Strength MTS": "🇺🇸",
@@ -215,11 +221,12 @@ export function WorkoutPlayer({
     exerciseId: string,
     setNumber: number,
     reps: number,
-    loadKg: number,
+    rawLoadKg: number,
     technique: Technique = "NORMAL",
     isExtra: boolean = false,
   ) => {
     if (!sessionId) return
+    const loadKg = Math.round(Math.min(Math.max(rawLoadKg, 0), 999) * 10) / 10
 
     if (typeof navigator !== "undefined" && "vibrate" in navigator) {
       navigator.vibrate(50)
@@ -284,12 +291,13 @@ export function WorkoutPlayer({
   const handleEditSet = useCallback(async (
     setId: string,
     reps: number,
-    loadKg: number,
+    rawLoadKg: number,
     technique: Technique,
     exerciseId: string,
     setNumber: number,
   ) => {
     if (!sessionId) return
+    const loadKg = Math.round(Math.min(Math.max(rawLoadKg, 0), 999) * 10) / 10
     try {
       await fetch(`/api/student/sessions/${sessionId}/sets`, {
         method: "PATCH",
@@ -491,7 +499,7 @@ export function WorkoutPlayer({
                         <>
                           <span className="text-neutral-600">·</span>
                           <span className="text-neutral-500">Carga:</span>
-                          <span className="text-white font-medium">{ex.loadKg}kg</span>
+                          <span className="text-white font-medium">{fmtKg(ex.loadKg)}kg</span>
                         </>
                       )}
                     </div>
@@ -986,7 +994,7 @@ function SetRow({
           {isExtra && <span className="text-[8px] text-emerald-600 block">extra</span>}
         </span>
         <span className="text-center text-sm text-emerald-300">{completed.reps}</span>
-        <span className="text-center text-sm text-emerald-300">{completed.loadKg}kg</span>
+        <span className="text-center text-sm text-emerald-300">{fmtKg(completed.loadKg)}kg</span>
         <div className="flex justify-center">
           {completed.technique !== "NORMAL" ? (
             <TechniqueBadge technique={completed.technique} />
@@ -1047,9 +1055,15 @@ function SetRow({
         />
         <input
           type="number"
+          inputMode="decimal"
           step="0.5"
+          min={0}
+          max={999}
           value={loadKg}
-          onChange={(e) => setLoadKg(parseFloat(e.target.value) || 0)}
+          onChange={(e) => {
+            const v = parseFloat(e.target.value)
+            setLoadKg(!v || v < 0 ? 0 : v > 999 ? 999 : Math.round(v * 10) / 10)
+          }}
           className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
         />
         <button
