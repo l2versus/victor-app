@@ -7,7 +7,7 @@ import {
   Trophy, Flame, Target, Users, Medal,
   HandMetal, Zap, Crown, ChevronRight,
   Calendar, TrendingUp, Award, Lock,
-  Heart, MessageCircle, Send, Camera,
+  Heart, MessageCircle, Send, Camera, Play,
   Image as ImageIcon, X, Plus, Loader2,
   UserPlus, User, Mail, Search,
 } from "lucide-react"
@@ -1035,23 +1035,18 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLInputElement>(null)
 
-  // Lock body scroll when modal is open
+  // Lock body scroll
   useEffect(() => {
     document.body.style.overflow = "hidden"
     return () => { document.body.style.overflow = "" }
   }, [])
 
-  function handleImage(e: React.ChangeEvent<HTMLInputElement>) {
+  function handleMedia(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-
-    // Limit to 2MB
-    if (file.size > 2 * 1024 * 1024) {
-      alert("Imagem muito grande. Máximo 2MB.")
-      return
-    }
-
+    if (file.size > 5 * 1024 * 1024) { alert("Arquivo muito grande. Máximo 5MB."); return }
     const reader = new FileReader()
     reader.onload = () => setImagePreview(reader.result as string)
     reader.readAsDataURL(file)
@@ -1060,13 +1055,11 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
   async function submit() {
     if ((!text.trim() && !imagePreview) || posting) return
     setPosting(true)
-
     const res = await fetch("/api/community/posts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ content: text, imageUrl: imagePreview }),
     })
-
     if (res.ok) onPost()
     setPosting(false)
   }
@@ -1076,7 +1069,7 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[100] bg-black/80 backdrop-blur-sm"
+      className="fixed inset-0 z-[100] bg-black/90"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       <motion.div
@@ -1084,8 +1077,8 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
         animate={{ y: 0 }}
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
-        className="absolute inset-x-0 bottom-0 w-full max-w-lg mx-auto rounded-t-2xl bg-[#111] border border-neutral-800 border-b-0 flex flex-col"
-        style={{ maxHeight: "85dvh" }}
+        className="absolute inset-x-0 bottom-0 w-full max-w-lg mx-auto bg-[#0a0a0a] rounded-t-2xl flex flex-col"
+        style={{ maxHeight: "90dvh" }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">
@@ -1093,37 +1086,38 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pb-3 border-b border-neutral-800 shrink-0">
-          <button onClick={onClose} className="text-neutral-500 hover:text-white p-1">
+        <div className="flex items-center justify-between px-4 pb-3 border-b border-white/[0.06] shrink-0">
+          <button onClick={onClose} className="text-neutral-400 hover:text-white p-2 min-h-11">
             <X className="w-5 h-5" />
           </button>
-          <h3 className="text-sm font-semibold text-white">Novo Post</h3>
+          <h3 className="text-base font-bold text-white">Novo Post</h3>
           <button
             onClick={submit}
             disabled={(!text.trim() && !imagePreview) || posting}
-            className="text-sm font-semibold text-red-400 disabled:text-neutral-700 flex items-center gap-1.5 p-1"
+            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-30 min-h-11 flex items-center"
           >
-            {posting ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : "Publicar"}
+            {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Publicar"}
           </button>
         </div>
 
         {/* Content — scrollable */}
-        <div className="flex-1 overflow-y-auto overscroll-contain p-4">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 pb-6">
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => setText(e.target.value.slice(0, 2000))}
             placeholder="O que está treinando hoje? Compartilhe com a galera..."
-            className="w-full bg-transparent text-sm text-white placeholder:text-neutral-600 outline-none resize-none min-h-[120px]"
+            className="w-full bg-transparent text-sm text-white placeholder:text-neutral-600 outline-none resize-none min-h-[100px]"
             autoFocus
           />
+          <p className="text-[10px] text-neutral-700 text-right">{text.length}/2000</p>
 
-          {/* Image preview */}
+          {/* Media preview */}
           {imagePreview && (
-            <div className="relative mt-3 rounded-xl overflow-hidden">
+            <div className="relative mt-3 rounded-xl overflow-hidden border border-white/[0.08]">
               <img src={imagePreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
               <button
                 onClick={() => setImagePreview(null)}
-                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/60 flex items-center justify-center text-white hover:bg-black/80"
+                className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center text-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1131,22 +1125,38 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
           )}
         </div>
 
-        {/* Actions — fixed at bottom with safe area */}
-        <div className="flex items-center gap-3 px-4 py-3 border-t border-neutral-800 shrink-0 pb-[calc(0.75rem+env(safe-area-inset-bottom))]">
-          <input ref={fileRef} type="file" accept="image/*" onChange={handleImage} className="hidden" />
+        {/* Media buttons — Instagram style action bar */}
+        <div className="flex items-center gap-2 px-4 py-3 border-t border-white/[0.06] shrink-0 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+          <input ref={fileRef} type="file" accept="image/*" onChange={handleMedia} className="hidden" />
+          <input ref={videoRef} type="file" accept="video/*" onChange={handleMedia} className="hidden" />
+
           <button
             onClick={() => fileRef.current?.click()}
-            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors p-2"
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-neutral-300 hover:text-white transition-colors min-h-11"
           >
-            <ImageIcon className="w-5 h-5" />
-            <span className="text-xs">Foto</span>
+            <ImageIcon className="w-4.5 h-4.5" />
+            <span className="text-xs font-medium">Foto</span>
           </button>
           <button
-            onClick={() => { if (fileRef.current) fileRef.current.capture = "environment"; fileRef.current?.click() }}
-            className="flex items-center gap-2 text-neutral-400 hover:text-white transition-colors p-2"
+            onClick={() => videoRef.current?.click()}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-neutral-300 hover:text-white transition-colors min-h-11"
           >
-            <Camera className="w-5 h-5" />
-            <span className="text-xs">Câmera</span>
+            <Play className="w-4.5 h-4.5" />
+            <span className="text-xs font-medium">Vídeo</span>
+          </button>
+          <button
+            onClick={() => {
+              const input = document.createElement("input")
+              input.type = "file"
+              input.accept = "image/*"
+              input.capture = "environment"
+              input.onchange = (e) => handleMedia(e as unknown as React.ChangeEvent<HTMLInputElement>)
+              input.click()
+            }}
+            className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-neutral-300 hover:text-white transition-colors min-h-11"
+          >
+            <Camera className="w-4.5 h-4.5" />
+            <span className="text-xs font-medium">Câmera</span>
           </button>
         </div>
       </motion.div>

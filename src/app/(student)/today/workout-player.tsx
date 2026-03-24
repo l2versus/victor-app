@@ -525,6 +525,11 @@ export function WorkoutPlayer({
                   >
                     {thumbnail ? (
                       <img src={thumbnail} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
+                    ) : ex.machine3dModel ? (
+                      <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-600/10 to-red-900/5 gap-1">
+                        <Box className="w-6 h-6 text-red-400" />
+                        <span className="text-[8px] text-red-400 font-bold">3D</span>
+                      </div>
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-white/[0.02]">
                         <Dumbbell className="w-6 h-6 text-neutral-700" />
