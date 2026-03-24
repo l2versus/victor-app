@@ -9,7 +9,7 @@ import {
   Calendar, TrendingUp, Award, Lock,
   Heart, MessageCircle, Send, Camera,
   Image as ImageIcon, X, Plus, Loader2,
-  UserPlus, User, Mail,
+  UserPlus, User, Mail, Search,
 } from "lucide-react"
 
 // ═══════════════════════════════════════
@@ -133,6 +133,10 @@ export default function CommunityPage() {
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const [myStudentId, setMyStudentId] = useState<string | null>(null)
   const [myAvatar, setMyAvatar] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState("")
+  const [searchResults, setSearchResults] = useState<Array<{ studentId: string; name: string; avatar: string | null; bio: string | null; profession: string | null; followers: number; sessions: number; isMe: boolean }>>([])
+  const [searching, setSearching] = useState(false)
+  const searchTimer = useRef<NodeJS.Timeout>(null)
 
   // Stories
   type StoryGroup = {
@@ -285,6 +289,65 @@ export default function CommunityPage() {
             )}
           </button>
         </div>
+      </div>
+
+      {/* ═══ Search Bar ═══ */}
+      <div className="relative">
+        <div className="flex items-center gap-2 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3 py-2.5">
+          <Search className="w-4 h-4 text-neutral-500 shrink-0" />
+          <input
+            value={searchQuery}
+            onChange={(e) => {
+              const q = e.target.value
+              setSearchQuery(q)
+              if (searchTimer.current) clearTimeout(searchTimer.current)
+              if (q.trim().length < 2) { setSearchResults([]); setSearching(false); return }
+              setSearching(true)
+              searchTimer.current = setTimeout(async () => {
+                try {
+                  const res = await fetch(`/api/community/search?q=${encodeURIComponent(q.trim())}`)
+                  if (res.ok) { const data = await res.json(); setSearchResults(data.users || []) }
+                } catch { /* ignore */ }
+                setSearching(false)
+              }, 300)
+            }}
+            placeholder="Buscar pessoas..."
+            className="flex-1 bg-transparent text-sm text-white placeholder-neutral-600 focus:outline-none"
+          />
+          {searchQuery && (
+            <button onClick={() => { setSearchQuery(""); setSearchResults([]) }} className="text-neutral-500">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
+        {/* Search results dropdown */}
+        {(searchResults.length > 0 || searching) && searchQuery.length >= 2 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-[#111] border border-white/[0.08] rounded-xl shadow-2xl z-30 max-h-72 overflow-y-auto">
+            {searching ? (
+              <div className="p-4 text-center"><Loader2 className="w-4 h-4 text-red-500 animate-spin mx-auto" /></div>
+            ) : (
+              searchResults.map((u) => (
+                <button
+                  key={u.studentId}
+                  onClick={() => { router.push(`/community/profile/${u.studentId}`); setSearchQuery(""); setSearchResults([]) }}
+                  className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors"
+                >
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold shrink-0 overflow-hidden">
+                    {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
+                  </div>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="text-sm font-semibold text-white truncate">{u.name}</p>
+                    <p className="text-[10px] text-neutral-500 truncate">
+                      {u.profession || `${u.followers} seguidores · ${u.sessions} sessões`}
+                    </p>
+                  </div>
+                  {u.isMe && <span className="text-[9px] text-neutral-600 px-2 py-0.5 rounded bg-white/[0.04]">Você</span>}
+                </button>
+              ))
+            )}
+          </div>
+        )}
       </div>
 
       {/* ═══ Stories Ring — Instagram style ═══ */}
