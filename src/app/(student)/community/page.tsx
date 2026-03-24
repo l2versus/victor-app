@@ -9,7 +9,7 @@ import {
   Calendar, TrendingUp, Award, Lock,
   Heart, MessageCircle, Send, Camera,
   Image as ImageIcon, X, Plus, Loader2,
-  UserPlus,
+  UserPlus, User, Mail,
 } from "lucide-react"
 
 // ═══════════════════════════════════════
@@ -131,6 +131,8 @@ export default function CommunityPage() {
   const [showComposer, setShowComposer] = useState(false)
   const [feedFilter, setFeedFilter] = useState<"all" | "following">("all")
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
+  const [myStudentId, setMyStudentId] = useState<string | null>(null)
+  const [myAvatar, setMyAvatar] = useState<string | null>(null)
 
   // Stories
   type StoryGroup = {
@@ -153,9 +155,10 @@ export default function CommunityPage() {
 
   const fetchFeatures = useCallback(async () => {
     try {
-      const [subRes, followRes] = await Promise.all([
+      const [subRes, followRes, profileRes] = await Promise.all([
         fetch("/api/student/subscription"),
         fetch("/api/community/follow?type=following"),
+        fetch("/api/student/profile"),
       ])
       if (subRes.ok) {
         const data = await subRes.json()
@@ -164,6 +167,11 @@ export default function CommunityPage() {
       if (followRes.ok) {
         const data = await followRes.json()
         setFollowingIds(new Set(data.users?.map((u: { studentId: string }) => u.studentId) ?? []))
+      }
+      if (profileRes.ok) {
+        const data = await profileRes.json()
+        setMyStudentId(data.student?.id ?? null)
+        setMyAvatar(data.student?.user?.avatar ?? null)
       }
     } catch { /* ignore */ }
   }, [])
@@ -254,16 +262,28 @@ export default function CommunityPage() {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Header — Instagram style */}
       <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-white tracking-tight">Ironberg Family</h1>
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg shadow-red-600/20">
-            <Users className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-white tracking-tight">Comunidade</h1>
-            <p className="text-xs text-neutral-500">Ironberg Family</p>
-          </div>
+          {/* DM inbox */}
+          <button
+            onClick={() => router.push("/community/dm")}
+            className="p-2 rounded-full hover:bg-white/[0.06] transition-colors"
+          >
+            <Mail className="w-5 h-5 text-neutral-300" />
+          </button>
+          {/* My profile */}
+          <button
+            onClick={() => myStudentId && router.push(`/community/profile/${myStudentId}`)}
+            className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center"
+          >
+            {myAvatar ? (
+              <img src={myAvatar} alt="Meu perfil" className="w-full h-full object-cover" />
+            ) : (
+              <User className="w-4 h-4 text-red-300" />
+            )}
+          </button>
         </div>
       </div>
 
