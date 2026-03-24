@@ -68,7 +68,7 @@ async function translate() {
     ["Chin-Up", "Barra Fixa (Supinada)"],
     ["Neutral-Grip Pull-Up", "Barra Fixa (Neutra)"],
     ["Inverted Row", "Remada Invertida"],
-    ["Straight-Arm Pulldown", "Pulldown Braço Reto"],
+    ["Straight-Arm Pulldown", "Pullover na Polia (Corda)"],
     ["Chest-Supported Row", "Remada com Apoio no Peito"],
     ["Barbell Overhead Press", "Desenvolvimento com Barra"],
     ["Dumbbell Shoulder Press", "Desenvolvimento com Halter"],
