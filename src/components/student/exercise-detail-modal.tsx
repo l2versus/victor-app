@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, useRef, Suspense } from "react"
 import { X, Play, AlertTriangle, Dumbbell, Target, ShieldAlert, ChevronDown, Box, RotateCcw } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { find3DModel, getSketchfabEmbedUrl } from "@/lib/exercise-3d-models"
@@ -170,9 +170,13 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
   const defaultTab = hasMachine3D ? "machine" : exercise.videoUrl ? "video" : "info"
   const [tab, setTab] = useState<"info" | "video" | "3d" | "machine">(defaultTab)
 
-  // Update tab when machine3DSlug resolves async
+  // Update tab ONLY on first async resolve (not on every tab change)
+  const hasAutoSwitched = useRef(false)
   useEffect(() => {
-    if (machine3DSlug && tab === "info") setTab("machine")
+    if (machine3DSlug && !hasAutoSwitched.current && tab === "info") {
+      setTab("machine")
+      hasAutoSwitched.current = true
+    }
   }, [machine3DSlug, tab])
 
   // Lock body scroll
@@ -189,7 +193,7 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
       {/* Modal — mobile bottom sheet style */}
       <div
         className="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col animate-slide-up"
-        style={{ maxHeight: "92dvh" }}
+        style={{ maxHeight: "95dvh", minHeight: "70dvh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Hero image — compact on mobile */}
