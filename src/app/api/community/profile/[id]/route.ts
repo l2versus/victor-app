@@ -11,15 +11,12 @@ export async function GET(
     const session = await requireAuth()
     const { id: studentId } = await params
 
-    // Get current student
-    let myStudentId: string | null = null
-    if (session.role === "STUDENT") {
-      const me = await prisma.student.findUnique({
-        where: { userId: session.userId },
-        select: { id: true },
-      })
-      myStudentId = me?.id ?? null
-    }
+    // Get current student (works for both student and admin proxy)
+    const me = await prisma.student.findUnique({
+      where: { userId: session.userId },
+      select: { id: true },
+    })
+    const myStudentId = me?.id ?? null
 
     const student = await prisma.student.findUnique({
       where: { id: studentId },

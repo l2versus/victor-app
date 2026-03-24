@@ -52,6 +52,8 @@ export default function AdminCommunityPage() {
   const [feed, setFeed] = useState<FeedPost[]>([])
   const [loading, setLoading] = useState(true)
   const [showComposer, setShowComposer] = useState(false)
+  const [members, setMembers] = useState<Array<{ studentId: string; name: string; avatar: string | null; sessions: number }>>([])
+
   const [postText, setPostText] = useState("")
   const [postImage, setPostImage] = useState<string | null>(null)
   const [posting, setPosting] = useState(false)
@@ -68,7 +70,15 @@ export default function AdminCommunityPage() {
     setLoading(false)
   }, [])
 
-  useEffect(() => { fetchFeed() }, [fetchFeed])
+  useEffect(() => {
+    fetchFeed()
+    // Fetch members for suggestions
+    fetch("/api/community/ranking?period=all").then(r => r.json()).then(d => {
+      setMembers((d.ranking || []).slice(0, 10).map((u: { studentId: string; name: string; avatar?: string | null; totalSessions?: number }) => ({
+        studentId: u.studentId, name: u.name, avatar: u.avatar || null, sessions: u.totalSessions || 0,
+      })))
+    }).catch(() => {})
+  }, [fetchFeed])
 
   async function toggleLike(postId: string) {
     setFeed(prev => prev.map(p =>
@@ -183,6 +193,28 @@ export default function AdminCommunityPage() {
         )}
       </AnimatePresence>
 
+      {/* Members — suggestions */}
+      {members.length > 0 && (
+        <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+          <p className="text-sm font-semibold text-white mb-3">Membros da Ironberg Family</p>
+          <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+            {members.map((u) => (
+              <button
+                key={u.studentId}
+                onClick={() => router.push(`/admin/community/profile/${u.studentId}`)}
+                className="flex flex-col items-center gap-1.5 shrink-0 w-18 cursor-pointer hover:opacity-80 transition-opacity"
+              >
+                <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold overflow-hidden">
+                  {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
+                </div>
+                <p className="text-[10px] text-neutral-300 text-center truncate w-full">{u.name.split(" ")[0]}</p>
+                <p className="text-[9px] text-neutral-600">{u.sessions} treinos</p>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Feed */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
@@ -201,7 +233,7 @@ export default function AdminCommunityPage() {
               {/* Header — click to view profile */}
               <button
                 onClick={() => post.studentId && router.push(`/admin/community/profile/${post.studentId}`)}
-                className="flex items-center gap-3 p-4 w-full text-left"
+                className="flex items-center gap-3 p-4 w-full text-left cursor-pointer hover:bg-white/[0.03] transition-colors rounded-t-xl"
               >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold overflow-hidden shrink-0">
                   {post.studentAvatar ? (

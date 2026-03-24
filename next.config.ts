@@ -4,6 +4,14 @@ const nextConfig: NextConfig = {
   // Standalone output for Docker deployment (Coolify)
   output: "standalone",
 
+  // Allow larger request bodies for photo/video uploads (base64)
+  serverExternalPackages: [],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
+
   // Image optimization — serve modern formats, smaller sizes
   images: {
     formats: ["image/avif", "image/webp"],

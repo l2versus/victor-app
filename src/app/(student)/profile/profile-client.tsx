@@ -73,32 +73,50 @@ export function ProfileClient({ student, stats }: ProfileProps) {
   async function handleAvatarUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 2 * 1024 * 1024) {
-      setAvatarMsg({ text: "Imagem muito grande. Máximo 2MB.", ok: false })
-      setTimeout(() => setAvatarMsg(null), 3000)
-      return
-    }
     setUploadingAvatar(true)
     setAvatarMsg(null)
-    const reader = new FileReader()
-    reader.onload = async () => {
-      const base64 = reader.result as string
+
+    try {
+      // Compress image client-side (max 400x400, quality 0.7 = ~50-100KB)
+      const compressed = await compressImage(file, 400, 0.7)
+
       const res = await fetch("/api/student/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ avatar: base64 }),
+        body: JSON.stringify({ avatar: compressed }),
       })
       if (res.ok) {
-        setAvatarUrl(base64)
+        setAvatarUrl(compressed)
         setAvatarMsg({ text: "Foto atualizada!", ok: true })
         router.refresh()
       } else {
-        setAvatarMsg({ text: "Erro ao salvar foto.", ok: false })
+        const data = await res.json().catch(() => ({}))
+        setAvatarMsg({ text: data.error || "Erro ao salvar foto.", ok: false })
       }
-      setUploadingAvatar(false)
-      setTimeout(() => setAvatarMsg(null), 3000)
+    } catch {
+      setAvatarMsg({ text: "Erro ao processar imagem.", ok: false })
     }
-    reader.readAsDataURL(file)
+    setUploadingAvatar(false)
+    setTimeout(() => setAvatarMsg(null), 3000)
+  }
+
+  function compressImage(file: File, maxSize: number, quality: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      img.onload = () => {
+        const canvas = document.createElement("canvas")
+        let { width, height } = img
+        if (width > height) { if (width > maxSize) { height = (height * maxSize) / width; width = maxSize } }
+        else { if (height > maxSize) { width = (width * maxSize) / height; height = maxSize } }
+        canvas.width = width
+        canvas.height = height
+        const ctx = canvas.getContext("2d")!
+        ctx.drawImage(img, 0, 0, width, height)
+        resolve(canvas.toDataURL("image/jpeg", quality))
+      }
+      img.onerror = reject
+      img.src = URL.createObjectURL(file)
+    })
   }
 
   const bmi = student.weight && student.height
