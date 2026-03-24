@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { notifySocial } from "@/lib/social-notifications"
 
 // POST /api/community/posts/[id] — like/unlike or comment
 export async function POST(
@@ -59,6 +60,17 @@ export async function POST(
       await prisma.communityLike.create({
         data: { postId, studentId: student.id },
       })
+
+      // Notify post author
+      const likedPost = await prisma.communityPost.findUnique({
+        where: { id: postId },
+        include: { student: { include: { user: { select: { id: true, name: true } } } } },
+      })
+      if (likedPost?.student && likedPost.student.userId !== session.userId) {
+        const me = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } })
+        notifySocial({ toUserId: likedPost.student.userId, fromName: me?.name || "Alguém", type: "social_like", postContent: likedPost.content })
+      }
+
       return NextResponse.json({ liked: true })
     }
 
@@ -74,6 +86,16 @@ export async function POST(
           student: { include: { user: { select: { name: true, avatar: true } } } },
         },
       })
+
+      // Notify post author
+      const commentedPost = await prisma.communityPost.findUnique({
+        where: { id: postId },
+        include: { student: { select: { userId: true } } },
+      })
+      if (commentedPost?.student && commentedPost.student.userId !== session.userId) {
+        const me = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } })
+        notifySocial({ toUserId: commentedPost.student.userId, fromName: me?.name || "Alguém", type: "social_comment", commentContent: content.trim() })
+      }
 
       return NextResponse.json({ comment }, { status: 201 })
     }
