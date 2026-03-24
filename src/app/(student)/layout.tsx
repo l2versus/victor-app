@@ -97,7 +97,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
       </div>
 
       {/* ═══ Social Header ═══ */}
-      <div className="relative z-10 max-w-lg mx-auto px-4 pt-5">
+      <div className="relative z-20 max-w-lg mx-auto px-4 pt-5">
         <HomeHeader
           name={userName}
           avatar={userAvatar}

@@ -224,64 +224,187 @@ export function EvolutionClient() {
     if (!evo || !stats) return
     setExportingPdf(true)
 
-    // Build PRs rows safely (all data from our own API, no user input)
-    const prsRows = stats.prs.slice(0, 8).map(pr => {
-      const name = String(pr.exerciseName).replace(/[<>&"']/g, "")
-      const load = Number(pr.loadKg)
-      return `<tr><td>${name}</td><td style="text-align:right;font-weight:700">${load} kg</td></tr>`
-    }).join("")
+    const esc = (s: string) => String(s).replace(/[<>&"']/g, "")
+    const fmtNum = (n: number) => n.toLocaleString("pt-BR")
+    const dateStr = new Date().toLocaleDateString("pt-BR")
+    const totalVol = fmtNum(evo.summary.totalVolume)
+    const sessPerWeek = (evo.summary.totalSessions / Math.max(evo.summary.periodDays / 7, 1)).toFixed(1)
+    const setsPerSession = (evo.summary.totalSets / Math.max(evo.summary.totalSessions, 1)).toFixed(0)
 
+    // --- PRs table ---
+    const prsRows = stats.prs.slice(0, 10).map((pr, i) => {
+      const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : `${i + 1}`
+      return `<tr><td style="text-align:center;width:40px">${medal}</td><td>${esc(pr.exerciseName)}</td><td class="dim">${esc(pr.muscle)}</td><td class="r bold">${pr.loadKg} kg</td><td class="dim r">${pr.date.slice(5)}</td></tr>`
+    }).join("")
     const prsSection = stats.prs.length > 0
-      ? `<h2>Records Pessoais</h2><table>${prsRows}</table>`
+      ? `<h2>🏆 Records Pessoais</h2><table><thead><tr><th></th><th>Exercicio</th><th>Musculo</th><th class="r">Carga</th><th class="r">Data</th></tr></thead><tbody>${prsRows}</tbody></table>`
       : ""
 
-    const totalVol = evo.summary.totalVolume.toLocaleString("pt-BR")
-    const dateStr = new Date().toLocaleDateString("pt-BR")
+    // --- Volume per session table ---
+    const volRows = evo.volumeTrend.slice(-15).map(v => {
+      const exList = (v.exercises || []).slice(0, 3).map(e => esc(e.name)).join(", ")
+      return `<tr><td>${v.date.slice(5)}</td><td>${esc(v.template)}</td><td class="r bold">${fmtNum(v.volume)} kg</td><td class="r">${v.sets}s</td><td class="r">${v.duration ? `${v.duration} min` : "—"}</td><td class="dim">${exList}${(v.exercises || []).length > 3 ? "..." : ""}</td></tr>`
+    }).join("")
+    const volSection = evo.volumeTrend.length > 0
+      ? `<h2>📊 Volume por Sessao</h2><p class="sub">Ultimas ${Math.min(15, evo.volumeTrend.length)} sessoes</p><table><thead><tr><th>Data</th><th>Treino</th><th class="r">Volume</th><th class="r">Series</th><th class="r">Duracao</th><th>Exercicios</th></tr></thead><tbody>${volRows}</tbody></table>`
+      : ""
+
+    // --- Volume bar chart (CSS bars) ---
+    const maxVol = Math.max(...evo.volumeTrend.slice(-12).map(v => v.volume), 1)
+    const volBars = evo.volumeTrend.slice(-12).map(v => {
+      const pct = Math.round((v.volume / maxVol) * 100)
+      return `<div class="bar-row"><span class="bar-label">${v.date.slice(5)}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div><span class="bar-val">${fmtNum(v.volume)} kg</span></div>`
+    }).join("")
+    const volChart = evo.volumeTrend.length > 0
+      ? `<h2>📈 Grafico de Volume</h2><div class="bar-chart">${volBars}</div>`
+      : ""
+
+    // --- Frequency chart (CSS bars) ---
+    const maxFreq = Math.max(...evo.weeklyFrequency.slice(-12).map(w => w.sessions), 1)
+    const freqBars = evo.weeklyFrequency.slice(-12).map(w => {
+      const pct = Math.round((w.sessions / maxFreq) * 100)
+      const color = w.sessions >= 4 ? "#22c55e" : w.sessions >= 2 ? "#3b82f6" : w.sessions >= 1 ? "#6366f1" : "#333"
+      return `<div class="bar-row"><span class="bar-label">${w.week}</span><div class="bar-track"><div class="bar-fill" style="width:${pct}%;background:${color}"></div></div><span class="bar-val">${w.sessions}x</span></div>`
+    }).join("")
+    const freqSection = evo.weeklyFrequency.length > 0
+      ? `<h2>📅 Frequencia Semanal</h2><div class="bar-chart">${freqBars}</div>`
+      : ""
+
+    // --- RPE trend ---
+    const rpeRows = evo.rpeTrend.slice(-15).map(r =>
+      `<tr><td>${r.date.slice(5)}</td><td>${esc(r.template)}</td><td class="r bold">${r.rpe}/10</td><td class="r"><div class="rpe-bar"><div class="rpe-fill" style="width:${r.rpe * 10}%;background:${r.rpe >= 8 ? "#ef4444" : r.rpe >= 6 ? "#f59e0b" : "#22c55e"}"></div></div></td></tr>`
+    ).join("")
+    const rpeSection = evo.rpeTrend.length > 2
+      ? `<h2>💪 Intensidade (RPE)</h2><table><thead><tr><th>Data</th><th>Treino</th><th class="r">RPE</th><th class="r" style="width:120px">Nivel</th></tr></thead><tbody>${rpeRows}</tbody></table>`
+      : ""
+
+    // --- Muscle distribution ---
+    const totalMuscleVol = evo.muscleDistribution.reduce((a, b) => a + b.volume, 0)
+    const maxMuscleVol = Math.max(...evo.muscleDistribution.map(m => m.volume), 1)
+    const muscleRows = evo.muscleDistribution
+      .sort((a, b) => b.volume - a.volume)
+      .map(m => {
+        const pct = totalMuscleVol > 0 ? Math.round((m.volume / totalMuscleVol) * 100) : 0
+        const barPct = Math.round((m.volume / maxMuscleVol) * 100)
+        return `<tr><td class="bold">${esc(m.muscle)}</td><td class="r">${fmtNum(m.volume)} kg</td><td class="r bold">${pct}%</td><td><div class="muscle-bar"><div class="muscle-fill" style="width:${barPct}%"></div></div></td></tr>`
+      }).join("")
+    const muscleSection = evo.muscleDistribution.length > 0
+      ? `<h2>🎯 Distribuicao Muscular</h2><table><thead><tr><th>Musculo</th><th class="r">Volume</th><th class="r">%</th><th style="width:120px"></th></tr></thead><tbody>${muscleRows}</tbody></table>`
+      : ""
+
+    // --- Heatmap (calendar) ---
+    const heatmapDots = stats.heatmap.slice(-60).filter(h => h.count > 0).map(h => {
+      const d = new Date(h.date)
+      const dayName = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"][d.getDay()]
+      return `<span class="heat-dot" style="opacity:${Math.min(0.3 + h.count * 0.25, 1)}">${h.date.slice(5)} (${dayName}) — ${h.count}x</span>`
+    }).join("")
+    const heatmapSection = stats.heatmap.length > 0
+      ? `<h2>🔥 Dias de Treino (ultimos 60 dias)</h2><div class="heat-grid">${heatmapDots}</div>`
+      : ""
+
+    // --- Load progression for top exercises ---
+    const topExercises = Object.entries(evo.loadProgression)
+      .filter(([, ex]) => ex.data.length >= 2)
+      .slice(0, 5)
+    const loadSections = topExercises.map(([, ex]) => {
+      const first = ex.data[0]?.maxLoad || 0
+      const last = ex.data[ex.data.length - 1]?.maxLoad || 0
+      const diff = first > 0 ? Math.round(((last - first) / first) * 100) : 0
+      const diffStr = diff >= 0 ? `+${diff}%` : `${diff}%`
+      const diffColor = diff > 0 ? "#22c55e" : diff < 0 ? "#ef4444" : "#a3a3a3"
+      const maxLoad = Math.max(...ex.data.map(d => d.maxLoad), 1)
+      const rows = ex.data.slice(-10).map(d => {
+        const barPct = Math.round((d.maxLoad / maxLoad) * 100)
+        return `<tr><td>${d.date.slice(5)}</td><td class="r bold">${d.maxLoad} kg</td><td><div class="muscle-bar"><div class="muscle-fill" style="width:${barPct}%;background:#3b82f6"></div></div></td></tr>`
+      }).join("")
+      return `<div class="ex-card"><div class="ex-header"><span>${esc(ex.exerciseName)}</span><span class="dim">${esc(ex.muscle)}</span><span style="color:${diffColor};font-weight:700">${diffStr}</span></div><table><thead><tr><th>Data</th><th class="r">Carga Max</th><th style="width:120px">Progresso</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    }).join("")
+    const loadSection = topExercises.length > 0
+      ? `<h2>📈 Progressao de Carga</h2><p class="sub">Top ${topExercises.length} exercicios com mais sessoes</p>${loadSections}`
+      : ""
 
     const html = [
       "<!DOCTYPE html><html><head><meta charset='utf-8'>",
       "<title>Evolucao — VO Personal</title>",
       "<style>",
       "*{margin:0;padding:0;box-sizing:border-box}",
-      "body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0a;color:#e5e5e5;padding:24px;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}",
-      ".header{background:#1a0000;border:1px solid #dc2626;border-radius:16px;padding:24px;margin-bottom:24px}",
-      ".header h1{font-size:24px;color:#fff;margin-bottom:4px}",
+      "body{font-family:-apple-system,system-ui,sans-serif;background:#0a0a0a;color:#e5e5e5;padding:24px;max-width:800px;margin:0 auto;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;color-adjust:exact!important}",
+      ".header{background:linear-gradient(135deg,#1a0000,#0d0000);border:1px solid #dc2626;border-radius:16px;padding:28px;margin-bottom:24px}",
+      ".header h1{font-size:26px;color:#fff;margin-bottom:4px}",
       ".header p{color:#a3a3a3;font-size:13px}",
       ".grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}",
-      ".card{background:#111;border:1px solid #333;border-radius:12px;padding:16px;text-align:center}",
-      ".card .val{font-size:24px;font-weight:900;color:#fff}",
-      ".card .lbl{font-size:10px;color:#a3a3a3;text-transform:uppercase;letter-spacing:0.1em;margin-top:4px}",
-      "h2{font-size:16px;color:#fff;margin:24px 0 12px;padding-bottom:8px;border-bottom:1px solid #dc2626}",
-      "table{width:100%;border-collapse:collapse;background:#111;border-radius:12px;overflow:hidden;border:1px solid #333}",
-      "td{padding:10px 14px;border-bottom:1px solid #222;font-size:14px;color:#e5e5e5}",
-      ".footer{margin-top:32px;padding-top:16px;border-top:1px solid #dc2626;color:#737373;font-size:11px;text-align:center}",
-      "@media print{body{background:#0a0a0a!important;color:#e5e5e5!important}.header{background:#1a0000!important}.card{background:#111!important}.card .val{color:#fff!important}td{color:#e5e5e5!important}h2{color:#fff!important}}",
+      ".card{background:#111;border:1px solid #262626;border-radius:12px;padding:18px;text-align:center}",
+      ".card .val{font-size:26px;font-weight:900;color:#fff}",
+      ".card .lbl{font-size:9px;color:#a3a3a3;text-transform:uppercase;letter-spacing:0.12em;margin-top:4px}",
+      ".card .sub-val{font-size:10px;color:#737373;margin-top:2px}",
+      "h2{font-size:15px;color:#fff;margin:28px 0 10px;padding-bottom:8px;border-bottom:1px solid #dc262640}",
+      ".sub{font-size:11px;color:#737373;margin:-6px 0 12px}",
+      "table{width:100%;border-collapse:collapse;background:#111;border-radius:12px;overflow:hidden;border:1px solid #262626;margin-bottom:12px}",
+      "thead{background:#161616}",
+      "th{padding:8px 12px;font-size:10px;color:#737373;text-transform:uppercase;letter-spacing:0.08em;font-weight:600;text-align:left}",
+      "td{padding:8px 12px;border-top:1px solid #1a1a1a;font-size:12px;color:#d4d4d4}",
+      ".r{text-align:right}",
+      ".bold{font-weight:700;color:#fff}",
+      ".dim{color:#737373;font-size:11px}",
+      // Bar chart styles
+      ".bar-chart{background:#111;border:1px solid #262626;border-radius:12px;padding:16px;margin-bottom:12px}",
+      ".bar-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}",
+      ".bar-label{font-size:10px;color:#737373;width:44px;text-align:right;shrink:0}",
+      ".bar-track{flex:1;height:18px;background:#1a1a1a;border-radius:4px;overflow:hidden}",
+      ".bar-fill{height:100%;background:linear-gradient(90deg,#dc2626,#ef4444);border-radius:4px;transition:width 0.3s}",
+      ".bar-val{font-size:10px;color:#d4d4d4;width:64px;font-weight:600}",
+      // RPE inline bar
+      ".rpe-bar{width:100%;height:8px;background:#1a1a1a;border-radius:4px;overflow:hidden}",
+      ".rpe-fill{height:100%;border-radius:4px}",
+      // Muscle bar
+      ".muscle-bar{width:100%;height:10px;background:#1a1a1a;border-radius:4px;overflow:hidden}",
+      ".muscle-fill{height:100%;background:linear-gradient(90deg,#dc2626,#ef4444);border-radius:4px}",
+      // Exercise card
+      ".ex-card{margin-bottom:16px}",
+      ".ex-header{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#161616;border:1px solid #262626;border-bottom:0;border-radius:12px 12px 0 0;font-size:13px;color:#fff;font-weight:600}",
+      ".ex-card table{border-radius:0 0 12px 12px}",
+      // Heatmap
+      ".heat-grid{display:flex;flex-wrap:wrap;gap:6px;padding:12px;background:#111;border:1px solid #262626;border-radius:12px}",
+      ".heat-dot{font-size:10px;padding:4px 8px;background:#dc262620;color:#fca5a5;border-radius:6px}",
+      // Footer
+      ".footer{margin-top:32px;padding-top:16px;border-top:1px solid #dc262640;color:#525252;font-size:11px;text-align:center}",
+      // Print
+      "@media print{body{background:#0a0a0a!important}*{color-adjust:exact!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important}.bar-fill,.rpe-fill,.muscle-fill{print-color-adjust:exact!important}}",
+      "@page{margin:12mm;size:A4}",
       "</style></head><body>",
+      // Header
       `<div class="header"><h1>Relatorio de Evolucao</h1><p>${dateStr} — Ultimos ${evo.summary.periodDays} dias</p></div>`,
+      // Summary cards
       '<div class="grid">',
-      `<div class="card"><div class="val">${evo.summary.totalSessions}</div><div class="lbl">Sessoes</div></div>`,
-      `<div class="card"><div class="val">${totalVol}</div><div class="lbl">Volume (kg)</div></div>`,
-      `<div class="card"><div class="val">${evo.summary.totalSets}</div><div class="lbl">Series</div></div>`,
-      `<div class="card"><div class="val">${evo.summary.avgDuration || "—"} min</div><div class="lbl">Duracao media</div></div>`,
+      `<div class="card"><div class="val">${evo.summary.totalSessions}</div><div class="lbl">Sessoes</div><div class="sub-val">${sessPerWeek}/semana</div></div>`,
+      `<div class="card"><div class="val">${totalVol}</div><div class="lbl">Volume Total (kg)</div></div>`,
+      `<div class="card"><div class="val">${evo.summary.totalSets}</div><div class="lbl">Series</div><div class="sub-val">${setsPerSession}/sessao</div></div>`,
+      `<div class="card"><div class="val">${evo.summary.avgDuration || "—"}<span style="font-size:14px;color:#737373"> min</span></div><div class="lbl">Duracao Media</div>${stats.avgRpe ? `<div class="sub-val">RPE medio: ${stats.avgRpe}</div>` : ""}</div>`,
       "</div>",
+      // Sections
+      volChart,
+      volSection,
+      freqSection,
+      rpeSection,
+      muscleSection,
       prsSection,
+      loadSection,
+      heatmapSection,
+      // Footer
       '<div class="footer">Gerado pelo Victor App — VO Personal • CREF 016254-G/CE</div>',
       "</body></html>",
     ].join("\n")
 
-    // Open HTML in new tab — user can print manually (avoids iOS "auto-print blocked" popup)
     const blob = new Blob([html], { type: "text/html" })
     const url = URL.createObjectURL(blob)
     const win = window.open(url, "_blank")
 
-    // Clean up after a delay
     setTimeout(() => {
       URL.revokeObjectURL(url)
       setExportingPdf(false)
     }, 1000)
 
     if (!win) {
-      // Fallback: download as HTML file if popup blocked
       const a = document.createElement("a")
       a.href = url
       a.download = "evolucao-vo-personal.html"
