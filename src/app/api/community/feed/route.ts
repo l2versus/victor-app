@@ -84,6 +84,7 @@ export async function GET(req: NextRequest) {
         content: post.content,
         imageUrl: post.imageUrl,
         metadata: post.metadata,
+        studentId: post.studentId,
         studentName: post.student?.user.name ?? "Victor Oliveira",
         studentAvatar: post.student?.user.avatar ?? null,
         reactionCounts,

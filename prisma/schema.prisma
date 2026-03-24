@@ -114,6 +114,8 @@ model Student {
   communityReactions CommunityReaction[]
   communityLikes    CommunityLike[]
   communityComments CommunityComment[]
+  followers         Follow[]          @relation("Following")
+  following         Follow[]          @relation("Follower")
   challengeEntries  ChallengeEntry[]
   bodyScans         BodyScan[]
   nutritionLogs     NutritionLog[]
@@ -615,6 +617,25 @@ model CommunityComment {
 
   @@index([postId])
   @@index([createdAt])
+}
+
+// ═══════════════════════════════════════
+// FOLLOWS — Aluno segue Aluno
+// ═══════════════════════════════════════
+
+model Follow {
+  id          String @id @default(cuid())
+  followerId  String
+  followingId String
+
+  follower  Student @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  following Student @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
 }
 
 // ═══════════════════════════════════════

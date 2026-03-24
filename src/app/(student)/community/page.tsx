@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Trophy, Flame, Target, Users, Medal,
@@ -8,6 +9,7 @@ import {
   Calendar, TrendingUp, Award, Lock,
   Heart, MessageCircle, Send, Camera,
   Image as ImageIcon, X, Plus, Loader2,
+  UserPlus,
 } from "lucide-react"
 
 // ═══════════════════════════════════════
@@ -40,6 +42,7 @@ type FeedPost = {
   content: string
   imageUrl: string | null
   metadata: Record<string, unknown> | null
+  studentId: string | null
   studentName: string
   studentAvatar: string | null
   reactionCounts: { CLAP: number; FIRE: number; MUSCLE: number }
@@ -117,6 +120,7 @@ const MEDAL_GLOW = [
 // ═══════════════════════════════════════
 
 export default function CommunityPage() {
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>("feed")
   const [period, setPeriod] = useState<"week" | "month" | "all">("month")
   const [ranking, setRanking] = useState<RankedStudent[]>([])
@@ -125,13 +129,22 @@ export default function CommunityPage() {
   const [loading, setLoading] = useState(true)
   const [features, setFeatures] = useState<{ hasVipGroup: boolean; planName: string | null }>({ hasVipGroup: false, planName: null })
   const [showComposer, setShowComposer] = useState(false)
+  const [feedFilter, setFeedFilter] = useState<"all" | "following">("all")
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
 
   const fetchFeatures = useCallback(async () => {
     try {
-      const res = await fetch("/api/student/subscription")
-      if (res.ok) {
-        const data = await res.json()
+      const [subRes, followRes] = await Promise.all([
+        fetch("/api/student/subscription"),
+        fetch("/api/community/follow?type=following"),
+      ])
+      if (subRes.ok) {
+        const data = await subRes.json()
         setFeatures({ hasVipGroup: data.hasVipGroup ?? false, planName: data.planName ?? null })
+      }
+      if (followRes.ok) {
+        const data = await followRes.json()
+        setFollowingIds(new Set(data.users?.map((u: { studentId: string }) => u.studentId) ?? []))
       }
     } catch { /* ignore */ }
   }, [])
@@ -274,6 +287,23 @@ export default function CommunityPage() {
               <Camera className="w-4 h-4 text-neutral-600 ml-auto" />
             </button>
 
+            {/* Feed filter: Todos / Seguindo */}
+            <div className="flex gap-2">
+              {(["all", "following"] as const).map((f) => (
+                <button
+                  key={f}
+                  onClick={() => setFeedFilter(f)}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] ${
+                    feedFilter === f
+                      ? "bg-red-600/15 text-red-400 border border-red-500/20"
+                      : "text-neutral-500 bg-white/[0.03] border border-white/[0.06]"
+                  }`}
+                >
+                  {f === "all" ? "Todos" : `Seguindo (${followingIds.size})`}
+                </button>
+              ))}
+            </div>
+
             {/* Post Composer Modal */}
             <AnimatePresence>
               {showComposer && (
@@ -288,23 +318,32 @@ export default function CommunityPage() {
               <div className="flex items-center justify-center py-16">
                 <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : feed.length === 0 ? (
-              <div className="text-center py-16">
-                <Camera className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
-                <p className="text-neutral-400 text-sm font-medium">Nenhum post ainda</p>
-                <p className="text-neutral-600 text-xs mt-1">Seja o primeiro a compartilhar!</p>
-              </div>
-            ) : (
-              feed.map((post) => (
-                <FeedCard
-                  key={post.id}
-                  post={post}
-                  onLike={() => toggleLike(post.id)}
-                  onReaction={(type) => toggleReaction(post.id, type)}
-                  onCommentAdded={fetchFeed}
-                />
-              ))
-            )}
+            ) : (() => {
+              const filtered = feedFilter === "following"
+                ? feed.filter((p) => p.studentId && followingIds.has(p.studentId))
+                : feed
+              return filtered.length === 0 ? (
+                <div className="text-center py-16">
+                  <Camera className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
+                  <p className="text-neutral-400 text-sm font-medium">
+                    {feedFilter === "following" ? "Nenhum post de quem você segue" : "Nenhum post ainda"}
+                  </p>
+                  <p className="text-neutral-600 text-xs mt-1">
+                    {feedFilter === "following" ? "Siga pessoas no ranking para ver posts aqui!" : "Seja o primeiro a compartilhar!"}
+                  </p>
+                </div>
+              ) : (
+                filtered.map((post) => (
+                  <FeedCard
+                    key={post.id}
+                    post={post}
+                    onLike={() => toggleLike(post.id)}
+                    onReaction={(type) => toggleReaction(post.id, type)}
+                    onCommentAdded={fetchFeed}
+                  />
+                ))
+              )
+            })()}
           </motion.div>
         )}
 
@@ -351,7 +390,8 @@ export default function CommunityPage() {
                       key={student.studentId}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm"
+                      onClick={() => router.push(`/community/profile/${student.studentId}`)}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm cursor-pointer active:bg-white/[0.05] transition-colors"
                     >
                       <span className="text-xs font-bold text-neutral-600 w-6 text-center">{student.position}</span>
                       <Avatar name={student.name} avatar={student.avatar} size="sm" />
@@ -480,6 +520,7 @@ function FeedCard({
   onReaction: (type: string) => void
   onCommentAdded: () => void
 }) {
+  const router = useRouter()
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -519,13 +560,18 @@ function FeedCard({
       animate={{ opacity: 1, y: 0 }}
       className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden"
     >
-      {/* Header */}
+      {/* Header — tappable to open profile */}
       <div className="flex items-center gap-3 p-3.5">
-        <Avatar name={post.studentName} avatar={post.studentAvatar} size="sm" />
-        <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-white truncate">{post.studentName}</p>
-          <p className="text-[10px] text-neutral-500">{timeAgo(post.createdAt)}</p>
-        </div>
+        <button
+          onClick={() => post.studentId && router.push(`/community/profile/${post.studentId}`)}
+          className="flex items-center gap-3 flex-1 min-w-0 text-left"
+        >
+          <Avatar name={post.studentName} avatar={post.studentAvatar} size="sm" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-white truncate">{post.studentName}</p>
+            <p className="text-[10px] text-neutral-500">{timeAgo(post.createdAt)}</p>
+          </div>
+        </button>
         {!isUserPost && <PostTypeBadge type={post.type} />}
       </div>
 
