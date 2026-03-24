@@ -119,7 +119,9 @@ export async function DELETE(
     if (!post) return NextResponse.json({ error: "Post não encontrado" }, { status: 404 })
 
     // Only own posts or admin can delete
-    if (post.studentId !== me?.id && session.role !== "ADMIN") {
+    const isOwner = me && post.studentId && post.studentId === me.id
+    const isAdmin = session.role === "ADMIN"
+    if (!isOwner && !isAdmin) {
       return NextResponse.json({ error: "Sem permissão" }, { status: 403 })
     }
 

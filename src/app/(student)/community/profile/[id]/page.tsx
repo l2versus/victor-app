@@ -419,7 +419,7 @@ export default function SocialProfilePage() {
               </div>
               {selectedPost.content && (
                 <p className="text-sm text-neutral-300 break-words whitespace-pre-wrap">
-                  <span className="font-semibold text-white mr-1.5">{profile.name.split(" ")[0]}</span>
+                  <span className="font-semibold text-white mr-1.5">{profile?.name?.split(" ")[0] || "User"}</span>
                   {selectedPost.content}
                 </p>
               )}
