@@ -133,6 +133,9 @@ export default function CommunityPage() {
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const [myStudentId, setMyStudentId] = useState<string | null>(null)
   const [myAvatar, setMyAvatar] = useState<string | null>(null)
+  const [myBio, setMyBio] = useState<string | null>(null)
+  const [myProfession, setMyProfession] = useState<string | null>(null)
+  const [suggestedUsers, setSuggestedUsers] = useState<Array<{ studentId: string; name: string; avatar: string | null; sessions: number }>>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [searchResults, setSearchResults] = useState<Array<{ studentId: string; name: string; avatar: string | null; bio: string | null; profession: string | null; followers: number; sessions: number; isMe: boolean }>>([])
   const [searching, setSearching] = useState(false)
@@ -176,7 +179,19 @@ export default function CommunityPage() {
         const data = await profileRes.json()
         setMyStudentId(data.student?.id ?? null)
         setMyAvatar(data.student?.user?.avatar ?? null)
+        setMyBio(data.student?.bio ?? null)
+        setMyProfession(data.student?.profession ?? null)
       }
+      // Fetch suggested users to follow
+      try {
+        const sugRes = await fetch("/api/community/ranking?period=month")
+        if (sugRes.ok) {
+          const sugData = await sugRes.json()
+          setSuggestedUsers((sugData.ranking || []).slice(0, 5).map((u: { studentId: string; name: string; avatar?: string | null; totalSessions?: number }) => ({
+            studentId: u.studentId, name: u.name, avatar: u.avatar || null, sessions: u.totalSessions || 0
+          })))
+        }
+      } catch { /* ignore */ }
     } catch { /* ignore */ }
   }, [])
 
@@ -568,6 +583,54 @@ export default function CommunityPage() {
                 </button>
               ))}
             </div>
+
+            {/* ═══ Onboarding — Complete profile nudge ═══ */}
+            {myStudentId && (!myBio || !myAvatar) && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl bg-gradient-to-r from-red-600/10 to-amber-600/5 border border-red-500/15 p-4"
+              >
+                <p className="text-sm font-semibold text-white mb-1">Complete seu perfil</p>
+                <p className="text-xs text-neutral-400 mb-3">
+                  {!myAvatar && !myBio ? "Adicione uma foto e bio para que outros membros te conheçam" :
+                   !myAvatar ? "Adicione uma foto de perfil" : "Escreva uma bio sobre você"}
+                </p>
+                <button
+                  onClick={() => myStudentId && router.push(`/community/profile/${myStudentId}`)}
+                  className="px-4 py-2 rounded-lg bg-red-600 text-white text-xs font-semibold"
+                >
+                  Completar perfil
+                </button>
+              </motion.div>
+            )}
+
+            {/* ═══ Onboarding — Suggested users to follow ═══ */}
+            {followingIds.size === 0 && suggestedUsers.length > 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4"
+              >
+                <p className="text-sm font-semibold text-white mb-1">Sugestões para você</p>
+                <p className="text-xs text-neutral-500 mb-3">Siga membros da Ironberg Family</p>
+                <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+                  {suggestedUsers.filter(u => u.studentId !== myStudentId).map((u) => (
+                    <button
+                      key={u.studentId}
+                      onClick={() => router.push(`/community/profile/${u.studentId}`)}
+                      className="flex flex-col items-center gap-2 shrink-0 w-20"
+                    >
+                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-sm font-bold overflow-hidden">
+                        {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
+                      </div>
+                      <p className="text-[10px] text-neutral-300 text-center truncate w-full">{u.name.split(" ")[0]}</p>
+                      <p className="text-[9px] text-neutral-600">{u.sessions} treinos</p>
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
 
             {/* Post Composer Modal */}
             <AnimatePresence>
