@@ -66,6 +66,17 @@ export async function GET(req: NextRequest) {
     })
     const currentStudentId = currentStudent?.id ?? null
 
+    // Resolve admin's trainer profile for posts with null studentId
+    const trainerUser = await prisma.user.findFirst({
+      where: { role: "ADMIN" },
+      select: { id: true, name: true, avatar: true },
+    })
+    // Get admin's student proxy for profile linking
+    const adminStudent = trainerUser ? await prisma.student.findUnique({
+      where: { userId: trainerUser.id },
+      select: { id: true },
+    }) : null
+
     const feed = items.map((post) => {
       // Count reactions by type
       const reactionCounts = { CLAP: 0, FIRE: 0, MUSCLE: 0 }
@@ -75,15 +86,18 @@ export async function GET(req: NextRequest) {
         if (r.studentId === currentStudentId) userReactions.push(r.type)
       }
 
+      // For admin posts (studentId null), use trainer info
+      const isAdminPost = !post.studentId
+
       return {
         id: post.id,
         type: post.type,
         content: post.content,
         imageUrl: post.imageUrl,
         metadata: post.metadata,
-        studentId: post.studentId,
-        studentName: post.student?.user.name ?? "Victor Oliveira",
-        studentAvatar: post.student?.user.avatar ?? null,
+        studentId: isAdminPost ? (adminStudent?.id ?? null) : post.studentId,
+        studentName: post.student?.user.name ?? trainerUser?.name ?? "Victor Oliveira",
+        studentAvatar: post.student?.user.avatar ?? trainerUser?.avatar ?? null,
         reactionCounts,
         userReactions,
         likesCount: post._count.likes,

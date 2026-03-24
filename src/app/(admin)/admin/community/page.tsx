@@ -198,8 +198,11 @@ export default function AdminCommunityPage() {
         <div className="space-y-4">
           {feed.map((post) => (
             <div key={post.id} className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden">
-              {/* Header */}
-              <div className="flex items-center gap-3 p-4">
+              {/* Header — click to view profile */}
+              <button
+                onClick={() => post.studentId && router.push(`/admin/community/profile/${post.studentId}`)}
+                className="flex items-center gap-3 p-4 w-full text-left"
+              >
                 <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold overflow-hidden shrink-0">
                   {post.studentAvatar ? (
                     <img src={post.studentAvatar} alt="" className="w-full h-full object-cover" />
@@ -216,7 +219,7 @@ export default function AdminCommunityPage() {
                   </div>
                   <p className="text-[10px] text-neutral-500">{timeAgo(post.createdAt)}</p>
                 </div>
-              </div>
+              </button>
 
               {/* Image */}
               {post.imageUrl && (

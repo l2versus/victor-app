@@ -68,6 +68,22 @@ export default function SocialProfilePage() {
   const [editProfession, setEditProfession] = useState("")
   const [editLink, setEditLink] = useState("")
   const [saving, setSaving] = useState(false)
+  const [showFollowList, setShowFollowList] = useState<"followers" | "following" | null>(null)
+  const [followList, setFollowList] = useState<Array<{ studentId: string; name: string; avatar: string | null }>>([])
+  const [loadingFollows, setLoadingFollows] = useState(false)
+
+  async function openFollowList(type: "followers" | "following") {
+    setShowFollowList(type)
+    setLoadingFollows(true)
+    try {
+      const res = await fetch(`/api/community/follow?type=${type}&studentId=${id}`)
+      if (res.ok) {
+        const data = await res.json()
+        setFollowList(data.users || [])
+      }
+    } catch { /* ignore */ }
+    setLoadingFollows(false)
+  }
 
   const fetchProfile = useCallback(async () => {
     try {
@@ -179,11 +195,15 @@ export default function SocialProfilePage() {
             )}
           </div>
 
-          {/* Stats row */}
+          {/* Stats row — tappable like Instagram */}
           <div className="flex-1 flex items-center justify-around">
             <StatColumn value={profile.stats.posts} label="Posts" />
-            <StatColumn value={profile.stats.followers} label="Seguidores" />
-            <StatColumn value={profile.stats.following} label="Seguindo" />
+            <button onClick={() => openFollowList("followers")}>
+              <StatColumn value={profile.stats.followers} label="Seguidores" />
+            </button>
+            <button onClick={() => openFollowList("following")}>
+              <StatColumn value={profile.stats.following} label="Seguindo" />
+            </button>
           </div>
         </div>
 
