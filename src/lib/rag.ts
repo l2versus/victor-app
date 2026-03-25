@@ -2,11 +2,11 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { embed } from "ai"
 import { prisma } from "@/lib/prisma"
 
-// ─── Embedding Model — Google text-embedding-004 (free, 768 dims) ────────────
+// ─── Embedding Model — Google gemini-embedding-001 (free, 3072 dims) ─────────
 
 function getEmbeddingModel() {
   const google = createGoogleGenerativeAI({ apiKey: process.env.GOOGLE_AI_API_KEY })
-  return google.textEmbeddingModel("text-embedding-004")
+  return google.textEmbeddingModel("gemini-embedding-001")
 }
 
 /** Generate embedding vector for a text string */
