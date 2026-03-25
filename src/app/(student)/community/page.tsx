@@ -12,6 +12,7 @@ import {
   Image as ImageIcon, X, Plus, Loader2,
   UserPlus, User, Mail, Search, RefreshCw, Check,
 } from "lucide-react"
+import { NotificationBell } from "@/components/student/notification-bell"
 
 // ═══════════════════════════════════════
 // TYPES
@@ -51,6 +52,7 @@ type FeedPost = {
   likesCount: number
   commentsCount: number
   isLiked: boolean
+  likedByNames?: string[]
   comments: FeedComment[]
   createdAt: string
 }
@@ -140,6 +142,12 @@ export default function CommunityPage() {
   const [searchResults, setSearchResults] = useState<Array<{ studentId: string; name: string; avatar: string | null; bio: string | null; profession: string | null; followers: number; sessions: number; isMe: boolean }>>([])
   const [searching, setSearching] = useState(false)
   const searchTimer = useRef<NodeJS.Timeout>(null)
+  const [feedHasFollows, setFeedHasFollows] = useState(false)
+
+  // Cleanup search timer on unmount
+  useEffect(() => {
+    return () => { if (searchTimer.current) clearTimeout(searchTimer.current) }
+  }, [])
 
   // Pull-to-refresh
   const [refreshing, setRefreshing] = useState(false)
@@ -224,7 +232,8 @@ export default function CommunityPage() {
       const res = await fetch("/api/community/feed")
       if (res.ok) {
         const data = await res.json()
-        setFeed(data.feed)
+        setFeed(data.feed || [])
+        setFeedHasFollows(data.hasFollows ?? false)
       }
     } catch { /* ignore */ }
     setLoading(false)
@@ -387,7 +396,9 @@ export default function CommunityPage() {
       {/* Header — Instagram style */}
       <div className="flex items-center justify-between">
         <h1 className="text-xl font-bold text-white tracking-tight">Ironberg Family</h1>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {/* Notifications — reuses existing bell component with dropdown */}
+          <NotificationBell />
           {/* DM inbox */}
           <button
             onClick={() => router.push("/community/dm")}
@@ -813,31 +824,49 @@ export default function CommunityPage() {
               </motion.div>
             )}
 
-            {/* ═══ Onboarding — Suggested users to follow ═══ */}
-            {followingIds.size === 0 && suggestedUsers.length > 0 && (
+            {/* ═══ Suggested users — ALWAYS visible for discovery ═══ */}
+            {suggestedUsers.filter(u => u.studentId !== myStudentId && !followingIds.has(u.studentId)).length > 0 && (
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4"
               >
-                <p className="text-sm font-semibold text-white mb-1">Sugestões para você</p>
-                <p className="text-xs text-neutral-500 mb-3">Siga membros da Ironberg Family</p>
+                <p className="text-sm font-semibold text-white mb-1">
+                  {followingIds.size === 0 ? "Comece seguindo" : "Sugestões para você"}
+                </p>
+                <p className="text-xs text-neutral-500 mb-3">
+                  {followingIds.size === 0 ? "Siga membros para personalizar seu feed" : "Descubra mais membros da Ironberg"}
+                </p>
                 <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
-                  {suggestedUsers.filter(u => u.studentId !== myStudentId).map((u) => (
-                    <button
-                      key={u.studentId}
-                      onClick={() => router.push(`/community/profile/${u.studentId}`)}
-                      className="flex flex-col items-center gap-2 shrink-0 w-20"
-                    >
-                      <div className="w-14 h-14 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-sm font-bold overflow-hidden">
+                  {suggestedUsers.filter(u => u.studentId !== myStudentId && !followingIds.has(u.studentId)).map((u) => (
+                    <div key={u.studentId} className="flex flex-col items-center gap-1.5 shrink-0 w-[88px]">
+                      <button
+                        onClick={() => router.push(`/community/profile/${u.studentId}`)}
+                        className="w-14 h-14 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-sm font-bold overflow-hidden"
+                      >
                         {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
-                      </div>
+                      </button>
                       <p className="text-[10px] text-neutral-300 text-center truncate w-full">{u.name.split(" ")[0]}</p>
-                      <p className="text-[9px] text-neutral-600">{u.sessions} treinos</p>
-                    </button>
+                      <button
+                        onClick={() => handleFollow(u.studentId)}
+                        className="px-3 py-1 rounded-md bg-red-600 text-white text-[10px] font-bold active:scale-95 transition-transform w-full"
+                      >
+                        Seguir
+                      </button>
+                    </div>
                   ))}
                 </div>
               </motion.div>
+            )}
+
+            {/* Feed mode indicator */}
+            {!feedHasFollows && feed.length > 0 && (
+              <div className="flex items-center gap-2 px-1">
+                <span className="text-[11px] text-neutral-500">
+                  Mostrando posts da Ironberg · Siga pessoas para personalizar
+                </span>
+                <div className="flex-1 h-px bg-white/[0.04]" />
+              </div>
             )}
 
             {/* Post Composer Modal — portal to escape stacking context */}
@@ -1234,10 +1263,34 @@ function FeedCard({
           )}
         </div>
 
-        {/* Likes count */}
+        {/* Likes count — social proof */}
         {post.likesCount > 0 && (
-          <p className="text-xs font-semibold text-white mt-2">
-            {post.likesCount} curtida{post.likesCount > 1 ? "s" : ""}
+          <p className="text-xs text-neutral-300 mt-2">
+            {post.isLiked && post.likesCount === 1 ? (
+              <span className="font-semibold text-white">Você curtiu</span>
+            ) : post.isLiked && post.likesCount > 1 ? (
+              <>
+                Curtido por <span className="font-semibold text-white">você</span> e{" "}
+                <span className="font-semibold text-white">
+                  {post.likesCount - 1 === 1
+                    ? (post.likedByNames?.[0] || "outra pessoa")
+                    : `mais ${post.likesCount - 1}`}
+                </span>
+              </>
+            ) : post.likedByNames && post.likedByNames.length > 0 ? (
+              <>
+                Curtido por <span className="font-semibold text-white">{post.likedByNames[0]}</span>
+                {post.likesCount > 1 && (
+                  <> e <span className="font-semibold text-white">
+                    {post.likesCount - 1 === 1
+                      ? (post.likedByNames[1] || "outra pessoa")
+                      : `mais ${post.likesCount - 1}`}
+                  </span></>
+                )}
+              </>
+            ) : (
+              <span className="font-semibold text-white">{post.likesCount} curtida{post.likesCount > 1 ? "s" : ""}</span>
+            )}
           </p>
         )}
 

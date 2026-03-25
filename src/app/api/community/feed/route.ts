@@ -6,31 +6,62 @@ export async function GET(req: NextRequest) {
   try {
     const session = await requireAuth()
 
-    // Get trainerId for data isolation
+    // Get trainerId for data isolation + current student
     let trainerId: string | undefined
+    let currentStudentId: string | null = null
     if (session.role === "STUDENT") {
       const student = await prisma.student.findUnique({
         where: { userId: session.userId },
-        select: { trainerId: true },
+        select: { id: true, trainerId: true },
       })
       trainerId = student?.trainerId
+      currentStudentId = student?.id ?? null
     } else {
       const trainer = await prisma.trainerProfile.findUnique({
         where: { userId: session.userId },
         select: { id: true },
       })
       trainerId = trainer?.id
+      const adminSt = await prisma.student.findUnique({
+        where: { userId: session.userId },
+        select: { id: true },
+      })
+      currentStudentId = adminSt?.id ?? null
     }
 
     const { searchParams } = new URL(req.url)
     const cursor = searchParams.get("cursor")
     const limit = Math.min(Number(searchParams.get("limit")) || 20, 50)
 
+    // Smart feed: get who I follow
+    const following = currentStudentId
+      ? await prisma.follow.findMany({
+          where: { followerId: currentStudentId },
+          select: { followingId: true },
+        })
+      : []
+    const followingIds = following.map((f) => f.followingId)
+    const hasFollows = followingIds.length > 0
+
+    // Build WHERE clause:
+    // - If follows someone: posts from followed users + my own + admin posts
+    // - If follows nobody: all posts from same trainer + admin posts (discovery mode)
+    const whereClause = trainerId
+      ? hasFollows
+        ? {
+            OR: [
+              { studentId: { in: [...followingIds, ...(currentStudentId ? [currentStudentId] : [])] } },
+              { studentId: null }, // admin posts always visible
+            ],
+          }
+        : { OR: [{ student: { trainerId } }, { studentId: null }] }
+      : {}
+
     const posts = await prisma.communityPost.findMany({
       take: limit + 1,
       ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-      orderBy: { createdAt: "desc" },
-      ...(trainerId ? { where: { OR: [{ student: { trainerId } }, { studentId: null }] } } : {}),
+      orderBy: [{ createdAt: "desc" }],
+      where: whereClause,
       include: {
         student: {
           include: {
@@ -42,13 +73,14 @@ export async function GET(req: NextRequest) {
         },
         likes: {
           select: { studentId: true },
+          take: 5, // For "liked by" social proof
         },
         comments: {
           include: {
             student: { include: { user: { select: { name: true, avatar: true } } } },
           },
           orderBy: { createdAt: "asc" },
-          take: 3, // Preview of latest comments
+          take: 3,
         },
         _count: {
           select: { likes: true, comments: true },
@@ -57,28 +89,50 @@ export async function GET(req: NextRequest) {
     })
 
     const hasMore = posts.length > limit
-    const items = hasMore ? posts.slice(0, limit) : posts
+    let items = hasMore ? posts.slice(0, limit) : posts
 
-    // Get current student id for reaction/like highlights (works for both student and admin)
-    const currentStudent = await prisma.student.findUnique({
-      where: { userId: session.userId },
-      select: { id: true },
+    // Engagement boost: sort by recency + engagement score
+    // Score = likes*2 + comments*3 + recency bonus (last 6h = max boost)
+    const now = Date.now()
+    items = [...items].sort((a, b) => {
+      const ageA = (now - new Date(a.createdAt).getTime()) / 3600000 // hours
+      const ageB = (now - new Date(b.createdAt).getTime()) / 3600000
+      const engA = a._count.likes * 2 + a._count.comments * 3
+      const engB = b._count.likes * 2 + b._count.comments * 3
+      const recencyA = Math.max(0, 1 - ageA / 48) // decays over 48h
+      const recencyB = Math.max(0, 1 - ageB / 48)
+      const scoreA = engA + recencyA * 10
+      const scoreB = engB + recencyB * 10
+      return scoreB - scoreA
     })
-    const currentStudentId = currentStudent?.id ?? null
 
     // Resolve admin's trainer profile for posts with null studentId
     const trainerUser = await prisma.user.findFirst({
       where: { role: "ADMIN" },
       select: { id: true, name: true, avatar: true },
     })
-    // Get admin's student proxy for profile linking
     const adminStudent = trainerUser ? await prisma.student.findUnique({
       where: { userId: trainerUser.id },
       select: { id: true },
     }) : null
 
+    // Collect liker names for social proof
+    const likerStudentIds = new Set<string>()
+    for (const post of items) {
+      for (const like of post.likes) {
+        if (like.studentId !== currentStudentId) likerStudentIds.add(like.studentId)
+      }
+    }
+    const likerNames = new Map<string, string>()
+    if (likerStudentIds.size > 0) {
+      const likers = await prisma.student.findMany({
+        where: { id: { in: [...likerStudentIds] } },
+        select: { id: true, user: { select: { name: true } } },
+      })
+      for (const l of likers) likerNames.set(l.id, l.user.name.split(" ")[0])
+    }
+
     const feed = items.map((post) => {
-      // Count reactions by type
       const reactionCounts = { CLAP: 0, FIRE: 0, MUSCLE: 0 }
       const userReactions: string[] = []
       for (const r of post.reactions) {
@@ -86,8 +140,13 @@ export async function GET(req: NextRequest) {
         if (r.studentId === currentStudentId) userReactions.push(r.type)
       }
 
-      // For admin posts (studentId null), use trainer info
       const isAdminPost = !post.studentId
+
+      // Social proof: "Fulano, Ciclano e mais X curtiram"
+      const likedByNames = post.likes
+        .filter((l) => l.studentId !== currentStudentId)
+        .slice(0, 2)
+        .map((l) => likerNames.get(l.studentId) || "Alguém")
 
       return {
         id: post.id,
@@ -96,13 +155,14 @@ export async function GET(req: NextRequest) {
         imageUrl: post.imageUrl,
         metadata: post.metadata,
         studentId: isAdminPost ? (adminStudent?.id ?? null) : post.studentId,
-        studentName: post.student?.user.name ?? trainerUser?.name ?? "Victor Oliveira",
+        studentName: post.student?.user.name ?? trainerUser?.name ?? "Personal",
         studentAvatar: post.student?.user.avatar ?? trainerUser?.avatar ?? null,
         reactionCounts,
         userReactions,
         likesCount: post._count.likes,
         commentsCount: post._count.comments,
         isLiked: post.likes.some((l) => l.studentId === currentStudentId),
+        likedByNames,
         comments: post.comments.map((c) => ({
           id: c.id,
           content: c.content,
@@ -116,6 +176,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       feed,
+      hasFollows,
       nextCursor: hasMore ? items[items.length - 1].id : null,
     })
   } catch (e: unknown) {
