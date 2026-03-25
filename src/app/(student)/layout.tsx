@@ -23,6 +23,14 @@ export default async function StudentLayout({ children }: { children: React.Reac
     include: { user: { select: { name: true, avatar: true } } },
   })
 
+  // Update online presence (fire-and-forget)
+  if (student) {
+    prisma.student.update({
+      where: { id: student.id },
+      data: { lastSeenAt: new Date() },
+    }).catch(() => {})
+  }
+
   // Weekly stats + feature flags (parallel)
   const weekStart = new Date()
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + (weekStart.getDay() === 0 ? -6 : 1))

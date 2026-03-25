@@ -1687,14 +1687,20 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
 // SUB-COMPONENTS
 // ═══════════════════════════════════════
 
-function Avatar({ name, avatar, size = "sm" }: { name: string; avatar: string | null; size?: "xs" | "sm" | "md" }) {
+function Avatar({ name, avatar, size = "sm", isOnline }: { name: string; avatar: string | null; size?: "xs" | "sm" | "md"; isOnline?: boolean }) {
   const sizeClasses = { xs: "w-6 h-6 text-[8px]", sm: "w-9 h-9 text-[10px]", md: "w-14 h-14 text-sm" }
+  const dotSize = { xs: "w-2 h-2", sm: "w-2.5 h-2.5", md: "w-3 h-3" }
   return (
-    <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 font-semibold shrink-0 overflow-hidden`}>
-      {avatar ? (
-        <img src={avatar} alt={name} className="w-full h-full object-cover" />
-      ) : (
-        getInitials(name)
+    <div className="relative shrink-0">
+      <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 font-semibold overflow-hidden`}>
+        {avatar ? (
+          <img src={avatar} alt={name} className="w-full h-full object-cover" />
+        ) : (
+          getInitials(name)
+        )}
+      </div>
+      {isOnline && (
+        <div className={`absolute -bottom-0.5 -right-0.5 ${dotSize[size]} rounded-full bg-emerald-500 border-2 border-[#0a0a0a]`} />
       )}
     </div>
   )
