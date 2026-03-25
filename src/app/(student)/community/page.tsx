@@ -549,12 +549,23 @@ export default function CommunityPage() {
               </button>
             </div>
 
-            {/* Story image */}
-            <img
-              src={viewingStory.group.stories[viewingStory.index].imageUrl}
-              alt=""
-              className="w-full h-full object-contain"
-            />
+            {/* Story media (image or video) */}
+            {viewingStory.group.stories[viewingStory.index].imageUrl.startsWith("data:video/") ? (
+              <video
+                src={viewingStory.group.stories[viewingStory.index].imageUrl}
+                className="w-full h-full object-contain"
+                autoPlay
+                playsInline
+                muted={false}
+                loop
+              />
+            ) : (
+              <img
+                src={viewingStory.group.stories[viewingStory.index].imageUrl}
+                alt=""
+                className="w-full h-full object-contain"
+              />
+            )}
 
             {/* Caption */}
             {viewingStory.group.stories[viewingStory.index].caption && (
@@ -608,29 +619,52 @@ export default function CommunityPage() {
 
             {!storyPreview ? (
               <>
-                <p className="text-xs text-neutral-500">Escolha uma foto para compartilhar por 24h</p>
-                <label className="flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-red-600 text-white text-sm font-semibold cursor-pointer active:scale-95 transition-transform">
-                  <Camera className="w-5 h-5" />
-                  Escolher Foto
-                  <input
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (!file) return
-                      if (file.size > 5 * 1024 * 1024) { alert("Máximo 5MB"); return }
-                      const reader = new FileReader()
-                      reader.onload = () => setStoryPreview(reader.result as string)
-                      reader.readAsDataURL(file)
-                    }}
-                  />
-                </label>
+                <p className="text-xs text-neutral-500">Escolha uma foto ou vídeo curto para compartilhar por 24h</p>
+                <div className="flex gap-2">
+                  <label className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-red-600 text-white text-sm font-semibold cursor-pointer active:scale-95 transition-transform">
+                    <Camera className="w-5 h-5" />
+                    Foto
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        if (file.size > 5 * 1024 * 1024) { alert("Máximo 5MB"); return }
+                        const reader = new FileReader()
+                        reader.onload = () => setStoryPreview(reader.result as string)
+                        reader.readAsDataURL(file)
+                      }}
+                    />
+                  </label>
+                  <label className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-white/[0.06] border border-white/[0.1] text-white text-sm font-semibold cursor-pointer active:scale-95 transition-transform">
+                    <Play className="w-5 h-5" />
+                    Vídeo
+                    <input
+                      type="file"
+                      accept="video/*"
+                      className="hidden"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        if (file.size > 4 * 1024 * 1024) { alert("Vídeo muito grande. Máximo 4MB (~10s)"); return }
+                        const reader = new FileReader()
+                        reader.onload = () => setStoryPreview(reader.result as string)
+                        reader.readAsDataURL(file)
+                      }}
+                    />
+                  </label>
+                </div>
               </>
             ) : (
               <>
                 <div className="relative rounded-xl overflow-hidden border border-white/[0.08]">
-                  <img src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-cover" />
+                  {storyPreview.startsWith("data:video/") ? (
+                    <video src={storyPreview} className="w-full max-h-[40dvh] object-cover" autoPlay muted loop playsInline />
+                  ) : (
+                    <img src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-cover" />
+                  )}
                   <button
                     onClick={() => setStoryPreview(null)}
                     className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center"
