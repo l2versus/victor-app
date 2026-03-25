@@ -10,7 +10,7 @@ import { useSwipe } from "@/hooks/use-swipe"
 import { BodyFocusBadges } from "@/components/student/muscle-info-card"
 import { Exercise3DButton } from "@/components/student/exercise-3d-viewer"
 import { useCelebration, type CelebrationType } from "@/components/student/celebration"
-import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
+// Spotify removed — was breaking layout
 import { RMCalculatorButton } from "@/components/student/rm-calculator"
 import { ExerciseDetailModal } from "@/components/student/exercise-detail-modal"
 
@@ -575,9 +575,6 @@ export function WorkoutPlayer({
           })}
         </div>
 
-        {/* ═══ SPOTIFY — Já pode escolher a playlist antes de treinar ═══ */}
-        <SpotifyMiniPlayer />
-
         {!isScheduledToday && viewingDayName && (
           <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-amber-500/10 border border-amber-500/15">
             <Dumbbell className="w-3.5 h-3.5 text-amber-400 shrink-0" />
@@ -758,25 +755,30 @@ export function WorkoutPlayer({
         </div>
       )}
 
-      {/* Progress bar */}
+      {/* Progress bar + abandon */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Clock className="w-3.5 h-3.5 text-neutral-600" />
           <span className="text-xs text-neutral-500 tabular-nums">{formatTime(elapsed)}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-neutral-500">{totalCompleted}/{totalSets}</span>
-          <div className="w-20 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-500"
-              style={{ width: `${Math.min(progress * 100, 100)}%` }}
-            />
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setPhase("preview")}
+            className="text-[10px] text-neutral-500 hover:text-white transition-colors px-2 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06]"
+          >
+            Pausar
+          </button>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-neutral-500">{totalCompleted}/{totalSets}</span>
+            <div className="w-20 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-500"
+                style={{ width: `${Math.min(progress * 100, 100)}%` }}
+              />
+            </div>
           </div>
         </div>
       </div>
-
-      {/* Spotify Player */}
-      <SpotifyMiniPlayer />
 
       {/* Exercise Navigation */}
       <div className="flex items-center justify-between">
@@ -807,9 +809,15 @@ export function WorkoutPlayer({
             {(() => {
               const thumb = currentEx.gifUrl || currentEx.imageUrl
               if (thumb) return (
-                <div className="w-14 h-14 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 bg-neutral-900">
+                <button
+                  onClick={() => setExerciseDetail(currentEx)}
+                  className="w-14 h-14 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 bg-neutral-900 relative"
+                >
                   <img src={thumb} alt={currentEx.name} className="w-full h-full object-cover" loading="lazy" />
-                </div>
+                  <div className="absolute bottom-0 right-0 bg-black/70 rounded-tl-lg px-1 py-0.5">
+                    <span className="text-[7px] text-neutral-300 font-bold">VER</span>
+                  </div>
+                </button>
               )
               if (currentEx.machine3dModel) return (
                 <button
@@ -821,9 +829,13 @@ export function WorkoutPlayer({
                 </button>
               )
               return (
-                <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/10 flex items-center justify-center text-red-400 border border-red-500/15 shrink-0">
-                  <Dumbbell className="w-5 h-5" />
-                </div>
+                <button
+                  onClick={() => setExerciseDetail(currentEx)}
+                  className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/10 flex flex-col items-center justify-center text-red-400 border border-red-500/15 shrink-0 gap-0.5"
+                >
+                  <Dumbbell className="w-4 h-4" />
+                  <span className="text-[7px] text-neutral-400 font-bold">DETALHES</span>
+                </button>
               )
             })()}
             <div className="flex-1 min-w-0">

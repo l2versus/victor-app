@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma"
 import { redirect } from "next/navigation"
 import Link from "next/link"
 import { WorkoutPlayer } from "./workout-player"
-import { SpotifyMiniPlayer } from "@/components/student/spotify-player"
+// Spotify removed
 import { Moon, Dumbbell, Droplets, Heart, BedDouble, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getBrazilDayOfWeek, getBrazilTodayRange } from "@/lib/timezone"
@@ -322,8 +322,6 @@ function EmptyDay({
           </div>
         </div>
       )}
-
-      <SpotifyMiniPlayer />
 
       {totalSessions > 0 && (
         <div className="text-center py-2">
