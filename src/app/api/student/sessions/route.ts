@@ -20,21 +20,38 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Treino não encontrado" }, { status: 404 })
     }
 
-    // Check if there's already an active session today (Brazil timezone)
-    const { start: today, end: tomorrow } = getBrazilTodayRange()
-
-    const existing = await prisma.workoutSession.findFirst({
+    // Check if there's ANY active (uncompleted) session for this student
+    // Priority: same template first, then any template
+    const existingAny = await prisma.workoutSession.findFirst({
       where: {
         studentId: student.id,
-        templateId,
-        startedAt: { gte: today, lt: tomorrow },
         completedAt: null,
       },
       include: { sets: true },
+      orderBy: { startedAt: "desc" },
     })
 
-    if (existing) {
-      return NextResponse.json({ session: existing })
+    if (existingAny) {
+      // If same template → resume it
+      if (existingAny.templateId === templateId) {
+        return NextResponse.json({ session: existingAny })
+      }
+
+      // Different template but old session with 0 sets → auto-discard the old one
+      const oldSets = existingAny.sets.length
+      if (oldSets === 0) {
+        await prisma.workoutSession.delete({ where: { id: existingAny.id } })
+      } else {
+        // Old session has progress → auto-complete it (save the work)
+        await prisma.workoutSession.update({
+          where: { id: existingAny.id },
+          data: {
+            completedAt: new Date(),
+            durationMin: Math.round((Date.now() - existingAny.startedAt.getTime()) / 60000),
+            notes: "Finalizado automaticamente ao iniciar novo treino",
+          },
+        })
+      }
     }
 
     const session = await prisma.workoutSession.create({

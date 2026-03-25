@@ -660,6 +660,21 @@ export function WorkoutPlayer({
           </div>
         )}
 
+        {/* Pending session reminder */}
+        {sessionId && activeSession && (
+          <div className="flex items-center gap-3 px-3.5 py-3 rounded-xl bg-amber-500/10 border border-amber-500/20">
+            <div className="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+              <Clock className="w-4 h-4 text-amber-400" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-semibold text-amber-300">Treino em andamento</p>
+              <p className="text-[10px] text-amber-400/60">
+                {totalCompleted} séries feitas · Retome ou descarte
+              </p>
+            </div>
+          </div>
+        )}
+
         <button
           onClick={handleStart}
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base shadow-xl shadow-red-600/25 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all duration-300"

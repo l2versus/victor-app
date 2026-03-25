@@ -100,14 +100,15 @@ export default async function TodayPage({
   const { start: todayDate, end: tomorrow } = getBrazilTodayRange()
 
   const [activeSession, completedToday, lastSession] = await Promise.all([
+    // Find ANY active session (not just today) — prevents orphaned sessions
     prisma.workoutSession.findFirst({
       where: {
         studentId: student.id,
         templateId: plan.templateId,
-        startedAt: { gte: todayDate, lt: tomorrow },
         completedAt: null,
       },
       include: { sets: true },
+      orderBy: { startedAt: "desc" },
     }),
     prisma.workoutSession.findFirst({
       where: {
