@@ -43,22 +43,22 @@ const moreItems = [
   { href: "/admin/bi-treino", label: "BI Treino", icon: BarChart3 },
   { href: "/admin/checkin", label: "Presença", icon: QrCode },
   { href: "/admin/crm", label: "CRM", icon: UserPlus },
+  { href: "/community", label: "Comunidade", icon: Heart },
   { href: "/admin/automations", label: "Automações", icon: Zap },
   { href: "/admin/template-library", label: "Templates", icon: BookOpen },
   { href: "/admin/challenges", label: "Desafios", icon: Target },
-  { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/plans", label: "Planos", icon: Crown },
   { href: "/admin/messages", label: "Mensagens", icon: MessageCircle },
-  { href: "/community", label: "Comunidade", icon: Heart },
   { href: "/admin/broadcasts", label: "Broadcast", icon: Send },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/academy", label: "Academia", icon: GraduationCap },
+  { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/knowledge", label: "Base IA", icon: BookOpen },
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
-  { href: "/admin/import", label: "Importar MFIT", icon: Upload },
   { href: "/admin/finance", label: "Financeiro", icon: DollarSign },
   { href: "/admin/exercises", label: "Exercícios", icon: Dumbbell },
   { href: "/admin/machines", label: "Equip. 3D", icon: Dumbbell },
+  { href: "/admin/import", label: "Importar MFIT", icon: Upload },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
 ]
 
@@ -91,7 +91,7 @@ export function AdminMobileNav() {
           className="fixed inset-x-0 z-50 px-3 pb-2 animate-in slide-in-from-bottom-4 fade-in duration-200"
           style={{ bottom: "calc(68px + env(safe-area-inset-bottom, 0px))" }}
         >
-          <div className="rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-2xl p-3 shadow-2xl max-h-[60dvh] flex flex-col">
+          <div className="rounded-2xl border border-white/[0.06] bg-[#0a0a0a]/95 backdrop-blur-2xl p-3 shadow-2xl max-h-[65dvh] flex flex-col">
             <div className="flex items-center justify-between px-2 mb-2 shrink-0">
               <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium">Menu</p>
               <button onClick={handleClose} className="text-neutral-600 hover:text-white transition-colors p-1">
@@ -99,7 +99,7 @@ export function AdminMobileNav() {
               </button>
             </div>
             <div className="overflow-y-auto flex-1 -mx-0.5 px-0.5 overscroll-contain">
-              <div className="grid grid-cols-4 gap-1.5 pb-2">
+              <div className="grid grid-cols-4 gap-1.5 pb-4">
                 {moreItems.map((item) => {
                   const isActive = pathname.startsWith(item.href)
                   return (
