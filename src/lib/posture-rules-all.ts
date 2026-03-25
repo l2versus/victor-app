@@ -16,6 +16,7 @@ import {
 } from "./posture-rules"
 
 import { EXTENDED_EXERCISE_RULES } from "./posture-rules-extended"
+import { NEW_EXERCISE_RULES } from "./posture-rules-new"
 
 // ─── Combine all rules, deduplicate by ID ────────────────────────────────────
 const seenIds = new Set<string>()
@@ -31,6 +32,14 @@ for (const rule of ORIGINAL_RULES) {
 
 // Then extended rules
 for (const rule of EXTENDED_EXERCISE_RULES) {
+  if (!seenIds.has(rule.id)) {
+    seenIds.add(rule.id)
+    allRules.push(rule)
+  }
+}
+
+// Then new PT exercises
+for (const rule of NEW_EXERCISE_RULES) {
   if (!seenIds.has(rule.id)) {
     seenIds.add(rule.id)
     allRules.push(rule)
