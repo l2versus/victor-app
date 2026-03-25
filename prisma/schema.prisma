@@ -132,6 +132,7 @@ model Student {
   checkIns          CheckIn[]
   stories           Story[]
   storyViews        StoryView[]
+  postViews         PostView[]
 
   // Spotify OAuth tokens (salvo no DB, não em cookies)
   spotifyAccessToken  String?
@@ -571,6 +572,7 @@ model CommunityPost {
   reactions CommunityReaction[]
   comments  CommunityComment[]
   likes     CommunityLike[]
+  views     PostView[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -629,6 +631,20 @@ model CommunityComment {
 
   @@index([postId])
   @@index([createdAt])
+}
+
+model PostView {
+  id        String @id @default(cuid())
+  postId    String
+  studentId String
+
+  post    CommunityPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  student Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  viewedAt DateTime @default(now())
+
+  @@unique([postId, studentId])
+  @@index([postId])
 }
 
 // ═══════════════════════════════════════

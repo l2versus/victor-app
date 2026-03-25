@@ -73,6 +73,11 @@ export default function SocialProfilePage() {
   const [followList, setFollowList] = useState<Array<{ studentId: string; name: string; avatar: string | null; isMe: boolean; iFollow: boolean; followsMe: boolean }>>([])
   const [loadingFollows, setLoadingFollows] = useState(false)
 
+  // Stories for this profile
+  type ProfileStory = { id: string; imageUrl: string; caption: string | null; viewCount: number; createdAt: string; expiresAt: string }
+  const [profileStories, setProfileStories] = useState<ProfileStory[]>([])
+  const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null)
+
   async function openFollowList(type: "followers" | "following") {
     setShowFollowList(type)
     setLoadingFollows(true)
@@ -88,11 +93,22 @@ export default function SocialProfilePage() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const res = await fetch(`/api/community/profile/${id}`)
-      if (res.ok) {
-        const data = await res.json()
+      const [profileRes, storiesRes] = await Promise.all([
+        fetch(`/api/community/profile/${id}`),
+        fetch("/api/community/stories"),
+      ])
+      if (profileRes.ok) {
+        const data = await profileRes.json()
         setProfile(data.profile)
         setPosts(data.posts)
+      }
+      if (storiesRes.ok) {
+        const storiesData = await storiesRes.json()
+        const groups = storiesData.storyGroups || []
+        const myGroup = groups.find((g: { studentId: string }) => g.studentId === id)
+        if (myGroup) {
+          setProfileStories(myGroup.stories)
+        }
       }
     } catch { /* ignore */ }
     setLoading(false)
@@ -187,14 +203,25 @@ export default function SocialProfilePage() {
       {/* Profile header — Instagram style */}
       <div className="px-4 pb-4">
         <div className="flex items-center gap-5">
-          {/* Avatar */}
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border-2 border-red-500/30 flex items-center justify-center text-red-300 text-xl font-bold shrink-0 overflow-hidden">
-            {profile.avatar ? (
-              <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
-            ) : (
-              getInitials(profile.name)
-            )}
-          </div>
+          {/* Avatar — story ring if has active stories */}
+          <button
+            onClick={() => profileStories.length > 0 && setViewingStoryIndex(0)}
+            className={`w-20 h-20 rounded-full shrink-0 ${
+              profileStories.length > 0
+                ? "p-[2.5px] bg-gradient-to-tr from-red-600 via-orange-500 to-yellow-400 cursor-pointer"
+                : ""
+            }`}
+          >
+            <div className={`w-full h-full rounded-full ${profileStories.length > 0 ? "bg-[#030303] p-[2px]" : ""}`}>
+              <div className={`w-full h-full rounded-full ${profileStories.length > 0 ? "" : "bg-gradient-to-br from-red-600/30 to-red-900/30 border-2 border-red-500/30"} flex items-center justify-center text-red-300 text-xl font-bold overflow-hidden`}>
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(profile.name)
+                )}
+              </div>
+            </div>
+          </button>
 
           {/* Stats row — tappable like Instagram */}
           <div className="flex-1 flex items-center justify-around">
@@ -413,6 +440,82 @@ export default function SocialProfilePage() {
             </div>
           )}
         </>
+      )}
+
+      {/* Profile Story Viewer Modal */}
+      {viewingStoryIndex !== null && profile && profileStories.length > 0 && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => setViewingStoryIndex(null)}>
+          <div className="w-full max-w-lg h-full relative flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Progress bars */}
+            <div className="absolute top-2 left-3 right-3 flex gap-1 z-10">
+              {profileStories.map((s, i) => (
+                <div key={s.id} className="flex-1 h-0.5 rounded-full bg-white/20 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-300 ${
+                    i <= viewingStoryIndex ? "bg-white w-full" : "w-0"
+                  }`} />
+                </div>
+              ))}
+            </div>
+
+            {/* Header */}
+            <div className="absolute top-6 left-3 right-3 flex items-center gap-2 z-10">
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center text-neutral-300 text-xs font-bold">
+                {profile.avatar ? (
+                  <img src={profile.avatar} alt="" className="w-full h-full object-cover" />
+                ) : (
+                  getInitials(profile.name)
+                )}
+              </div>
+              <span className="text-white text-sm font-semibold">{profile.name.split(" ")[0]}</span>
+              <span className="text-white/50 text-xs">{timeAgo(profileStories[viewingStoryIndex].createdAt)}</span>
+              {profile.isMe && profileStories[viewingStoryIndex].viewCount > 0 && (
+                <span className="text-white/50 text-[10px]">👁 {profileStories[viewingStoryIndex].viewCount}</span>
+              )}
+              <button onClick={() => setViewingStoryIndex(null)} className="ml-auto text-white/70 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Media */}
+            <div className="flex-1 relative">
+              {(() => {
+                const url = profileStories[viewingStoryIndex].imageUrl
+                const isVid = /\.(mp4|mov|webm|quicktime)/i.test(url)
+                return isVid ? (
+                  <video key={url} src={url} className="w-full h-full object-contain" autoPlay playsInline loop />
+                ) : (
+                  <img src={url} alt="" className="w-full h-full object-contain" />
+                )
+              })()}
+
+              {profileStories[viewingStoryIndex].caption && (
+                <div className="absolute bottom-4 left-0 right-0 px-4">
+                  <p className="text-white text-sm bg-black/50 px-3 py-2 rounded-lg backdrop-blur-sm">
+                    {profileStories[viewingStoryIndex].caption}
+                  </p>
+                </div>
+              )}
+
+              {/* Nav tap zones */}
+              <button className="absolute left-0 top-0 w-1/3 h-full" onClick={() => {
+                if (viewingStoryIndex > 0) setViewingStoryIndex(viewingStoryIndex - 1)
+                else setViewingStoryIndex(null)
+              }} />
+              <button className="absolute right-0 top-0 w-2/3 h-full" onClick={() => {
+                const next = viewingStoryIndex + 1
+                if (next < profileStories.length) {
+                  setViewingStoryIndex(next)
+                  fetch("/api/community/stories/view", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ storyId: profileStories[next].id }),
+                  })
+                } else setViewingStoryIndex(null)
+              }} />
+            </div>
+          </div>
+        </div>,
+        document.getElementById("modal-portal") || document.body
       )}
 
       {/* Followers/Following Modal — portal to escape stacking context */}

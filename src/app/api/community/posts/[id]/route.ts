@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
-import { notifySocial } from "@/lib/social-notifications"
+import { notifySocial, notifyMentions } from "@/lib/social-notifications"
 
 // POST /api/community/posts/[id] — like/unlike or comment
 export async function POST(
@@ -92,10 +92,18 @@ export async function POST(
         where: { id: postId },
         include: { student: { select: { userId: true } } },
       })
+      const me = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } })
       if (commentedPost?.student && commentedPost.student.userId !== session.userId) {
-        const me = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } })
         notifySocial({ toUserId: commentedPost.student.userId, fromName: me?.name || "Alguém", type: "social_comment", commentContent: content.trim() })
       }
+
+      // Notify @mentioned users
+      notifyMentions({
+        text: content.trim(),
+        fromUserId: session.userId,
+        fromName: me?.name || "Alguém",
+        postId,
+      })
 
       return NextResponse.json({ comment }, { status: 201 })
     }

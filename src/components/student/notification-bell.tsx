@@ -1,7 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import { Bell, Trophy, MessageSquare, Zap, Megaphone, X, CheckCheck, CalendarCheck, CalendarX, Calendar } from "lucide-react"
+import { useRouter } from "next/navigation"
+import {
+  Bell, Trophy, MessageSquare, Zap, Megaphone, X, CheckCheck,
+  CalendarCheck, CalendarX, Calendar, Heart, UserPlus, AtSign,
+} from "lucide-react"
 import { cn } from "@/lib/utils"
 
 interface Notification {
@@ -23,6 +27,10 @@ const TYPE_ICON: Record<string, React.ReactNode> = {
   schedule_confirmed: <CalendarCheck className="w-4 h-4 text-green-400" />,
   schedule_cancelled: <CalendarX className="w-4 h-4 text-red-400" />,
   schedule_completed: <CalendarCheck className="w-4 h-4 text-neutral-400" />,
+  social_like: <Heart className="w-4 h-4 text-red-400" />,
+  social_comment: <MessageSquare className="w-4 h-4 text-blue-400" />,
+  social_follow: <UserPlus className="w-4 h-4 text-green-400" />,
+  social_mention: <AtSign className="w-4 h-4 text-purple-400" />,
 }
 
 function timeAgo(date: string): string {
@@ -35,7 +43,61 @@ function timeAgo(date: string): string {
   return `${Math.floor(hrs / 24)}d`
 }
 
+// Determine navigation target from notification type and metadata
+function getNotificationRoute(n: Notification): string | null {
+  const meta = n.metadata as Record<string, string> | undefined
+
+  switch (n.type) {
+    case "social_like":
+    case "social_comment":
+    case "social_mention":
+      // Navigate to community feed (where posts are)
+      return "/community"
+    case "social_follow":
+      // Navigate to the follower's profile
+      if (meta?.fromStudentId) return `/community/profile/${meta.fromStudentId}`
+      return "/community"
+    case "new_message":
+      // Navigate to DM inbox
+      return "/community/dm"
+    case "challenge_started":
+      return "/community"
+    case "schedule_new":
+    case "schedule_confirmed":
+    case "schedule_cancelled":
+    case "schedule_completed":
+      return "/agenda"
+    case "announcement":
+      return "/community"
+    default:
+      return null
+  }
+}
+
+// Group notifications by time period (Instagram style)
+function groupByTime(notifications: Notification[]): { label: string; items: Notification[] }[] {
+  const now = Date.now()
+  const groups: { label: string; items: Notification[] }[] = [
+    { label: "Hoje", items: [] },
+    { label: "Ontem", items: [] },
+    { label: "Últimos 7 dias", items: [] },
+    { label: "Anteriores", items: [] },
+  ]
+
+  for (const n of notifications) {
+    const diff = now - new Date(n.createdAt).getTime()
+    const hours = diff / 3600000
+    if (hours < 24) groups[0].items.push(n)
+    else if (hours < 48) groups[1].items.push(n)
+    else if (hours < 168) groups[2].items.push(n)
+    else groups[3].items.push(n)
+  }
+
+  return groups.filter(g => g.items.length > 0)
+}
+
 export function NotificationBell() {
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unread, setUnread] = useState(0)
@@ -86,14 +148,24 @@ export function NotificationBell() {
     }
   }
 
-  async function markRead(id: string) {
-    await fetch("/api/student/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids: [id] }),
-    })
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-    setUnread(prev => Math.max(0, prev - 1))
+  async function handleNotificationClick(n: Notification) {
+    // Mark as read
+    if (!n.read) {
+      fetch("/api/student/notifications", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [n.id] }),
+      })
+      setNotifications(prev => prev.map(x => x.id === n.id ? { ...x, read: true } : x))
+      setUnread(prev => Math.max(0, prev - 1))
+    }
+
+    // Navigate to relevant page
+    const route = getNotificationRoute(n)
+    if (route) {
+      setOpen(false)
+      router.push(route)
+    }
   }
 
   function handleToggle() {
@@ -106,6 +178,8 @@ export function NotificationBell() {
     }
     setOpen(o => !o)
   }
+
+  const groupedNotifications = groupByTime(notifications)
 
   return (
     <div className="relative" ref={panelRef}>
@@ -131,10 +205,10 @@ export function NotificationBell() {
         <div className="fixed inset-0 z-[199] bg-black/60" onClick={() => setOpen(false)} />
         <div
           style={panelStyle}
-          className="fixed w-[min(320px,calc(100vw-2rem))] max-h-96 flex flex-col z-200 rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl shadow-black/80 overflow-hidden"
+          className="fixed w-[min(360px,calc(100vw-1rem))] max-h-[70dvh] flex flex-col z-200 rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl shadow-black/80 overflow-hidden"
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05]">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.05] shrink-0">
             <p className="text-sm font-semibold text-white">Notificações</p>
             <div className="flex items-center gap-2">
               {unread > 0 && (
@@ -144,7 +218,7 @@ export function NotificationBell() {
                   className="flex items-center gap-1 text-[10px] text-neutral-500 hover:text-neutral-300 transition-colors"
                 >
                   <CheckCheck className="w-3 h-3" />
-                  Marcar todas lidas
+                  Marcar lidas
                 </button>
               )}
               <button onClick={() => setOpen(false)} className="text-neutral-600 hover:text-neutral-400 transition-colors">
@@ -153,42 +227,51 @@ export function NotificationBell() {
             </div>
           </div>
 
-          {/* List */}
-          <div className="overflow-y-auto flex-1">
+          {/* List — grouped by time like Instagram */}
+          <div className="overflow-y-auto flex-1 overscroll-contain">
             {notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
                 <Bell className="w-8 h-8 text-neutral-700" />
                 <p className="text-xs text-neutral-600">Nenhuma notificação</p>
               </div>
             ) : (
-              notifications.map(n => (
-                <button
-                  key={n.id}
-                  onClick={() => { if (!n.read) markRead(n.id) }}
-                  className={cn(
-                    "w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-white/[0.03] transition-colors border-b border-white/[0.03] last:border-0",
-                    !n.read && "bg-white/[0.02]"
-                  )}
-                >
-                  <div className={cn(
-                    "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
-                    !n.read ? "bg-red-600/15" : "bg-white/[0.04]"
-                  )}>
-                    {TYPE_ICON[n.type] ?? <Bell className="w-4 h-4 text-neutral-500" />}
+              groupedNotifications.map((group) => (
+                <div key={group.label}>
+                  {/* Time group header */}
+                  <div className="px-4 pt-3 pb-1.5">
+                    <p className="text-[11px] font-semibold text-white">{group.label}</p>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-1">
-                      <p className={cn("text-xs font-semibold truncate", n.read ? "text-neutral-400" : "text-white")}>
-                        {n.title}
-                      </p>
-                      <span className="text-[10px] text-neutral-600 shrink-0">{timeAgo(n.createdAt)}</span>
-                    </div>
-                    <p className="text-[11px] text-neutral-500 leading-snug mt-0.5 line-clamp-2">{n.body}</p>
-                  </div>
-                  {!n.read && (
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 mt-1.5" />
-                  )}
-                </button>
+
+                  {group.items.map(n => (
+                    <button
+                      key={n.id}
+                      onClick={() => handleNotificationClick(n)}
+                      className={cn(
+                        "w-full flex items-start gap-3 px-4 py-3 text-left hover:bg-white/[0.04] active:bg-white/[0.06] transition-colors border-b border-white/[0.03] last:border-0",
+                        !n.read && "bg-white/[0.02]"
+                      )}
+                    >
+                      <div className={cn(
+                        "w-8 h-8 rounded-xl flex items-center justify-center shrink-0 mt-0.5",
+                        !n.read ? "bg-red-600/15" : "bg-white/[0.04]"
+                      )}>
+                        {TYPE_ICON[n.type] ?? <Bell className="w-4 h-4 text-neutral-500" />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-1">
+                          <p className={cn("text-xs font-semibold truncate", n.read ? "text-neutral-400" : "text-white")}>
+                            {n.title}
+                          </p>
+                          <span className="text-[10px] text-neutral-600 shrink-0">{timeAgo(n.createdAt)}</span>
+                        </div>
+                        <p className="text-[11px] text-neutral-500 leading-snug mt-0.5 line-clamp-2">{n.body}</p>
+                      </div>
+                      {!n.read && (
+                        <div className="w-1.5 h-1.5 rounded-full bg-red-500 shrink-0 mt-1.5" />
+                      )}
+                    </button>
+                  ))}
+                </div>
               ))
             )}
           </div>

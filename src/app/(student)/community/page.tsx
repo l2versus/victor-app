@@ -10,7 +10,7 @@ import {
   Calendar, TrendingUp, Award, Lock,
   Heart, MessageCircle, Send, Camera, Play, Share2, Bookmark,
   Image as ImageIcon, X, Plus, Loader2,
-  UserPlus, User, Mail, Search, RefreshCw, Check,
+  UserPlus, User, Mail, Search, RefreshCw, Check, ChevronUp,
 } from "lucide-react"
 import { NotificationBell } from "@/components/student/notification-bell"
 
@@ -51,6 +51,7 @@ type FeedPost = {
   userReactions: string[]
   likesCount: number
   commentsCount: number
+  viewsCount: number
   isLiked: boolean
   likedBy?: { name: string; avatar: string | null }[]
   comments: FeedComment[]
@@ -70,6 +71,11 @@ type ChallengeItem = {
   isParticipating: boolean
   leaderboard: { position: number; name: string; avatar: string | null; value: number; isMe: boolean }[]
   myEntry: { value: number } | null
+}
+
+type StoryGroup = {
+  studentId: string; name: string; avatar: string | null; isMe: boolean; hasUnviewed: boolean
+  stories: { id: string; imageUrl: string; caption: string | null; viewCount: number; isViewed: boolean; createdAt: string; expiresAt: string }[]
 }
 
 type Tab = "ranking" | "feed" | "desafios"
@@ -160,10 +166,6 @@ export default function CommunityPage() {
   const pullDistRef = useRef(0)
 
   // Stories
-  type StoryGroup = {
-    studentId: string; name: string; avatar: string | null; isMe: boolean; hasUnviewed: boolean
-    stories: { id: string; imageUrl: string; caption: string | null; viewCount: number; isViewed: boolean; createdAt: string; expiresAt: string }[]
-  }
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([])
   const [viewingStory, setViewingStory] = useState<{ group: StoryGroup; index: number } | null>(null)
   const [showStoryCreate, setShowStoryCreate] = useState(false)
@@ -571,93 +573,13 @@ export default function CommunityPage() {
 
       {/* Story Viewer Modal — portal to escape stacking context */}
       {viewingStory && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => { setViewingStory(null); fetchStories() }}>
-          <div className="w-full max-w-lg h-full relative" onClick={(e) => e.stopPropagation()}>
-            {/* Progress bars */}
-            <div className="absolute top-2 left-3 right-3 flex gap-1 z-10">
-              {viewingStory.group.stories.map((s, i) => (
-                <div key={s.id} className="flex-1 h-0.5 rounded-full bg-white/20 overflow-hidden">
-                  <div className={`h-full rounded-full transition-all duration-300 ${
-                    i < viewingStory.index ? "bg-white w-full" : i === viewingStory.index ? "bg-white w-full" : "w-0"
-                  }`} />
-                </div>
-              ))}
-            </div>
-
-            {/* Header */}
-            <div className="absolute top-6 left-3 right-3 flex items-center gap-2 z-10">
-              <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center text-neutral-300 text-xs font-bold">
-                {viewingStory.group.avatar ? (
-                  <img src={viewingStory.group.avatar} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  viewingStory.group.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
-                )}
-              </div>
-              <span className="text-white text-sm font-semibold">{viewingStory.group.name.split(" ")[0]}</span>
-              <span className="text-white/50 text-xs">
-                {timeAgo(viewingStory.group.stories[viewingStory.index].createdAt)}
-              </span>
-              <button onClick={() => { setViewingStory(null); fetchStories() }} className="ml-auto text-white/70 p-1">
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Story media (image or video) */}
-            {(() => {
-              const url = viewingStory.group.stories[viewingStory.index].imageUrl
-              const isVideo = url.startsWith("data:video/") || /\.(mp4|mov|webm|quicktime)/i.test(url)
-              return isVideo ? (
-                <video
-                  key={url}
-                  src={url}
-                  className="w-full h-full object-contain"
-                  autoPlay
-                  playsInline
-                  loop
-                />
-              ) : (
-                <img src={url} alt="" className="w-full h-full object-contain" />
-              )
-            })()}
-
-            {/* Caption */}
-            {viewingStory.group.stories[viewingStory.index].caption && (
-              <div className="absolute bottom-16 left-0 right-0 px-4">
-                <p className="text-white text-sm bg-black/50 px-3 py-2 rounded-lg backdrop-blur-sm">
-                  {viewingStory.group.stories[viewingStory.index].caption}
-                </p>
-              </div>
-            )}
-
-            {/* Navigation tap zones */}
-            <button
-              className="absolute left-0 top-0 w-1/3 h-full"
-              onClick={() => {
-                if (viewingStory.index > 0) {
-                  setViewingStory({ ...viewingStory, index: viewingStory.index - 1 })
-                } else {
-                  setViewingStory(null); fetchStories()
-                }
-              }}
-            />
-            <button
-              className="absolute right-0 top-0 w-2/3 h-full"
-              onClick={() => {
-                const nextIdx = viewingStory.index + 1
-                if (nextIdx < viewingStory.group.stories.length) {
-                  setViewingStory({ ...viewingStory, index: nextIdx })
-                  fetch("/api/community/stories/view", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ storyId: viewingStory.group.stories[nextIdx].id }),
-                  })
-                } else {
-                  setViewingStory(null); fetchStories()
-                }
-              }}
-            />
-          </div>
-        </div>,
+        <StoryViewer
+          viewingStory={viewingStory}
+          setViewingStory={setViewingStory}
+          fetchStories={fetchStories}
+          myStudentId={myStudentId}
+          timeAgo={timeAgo}
+        />,
         document.getElementById("modal-portal") || document.body
       )}
 
@@ -1167,6 +1089,18 @@ function FeedCard({
   const router = useRouter()
   const [showHeartAnim, setShowHeartAnim] = useState(false)
   const [showComments, setShowComments] = useState(false)
+  const viewTracked = useRef(false)
+
+  // Track post view (fire-and-forget, once per mount)
+  useEffect(() => {
+    if (viewTracked.current) return
+    viewTracked.current = true
+    fetch("/api/community/posts/view", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ postId: post.id }),
+    }).catch(() => {})
+  }, [post.id])
   const [commentText, setCommentText] = useState("")
   const [submitting, setSubmitting] = useState(false)
   const [allComments, setAllComments] = useState<FeedComment[]>(post.comments)
@@ -1278,8 +1212,9 @@ function FeedCard({
             className="relative w-full bg-neutral-900 -mx-0"
             onDoubleClick={() => {
               if (!post.isLiked) onLike()
+              try { navigator.vibrate?.(20) } catch {}
               setShowHeartAnim(true)
-              setTimeout(() => setShowHeartAnim(false), 900)
+              setTimeout(() => setShowHeartAnim(false), 1200)
             }}
           >
             {isPostVideo ? (
@@ -1296,12 +1231,12 @@ function FeedCard({
             <AnimatePresence>
               {showHeartAnim && (
                 <motion.div
-                  initial={{ scale: 0, opacity: 0.9 }}
-                  animate={{ scale: 1.2, opacity: 0 }}
-                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{ scale: 1.5, opacity: 0 }}
+                  transition={{ duration: 1, ease: "easeOut" }}
                   className="absolute inset-0 flex items-center justify-center pointer-events-none"
                 >
-                  <Heart className="w-24 h-24 fill-white text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]" />
+                  <Heart className="w-28 h-28 fill-red-500 text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]" />
                 </motion.div>
               )}
             </AnimatePresence>
@@ -1422,11 +1357,18 @@ function FeedCard({
           </div>
         )}
 
+        {/* View count — own posts only (Instagram "Visto por") */}
+        {isMe && post.viewsCount > 0 && (
+          <p className="text-[11px] text-neutral-500 mt-1.5 flex items-center gap-1">
+            👁 Visto por {post.viewsCount} {post.viewsCount === 1 ? "pessoa" : "pessoas"}
+          </p>
+        )}
+
         {/* Caption */}
         {post.content && (
           <p className="text-sm text-neutral-300 mt-1.5 leading-relaxed break-words whitespace-pre-wrap">
             <span className="font-semibold text-white mr-1.5">{post.studentName.split(" ")[0]}</span>
-            {post.content}
+            <MentionText text={post.content} />
           </p>
         )}
 
@@ -1457,20 +1399,19 @@ function FeedCard({
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-neutral-300 break-words">
                       <span className="font-semibold text-white mr-1">{c.studentName.split(" ")[0]}</span>
-                      {c.content}
+                      <MentionText text={c.content} />
                     </p>
                     <p className="text-[10px] text-neutral-600 mt-0.5">{timeAgo(c.createdAt)}</p>
                   </div>
                 </div>
               ))}
 
-              {/* Comment input */}
+              {/* Comment input with @mention autocomplete */}
               <div className="flex items-center gap-2 pt-1">
-                <input
-                  type="text"
+                <CommentInputWithMentions
                   value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitComment()}
+                  onChange={setCommentText}
+                  onSubmit={submitComment}
                   placeholder="Adicionar comentário..."
                   className="flex-1 bg-transparent text-sm text-white placeholder:text-neutral-600 outline-none"
                 />
@@ -1490,13 +1431,12 @@ function FeedCard({
       {/* Quick comment input (always visible like Instagram) */}
       {!showComments && (
         <div className="flex items-center gap-2 px-3.5 py-2.5 border-t border-white/[0.04] mt-2">
-          <input
-            type="text"
+          <CommentInputWithMentions
             value={commentText}
-            onChange={(e) => setCommentText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && submitComment()}
+            onChange={setCommentText}
+            onSubmit={submitComment}
             placeholder="Adicionar comentário..."
-            className="flex-1 bg-transparent text-xs text-white placeholder:text-neutral-600 outline-none"
+            className="w-full bg-transparent text-xs text-white placeholder:text-neutral-600 outline-none"
           />
           {commentText.trim() && (
             <button
@@ -1684,6 +1624,349 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
 }
 
 // ═══════════════════════════════════════
+// STORY VIEWER — Reply + Emoji Reactions
+// ═══════════════════════════════════════
+
+function StoryViewer({
+  viewingStory,
+  setViewingStory,
+  fetchStories,
+  myStudentId,
+  timeAgo,
+}: {
+  viewingStory: { group: StoryGroup; index: number }
+  setViewingStory: (v: { group: StoryGroup; index: number } | null) => void
+  fetchStories: () => void
+  myStudentId: string | null
+  timeAgo: (d: string) => string
+}) {
+  const [replyText, setReplyText] = useState("")
+  const [sending, setSending] = useState(false)
+  const [reactionSent, setReactionSent] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  const router = useRouter()
+
+  // Story Insights (own stories)
+  const [showInsights, setShowInsights] = useState(false)
+  const [insightsData, setInsightsData] = useState<{
+    viewCount: number
+    viewers: Array<{ studentId: string; name: string; avatar: string | null; viewedAt: string }>
+    replies: Array<{ id: string; senderName: string; senderAvatar: string | null; content: string; isReaction: boolean; createdAt: string }>
+  } | null>(null)
+  const [insightsLoading, setInsightsLoading] = useState(false)
+
+  async function fetchInsights(storyId: string) {
+    setInsightsLoading(true)
+    try {
+      const res = await fetch(`/api/community/stories/insights?storyId=${storyId}`)
+      if (res.ok) {
+        const data = await res.json()
+        setInsightsData(data)
+      }
+    } catch { /* silent */ }
+    setInsightsLoading(false)
+  }
+
+  const STORY_REACTIONS = ["❤️", "🔥", "😍", "😂", "😮", "👏"]
+
+  const isOwnStory = viewingStory.group.isMe
+
+  async function sendReply(text: string) {
+    if (!text.trim() || sending || isOwnStory) return
+    setSending(true)
+    try {
+      // Find the userId for the story author via profile API
+      const profileRes = await fetch(`/api/community/profile/${viewingStory.group.studentId}`)
+      if (!profileRes.ok) { setSending(false); return }
+      const profileData = await profileRes.json()
+      const receiverUserId = profileData.profile?.userId
+      if (!receiverUserId) { setSending(false); return }
+
+      // Send DM with story context
+      const storyUrl = viewingStory.group.stories[viewingStory.index].imageUrl
+      const dmContent = `[Story reply] ${text}`
+      await fetch("/api/community/dm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiverId: receiverUserId,
+          content: dmContent,
+          metadata: { storyId: viewingStory.group.stories[viewingStory.index].id, storyImageUrl: storyUrl },
+        }),
+      })
+      setReplyText("")
+      // Brief feedback
+      setReactionSent("✓ Enviado")
+      setTimeout(() => setReactionSent(null), 1500)
+    } catch { /* silent */ }
+    setSending(false)
+  }
+
+  async function sendEmojiReaction(emoji: string) {
+    if (isOwnStory) return
+    setReactionSent(emoji)
+    try {
+      const profileRes = await fetch(`/api/community/profile/${viewingStory.group.studentId}`)
+      if (!profileRes.ok) return
+      const profileData = await profileRes.json()
+      const receiverUserId = profileData.profile?.userId
+      if (!receiverUserId) return
+
+      await fetch("/api/community/dm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          receiverId: receiverUserId,
+          content: `${emoji} reagiu ao seu story`,
+          metadata: { storyId: viewingStory.group.stories[viewingStory.index].id, type: "story_reaction" },
+        }),
+      })
+    } catch { /* silent */ }
+    setTimeout(() => setReactionSent(null), 1500)
+  }
+
+  function navigateStory(direction: "prev" | "next") {
+    if (direction === "prev") {
+      if (viewingStory.index > 0) {
+        setViewingStory({ ...viewingStory, index: viewingStory.index - 1 })
+      } else {
+        setViewingStory(null); fetchStories()
+      }
+    } else {
+      const nextIdx = viewingStory.index + 1
+      if (nextIdx < viewingStory.group.stories.length) {
+        setViewingStory({ ...viewingStory, index: nextIdx })
+        fetch("/api/community/stories/view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ storyId: viewingStory.group.stories[nextIdx].id }),
+        })
+      } else {
+        setViewingStory(null); fetchStories()
+      }
+    }
+  }
+
+  const currentStory = viewingStory.group.stories[viewingStory.index]
+  const isVideo = currentStory.imageUrl.startsWith("data:video/") || /\.(mp4|mov|webm|quicktime)/i.test(currentStory.imageUrl)
+
+  return (
+    <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => { setViewingStory(null); fetchStories() }}>
+      <div className="w-full max-w-lg h-full relative flex flex-col" onClick={(e) => e.stopPropagation()}>
+        {/* Progress bars */}
+        <div className="absolute top-2 left-3 right-3 flex gap-1 z-10">
+          {viewingStory.group.stories.map((s, i) => (
+            <div key={s.id} className="flex-1 h-0.5 rounded-full bg-white/20 overflow-hidden">
+              <div className={`h-full rounded-full transition-all duration-300 ${
+                i < viewingStory.index ? "bg-white w-full" : i === viewingStory.index ? "bg-white w-full" : "w-0"
+              }`} />
+            </div>
+          ))}
+        </div>
+
+        {/* Header */}
+        <div className="absolute top-6 left-3 right-3 flex items-center gap-2 z-10">
+          <button
+            onClick={() => router.push(`/community/profile/${viewingStory.group.studentId}`)}
+            className="flex items-center gap-2"
+          >
+            <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center text-neutral-300 text-xs font-bold">
+              {viewingStory.group.avatar ? (
+                <img src={viewingStory.group.avatar} alt="" className="w-full h-full object-cover" />
+              ) : (
+                viewingStory.group.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+              )}
+            </div>
+            <span className="text-white text-sm font-semibold">{viewingStory.group.name.split(" ")[0]}</span>
+          </button>
+          <span className="text-white/50 text-xs">
+            {timeAgo(currentStory.createdAt)}
+          </span>
+          {/* View count for own stories */}
+          {isOwnStory && currentStory.viewCount > 0 && (
+            <span className="text-white/50 text-[10px] flex items-center gap-1">
+              👁 {currentStory.viewCount}
+            </span>
+          )}
+          <button onClick={() => { setViewingStory(null); fetchStories() }} className="ml-auto text-white/70 p-1">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Story media */}
+        <div className="flex-1 relative">
+          {isVideo ? (
+            <video key={currentStory.imageUrl} src={currentStory.imageUrl} className="w-full h-full object-contain" autoPlay playsInline loop />
+          ) : (
+            <img src={currentStory.imageUrl} alt="" className="w-full h-full object-contain" />
+          )}
+
+          {/* Caption */}
+          {currentStory.caption && (
+            <div className="absolute bottom-4 left-0 right-0 px-4">
+              <p className="text-white text-sm bg-black/50 px-3 py-2 rounded-lg backdrop-blur-sm">
+                {currentStory.caption}
+              </p>
+            </div>
+          )}
+
+          {/* Navigation tap zones */}
+          <button className="absolute left-0 top-0 w-1/3 h-full" onClick={() => navigateStory("prev")} />
+          <button className="absolute right-0 top-0 w-2/3 h-full" onClick={() => navigateStory("next")} />
+
+          {/* Reaction sent feedback */}
+          <AnimatePresence>
+            {reactionSent && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0, opacity: 0 }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
+                <span className="text-6xl drop-shadow-2xl">{reactionSent}</span>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+
+        {/* Reply bar + Emoji reactions — only for other people's stories */}
+        {!isOwnStory && (
+          <div className="shrink-0 px-3 pb-[env(safe-area-inset-bottom,8px)] pt-2 bg-black/80 backdrop-blur-sm">
+            {/* Quick emoji reactions */}
+            <div className="flex justify-center gap-4 mb-2">
+              {STORY_REACTIONS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => sendEmojiReaction(emoji)}
+                  className="text-2xl active:scale-150 transition-transform hover:scale-125"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+            {/* Text reply input */}
+            <div className="flex items-center gap-2">
+              <input
+                ref={inputRef}
+                value={replyText}
+                onChange={(e) => setReplyText(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && sendReply(replyText)}
+                placeholder={`Responder a ${viewingStory.group.name.split(" ")[0]}...`}
+                className="flex-1 bg-white/[0.08] border border-white/[0.12] rounded-full px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 outline-none focus:border-white/[0.25] transition-colors"
+              />
+              {replyText.trim() && (
+                <button
+                  onClick={() => sendReply(replyText)}
+                  disabled={sending}
+                  className="w-10 h-10 rounded-full bg-red-600 flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
+                >
+                  <Send className="w-4 h-4 text-white" />
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Own story — view count bar + swipe up for insights */}
+        {isOwnStory && (
+          <div className="shrink-0 bg-black/80 backdrop-blur-sm">
+            <button
+              onClick={() => {
+                if (!showInsights) {
+                  setShowInsights(true)
+                  fetchInsights(currentStory.id)
+                } else {
+                  setShowInsights(false)
+                }
+              }}
+              className="w-full px-4 pb-1 pt-3 flex flex-col items-center gap-1"
+            >
+              <motion.div
+                animate={{ y: showInsights ? 2 : [0, -3, 0] }}
+                transition={showInsights ? {} : { repeat: Infinity, duration: 1.5 }}
+                className="text-white/50"
+              >
+                {showInsights ? <X className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+              </motion.div>
+              <span className="text-white/60 text-xs flex items-center gap-1.5">
+                👁 {currentStory.viewCount} visualizações
+              </span>
+            </button>
+
+            {/* Insights panel — slides up */}
+            <AnimatePresence>
+              {showInsights && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: "auto", opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="px-4 pb-[env(safe-area-inset-bottom,8px)] max-h-[45dvh] overflow-y-auto overscroll-contain space-y-3">
+                    {insightsLoading ? (
+                      <div className="flex items-center justify-center py-6">
+                        <Loader2 className="w-5 h-5 text-red-500 animate-spin" />
+                      </div>
+                    ) : insightsData ? (
+                      <>
+                        {/* Replies section */}
+                        {insightsData.replies.length > 0 && (
+                          <div>
+                            <p className="text-[11px] font-semibold text-white mb-2">Respostas ao story</p>
+                            {insightsData.replies.map((r) => (
+                              <div key={r.id} className="flex items-center gap-2.5 py-2 border-b border-white/[0.04] last:border-0">
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-[8px] font-bold shrink-0 overflow-hidden">
+                                  {r.senderAvatar ? <img src={r.senderAvatar} alt="" className="w-full h-full object-cover" /> : r.senderName[0]}
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-xs text-white font-semibold truncate">{r.senderName}</p>
+                                  <p className="text-[11px] text-neutral-400 truncate">{r.content}</p>
+                                </div>
+                                <span className="text-[10px] text-neutral-600 shrink-0">{timeAgo(r.createdAt)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Viewers section */}
+                        <div>
+                          <p className="text-[11px] font-semibold text-white mb-2">Quem viu este story</p>
+                          {insightsData.viewers.length === 0 ? (
+                            <p className="text-[11px] text-neutral-600 py-3 text-center">Ninguém viu ainda</p>
+                          ) : (
+                            insightsData.viewers.map((v) => (
+                              <button
+                                key={v.studentId}
+                                onClick={() => {
+                                  setViewingStory(null)
+                                  fetchStories()
+                                  router.push(`/community/profile/${v.studentId}`)
+                                }}
+                                className="w-full flex items-center gap-2.5 py-2 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.03] transition-colors"
+                              >
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-[8px] font-bold shrink-0 overflow-hidden">
+                                  {v.avatar ? <img src={v.avatar} alt="" className="w-full h-full object-cover" /> : v.name[0]}
+                                </div>
+                                <p className="text-xs text-white font-medium truncate flex-1 text-left">{v.name}</p>
+                                <span className="text-[10px] text-neutral-600 shrink-0">{timeAgo(v.viewedAt)}</span>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      </>
+                    ) : null}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════
 // SUB-COMPONENTS
 // ═══════════════════════════════════════
 
@@ -1748,5 +2031,140 @@ function PostTypeBadge({ type }: { type: string }) {
       <c.icon className="w-3 h-3" />
       {c.label}
     </span>
+  )
+}
+
+// Renders @mentions as clickable links in text
+function MentionText({ text, className }: { text: string; className?: string }) {
+  const router = useRouter()
+  const parts = text.split(/(@\w[\w.]*)/g)
+
+  return (
+    <span className={className}>
+      {parts.map((part, i) =>
+        part.startsWith("@") ? (
+          <button
+            key={i}
+            onClick={() => {
+              // Search for user by name and navigate
+              const name = part.slice(1)
+              fetch(`/api/community/search?q=${encodeURIComponent(name)}`)
+                .then(r => r.json())
+                .then(data => {
+                  const user = data.users?.[0]
+                  if (user) router.push(`/community/profile/${user.studentId}`)
+                })
+                .catch(() => {})
+            }}
+            className="text-blue-400 font-semibold hover:underline"
+          >
+            {part}
+          </button>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </span>
+  )
+}
+
+// Comment input with @mention autocomplete
+function CommentInputWithMentions({
+  value,
+  onChange,
+  onSubmit,
+  placeholder,
+  disabled,
+  className,
+}: {
+  value: string
+  onChange: (v: string) => void
+  onSubmit: () => void
+  placeholder: string
+  disabled?: boolean
+  className?: string
+}) {
+  const [mentionQuery, setMentionQuery] = useState("")
+  const [mentionResults, setMentionResults] = useState<Array<{ studentId: string; name: string; avatar: string | null }>>([])
+  const [showMentions, setShowMentions] = useState(false)
+  const searchRef = useRef<NodeJS.Timeout>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  function handleChange(text: string) {
+    onChange(text)
+
+    // Check if user is typing @mention
+    const cursorPos = inputRef.current?.selectionStart || text.length
+    const textBeforeCursor = text.slice(0, cursorPos)
+    const mentionMatch = textBeforeCursor.match(/@(\w*)$/)
+
+    if (mentionMatch) {
+      const query = mentionMatch[1]
+      setMentionQuery(query)
+      if (query.length >= 1) {
+        if (searchRef.current) clearTimeout(searchRef.current)
+        searchRef.current = setTimeout(async () => {
+          try {
+            const res = await fetch(`/api/community/search?q=${encodeURIComponent(query)}`)
+            if (res.ok) {
+              const data = await res.json()
+              setMentionResults((data.users || []).slice(0, 5))
+              setShowMentions(true)
+            }
+          } catch { /* ignore */ }
+        }, 200)
+      } else {
+        setShowMentions(false)
+      }
+    } else {
+      setShowMentions(false)
+    }
+  }
+
+  function selectMention(name: string) {
+    const cursorPos = inputRef.current?.selectionStart || value.length
+    const textBeforeCursor = value.slice(0, cursorPos)
+    const textAfterCursor = value.slice(cursorPos)
+    const newBefore = textBeforeCursor.replace(/@\w*$/, `@${name.split(" ")[0]} `)
+    onChange(newBefore + textAfterCursor)
+    setShowMentions(false)
+    setMentionResults([])
+    inputRef.current?.focus()
+  }
+
+  useEffect(() => {
+    return () => { if (searchRef.current) clearTimeout(searchRef.current) }
+  }, [])
+
+  return (
+    <div className="relative flex-1">
+      <input
+        ref={inputRef}
+        type="text"
+        value={value}
+        onChange={(e) => handleChange(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && onSubmit()}
+        placeholder={placeholder}
+        disabled={disabled}
+        className={className}
+      />
+      {/* Mention autocomplete dropdown */}
+      {showMentions && mentionResults.length > 0 && (
+        <div className="absolute bottom-full left-0 right-0 mb-1 bg-[#1a1a1a] border border-white/[0.1] rounded-xl shadow-2xl z-30 max-h-40 overflow-y-auto">
+          {mentionResults.map((u) => (
+            <button
+              key={u.studentId}
+              onClick={() => selectMention(u.name)}
+              className="w-full flex items-center gap-2 px-3 py-2 hover:bg-white/[0.05] transition-colors text-left"
+            >
+              <div className="w-7 h-7 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-[8px] font-bold shrink-0 overflow-hidden">
+                {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
+              </div>
+              <span className="text-xs text-white font-medium truncate">{u.name}</span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }

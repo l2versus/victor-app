@@ -83,7 +83,7 @@ export async function GET(req: NextRequest) {
           take: 3,
         },
         _count: {
-          select: { likes: true, comments: true },
+          select: { likes: true, comments: true, views: true },
         },
       },
     })
@@ -171,6 +171,7 @@ export async function GET(req: NextRequest) {
         userReactions,
         likesCount: post._count.likes,
         commentsCount: post._count.comments,
+        viewsCount: post._count.views,
         isLiked: post.likes.some((l) => l.studentId === currentStudentId),
         likedBy,
         comments: post.comments.map((c) => ({

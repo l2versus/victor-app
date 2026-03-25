@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const followed = await prisma.student.findUnique({ where: { id: studentId }, select: { userId: true } })
     if (followed && followed.userId !== session.userId) {
       const myUser = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } })
-      notifySocial({ toUserId: followed.userId, fromName: myUser?.name || "Alguém", type: "social_follow" })
+      notifySocial({ toUserId: followed.userId, fromUserId: session.userId, fromStudentId: me.id, fromName: myUser?.name || "Alguém", type: "social_follow" })
     }
 
     return NextResponse.json({ following: true })
