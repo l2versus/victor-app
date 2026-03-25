@@ -106,11 +106,21 @@ export async function GET(req: NextRequest) {
       return scoreB - scoreA
     })
 
-    // Resolve admin's trainer profile for posts with null studentId
-    const trainerUser = await prisma.user.findFirst({
-      where: { role: "ADMIN" },
-      select: { id: true, name: true, avatar: true },
+    // Resolve primary trainer for admin posts (the one with students)
+    const primaryTrainer = await prisma.trainerProfile.findFirst({
+      orderBy: { students: { _count: "desc" } },
+      select: { userId: true },
     })
+    const trainerUser = primaryTrainer
+      ? await prisma.user.findUnique({
+          where: { id: primaryTrainer.userId },
+          select: { id: true, name: true, avatar: true },
+        })
+      : await prisma.user.findFirst({
+          where: { role: "ADMIN" },
+          orderBy: { createdAt: "asc" },
+          select: { id: true, name: true, avatar: true },
+        })
     const adminStudent = trainerUser ? await prisma.student.findUnique({
       where: { userId: trainerUser.id },
       select: { id: true },
