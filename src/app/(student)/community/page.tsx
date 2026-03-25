@@ -156,6 +156,8 @@ export default function CommunityPage() {
   const [storyGroups, setStoryGroups] = useState<StoryGroup[]>([])
   const [viewingStory, setViewingStory] = useState<{ group: StoryGroup; index: number } | null>(null)
   const [showStoryCreate, setShowStoryCreate] = useState(false)
+  const [storyPreview, setStoryPreview] = useState<string | null>(null)
+  const [storyUploading, setStoryUploading] = useState(false)
 
   const fetchStories = useCallback(async () => {
     try {
@@ -597,33 +599,74 @@ export default function CommunityPage() {
 
       {/* Story Create Modal — portal to escape stacking context */}
       {showStoryCreate && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[100] bg-black/80 flex items-end justify-center" onClick={() => setShowStoryCreate(false)}>
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-end justify-center" onClick={() => { setShowStoryCreate(false); setStoryPreview(null) }}>
           <div className="w-full max-w-lg bg-[#111] border-t border-white/[0.08] rounded-t-2xl p-5 pb-10 space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-white">Novo Story</h3>
-              <button onClick={() => setShowStoryCreate(false)} className="text-neutral-500"><X className="w-5 h-5" /></button>
+              <button onClick={() => { setShowStoryCreate(false); setStoryPreview(null) }} className="text-neutral-500"><X className="w-5 h-5" /></button>
             </div>
-            <p className="text-xs text-neutral-500">Escolha uma foto para compartilhar por 24h</p>
-            <input
-              type="file"
-              accept="image/*"
-              onChange={async (e) => {
-                const file = e.target.files?.[0]
-                if (!file) return
-                const reader = new FileReader()
-                reader.onload = async () => {
-                  const imageUrl = reader.result as string
-                  const res = await fetch("/api/community/stories", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ imageUrl }),
-                  })
-                  if (res.ok) { setShowStoryCreate(false); fetchStories() }
-                }
-                reader.readAsDataURL(file)
-              }}
-              className="w-full text-sm text-neutral-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-red-600 file:text-white file:font-semibold file:text-sm"
-            />
+
+            {!storyPreview ? (
+              <>
+                <p className="text-xs text-neutral-500">Escolha uma foto para compartilhar por 24h</p>
+                <label className="flex items-center justify-center gap-2 w-full py-4 rounded-xl bg-red-600 text-white text-sm font-semibold cursor-pointer active:scale-95 transition-transform">
+                  <Camera className="w-5 h-5" />
+                  Escolher Foto
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      if (file.size > 5 * 1024 * 1024) { alert("Máximo 5MB"); return }
+                      const reader = new FileReader()
+                      reader.onload = () => setStoryPreview(reader.result as string)
+                      reader.readAsDataURL(file)
+                    }}
+                  />
+                </label>
+              </>
+            ) : (
+              <>
+                <div className="relative rounded-xl overflow-hidden border border-white/[0.08]">
+                  <img src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-cover" />
+                  <button
+                    onClick={() => setStoryPreview(null)}
+                    className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center"
+                  >
+                    <X className="w-4 h-4 text-white" />
+                  </button>
+                </div>
+                <button
+                  onClick={async () => {
+                    if (!storyPreview || storyUploading) return
+                    setStoryUploading(true)
+                    try {
+                      const res = await fetch("/api/community/stories", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ imageUrl: storyPreview }),
+                      })
+                      if (res.ok) { setShowStoryCreate(false); setStoryPreview(null); fetchStories() }
+                    } finally {
+                      setStoryUploading(false)
+                    }
+                  }}
+                  disabled={storyUploading}
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-bold shadow-lg shadow-red-600/20 disabled:opacity-50 active:scale-[0.98] transition-all min-h-[48px] flex items-center justify-center gap-2"
+                >
+                  {storyUploading ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Publicar Story
+                    </>
+                  )}
+                </button>
+              </>
+            )}
           </div>
         </div>,
         document.getElementById("modal-portal") || document.body
