@@ -434,28 +434,41 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                   </select>
                 </div>
 
-                {/* Foto da máquina */}
+                {/* Foto do exercício — Vercel Blob upload */}
                 <div>
-                  <label className="text-xs text-neutral-500 mb-1 block">Foto da máquina</label>
+                  <label className="text-xs text-neutral-500 mb-1 block">Foto / Thumbnail do exercício</label>
                   <div className="flex gap-2">
                     <input
                       value={editMedia.imageUrl}
                       onChange={e => setEditMedia({ ...editMedia, imageUrl: e.target.value })}
-                      placeholder="https://link-da-foto.com/maquina.jpg"
+                      placeholder="https://link-da-foto.com/exercicio.jpg"
                       className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30"
                     />
-                    <label className="shrink-0 px-3 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-xs text-neutral-400 cursor-pointer hover:bg-white/[0.1] transition-colors flex items-center gap-1.5">
+                    <label className="shrink-0 px-3 py-2.5 rounded-xl bg-red-600/20 border border-red-500/20 text-xs text-red-400 cursor-pointer hover:bg-red-600/30 transition-colors flex items-center gap-1.5 font-semibold">
                       📷 Upload
-                      <input type="file" accept="image/*" className="hidden" onChange={e => {
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
                         const file = e.target.files?.[0]
                         if (!file) return
-                        const reader = new FileReader()
-                        reader.onload = () => setEditMedia({ ...editMedia, imageUrl: reader.result as string })
-                        reader.readAsDataURL(file)
+                        try {
+                          const { upload } = await import("@vercel/blob/client")
+                          const blob = await upload(`exercises/${Date.now()}-${file.name}`, file, {
+                            access: "public",
+                            handleUploadUrl: "/api/upload",
+                          })
+                          setEditMedia({ ...editMedia, imageUrl: blob.url })
+                        } catch {
+                          // Fallback to base64 if Blob not configured
+                          const reader = new FileReader()
+                          reader.onload = () => setEditMedia({ ...editMedia, imageUrl: reader.result as string })
+                          reader.readAsDataURL(file)
+                        }
                       }} />
                     </label>
                   </div>
-                  <p className="text-[9px] text-neutral-600 mt-1">Cole um link ou faça upload direto da foto</p>
+                  {editMedia.imageUrl && editMedia.imageUrl.startsWith("http") && (
+                    <img src={editMedia.imageUrl} alt="Preview" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-white/[0.06]" />
+                  )}
+                  <p className="text-[9px] text-neutral-600 mt-1">Cole um link ou faça upload direto (até 100MB via Blob)</p>
                 </div>
 
                 {/* Vídeo */}
