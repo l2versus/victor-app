@@ -26,8 +26,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Post precisa de texto ou foto" }, { status: 400 })
     }
 
-    if (imageUrl && imageUrl.length > 5 * 1024 * 1024) {
-      return NextResponse.json({ error: "Arquivo muito grande. Máximo 5MB." }, { status: 400 })
+    if (imageUrl && imageUrl.length > 10000 && !imageUrl.startsWith("http")) {
+      return NextResponse.json({ error: "Use upload via Blob para arquivos grandes" }, { status: 400 })
     }
 
     if (content && content.length > 2000) {

@@ -1200,33 +1200,45 @@ function FeedCard({
         </div>
       </div>
 
-      {/* Image — double-tap heart animation */}
-      {post.imageUrl && (
-        <div className="relative w-full bg-neutral-900">
-          <img
-            src={post.imageUrl}
-            alt="Post"
-            className="w-full object-contain bg-black"
+      {/* Media — photo or video, double-tap heart */}
+      {post.imageUrl && (() => {
+        const url = post.imageUrl!
+        const isPostVideo = /\.(mp4|mov|webm|quicktime)/i.test(url) || url.includes("video")
+        return (
+          <div
+            className="relative w-full bg-neutral-900"
             onDoubleClick={() => {
               if (!post.isLiked) onLike()
               setShowHeartAnim(true)
               setTimeout(() => setShowHeartAnim(false), 900)
             }}
-          />
-          <AnimatePresence>
-            {showHeartAnim && (
-              <motion.div
-                initial={{ scale: 0, opacity: 0.9 }}
-                animate={{ scale: 1.2, opacity: 0 }}
-                transition={{ duration: 0.8, ease: "easeOut" }}
-                className="absolute inset-0 flex items-center justify-center pointer-events-none"
-              >
-                <Heart className="w-24 h-24 fill-white text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]" />
-              </motion.div>
+          >
+            {isPostVideo ? (
+              <video
+                src={url}
+                className="w-full object-contain bg-black max-h-[500px]"
+                controls
+                playsInline
+                preload="metadata"
+              />
+            ) : (
+              <img src={url} alt="Post" className="w-full object-contain bg-black" />
             )}
-          </AnimatePresence>
-        </div>
-      )}
+            <AnimatePresence>
+              {showHeartAnim && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 0.9 }}
+                  animate={{ scale: 1.2, opacity: 0 }}
+                  transition={{ duration: 0.8, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                >
+                  <Heart className="w-24 h-24 fill-white text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )
+      })()}
 
       {/* Actions */}
       <div className="px-3.5 pt-2.5">
@@ -1416,8 +1428,10 @@ function FeedCard({
 
 function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => void }) {
   const [text, setText] = useState("")
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null)
+  const [mediaFile, setMediaFile] = useState<File | null>(null)
   const [posting, setPosting] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState("")
   const fileRef = useRef<HTMLInputElement>(null)
   const videoRef = useRef<HTMLInputElement>(null)
 
@@ -1430,23 +1444,44 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
   function handleMedia(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
-    if (file.size > 5 * 1024 * 1024) { alert("Arquivo muito grande. Máximo 5MB."); return }
-    const reader = new FileReader()
-    reader.onload = () => setImagePreview(reader.result as string)
-    reader.readAsDataURL(file)
+    if (file.size > 100 * 1024 * 1024) { alert("Máximo 100MB"); return }
+    setMediaFile(file)
+    setMediaPreview(URL.createObjectURL(file))
   }
 
   async function submit() {
-    if ((!text.trim() && !imagePreview) || posting) return
+    if ((!text.trim() && !mediaFile) || posting) return
     setPosting(true)
-    const res = await fetch("/api/community/posts", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ content: text, imageUrl: imagePreview }),
-    })
-    if (res.ok) onPost()
-    setPosting(false)
+    try {
+      let imageUrl: string | null = null
+
+      if (mediaFile) {
+        setUploadProgress("Enviando...")
+        const { upload } = await import("@vercel/blob/client")
+        const blob = await upload(
+          `posts/${Date.now()}-${mediaFile.name}`,
+          mediaFile,
+          { access: "public", handleUploadUrl: "/api/upload" }
+        )
+        imageUrl = blob.url
+        setUploadProgress("Publicando...")
+      }
+
+      const res = await fetch("/api/community/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content: text, imageUrl }),
+      })
+      if (res.ok) onPost()
+    } catch {
+      setUploadProgress("Erro no upload. Tente novamente.")
+    } finally {
+      setPosting(false)
+      setUploadProgress("")
+    }
   }
+
+  const isVideo = mediaFile?.type.startsWith("video/")
 
   return (
     <motion.div
@@ -1477,10 +1512,10 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
           <h3 className="text-base font-bold text-white">Novo Post</h3>
           <button
             onClick={submit}
-            disabled={(!text.trim() && !imagePreview) || posting}
-            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-30 min-h-11 flex items-center"
+            disabled={(!text.trim() && !mediaFile) || posting}
+            className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-semibold disabled:opacity-30 min-h-11 flex items-center gap-1.5"
           >
-            {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : "Publicar"}
+            {posting ? <><Loader2 className="w-4 h-4 animate-spin" /><span className="text-xs">{uploadProgress}</span></> : "Publicar"}
           </button>
         </div>
 
@@ -1495,16 +1530,25 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
           />
           <p className="text-[10px] text-neutral-700 text-right">{text.length}/2000</p>
 
-          {/* Media preview */}
-          {imagePreview && (
+          {/* Media preview — photo or video */}
+          {mediaPreview && (
             <div className="relative mt-3 rounded-xl overflow-hidden border border-white/[0.08]">
-              <img src={imagePreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
+              {isVideo ? (
+                <video src={mediaPreview} className="w-full max-h-[300px] object-cover" autoPlay muted loop playsInline />
+              ) : (
+                <img src={mediaPreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
+              )}
               <button
-                onClick={() => setImagePreview(null)}
+                onClick={() => { setMediaPreview(null); setMediaFile(null) }}
                 className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center text-white"
               >
                 <X className="w-4 h-4" />
               </button>
+              {mediaFile && (
+                <div className="absolute bottom-2 left-2 bg-black/70 px-2 py-1 rounded-lg">
+                  <span className="text-[10px] text-white">{isVideo ? "🎬" : "📷"} {(mediaFile.size / 1024 / 1024).toFixed(1)}MB</span>
+                </div>
+              )}
             </div>
           )}
         </div>
