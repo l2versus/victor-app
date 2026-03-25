@@ -111,6 +111,8 @@ export default function RootLayout({
         <JsonLd />
         <PWAProvider />
         {children}
+        {/* Global modal portal — outside ALL stacking contexts */}
+        <div id="modal-portal" />
       </body>
     </html>
   );

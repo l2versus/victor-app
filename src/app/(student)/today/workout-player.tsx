@@ -993,7 +993,7 @@ function SetRow({
   const defaultTechnique = exerciseTechnique !== "NORMAL" ? exerciseTechnique : (lastSetTechnique || "NORMAL")
 
   const [reps, setReps] = useState(completed?.reps ?? prescribedReps)
-  const [loadKg, setLoadKg] = useState(completed?.loadKg ?? suggestedLoad)
+  const [loadStr, setLoadStr] = useState(String(completed?.loadKg ?? suggestedLoad ?? 0))
   const [technique, setTechnique] = useState<Technique>(completed?.technique ?? defaultTechnique)
   const [editing, setEditing] = useState(false)
   const [showTechPicker, setShowTechPicker] = useState(false)
@@ -1021,7 +1021,7 @@ function SetRow({
           <button
             onClick={() => {
               setReps(completed.reps)
-              setLoadKg(completed.loadKg)
+              setLoadStr(String(completed.loadKg))
               setTechnique(completed.technique)
               setEditing(true)
             }}
@@ -1069,16 +1069,15 @@ function SetRow({
           className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
         />
         <input
-          type="number"
+          type="text"
           inputMode="decimal"
-          step="0.5"
-          min={0}
-          max={999}
-          value={loadKg}
+          pattern="[0-9]*[.,]?[0-9]*"
+          value={loadStr}
           onChange={(e) => {
-            const v = parseFloat(e.target.value)
-            setLoadKg(!v || v < 0 ? 0 : v > 999 ? 999 : Math.round(v * 10) / 10)
+            const v = e.target.value.replace(",", ".")
+            if (v === "" || /^\d{0,3}\.?\d{0,1}$/.test(v)) setLoadStr(v)
           }}
+          placeholder="0"
           className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
         />
         <button
@@ -1092,7 +1091,7 @@ function SetRow({
           {editing ? (
             <button
               onClick={() => {
-                if (onEdit) onEdit(reps, loadKg, technique)
+                if (onEdit) onEdit(reps, parseFloat(loadStr) || 0, technique)
                 setEditing(false)
               }}
               className="w-11 h-11 rounded-lg bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all active:scale-90"
@@ -1101,7 +1100,7 @@ function SetRow({
             </button>
           ) : (
             <button
-              onClick={() => onComplete(reps, loadKg, technique)}
+              onClick={() => onComplete(reps, parseFloat(loadStr) || 0, technique)}
               className="w-11 h-11 rounded-lg bg-red-600/20 border border-red-500/30 text-red-400 flex items-center justify-center transition-all duration-200 active:scale-90 hover:bg-red-600/30"
             >
               <Check className="w-4 h-4" />
@@ -1159,7 +1158,7 @@ function AddExtraSetButton({
 }) {
   const [expanded, setExpanded] = useState(false)
   const [reps, setReps] = useState(suggestedReps)
-  const [loadKg, setLoadKg] = useState(suggestedLoad)
+  const [loadStr, setLoadStr] = useState(String(suggestedLoad ?? 0))
   const [technique, setTechnique] = useState<Technique>(exerciseTechnique)
 
   if (!expanded) {
@@ -1167,7 +1166,7 @@ function AddExtraSetButton({
       <button
         onClick={() => {
           setReps(suggestedReps)
-          setLoadKg(suggestedLoad)
+          setLoadStr(String(suggestedLoad ?? 0))
           setExpanded(true)
         }}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-white/[0.08] text-neutral-500 text-xs font-medium hover:border-white/[0.15] hover:text-neutral-300 transition-all"
@@ -1192,10 +1191,15 @@ function AddExtraSetButton({
         autoFocus
       />
       <input
-        type="number"
-        step="0.5"
-        value={loadKg}
-        onChange={(e) => setLoadKg(parseFloat(e.target.value) || 0)}
+        type="text"
+        inputMode="decimal"
+        pattern="[0-9]*[.,]?[0-9]*"
+        value={loadStr}
+        onChange={(e) => {
+          const v = e.target.value.replace(",", ".")
+          if (v === "" || /^\d{0,3}\.?\d{0,1}$/.test(v)) setLoadStr(v)
+        }}
+        placeholder="0"
         className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-blue-500/50 outline-none py-1"
       />
       <select
@@ -1212,7 +1216,7 @@ function AddExtraSetButton({
       <div className="flex justify-center gap-1">
         <button
           onClick={() => {
-            onAdd(reps, loadKg, technique)
+            onAdd(reps, parseFloat(loadStr) || 0, technique)
             setExpanded(false)
           }}
           className="w-11 h-11 rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 flex items-center justify-center transition-all active:scale-90"

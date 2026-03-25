@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback, useRef } from "react"
+import { createPortal } from "react-dom"
 import { useRouter } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
@@ -9,7 +10,7 @@ import {
   Calendar, TrendingUp, Award, Lock,
   Heart, MessageCircle, Send, Camera, Play,
   Image as ImageIcon, X, Plus, Loader2,
-  UserPlus, User, Mail, Search,
+  UserPlus, User, Mail, Search, RefreshCw, Check,
 } from "lucide-react"
 
 // ═══════════════════════════════════════
@@ -129,7 +130,6 @@ export default function CommunityPage() {
   const [loading, setLoading] = useState(true)
   const [features, setFeatures] = useState<{ hasVipGroup: boolean; planName: string | null }>({ hasVipGroup: false, planName: null })
   const [showComposer, setShowComposer] = useState(false)
-  const [feedFilter, setFeedFilter] = useState<"all" | "following">("all")
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const [myStudentId, setMyStudentId] = useState<string | null>(null)
   const [myAvatar, setMyAvatar] = useState<string | null>(null)
@@ -140,6 +140,13 @@ export default function CommunityPage() {
   const [searchResults, setSearchResults] = useState<Array<{ studentId: string; name: string; avatar: string | null; bio: string | null; profession: string | null; followers: number; sessions: number; isMe: boolean }>>([])
   const [searching, setSearching] = useState(false)
   const searchTimer = useRef<NodeJS.Timeout>(null)
+
+  // Pull-to-refresh
+  const [refreshing, setRefreshing] = useState(false)
+  const [pullOffset, setPullOffset] = useState(0)
+  const touchStartRef = useRef(0)
+  const canPullRef = useRef(false)
+  const pullDistRef = useRef(0)
 
   // Stories
   type StoryGroup = {
@@ -231,6 +238,31 @@ export default function CommunityPage() {
     setLoading(false)
   }, [])
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true)
+    await Promise.all([fetchFeed(), fetchStories(), fetchFeatures()])
+    setRefreshing(false)
+  }, [fetchFeed, fetchStories, fetchFeatures])
+
+  async function handleFollow(studentId: string) {
+    // Optimistic update
+    setFollowingIds(prev => { const n = new Set(prev); n.add(studentId); return n })
+    try {
+      const res = await fetch("/api/community/follow", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ studentId }),
+      })
+      if (!res.ok) throw new Error()
+      const data = await res.json()
+      if (!data.following) {
+        setFollowingIds(prev => { const n = new Set(prev); n.delete(studentId); return n })
+      }
+    } catch {
+      setFollowingIds(prev => { const n = new Set(prev); n.delete(studentId); return n })
+    }
+  }
+
   useEffect(() => { fetchFeatures(); fetchStories() }, [fetchFeatures, fetchStories])
 
   useEffect(() => {
@@ -238,6 +270,73 @@ export default function CommunityPage() {
     else if (tab === "feed") fetchFeed()
     else if (tab === "desafios") fetchChallenges()
   }, [tab, fetchRanking, fetchFeed, fetchChallenges])
+
+  // Pull-to-refresh: native listeners with passive:false to preventDefault
+  useEffect(() => {
+    if (tab !== "feed") return
+
+    document.documentElement.style.overscrollBehaviorY = "contain"
+
+    const onStart = (e: TouchEvent) => {
+      const scrollTop = window.scrollY || document.documentElement.scrollTop || 0
+      if (scrollTop <= 5 && !refreshing) {
+        touchStartRef.current = e.touches[0].clientY
+        canPullRef.current = true
+      }
+    }
+
+    const onMove = (e: TouchEvent) => {
+      if (!canPullRef.current) return
+      const dy = e.touches[0].clientY - touchStartRef.current
+      const scrollTop = window.scrollY || document.documentElement.scrollTop || 0
+      if (dy > 10 && scrollTop <= 5) {
+        e.preventDefault()
+        const d = Math.min((dy - 10) * 0.4, 80)
+        pullDistRef.current = d
+        setPullOffset(d)
+      } else if (dy < -5) {
+        canPullRef.current = false
+        pullDistRef.current = 0
+        setPullOffset(0)
+      }
+    }
+
+    const onEnd = () => {
+      if (!canPullRef.current) {
+        setPullOffset(0)
+        pullDistRef.current = 0
+        return
+      }
+      canPullRef.current = false
+      if (pullDistRef.current >= 50) {
+        handleRefresh()
+      }
+      setPullOffset(0)
+      pullDistRef.current = 0
+    }
+
+    document.addEventListener("touchstart", onStart, { passive: true })
+    document.addEventListener("touchmove", onMove, { passive: false })
+    document.addEventListener("touchend", onEnd, { passive: true })
+
+    return () => {
+      document.documentElement.style.overscrollBehaviorY = ""
+      document.removeEventListener("touchstart", onStart)
+      document.removeEventListener("touchmove", onMove)
+      document.removeEventListener("touchend", onEnd)
+    }
+  }, [tab, refreshing, handleRefresh])
+
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible" && tab === "feed") {
+        fetchFeed()
+        fetchStories()
+      }
+    }
+    document.addEventListener("visibilitychange", onVisible)
+    return () => document.removeEventListener("visibilitychange", onVisible)
+  }, [tab, fetchFeed, fetchStories])
 
   async function toggleLike(postId: string) {
     // Optimistic update
@@ -415,8 +514,8 @@ export default function CommunityPage() {
         ))}
       </div>
 
-      {/* Story Viewer Modal */}
-      {viewingStory && (
+      {/* Story Viewer Modal — portal to escape stacking context */}
+      {viewingStory && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => { setViewingStory(null); fetchStories() }}>
           <div className="w-full max-w-lg h-full relative" onClick={(e) => e.stopPropagation()}>
             {/* Progress bars */}
@@ -492,13 +591,14 @@ export default function CommunityPage() {
               }}
             />
           </div>
-        </div>
+        </div>,
+        document.getElementById("modal-portal") || document.body
       )}
 
-      {/* Story Create Modal */}
-      {showStoryCreate && (
+      {/* Story Create Modal — portal to escape stacking context */}
+      {showStoryCreate && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[100] bg-black/80 flex items-end justify-center" onClick={() => setShowStoryCreate(false)}>
-          <div className="w-full max-w-lg bg-[#111] border-t border-white/[0.08] rounded-t-2xl p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-lg bg-[#111] border-t border-white/[0.08] rounded-t-2xl p-5 pb-10 space-y-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between">
               <h3 className="text-base font-bold text-white">Novo Story</h3>
               <button onClick={() => setShowStoryCreate(false)} className="text-neutral-500"><X className="w-5 h-5" /></button>
@@ -525,7 +625,8 @@ export default function CommunityPage() {
               className="w-full text-sm text-neutral-400 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-red-600 file:text-white file:font-semibold file:text-sm"
             />
           </div>
-        </div>
+        </div>,
+        document.getElementById("modal-portal") || document.body
       )}
 
       {/* Tabs */}
@@ -553,6 +654,19 @@ export default function CommunityPage() {
         {/* ═══ FEED ═══ */}
         {tab === "feed" && (
           <motion.div key="feed" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-4">
+            {/* Pull-to-refresh indicator */}
+            {(pullOffset > 0 || refreshing) && (
+              <div
+                className="flex items-center justify-center overflow-hidden transition-[height] duration-200 -mt-2"
+                style={{ height: refreshing ? 48 : pullOffset }}
+              >
+                <RefreshCw
+                  className={`w-5 h-5 text-red-400 transition-transform ${refreshing ? "animate-spin" : ""}`}
+                  style={!refreshing ? { transform: `rotate(${pullOffset * 4}deg)`, opacity: Math.min(pullOffset / 50, 1) } : undefined}
+                />
+              </div>
+            )}
+
             {/* New Post Button */}
             <button
               onClick={() => setShowComposer(true)}
@@ -567,22 +681,15 @@ export default function CommunityPage() {
               <Camera className="w-4 h-4 text-neutral-600 ml-auto" />
             </button>
 
-            {/* Feed filter: Todos / Seguindo */}
-            <div className="flex gap-2">
-              {(["all", "following"] as const).map((f) => (
-                <button
-                  key={f}
-                  onClick={() => setFeedFilter(f)}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-medium transition-all min-h-[36px] ${
-                    feedFilter === f
-                      ? "bg-red-600/15 text-red-400 border border-red-500/20"
-                      : "text-neutral-500 bg-white/[0.03] border border-white/[0.06]"
-                  }`}
-                >
-                  {f === "all" ? "Todos" : `Seguindo (${followingIds.size})`}
-                </button>
-              ))}
-            </div>
+            {/* Following count indicator */}
+            {followingIds.size > 0 && (
+              <div className="flex items-center gap-2 px-1">
+                <span className="text-[11px] text-neutral-500">
+                  Seguindo {followingIds.size} {followingIds.size === 1 ? "pessoa" : "pessoas"}
+                </span>
+                <div className="flex-1 h-px bg-white/[0.04]" />
+              </div>
+            )}
 
             {/* ═══ Onboarding — Complete profile nudge ═══ */}
             {myStudentId && (!myBio || !myAvatar) && (
@@ -632,46 +739,39 @@ export default function CommunityPage() {
               </motion.div>
             )}
 
-            {/* Post Composer Modal */}
-            <AnimatePresence>
-              {showComposer && (
-                <PostComposer
-                  onClose={() => setShowComposer(false)}
-                  onPost={() => { setShowComposer(false); fetchFeed() }}
-                />
-              )}
-            </AnimatePresence>
+            {/* Post Composer Modal — portal to escape stacking context */}
+            {showComposer && typeof document !== "undefined" && createPortal(
+              <PostComposer
+                onClose={() => setShowComposer(false)}
+                onPost={() => { setShowComposer(false); fetchFeed() }}
+              />,
+              document.getElementById("modal-portal") || document.body
+            )}
 
-            {loading ? (
+            {loading && !refreshing ? (
               <div className="flex items-center justify-center py-16">
                 <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
               </div>
-            ) : (() => {
-              const filtered = feedFilter === "following"
-                ? feed.filter((p) => p.studentId && followingIds.has(p.studentId))
-                : feed
-              return filtered.length === 0 ? (
-                <div className="text-center py-16">
-                  <Camera className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
-                  <p className="text-neutral-400 text-sm font-medium">
-                    {feedFilter === "following" ? "Nenhum post de quem você segue" : "Nenhum post ainda"}
-                  </p>
-                  <p className="text-neutral-600 text-xs mt-1">
-                    {feedFilter === "following" ? "Siga pessoas no ranking para ver posts aqui!" : "Seja o primeiro a compartilhar!"}
-                  </p>
-                </div>
-              ) : (
-                filtered.map((post) => (
-                  <FeedCard
-                    key={post.id}
-                    post={post}
-                    onLike={() => toggleLike(post.id)}
-                    onReaction={(type) => toggleReaction(post.id, type)}
-                    onCommentAdded={fetchFeed}
-                  />
-                ))
-              )
-            })()}
+            ) : feed.length === 0 ? (
+              <div className="text-center py-16">
+                <Camera className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
+                <p className="text-neutral-400 text-sm font-medium">Nenhum post ainda</p>
+                <p className="text-neutral-600 text-xs mt-1">Seja o primeiro a compartilhar!</p>
+              </div>
+            ) : (
+              feed.map((post) => (
+                <FeedCard
+                  key={post.id}
+                  post={post}
+                  onLike={() => toggleLike(post.id)}
+                  onReaction={(type) => toggleReaction(post.id, type)}
+                  onCommentAdded={fetchFeed}
+                  isFollowing={!!post.studentId && followingIds.has(post.studentId)}
+                  isMe={post.studentId === myStudentId}
+                  onFollow={() => post.studentId && handleFollow(post.studentId)}
+                />
+              ))
+            )}
           </motion.div>
         )}
 
@@ -842,13 +942,20 @@ function FeedCard({
   onLike,
   onReaction,
   onCommentAdded,
+  isFollowing,
+  isMe,
+  onFollow,
 }: {
   post: FeedPost
   onLike: () => void
   onReaction: (type: string) => void
   onCommentAdded: () => void
+  isFollowing: boolean
+  isMe: boolean
+  onFollow: () => void
 }) {
   const router = useRouter()
+  const [showHeartAnim, setShowHeartAnim] = useState(false)
   const [showComments, setShowComments] = useState(false)
   const [commentText, setCommentText] = useState("")
   const [submitting, setSubmitting] = useState(false)
@@ -914,6 +1021,20 @@ function FeedCard({
           </div>
         </button>
         {!isUserPost && <PostTypeBadge type={post.type} />}
+        {/* Follow button — inline discovery (zero friction) */}
+        {post.studentId && !isFollowing && !isMe && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onFollow() }}
+            className="px-3 py-1.5 rounded-lg bg-red-600 text-white text-[11px] font-bold hover:bg-red-500 active:scale-95 transition-all"
+          >
+            Seguir
+          </button>
+        )}
+        {post.studentId && isFollowing && !isMe && (
+          <span className="flex items-center gap-1 px-2 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06] text-[10px] text-neutral-500">
+            <Check className="w-3 h-3" /> Seguindo
+          </span>
+        )}
         {/* 3-dot menu */}
         <div className="relative">
           <button onClick={() => setShowMenu(!showMenu)} className="p-1.5 text-neutral-500 hover:text-white">
@@ -938,15 +1059,31 @@ function FeedCard({
         </div>
       </div>
 
-      {/* Image */}
+      {/* Image — double-tap heart animation */}
       {post.imageUrl && (
         <div className="relative w-full bg-neutral-900">
           <img
             src={post.imageUrl}
             alt="Post"
             className="w-full object-contain bg-black"
-            onDoubleClick={onLike}
+            onDoubleClick={() => {
+              if (!post.isLiked) onLike()
+              setShowHeartAnim(true)
+              setTimeout(() => setShowHeartAnim(false), 900)
+            }}
           />
+          <AnimatePresence>
+            {showHeartAnim && (
+              <motion.div
+                initial={{ scale: 0, opacity: 0.9 }}
+                animate={{ scale: 1.2, opacity: 0 }}
+                transition={{ duration: 0.8, ease: "easeOut" }}
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+              >
+                <Heart className="w-24 h-24 fill-white text-white drop-shadow-[0_0_30px_rgba(255,255,255,0.4)]" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       )}
 

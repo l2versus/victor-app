@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { createPortal } from "react-dom"
 import { useParams, useRouter } from "next/navigation"
 import { motion } from "framer-motion"
 import {
@@ -414,8 +415,8 @@ export default function SocialProfilePage() {
         </>
       )}
 
-      {/* Followers/Following Modal — Instagram style */}
-      {showFollowList && (
+      {/* Followers/Following Modal — portal to escape stacking context */}
+      {showFollowList && typeof document !== "undefined" && createPortal(
         <div className="fixed inset-0 z-[100] bg-black/80" onClick={() => setShowFollowList(null)}>
           <motion.div
             initial={{ y: "100%" }}
@@ -492,11 +493,12 @@ export default function SocialProfilePage() {
               )}
             </div>
           </motion.div>
-        </div>
+        </div>,
+        document.getElementById("modal-portal") || document.body
       )}
 
-      {/* Post detail modal */}
-      {selectedPost && (
+      {/* Post detail modal — portal to escape stacking context */}
+      {selectedPost && typeof document !== "undefined" && createPortal(
         <div
           className="fixed inset-0 z-[100] bg-black/80 flex items-center justify-center p-4"
           onClick={() => setSelectedPost(null)}
@@ -527,7 +529,8 @@ export default function SocialProfilePage() {
               <p className="text-[10px] text-neutral-600 mt-2">{timeAgo(selectedPost.createdAt)}</p>
             </div>
           </motion.div>
-        </div>
+        </div>,
+        document.getElementById("modal-portal") || document.body
       )}
     </div>
   )

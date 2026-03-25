@@ -108,7 +108,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
       </div>
 
       {/* ═══ Content ═══ */}
-      <main className="relative z-10 max-w-lg mx-auto px-4 pb-24">
+      <main className="relative max-w-lg mx-auto px-4 pb-24">
         {children}
       </main>
 
@@ -117,6 +117,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
       {/* ═══ Navigation ═══ */}
       <StudentNav hasNutrition={features?.hasNutrition ?? false} />
+
     </div>
   )
 }
