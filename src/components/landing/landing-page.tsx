@@ -91,7 +91,7 @@ const tiers = [
       { t: "3 treinos por semana", ok: true },
       { t: "Assistente virtual pós-treino", ok: false },
       { t: "Correção de postura", ok: false },
-      { t: "Grupo VIP", ok: false },
+      { t: "Rede Social Ironberg", ok: false },
     ],
     cta: "Começar agora",
   },
@@ -113,7 +113,7 @@ const tiers = [
     features: [
       { t: "Tudo do Pro", ok: true },
       { t: "Correção postura por câmera", ok: true },
-      { t: "Grupo VIP exclusivo", ok: true },
+      { t: "Rede Social Ironberg exclusivo", ok: true },
       { t: "Orientação nutricional", ok: true },
       { t: "WhatsApp direto com Victor", ok: true },
       { t: "Prioridade total", ok: true },

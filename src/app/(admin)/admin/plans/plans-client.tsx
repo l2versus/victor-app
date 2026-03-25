@@ -61,7 +61,7 @@ function sortPlans(plans: Plan[]): Plan[] {
 const featureConfig = [
   { key: "hasAI" as const, label: "Chat IA", icon: Sparkles, color: "text-purple-400" },
   { key: "hasPostureCamera" as const, label: "Câmera Postura", icon: Camera, color: "text-blue-400" },
-  { key: "hasVipGroup" as const, label: "Grupo VIP", icon: MessageCircle, color: "text-emerald-400" },
+  { key: "hasVipGroup" as const, label: "Rede Social", icon: MessageCircle, color: "text-emerald-400" },
   { key: "hasNutrition" as const, label: "Nutrição", icon: Salad, color: "text-amber-400" },
 ]
 

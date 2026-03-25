@@ -487,7 +487,7 @@ const STRATEGIES = [
       "Mensagem de aniversário automática (já implementado!)",
       "Check-in semanal: 'Como está se sentindo nos treinos?'",
       "Relatório mensal de evolução (gráficos de carga)",
-      "Grupo VIP no WhatsApp (exclusivo plano Elite)",
+      "Rede Social Ironberg exclusiva (plano Elite)",
       "Desafios mensais com ranking entre alunos",
       "Renovação antecipada com desconto progressivo",
     ],
