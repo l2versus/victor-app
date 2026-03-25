@@ -5,6 +5,7 @@ import {
   TrendingUp, Dumbbell, Flame, Clock, BarChart3,
   ChevronDown, Trophy, Target, Zap, FileDown,
   Calendar, ChevronRight, Activity, ArrowUpRight, ArrowDownRight, Minus,
+  Ruler, Plus, Loader2, Trash2,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
@@ -59,7 +60,7 @@ const MUSCLE_COLORS: Record<string, string> = {
 }
 const PIE_COLORS = ["#ef4444", "#f97316", "#3b82f6", "#22c55e", "#8b5cf6", "#eab308", "#ec4899", "#14b8a6"]
 
-type TabId = "dashboard" | "exercises" | "history"
+type TabId = "dashboard" | "exercises" | "history" | "medidas"
 
 /* ═══ 3D Anatomy Viewer — Sketchfab Embed ═══ */
 function Anatomy3DViewer() {
@@ -508,6 +509,7 @@ export function EvolutionClient() {
         {([
           { id: "dashboard" as const, label: "Dashboard", icon: BarChart3 },
           { id: "exercises" as const, label: "Exercicios", icon: Dumbbell },
+          { id: "medidas" as const, label: "Medidas", icon: Ruler },
           { id: "history" as const, label: "Historico", icon: Calendar },
         ]).map((t) => (
           <button key={t.id} onClick={() => setTab(t.id)} className={cn(
@@ -955,6 +957,294 @@ export function EvolutionClient() {
               <p className="text-neutral-400 text-sm">Nenhuma sessao registrada</p>
             </div>
           )}
+        </div>
+      )}
+
+      {/* ═══════════════ TAB: MEDIDAS ═══════════════ */}
+      {tab === "medidas" && <MedidasTab />}
+    </div>
+  )
+}
+
+/* ═══ Medidas Corporais Tab ═══ */
+
+type MeasurementEntry = {
+  id: string; createdAt: string; weight: number | null; bodyFat: number | null
+  neck: number | null; chest: number | null; shoulders: number | null
+  leftBicep: number | null; rightBicep: number | null; waist: number | null
+  abdomen: number | null; hips: number | null; leftThigh: number | null
+  rightThigh: number | null; leftCalf: number | null; rightCalf: number | null
+  notes: string | null
+}
+
+const MEASURE_FIELDS = [
+  { key: "weight", label: "Peso", unit: "kg", emoji: "⚖️" },
+  { key: "bodyFat", label: "Gordura", unit: "%", emoji: "📊" },
+  { key: "neck", label: "Pescoço", unit: "cm", emoji: "📏" },
+  { key: "chest", label: "Peitoral", unit: "cm", emoji: "📏" },
+  { key: "shoulders", label: "Ombros", unit: "cm", emoji: "📏" },
+  { key: "leftBicep", label: "Bíceps E", unit: "cm", emoji: "💪" },
+  { key: "rightBicep", label: "Bíceps D", unit: "cm", emoji: "💪" },
+  { key: "waist", label: "Cintura", unit: "cm", emoji: "📏" },
+  { key: "abdomen", label: "Abdômen", unit: "cm", emoji: "📏" },
+  { key: "hips", label: "Quadril", unit: "cm", emoji: "📏" },
+  { key: "leftThigh", label: "Coxa E", unit: "cm", emoji: "🦵" },
+  { key: "rightThigh", label: "Coxa D", unit: "cm", emoji: "🦵" },
+  { key: "leftCalf", label: "Pant. E", unit: "cm", emoji: "🦵" },
+  { key: "rightCalf", label: "Pant. D", unit: "cm", emoji: "🦵" },
+] as const
+
+function MedidasTab() {
+  const [measurements, setMeasurements] = useState<MeasurementEntry[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [formData, setFormData] = useState<Record<string, string>>({})
+  const [notes, setNotes] = useState("")
+
+  useEffect(() => {
+    fetchMeasurements()
+  }, [])
+
+  async function fetchMeasurements() {
+    try {
+      const res = await fetch("/api/student/measurements")
+      if (res.ok) {
+        const data = await res.json()
+        setMeasurements(data.measurements || [])
+      }
+    } catch { /* ignore */ }
+    setLoading(false)
+  }
+
+  async function handleSave() {
+    if (saving) return
+    setSaving(true)
+    try {
+      const payload: Record<string, string | number | null> = { notes: notes || null }
+      for (const f of MEASURE_FIELDS) {
+        payload[f.key] = formData[f.key] || null
+      }
+      const res = await fetch("/api/student/measurements", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      })
+      if (res.ok) {
+        setShowForm(false)
+        setFormData({})
+        setNotes("")
+        fetchMeasurements()
+      }
+    } catch { /* ignore */ }
+    setSaving(false)
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Excluir esta medição?")) return
+    await fetch("/api/student/measurements", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    })
+    fetchMeasurements()
+  }
+
+  // Calculate diff between latest and previous
+  function getDiff(key: string): { value: number; diff: number | null } | null {
+    if (measurements.length === 0) return null
+    const latest = measurements[0][key as keyof MeasurementEntry] as number | null
+    if (latest === null) return null
+    const prev = measurements.length > 1 ? (measurements[1][key as keyof MeasurementEntry] as number | null) : null
+    return { value: latest, diff: prev !== null ? Math.round((latest - prev) * 10) / 10 : null }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <Loader2 className="w-6 h-6 text-red-500 animate-spin" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Header + Add button */}
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium">{measurements.length} medições registradas</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-red-600 text-white text-xs font-semibold active:scale-95 transition-transform"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Nova medição
+        </button>
+      </div>
+
+      {/* New measurement form */}
+      {showForm && (
+        <div className="rounded-2xl border border-red-500/20 bg-red-600/5 p-4 space-y-3">
+          <p className="text-sm font-semibold text-white">Registrar medidas</p>
+          <p className="text-[10px] text-neutral-500">Preencha o que souber — não precisa preencher tudo</p>
+
+          <div className="grid grid-cols-2 gap-2.5">
+            {MEASURE_FIELDS.map((f) => (
+              <div key={f.key} className="flex items-center gap-2">
+                <span className="text-xs">{f.emoji}</span>
+                <div className="flex-1">
+                  <label className="text-[9px] text-neutral-500 uppercase tracking-wider">{f.label}</label>
+                  <div className="flex items-center gap-1">
+                    <input
+                      type="text"
+                      inputMode="decimal"
+                      value={formData[f.key] || ""}
+                      onChange={(e) => {
+                        const v = e.target.value.replace(",", ".")
+                        if (v === "" || /^\d{0,3}\.?\d{0,1}$/.test(v)) {
+                          setFormData(prev => ({ ...prev, [f.key]: v }))
+                        }
+                      }}
+                      placeholder="—"
+                      className="w-full bg-white/[0.06] border border-white/[0.08] rounded-lg px-2 py-1.5 text-sm text-white placeholder-neutral-700 text-center focus:outline-none focus:border-red-500/50"
+                    />
+                    <span className="text-[9px] text-neutral-600 w-5">{f.unit}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div>
+            <label className="text-[9px] text-neutral-500 uppercase tracking-wider">Observações</label>
+            <input
+              type="text"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value.slice(0, 200))}
+              placeholder="Ex: em jejum, pós-treino..."
+              className="w-full bg-white/[0.06] border border-white/[0.08] rounded-lg px-3 py-2 text-sm text-white placeholder-neutral-700 focus:outline-none focus:border-red-500/50 mt-1"
+            />
+          </div>
+
+          <div className="flex gap-2">
+            <button onClick={() => setShowForm(false)} className="flex-1 py-2.5 rounded-xl bg-white/[0.04] border border-white/[0.08] text-neutral-400 text-sm">
+              Cancelar
+            </button>
+            <button onClick={handleSave} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-red-600 text-white text-sm font-semibold disabled:opacity-50 flex items-center justify-center gap-1">
+              {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Latest measurements summary — diff cards */}
+      {measurements.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          {MEASURE_FIELDS.map((f) => {
+            const data = getDiff(f.key)
+            if (!data) return null
+            return (
+              <div key={f.key} className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-2.5">
+                <p className="text-[8px] text-neutral-500 uppercase tracking-wider">{f.label}</p>
+                <p className="text-sm font-bold text-white mt-0.5">{data.value} <span className="text-[9px] text-neutral-500 font-normal">{f.unit}</span></p>
+                {data.diff !== null && data.diff !== 0 && (
+                  <p className={cn("text-[10px] font-semibold mt-0.5 flex items-center gap-0.5",
+                    // For weight/bodyFat/waist/abdomen: negative = good (green). For arms/chest: positive = good
+                    ["weight", "bodyFat", "waist", "abdomen"].includes(f.key)
+                      ? data.diff < 0 ? "text-green-400" : "text-red-400"
+                      : data.diff > 0 ? "text-green-400" : "text-red-400"
+                  )}>
+                    {data.diff > 0 ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
+                    {data.diff > 0 ? "+" : ""}{data.diff} {f.unit}
+                  </p>
+                )}
+                {data.diff === 0 && <p className="text-[10px] text-neutral-600 mt-0.5 flex items-center gap-0.5"><Minus className="w-3 h-3" /> Igual</p>}
+              </div>
+            )
+          }).filter(Boolean)}
+        </div>
+      )}
+
+      {/* Evolution chart — waist, bicep, weight over time */}
+      {measurements.length >= 2 && (
+        <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4">
+          <h3 className="text-xs font-semibold text-white/90 mb-3">Evolução</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <LineChart data={[...measurements].reverse().map(m => ({
+              date: format(new Date(m.createdAt), "dd/MM", { locale: ptBR }),
+              Peso: m.weight,
+              Cintura: m.waist,
+              "Bíceps D": m.rightBicep,
+              Peitoral: m.chest,
+            }))}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.04)" />
+              <XAxis dataKey="date" tick={{ fill: "#525252", fontSize: 9 }} />
+              <YAxis tick={{ fill: "#525252", fontSize: 9 }} />
+              <Tooltip
+                contentStyle={{ background: "#1a1a1a", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, fontSize: 11 }}
+                labelStyle={{ color: "#999" }}
+              />
+              <Line type="monotone" dataKey="Peso" stroke="#ef4444" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              <Line type="monotone" dataKey="Cintura" stroke="#f97316" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              <Line type="monotone" dataKey="Bíceps D" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+              <Line type="monotone" dataKey="Peitoral" stroke="#22c55e" strokeWidth={2} dot={{ r: 3 }} connectNulls />
+            </LineChart>
+          </ResponsiveContainer>
+          <div className="flex flex-wrap gap-3 mt-2 justify-center">
+            {[
+              { label: "Peso", color: "#ef4444" },
+              { label: "Cintura", color: "#f97316" },
+              { label: "Bíceps D", color: "#3b82f6" },
+              { label: "Peitoral", color: "#22c55e" },
+            ].map(l => (
+              <div key={l.label} className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full" style={{ background: l.color }} />
+                <span className="text-[9px] text-neutral-500">{l.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Measurement history */}
+      {measurements.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium px-1">Histórico</p>
+          {measurements.map((m) => (
+            <div key={m.id} className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3.5">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold text-white">
+                  {format(new Date(m.createdAt), "dd MMM yyyy", { locale: ptBR })}
+                </p>
+                <button onClick={() => handleDelete(m.id)} className="text-neutral-600 hover:text-red-400 transition-colors p-1">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="grid grid-cols-3 gap-x-4 gap-y-1">
+                {MEASURE_FIELDS.map(f => {
+                  const val = m[f.key as keyof MeasurementEntry] as number | null
+                  if (val === null) return null
+                  return (
+                    <div key={f.key} className="flex items-center justify-between">
+                      <span className="text-[10px] text-neutral-500">{f.label}</span>
+                      <span className="text-[11px] text-white font-medium">{val} {f.unit}</span>
+                    </div>
+                  )
+                }).filter(Boolean)}
+              </div>
+              {m.notes && <p className="text-[10px] text-neutral-500 mt-2 italic">{m.notes}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Empty state */}
+      {measurements.length === 0 && !showForm && (
+        <div className="text-center py-12">
+          <Ruler className="w-10 h-10 text-neutral-700 mx-auto mb-3" />
+          <p className="text-neutral-400 text-sm font-medium">Nenhuma medida registrada</p>
+          <p className="text-neutral-600 text-xs mt-1">Registre suas medidas para acompanhar sua evolução</p>
         </div>
       )}
     </div>

@@ -127,6 +127,7 @@ model Student {
   nutritionLogs     NutritionLog[]
   pushSubscriptions PushSubscription[]
   progressPhotos    ProgressPhoto[]
+  bodyMeasurements  BodyMeasurement[]
   scheduleSlots     ScheduleSlot[]
   extraActivities   ExtraActivity[]
   checkIns          CheckIn[]
@@ -864,6 +865,38 @@ model PushSubscription {
 }
 
 // ═══════════════════════════════════════
+// BODY MEASUREMENTS — Circunferências corporais
+// ═══════════════════════════════════════
+
+model BodyMeasurement {
+  id        String @id @default(cuid())
+  studentId String
+
+  // Todas em centímetros (cm), opcionais
+  weight     Float?  /// Peso (kg)
+  bodyFat    Float?  /// % Gordura corporal
+  neck       Float?  /// Pescoço
+  chest      Float?  /// Peitoral
+  shoulders  Float?  /// Ombros
+  leftBicep  Float?  /// Bíceps esquerdo
+  rightBicep Float?  /// Bíceps direito
+  waist      Float?  /// Cintura
+  abdomen    Float?  /// Abdômen
+  hips       Float?  /// Quadril
+  leftThigh  Float?  /// Coxa esquerda
+  rightThigh Float?  /// Coxa direita
+  leftCalf   Float?  /// Panturrilha esquerda
+  rightCalf  Float?  /// Panturrilha direita
+  notes      String? /// Observações
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([createdAt])
+}
+
 // PROGRESS PHOTOS — Fotos de evolução (antes/depois)
 // ═══════════════════════════════════════
 
