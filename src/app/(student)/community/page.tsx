@@ -1644,7 +1644,30 @@ function StoryViewer({
   const [sending, setSending] = useState(false)
   const [reactionSent, setReactionSent] = useState<string | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const videoRef = useRef<HTMLVideoElement>(null)
   const router = useRouter()
+
+  // Set Media Session API artwork (prevents iOS showing default Next.js triangle)
+  useEffect(() => {
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: `Story de ${viewingStory.group.name.split(" ")[0]}`,
+        artist: "Ironberg App",
+        album: "Stories",
+        artwork: [
+          { src: "/icon-192x192.png", sizes: "192x192", type: "image/png" },
+          { src: "/icon-512x512.png", sizes: "512x512", type: "image/png" },
+        ],
+      })
+    }
+    // Cleanup: pause video and clear media session on unmount
+    return () => {
+      videoRef.current?.pause()
+      if ("mediaSession" in navigator) {
+        navigator.mediaSession.metadata = null
+      }
+    }
+  }, [viewingStory.group.name])
 
   // Story Insights (own stories)
   const [showInsights, setShowInsights] = useState(false)
@@ -1725,12 +1748,19 @@ function StoryViewer({
     setTimeout(() => setReactionSent(null), 1500)
   }
 
+  function closeViewer() {
+    videoRef.current?.pause()
+    setViewingStory(null)
+    fetchStories()
+  }
+
   function navigateStory(direction: "prev" | "next") {
+    videoRef.current?.pause()
     if (direction === "prev") {
       if (viewingStory.index > 0) {
         setViewingStory({ ...viewingStory, index: viewingStory.index - 1 })
       } else {
-        setViewingStory(null); fetchStories()
+        closeViewer()
       }
     } else {
       const nextIdx = viewingStory.index + 1
@@ -1742,7 +1772,7 @@ function StoryViewer({
           body: JSON.stringify({ storyId: viewingStory.group.stories[nextIdx].id }),
         })
       } else {
-        setViewingStory(null); fetchStories()
+        closeViewer()
       }
     }
   }
@@ -1751,7 +1781,7 @@ function StoryViewer({
   const isVideo = currentStory.imageUrl.startsWith("data:video/") || /\.(mp4|mov|webm|quicktime)/i.test(currentStory.imageUrl)
 
   return (
-    <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => { setViewingStory(null); fetchStories() }}>
+    <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => closeViewer()}>
       <div className="w-full max-w-lg h-full relative flex flex-col" onClick={(e) => e.stopPropagation()}>
         {/* Progress bars */}
         <div className="absolute top-2 left-3 right-3 flex gap-1 z-10">
@@ -1788,7 +1818,7 @@ function StoryViewer({
               👁 {currentStory.viewCount}
             </span>
           )}
-          <button onClick={() => { setViewingStory(null); fetchStories() }} className="ml-auto text-white/70 p-1">
+          <button onClick={() => closeViewer()} className="ml-auto text-white/70 p-1">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -1796,7 +1826,7 @@ function StoryViewer({
         {/* Story media */}
         <div className="flex-1 relative">
           {isVideo ? (
-            <video key={currentStory.imageUrl} src={currentStory.imageUrl} className="w-full h-full object-contain" autoPlay playsInline loop />
+            <video ref={videoRef} key={currentStory.imageUrl} src={currentStory.imageUrl} className="w-full h-full object-contain" autoPlay playsInline loop />
           ) : (
             <img src={currentStory.imageUrl} alt="" className="w-full h-full object-contain" />
           )}
@@ -1938,8 +1968,7 @@ function StoryViewer({
                               <button
                                 key={v.studentId}
                                 onClick={() => {
-                                  setViewingStory(null)
-                                  fetchStories()
+                                  closeViewer()
                                   router.push(`/community/profile/${v.studentId}`)
                                 }}
                                 className="w-full flex items-center gap-2.5 py-2 border-b border-white/[0.04] last:border-0 hover:bg-white/[0.03] transition-colors"
