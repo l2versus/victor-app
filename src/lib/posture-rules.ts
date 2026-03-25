@@ -60,7 +60,7 @@ export interface PostureFeedback {
 }
 
 /** Camera positioning the user needs for this exercise */
-export type CameraPosition = "side" | "front" | "side-or-front"
+export type CameraPosition = "side" | "front" | "back" | "side-or-front" | "any"
 
 /** Muscle group for UI grouping */
 export type MuscleGroup =
@@ -82,6 +82,8 @@ export interface ExerciseRule {
   nameEn: string
   muscleGroup: MuscleGroup
   cameraPosition: CameraPosition
+  /** All allowed camera positions — user can choose. If omitted, only cameraPosition is allowed */
+  allowedPositions?: CameraPosition[]
   /** Short positioning tip shown before starting */
   positioningTip: string
   analyze: (landmarks: Point[]) => PostureFeedback[]

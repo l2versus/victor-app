@@ -526,18 +526,17 @@ export function PostureAnalyzer() {
                           <span
                             className={cn(
                               "text-[9px] px-1.5 py-0.5 rounded shrink-0",
-                              rule.cameraPosition === "side"
-                                ? "bg-blue-600/20 text-blue-400"
-                                : rule.cameraPosition === "front"
-                                  ? "bg-purple-600/20 text-purple-400"
-                                  : "bg-amber-600/20 text-amber-400",
+                              rule.cameraPosition === "side" ? "bg-blue-600/20 text-blue-400"
+                                : rule.cameraPosition === "front" ? "bg-purple-600/20 text-purple-400"
+                                : rule.cameraPosition === "back" ? "bg-green-600/20 text-green-400"
+                                : "bg-amber-600/20 text-amber-400",
                             )}
                           >
-                            {rule.cameraPosition === "side"
-                              ? "LATERAL"
-                              : rule.cameraPosition === "front"
-                                ? "FRONTAL"
-                                : "AMBOS"}
+                            {rule.cameraPosition === "side" ? "LATERAL"
+                              : rule.cameraPosition === "front" ? "FRONTAL"
+                              : rule.cameraPosition === "back" ? "COSTAS"
+                              : rule.allowedPositions ? `${rule.allowedPositions.length} ÂNGULOS`
+                              : "AMBOS"}
                           </span>
                         </button>
                       ))}
@@ -550,20 +549,51 @@ export function PostureAnalyzer() {
         )}
       </div>
 
-      {/* ─── Positioning guide (shown when exercise changes) ─── */}
+      {/* ─── Positioning guide + Camera angle selector ─── */}
       {showPositionGuide && state === "idle" && (
-        <div className="flex items-start gap-3 px-3 py-2.5 rounded-xl bg-blue-600/10 border border-blue-500/20 text-sm">
-          <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-blue-300 text-xs font-medium">Como se posicionar:</p>
-            <p className="text-blue-200/70 text-xs mt-0.5">{selectedExercise.positioningTip}</p>
+        <div className="rounded-xl bg-blue-600/10 border border-blue-500/20 overflow-hidden">
+          <div className="flex items-start gap-3 px-3 py-2.5 text-sm">
+            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-blue-300 text-xs font-medium">Como se posicionar:</p>
+              <p className="text-blue-200/70 text-xs mt-0.5">{selectedExercise.positioningTip}</p>
+            </div>
+            <button
+              onClick={() => setShowPositionGuide(false)}
+              className="text-blue-500/50 hover:text-blue-400 shrink-0"
+            >
+              <X className="w-3 h-3" />
+            </button>
           </div>
-          <button
-            onClick={() => setShowPositionGuide(false)}
-            className="text-blue-500/50 hover:text-blue-400 shrink-0"
-          >
-            <X className="w-3 h-3" />
-          </button>
+          {/* Camera angle selector — when multiple positions allowed */}
+          {(selectedExercise.allowedPositions && selectedExercise.allowedPositions.length > 1) && (
+            <div className="flex items-center gap-1.5 px-3 pb-2.5">
+              <span className="text-[9px] text-blue-400/60 mr-1">Ângulo:</span>
+              {selectedExercise.allowedPositions.map((pos) => (
+                <button
+                  key={pos}
+                  className={cn(
+                    "px-2 py-1 rounded-lg text-[10px] font-medium transition-all",
+                    selectedExercise.cameraPosition === pos
+                      ? "bg-blue-500/30 text-blue-300 border border-blue-500/40"
+                      : "bg-white/[0.04] text-neutral-500 border border-white/[0.06] hover:text-neutral-300"
+                  )}
+                  onClick={() => {
+                    // Update the exercise's active camera position
+                    const updated = { ...selectedExercise, cameraPosition: pos, positioningTip:
+                      pos === "side" ? "Posicione a câmera de LADO" :
+                      pos === "front" ? "Posicione a câmera na FRENTE" :
+                      pos === "back" ? "Posicione a câmera nas COSTAS" :
+                      "Posicione a câmera onde preferir"
+                    }
+                    setSelectedExercise(updated as ExerciseRule)
+                  }}
+                >
+                  {pos === "side" ? "Lateral" : pos === "front" ? "Frente" : pos === "back" ? "Costas" : pos === "any" ? "Qualquer" : "Ambos"}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
