@@ -157,20 +157,33 @@ export function WorkoutPlayer({
     activeSession ? new Date(activeSession.startedAt) : null
   )
   const timerRef = useRef<NodeJS.Timeout>(null)
+  const pausedElapsedRef = useRef(0) // accumulated seconds before pauses
 
   const totalCompleted = Array.from(completedSets.values()).reduce((sum, arr) => sum + arr.length, 0)
   const progress = totalSets > 0 ? totalCompleted / totalSets : 0
   const currentEx = exercises[currentExIdx] ?? exercises[0]
 
-  // Elapsed timer
+  // Elapsed timer — only runs during active/rest phases, pauses correctly
   useEffect(() => {
     if (phase === "active" || phase === "rest") {
+      // If resuming from pause, reset startTime to now
+      if (!startTimeRef.current) {
+        startTimeRef.current = new Date()
+      }
       timerRef.current = setInterval(() => {
         if (startTimeRef.current) {
-          setElapsed(Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000))
+          const sinceResume = Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000)
+          setElapsed(pausedElapsedRef.current + sinceResume)
         }
       }, 1000)
       return () => { if (timerRef.current) clearInterval(timerRef.current) }
+    }
+    // When going to preview (pause), save accumulated time and clear startTime
+    if (phase === "preview" && startTimeRef.current) {
+      const sinceResume = Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000)
+      pausedElapsedRef.current += sinceResume
+      startTimeRef.current = null
+      if (timerRef.current) clearInterval(timerRef.current)
     }
   }, [phase])
 
@@ -197,8 +210,14 @@ export function WorkoutPlayer({
     },
   })
 
-  // Start workout
+  // Start or resume workout
   async function handleStart() {
+    // Resume from pause — session already exists
+    if (sessionId) {
+      setPhase("active")
+      return
+    }
+    // New session
     try {
       const res = await fetch("/api/student/sessions", {
         method: "POST",
@@ -209,6 +228,7 @@ export function WorkoutPlayer({
       if (data.session) {
         setSessionId(data.session.id)
         startTimeRef.current = new Date()
+        pausedElapsedRef.current = 0
         setPhase("active")
       }
     } catch {
@@ -589,7 +609,7 @@ export function WorkoutPlayer({
           className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base shadow-xl shadow-red-600/25 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all duration-300"
         >
           <Play className="w-5 h-5" fill="currentColor" />
-          {isScheduledToday ? "Iniciar Treino" : "Treinar Agora"}
+          {sessionId ? "Retomar Treino" : isScheduledToday ? "Iniciar Treino" : "Treinar Agora"}
         </button>
 
         {/* ═══ EXERCISE DETAIL MODAL ═══ */}
