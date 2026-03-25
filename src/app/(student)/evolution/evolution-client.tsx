@@ -13,6 +13,7 @@ import {
   PieChart, Pie, LineChart, Line,
 } from "recharts"
 import { BodyMap, BodyMapLegend } from "@/components/student/body-map"
+import { EnergyBalanceCard } from "@/components/student/energy-balance-card"
 import { MuscleBadge } from "@/components/student/muscle-info-card"
 import { format, subDays, startOfWeek, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -529,6 +530,9 @@ export function EvolutionClient() {
             <StatCard icon={Target} value={evo.summary.totalSets} label="Series" sub={`${(evo.summary.totalSets / Math.max(evo.summary.totalSessions, 1)).toFixed(0)}/sessao`} color="blue" />
             <StatCard icon={Clock} value={evo.summary.avgDuration || 0} label="Min/sessao" sub={stats.avgRpe ? `RPE ${stats.avgRpe}` : undefined} color="purple" />
           </div>
+
+          {/* ═══ ENERGY BALANCE ═══ */}
+          <EnergyBalanceCard />
 
           {/* ═══ VOLUME CHART (Hevy-style area) ═══ */}
           <Section title="Volume por sessao" subtitle="Toque no ponto para ver detalhes">
