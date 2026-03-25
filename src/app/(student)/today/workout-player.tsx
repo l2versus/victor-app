@@ -160,12 +160,14 @@ export function WorkoutPlayer({
   )
   const [rpe, setRpe] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  // Timer state — ONLY trust sessionStorage, never raw startedAt (could be hours ago)
   const [elapsed, setElapsed] = useState(() => {
     if (typeof window === "undefined" || !activeSession) return 0
     try {
       const saved = sessionStorage.getItem(`workout_elapsed_${activeSession.id}`)
-      return saved ? parseInt(saved, 10) || 0 : 0
-    } catch { return 0 }
+      if (saved) return parseInt(saved, 10) || 0
+    } catch {}
+    return 0 // No saved data = start from 0
   })
   const [nextExName, setNextExName] = useState("")
   const startTimeRef = useRef<Date | null>(
@@ -173,10 +175,14 @@ export function WorkoutPlayer({
       if (!activeSession) return null
       if (typeof window !== "undefined") {
         try {
+          // If paused → timer stopped
           if (sessionStorage.getItem(`workout_paused_${activeSession.id}`) === "true") return null
+          // If has saved elapsed → resuming, start from now
+          if (sessionStorage.getItem(`workout_elapsed_${activeSession.id}`)) return new Date()
         } catch {}
       }
-      return new Date(activeSession.startedAt)
+      // No sessionStorage data at all → fresh start from now (not startedAt from hours ago)
+      return new Date()
     })()
   )
   const timerRef = useRef<NodeJS.Timeout>(null)
@@ -185,8 +191,9 @@ export function WorkoutPlayer({
       if (typeof window === "undefined" || !activeSession) return 0
       try {
         const saved = sessionStorage.getItem(`workout_elapsed_${activeSession.id}`)
-        return saved ? parseInt(saved, 10) || 0 : 0
-      } catch { return 0 }
+        if (saved) return parseInt(saved, 10) || 0
+      } catch {}
+      return 0
     })()
   )
 
@@ -824,19 +831,13 @@ export function WorkoutPlayer({
         </div>
       )}
 
-      {/* Progress bar + abandon */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Clock className="w-3.5 h-3.5 text-neutral-600" />
-          <span className="text-xs text-neutral-500 tabular-nums">{formatTime(elapsed)}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setPhase("preview")}
-            className="text-[10px] text-neutral-500 hover:text-white transition-colors px-2 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06]"
-          >
-            Pausar
-          </button>
+      {/* Progress bar + Pausar + Descartar (Strava style) */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className="w-3.5 h-3.5 text-neutral-600" />
+            <span className="text-xs text-neutral-500 tabular-nums">{formatTime(elapsed)}</span>
+          </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-neutral-500">{totalCompleted}/{totalSets}</span>
             <div className="w-20 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
@@ -846,6 +847,38 @@ export function WorkoutPlayer({
               />
             </div>
           </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPhase("preview")}
+            className="flex-1 text-[11px] text-neutral-400 hover:text-white transition-colors py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] font-medium"
+          >
+            ⏸ Pausar
+          </button>
+          <button
+            onClick={async () => {
+              if (!confirm("Descartar treino? O progresso será apagado e você poderá iniciar novamente.")) return
+              if (sessionId) {
+                try {
+                  await fetch(`/api/student/sessions/${sessionId}`, { method: "DELETE" })
+                } catch {}
+                try {
+                  sessionStorage.removeItem(`workout_paused_${sessionId}`)
+                  sessionStorage.removeItem(`workout_elapsed_${sessionId}`)
+                } catch {}
+              }
+              setSessionId(null)
+              setPhase("preview")
+              setElapsed(0)
+              pausedElapsedRef.current = 0
+              startTimeRef.current = null
+              setCompletedSets(new Map())
+              if (timerRef.current) clearInterval(timerRef.current)
+            }}
+            className="text-[11px] text-red-500/60 hover:text-red-400 transition-colors py-2 px-3 rounded-lg hover:bg-red-500/10 font-medium"
+          >
+            Descartar
+          </button>
         </div>
       </div>
 

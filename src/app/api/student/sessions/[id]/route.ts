@@ -106,3 +106,29 @@ async function triggerPostWorkoutBot(studentId: string, workoutName: string, dur
     }
   }, delayMs)
 }
+
+// DELETE /api/student/sessions/[id] — Discard (abandon) an incomplete session
+export async function DELETE(
+  _req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { student } = await requireStudent()
+    const { id } = await params
+
+    const session = await prisma.workoutSession.findFirst({
+      where: { id, studentId: student.id },
+    })
+    if (!session) return NextResponse.json({ error: "Sessão não encontrada" }, { status: 404 })
+
+    // Delete associated sets first, then session
+    await prisma.sessionSet.deleteMany({ where: { sessionId: id } })
+    await prisma.workoutSession.delete({ where: { id } })
+
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Erro interno"
+    const status = message === "Unauthorized" ? 401 : message === "Forbidden" ? 403 : 500
+    return NextResponse.json({ error: message }, { status })
+  }
+}
