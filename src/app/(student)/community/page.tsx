@@ -157,7 +157,9 @@ export default function CommunityPage() {
   const [viewingStory, setViewingStory] = useState<{ group: StoryGroup; index: number } | null>(null)
   const [showStoryCreate, setShowStoryCreate] = useState(false)
   const [storyPreview, setStoryPreview] = useState<string | null>(null)
+  const [storyFile, setStoryFile] = useState<File | null>(null)
   const [storyUploading, setStoryUploading] = useState(false)
+  const [storyProgress, setStoryProgress] = useState("")
 
   const fetchStories = useCallback(async () => {
     try {
@@ -550,22 +552,22 @@ export default function CommunityPage() {
             </div>
 
             {/* Story media (image or video) */}
-            {viewingStory.group.stories[viewingStory.index].imageUrl.startsWith("data:video/") ? (
-              <video
-                src={viewingStory.group.stories[viewingStory.index].imageUrl}
-                className="w-full h-full object-contain"
-                autoPlay
-                playsInline
-                muted={false}
-                loop
-              />
-            ) : (
-              <img
-                src={viewingStory.group.stories[viewingStory.index].imageUrl}
-                alt=""
-                className="w-full h-full object-contain"
-              />
-            )}
+            {(() => {
+              const url = viewingStory.group.stories[viewingStory.index].imageUrl
+              const isVideo = url.startsWith("data:video/") || /\.(mp4|mov|webm|quicktime)/i.test(url)
+              return isVideo ? (
+                <video
+                  key={url}
+                  src={url}
+                  className="w-full h-full object-contain"
+                  autoPlay
+                  playsInline
+                  loop
+                />
+              ) : (
+                <img src={url} alt="" className="w-full h-full object-contain" />
+              )
+            })()}
 
             {/* Caption */}
             {viewingStory.group.stories[viewingStory.index].caption && (
@@ -619,7 +621,7 @@ export default function CommunityPage() {
 
             {!storyPreview ? (
               <>
-                <p className="text-xs text-neutral-500">Escolha uma foto ou vídeo curto para compartilhar por 24h</p>
+                <p className="text-xs text-neutral-500">Escolha uma foto ou vídeo para compartilhar por 24h</p>
                 <div className="flex gap-2">
                   <label className="flex-1 flex items-center justify-center gap-2 py-4 rounded-xl bg-red-600 text-white text-sm font-semibold cursor-pointer active:scale-95 transition-transform">
                     <Camera className="w-5 h-5" />
@@ -631,10 +633,8 @@ export default function CommunityPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (!file) return
-                        if (file.size > 5 * 1024 * 1024) { alert("Máximo 5MB"); return }
-                        const reader = new FileReader()
-                        reader.onload = () => setStoryPreview(reader.result as string)
-                        reader.readAsDataURL(file)
+                        setStoryFile(file)
+                        setStoryPreview(URL.createObjectURL(file))
                       }}
                     />
                   </label>
@@ -648,10 +648,9 @@ export default function CommunityPage() {
                       onChange={(e) => {
                         const file = e.target.files?.[0]
                         if (!file) return
-                        if (file.size > 4 * 1024 * 1024) { alert("Vídeo muito grande. Máximo 4MB (~10s)"); return }
-                        const reader = new FileReader()
-                        reader.onload = () => setStoryPreview(reader.result as string)
-                        reader.readAsDataURL(file)
+                        if (file.size > 100 * 1024 * 1024) { alert("Máximo 100MB"); return }
+                        setStoryFile(file)
+                        setStoryPreview(URL.createObjectURL(file))
                       }}
                     />
                   </label>
@@ -660,29 +659,51 @@ export default function CommunityPage() {
             ) : (
               <>
                 <div className="relative rounded-xl overflow-hidden border border-white/[0.08]">
-                  {storyPreview.startsWith("data:video/") ? (
+                  {storyFile?.type.startsWith("video/") ? (
                     <video src={storyPreview} className="w-full max-h-[40dvh] object-cover" autoPlay muted loop playsInline />
                   ) : (
                     <img src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-cover" />
                   )}
                   <button
-                    onClick={() => setStoryPreview(null)}
+                    onClick={() => { setStoryPreview(null); setStoryFile(null); setStoryProgress("") }}
                     className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center"
                   >
                     <X className="w-4 h-4 text-white" />
                   </button>
                 </div>
+                {storyFile && (
+                  <p className="text-[10px] text-neutral-600 text-center">
+                    {storyFile.type.startsWith("video/") ? "🎬" : "📷"} {(storyFile.size / 1024 / 1024).toFixed(1)}MB
+                  </p>
+                )}
                 <button
                   onClick={async () => {
-                    if (!storyPreview || storyUploading) return
+                    if (!storyFile || storyUploading) return
                     setStoryUploading(true)
+                    setStoryProgress("Enviando...")
                     try {
+                      // Upload to Vercel Blob (direct from client, no size limit)
+                      const { upload } = await import("@vercel/blob/client")
+                      const blob = await upload(
+                        `stories/${Date.now()}-${storyFile.name}`,
+                        storyFile,
+                        { access: "public", handleUploadUrl: "/api/upload" }
+                      )
+                      setStoryProgress("Publicando...")
                       const res = await fetch("/api/community/stories", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ imageUrl: storyPreview }),
+                        body: JSON.stringify({ imageUrl: blob.url }),
                       })
-                      if (res.ok) { setShowStoryCreate(false); setStoryPreview(null); fetchStories() }
+                      if (res.ok) {
+                        setShowStoryCreate(false)
+                        setStoryPreview(null)
+                        setStoryFile(null)
+                        setStoryProgress("")
+                        fetchStories()
+                      }
+                    } catch {
+                      setStoryProgress("Erro no upload. Tente novamente.")
                     } finally {
                       setStoryUploading(false)
                     }
@@ -691,7 +712,10 @@ export default function CommunityPage() {
                   className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-bold shadow-lg shadow-red-600/20 disabled:opacity-50 active:scale-[0.98] transition-all min-h-[48px] flex items-center justify-center gap-2"
                 >
                   {storyUploading ? (
-                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin" />
+                      <span className="text-xs">{storyProgress}</span>
+                    </>
                   ) : (
                     <>
                       <Send className="w-4 h-4" />
