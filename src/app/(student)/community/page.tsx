@@ -8,7 +8,7 @@ import {
   Trophy, Flame, Target, Users, Medal,
   HandMetal, Zap, Crown, ChevronRight,
   Calendar, TrendingUp, Award, Lock,
-  Heart, MessageCircle, Send, Camera, Play,
+  Heart, MessageCircle, Send, Camera, Play, Share2, Bookmark,
   Image as ImageIcon, X, Plus, Loader2,
   UserPlus, User, Mail, Search, RefreshCw, Check,
 } from "lucide-react"
@@ -1200,13 +1200,13 @@ function FeedCard({
         </div>
       </div>
 
-      {/* Media — photo or video, double-tap heart */}
+      {/* Media — photo or video, edge-to-edge, double-tap heart */}
       {post.imageUrl && (() => {
         const url = post.imageUrl!
         const isPostVideo = /\.(mp4|mov|webm|quicktime)/i.test(url) || url.includes("video")
         return (
           <div
-            className="relative w-full bg-neutral-900"
+            className="relative w-full bg-neutral-900 -mx-0"
             onDoubleClick={() => {
               if (!post.isLiked) onLike()
               setShowHeartAnim(true)
@@ -1261,9 +1261,31 @@ function FeedCard({
           >
             <MessageCircle className="w-5.5 h-5.5 text-neutral-400 hover:text-white transition-colors" />
           </button>
+          <button
+            onClick={async () => {
+              if (navigator.share) {
+                try {
+                  await navigator.share({
+                    title: `${post.studentName} na Ironberg Family`,
+                    text: post.content?.slice(0, 100) || "Confira este post!",
+                    url: window.location.href,
+                  })
+                } catch {}
+              } else {
+                await navigator.clipboard.writeText(window.location.href)
+                alert("Link copiado!")
+              }
+            }}
+            className="flex items-center gap-1.5"
+          >
+            <Share2 className="w-5 h-5 text-neutral-400 hover:text-white transition-colors" />
+          </button>
+          <button className="ml-auto">
+            <Bookmark className="w-5 h-5 text-neutral-400 hover:text-white transition-colors" />
+          </button>
           {/* Emoji reactions for non-user-posts */}
           {!isUserPost && (
-            <div className="flex gap-1.5 ml-auto">
+            <div className="flex gap-1.5">
               {(Object.keys(REACTION_ICONS) as Array<keyof typeof REACTION_ICONS>).map((type) => {
                 const count = post.reactionCounts[type]
                 const isActive = post.userReactions.includes(type)
