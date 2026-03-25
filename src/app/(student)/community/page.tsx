@@ -52,7 +52,7 @@ type FeedPost = {
   likesCount: number
   commentsCount: number
   isLiked: boolean
-  likedByNames?: string[]
+  likedBy?: { name: string; avatar: string | null }[]
   comments: FeedComment[]
   createdAt: string
 }
@@ -201,15 +201,26 @@ export default function CommunityPage() {
         setMyBio(data.student?.bio ?? null)
         setMyProfession(data.student?.profession ?? null)
       }
-      // Fetch suggested users to follow
+      // Fetch suggested users: ranking (month + all-time) for wider pool
       try {
-        const sugRes = await fetch("/api/community/ranking?period=month")
-        if (sugRes.ok) {
-          const sugData = await sugRes.json()
-          setSuggestedUsers((sugData.ranking || []).slice(0, 5).map((u: { studentId: string; name: string; avatar?: string | null; totalSessions?: number }) => ({
-            studentId: u.studentId, name: u.name, avatar: u.avatar || null, sessions: u.totalSessions || 0
-          })))
+        const [sugRes1, sugRes2] = await Promise.all([
+          fetch("/api/community/ranking?period=month"),
+          fetch("/api/community/ranking?period=all"),
+        ])
+        const allSuggested = new Map<string, { studentId: string; name: string; avatar: string | null; sessions: number }>()
+        for (const sugRes of [sugRes1, sugRes2]) {
+          if (sugRes.ok) {
+            const sugData = await sugRes.json()
+            for (const u of (sugData.ranking || []).slice(0, 10)) {
+              if (!allSuggested.has(u.studentId)) {
+                allSuggested.set(u.studentId, {
+                  studentId: u.studentId, name: u.name, avatar: u.avatar || null, sessions: u.totalSessions || 0
+                })
+              }
+            }
+          }
         }
+        setSuggestedUsers([...allSuggested.values()])
       } catch { /* ignore */ }
     } catch { /* ignore */ }
   }, [])
@@ -1263,35 +1274,49 @@ function FeedCard({
           )}
         </div>
 
-        {/* Likes count — social proof */}
+        {/* Likes — Instagram social proof with stacked avatars */}
         {post.likesCount > 0 && (
-          <p className="text-xs text-neutral-300 mt-2">
-            {post.isLiked && post.likesCount === 1 ? (
-              <span className="font-semibold text-white">Você curtiu</span>
-            ) : post.isLiked && post.likesCount > 1 ? (
-              <>
-                Curtido por <span className="font-semibold text-white">você</span> e{" "}
-                <span className="font-semibold text-white">
-                  {post.likesCount - 1 === 1
-                    ? (post.likedByNames?.[0] || "outra pessoa")
-                    : `mais ${post.likesCount - 1}`}
-                </span>
-              </>
-            ) : post.likedByNames && post.likedByNames.length > 0 ? (
-              <>
-                Curtido por <span className="font-semibold text-white">{post.likedByNames[0]}</span>
-                {post.likesCount > 1 && (
-                  <> e <span className="font-semibold text-white">
-                    {post.likesCount - 1 === 1
-                      ? (post.likedByNames[1] || "outra pessoa")
-                      : `mais ${post.likesCount - 1}`}
-                  </span></>
-                )}
-              </>
-            ) : (
-              <span className="font-semibold text-white">{post.likesCount} curtida{post.likesCount > 1 ? "s" : ""}</span>
+          <div className="flex items-center gap-2 mt-2">
+            {/* Stacked avatar circles */}
+            {post.likedBy && post.likedBy.length > 0 && (
+              <div className="flex -space-x-2">
+                {post.likedBy.slice(0, 3).map((liker, i) => (
+                  <div key={i} className="w-5 h-5 rounded-full border-2 border-black bg-gradient-to-br from-red-600/40 to-red-900/40 flex items-center justify-center overflow-hidden">
+                    {liker.avatar ? (
+                      <img src={liker.avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[7px] text-red-300 font-bold">{liker.name[0]}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
-          </p>
+            <p className="text-xs text-neutral-300">
+              {post.isLiked && post.likesCount === 1 ? (
+                <span className="font-semibold text-white">Você curtiu</span>
+              ) : post.isLiked ? (
+                <>
+                  Curtido por <span className="font-semibold text-white">você</span>
+                  {post.likesCount > 1 && <> e <span className="font-semibold text-white">
+                    {post.likedBy?.[0]?.name
+                      ? (post.likesCount === 2 ? post.likedBy[0].name : `mais ${post.likesCount - 1}`)
+                      : `mais ${post.likesCount - 1}`}
+                  </span></>}
+                </>
+              ) : post.likedBy && post.likedBy.length > 0 ? (
+                <>
+                  Curtido por <span className="font-semibold text-white">{post.likedBy[0].name}</span>
+                  {post.likesCount > 1 && <> e <span className="font-semibold text-white">
+                    {post.likesCount === 2
+                      ? (post.likedBy[1]?.name || "outra pessoa")
+                      : `mais ${post.likesCount - 1}`}
+                  </span></>}
+                </>
+              ) : (
+                <span className="font-semibold text-white">{post.likesCount} curtida{post.likesCount > 1 ? "s" : ""}</span>
+              )}
+            </p>
+          </div>
         )}
 
         {/* Caption */}

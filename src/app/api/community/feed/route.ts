@@ -116,20 +116,20 @@ export async function GET(req: NextRequest) {
       select: { id: true },
     }) : null
 
-    // Collect liker names for social proof
+    // Collect liker info for social proof (name + avatar)
     const likerStudentIds = new Set<string>()
     for (const post of items) {
       for (const like of post.likes) {
         if (like.studentId !== currentStudentId) likerStudentIds.add(like.studentId)
       }
     }
-    const likerNames = new Map<string, string>()
+    const likerInfo = new Map<string, { name: string; avatar: string | null }>()
     if (likerStudentIds.size > 0) {
       const likers = await prisma.student.findMany({
         where: { id: { in: [...likerStudentIds] } },
-        select: { id: true, user: { select: { name: true } } },
+        select: { id: true, user: { select: { name: true, avatar: true } } },
       })
-      for (const l of likers) likerNames.set(l.id, l.user.name.split(" ")[0])
+      for (const l of likers) likerInfo.set(l.id, { name: l.user.name.split(" ")[0], avatar: l.user.avatar })
     }
 
     const feed = items.map((post) => {
@@ -142,11 +142,11 @@ export async function GET(req: NextRequest) {
 
       const isAdminPost = !post.studentId
 
-      // Social proof: "Fulano, Ciclano e mais X curtiram"
-      const likedByNames = post.likes
+      // Social proof: likers with name + avatar (Instagram style)
+      const likedBy = post.likes
         .filter((l) => l.studentId !== currentStudentId)
-        .slice(0, 2)
-        .map((l) => likerNames.get(l.studentId) || "Alguém")
+        .slice(0, 3)
+        .map((l) => likerInfo.get(l.studentId) || { name: "Alguém", avatar: null })
 
       return {
         id: post.id,
@@ -162,7 +162,7 @@ export async function GET(req: NextRequest) {
         likesCount: post._count.likes,
         commentsCount: post._count.comments,
         isLiked: post.likes.some((l) => l.studentId === currentStudentId),
-        likedByNames,
+        likedBy,
         comments: post.comments.map((c) => ({
           id: c.id,
           content: c.content,
