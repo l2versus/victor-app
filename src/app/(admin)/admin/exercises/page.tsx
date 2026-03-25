@@ -10,7 +10,6 @@ export default async function ExercisesPage() {
   const [exercises, total] = await Promise.all([
     prisma.exercise.findMany({
       orderBy: [{ muscle: "asc" }, { name: "asc" }],
-      take: 50,
     }),
     prisma.exercise.count(),
   ])

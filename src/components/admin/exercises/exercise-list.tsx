@@ -53,20 +53,18 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
   const [editMedia, setEditMedia] = useState({ name: "", instructions: "", machine3dModel: "", gifUrl: "", videoUrl: "", imageUrl: "", machineBrand: "" })
   const [savingMedia, setSavingMedia] = useState(false)
 
-  const fetchExercises = useCallback(async (s: string, m: string, p: number) => {
+  const fetchExercises = useCallback(async (s: string, m: string) => {
     setLoading(true)
     try {
       const params = new URLSearchParams()
       if (s) params.set("search", s)
       if (m) params.set("muscle", m)
-      params.set("page", String(p))
-      params.set("limit", "50")
+      params.set("limit", "9999")
 
       const res = await fetch(`/api/admin/exercises?${params}`)
       const data: ExerciseData = await res.json()
       setExercises(data.exercises)
       setTotal(data.total)
-      setPages(data.pages)
       if (data.muscles.length > 0) setMuscles(data.muscles)
     } catch {
       console.error("Failed to fetch exercises")
@@ -78,8 +76,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
   // Debounced search
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPage(1)
-      fetchExercises(search, muscle, 1)
+      fetchExercises(search, muscle)
     }, 300)
     return () => clearTimeout(timer)
   }, [search, muscle, fetchExercises])
@@ -105,7 +102,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
     })
     if (res.ok) {
       setShowForm(false)
-      fetchExercises(search, muscle, page)
+      fetchExercises(search, muscle)
     }
   }
 
@@ -296,30 +293,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
         </div>
       )}
 
-      {/* Pagination */}
-      {pages > 1 && (
-        <div className="flex items-center justify-center gap-2 mt-8">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setPage(page - 1); fetchExercises(search, muscle, page - 1) }}
-            disabled={page <= 1}
-          >
-            Anterior
-          </Button>
-          <span className="text-neutral-500 text-sm px-3">
-            {page} / {pages}
-          </span>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => { setPage(page + 1); fetchExercises(search, muscle, page + 1) }}
-            disabled={page >= pages}
-          >
-            Próximo
-          </Button>
-        </div>
-      )}
+      {/* All exercises loaded — no pagination needed */}
 
       {/* Exercise Detail / Edit Media Modal */}
       {selectedExercise && (
