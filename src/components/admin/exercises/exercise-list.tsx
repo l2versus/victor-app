@@ -127,12 +127,25 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
     setExpandedGroups(new Set())
   }
 
-  // Group exercises by muscle
-  const grouped = exercises.reduce<Record<string, Exercise[]>>((acc, ex) => {
-    if (!acc[ex.muscle]) acc[ex.muscle] = []
-    acc[ex.muscle].push(ex)
+  // Group exercises by muscle → equipment (two-level)
+  const grouped = exercises.reduce<Record<string, Record<string, Exercise[]>>>((acc, ex) => {
+    if (!acc[ex.muscle]) acc[ex.muscle] = {}
+    if (!acc[ex.muscle][ex.equipment]) acc[ex.muscle][ex.equipment] = []
+    acc[ex.muscle][ex.equipment].push(ex)
     return acc
   }, {})
+
+  const equipIcons: Record<string, string> = {
+    Barbell: "🏋️", Dumbbell: "💪", Cable: "🔗", Machine: "⚙️",
+    Bodyweight: "🤸", Kettlebell: "🔔", Band: "🎗️", Other: "📦",
+    Barra: "🏋️", Halter: "💪", Cabo: "🔗", "Máquina": "⚙️",
+    "Peso Corporal": "🤸", "Elástico": "🎗️", Outro: "📦",
+  }
+  const equipOrder = ["Barbell", "Barra", "Dumbbell", "Halter", "Machine", "Máquina", "Cable", "Cabo", "Bodyweight", "Peso Corporal", "Kettlebell", "Band", "Elástico", "Other", "Outro"]
+  const sortEquip = (a: string, b: string) => {
+    const ia = equipOrder.indexOf(a); const ib = equipOrder.indexOf(b)
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
+  }
 
   const allExpanded = Object.keys(grouped).length > 0 && expandedGroups.size === Object.keys(grouped).length
 
@@ -215,8 +228,9 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
         <div className="space-y-2">
           {Object.entries(grouped)
             .sort(([a], [b]) => a.localeCompare(b))
-            .map(([muscleGroup, exs]) => {
+            .map(([muscleGroup, byEquip]) => {
               const isExpanded = expandedGroups.has(muscleGroup)
+              const totalInGroup = Object.values(byEquip).reduce((s, arr) => s + arr.length, 0)
               return (
                 <div
                   key={muscleGroup}
@@ -237,7 +251,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                       {muscleGroup}
                     </span>
                     <span className="text-neutral-600 text-xs tabular-nums">
-                      {exs.length} exercício{exs.length !== 1 ? "s" : ""}
+                      {totalInGroup} exercício{totalInGroup !== 1 ? "s" : ""}
                     </span>
                   </button>
 
@@ -249,6 +263,13 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                   >
                     <div className="overflow-hidden">
                       <div className="px-4 pb-3 pt-1 border-t border-neutral-800/50">
+                        {Object.entries(byEquip).sort(([a], [b]) => sortEquip(a, b)).map(([equip, exs]) => (
+                        <div key={`${muscleGroup}-${equip}`} className="mb-2 last:mb-0">
+                          <div className="flex items-center gap-1.5 py-1.5 px-1">
+                            <span className="text-xs">{equipIcons[equip] || "📦"}</span>
+                            <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">{equip}</span>
+                            <span className="text-[9px] text-neutral-700">({exs.length})</span>
+                          </div>
                         <div className="space-y-1">
                           {exs.map((ex) => (
                             <button
@@ -284,6 +305,8 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                             </button>
                           ))}
                         </div>
+                        </div>
+                        ))}
                       </div>
                     </div>
                   </div>

@@ -600,11 +600,15 @@ function ExercisePickerMulti({ onConfirm, onClose, excludeIds }: {
     setSelected((prev) => prev.find((e) => e.id === ex.id) ? prev.filter((e) => e.id !== ex.id) : [...prev, ex])
   }
 
-  const grouped = exercises.reduce<Record<string, Exercise[]>>((acc, ex) => {
-    if (!acc[ex.muscle]) acc[ex.muscle] = []
-    acc[ex.muscle].push(ex)
+  // Group by muscle → equipment (two-level)
+  const grouped = exercises.reduce<Record<string, Record<string, Exercise[]>>>((acc, ex) => {
+    if (!acc[ex.muscle]) acc[ex.muscle] = {}
+    if (!acc[ex.muscle][ex.equipment]) acc[ex.muscle][ex.equipment] = []
+    acc[ex.muscle][ex.equipment].push(ex)
     return acc
   }, {})
+  const eqIcons: Record<string, string> = { Barbell: "🏋️", Dumbbell: "💪", Cable: "🔗", Machine: "⚙️", Bodyweight: "🤸", Kettlebell: "🔔", Band: "🎗️", Other: "📦", Barra: "🏋️", Halter: "💪", Cabo: "🔗", "Máquina": "⚙️", "Peso Corporal": "🤸", "Elástico": "🎗️", Outro: "📦" }
+  const eqOrder = ["Barbell", "Barra", "Dumbbell", "Halter", "Machine", "Máquina", "Cable", "Cabo", "Bodyweight", "Peso Corporal", "Kettlebell", "Band", "Elástico", "Other", "Outro"]
 
   return (
     <Modal title="Adicionar Exercícios" onClose={onClose} className="mx-4 sm:mx-auto max-h-[90vh]">
@@ -643,9 +647,16 @@ function ExercisePickerMulti({ onConfirm, onClose, excludeIds }: {
           ) : exercises.length === 0 ? (
             <p className="text-neutral-500 text-sm text-center py-8">Nenhum exercício encontrado</p>
           ) : (
-            Object.entries(grouped).map(([muscleGroup, exs]) => (
+            Object.entries(grouped).map(([muscleGroup, byEquip]) => (
               <div key={muscleGroup}>
                 <div className="px-3 py-1.5"><span className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium">{muscleGroup}</span></div>
+                {Object.entries(byEquip).sort(([a], [b]) => { const ia = eqOrder.indexOf(a); const ib = eqOrder.indexOf(b); return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib) }).map(([equip, exs]) => (
+                  <div key={`${muscleGroup}-${equip}`}>
+                    <div className="flex items-center gap-1.5 px-4 py-1 mt-1">
+                      <span className="text-[10px]">{eqIcons[equip] || "📦"}</span>
+                      <span className="text-[9px] font-semibold text-neutral-500 uppercase tracking-wider">{equip}</span>
+                      <span className="text-[8px] text-neutral-700">({exs.length})</span>
+                    </div>
                 {exs.map((ex) => {
                   const checked = selected.some((e) => e.id === ex.id)
                   return (
@@ -658,11 +669,12 @@ function ExercisePickerMulti({ onConfirm, onClose, excludeIds }: {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-xs sm:text-sm truncate">{ex.name}</p>
-                        <p className="text-neutral-600 text-[10px]">{ex.equipment}</p>
                       </div>
                     </button>
                   )
                 })}
+                  </div>
+                ))}
               </div>
             ))
           )}
