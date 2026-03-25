@@ -322,7 +322,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
       {selectedExercise && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" onClick={() => setSelectedExercise(null)}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
-          <div className="relative w-full max-w-lg rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+          <div className="relative w-full max-w-lg max-h-[85dvh] rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-y-auto overscroll-contain pb-safe" onClick={e => e.stopPropagation()}>
             <button onClick={() => setSelectedExercise(null)} className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full bg-white/[0.05] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.1] transition-all">
               <X className="w-4 h-4" />
             </button>
@@ -339,7 +339,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
               )}
             </div>
 
-            <div className="p-6">
+            <div className="p-6 pb-10">
               <h3 className="text-lg font-bold text-white mb-1">{selectedExercise.name}</h3>
               <div className="flex items-center gap-2 mb-4">
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/15">{selectedExercise.muscle}</span>

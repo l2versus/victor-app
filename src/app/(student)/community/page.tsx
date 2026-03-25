@@ -128,6 +128,9 @@ export default function CommunityPage() {
   const [period, setPeriod] = useState<"week" | "month" | "all">("month")
   const [ranking, setRanking] = useState<RankedStudent[]>([])
   const [feed, setFeed] = useState<FeedPost[]>([])
+  const [feedCursor, setFeedCursor] = useState<string | null>(null)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const feedEndRef = useRef<HTMLDivElement>(null)
   const [challenges, setChallenges] = useState<ChallengeItem[]>([])
   const [loading, setLoading] = useState(true)
   const [features, setFeatures] = useState<{ hasVipGroup: boolean; planName: string | null }>({ hasVipGroup: false, planName: null })
@@ -237,18 +240,42 @@ export default function CommunityPage() {
     setLoading(false)
   }, [period])
 
-  const fetchFeed = useCallback(async () => {
-    setLoading(true)
+  const fetchFeed = useCallback(async (cursor?: string | null) => {
+    if (cursor) setLoadingMore(true)
+    else setLoading(true)
     try {
-      const res = await fetch("/api/community/feed")
+      const url = cursor ? `/api/community/feed?cursor=${cursor}&limit=10` : "/api/community/feed?limit=10"
+      const res = await fetch(url)
       if (res.ok) {
         const data = await res.json()
-        setFeed(data.feed || [])
+        if (cursor) {
+          setFeed(prev => [...prev, ...(data.feed || [])])
+        } else {
+          setFeed(data.feed || [])
+        }
+        setFeedCursor(data.nextCursor || null)
         setFeedHasFollows(data.hasFollows ?? false)
       }
     } catch { /* ignore */ }
     setLoading(false)
+    setLoadingMore(false)
   }, [])
+
+  // Infinite scroll — load more when reaching bottom
+  useEffect(() => {
+    if (tab !== "feed" || !feedCursor) return
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && feedCursor && !loadingMore) {
+          fetchFeed(feedCursor)
+        }
+      },
+      { threshold: 0.1 }
+    )
+    const el = feedEndRef.current
+    if (el) observer.observe(el)
+    return () => { if (el) observer.unobserve(el) }
+  }, [tab, feedCursor, loadingMore, fetchFeed])
 
   const fetchChallenges = useCallback(async () => {
     setLoading(true)
@@ -363,6 +390,8 @@ export default function CommunityPage() {
   }, [tab, fetchFeed, fetchStories])
 
   async function toggleLike(postId: string) {
+    // Haptic feedback (mobile)
+    try { navigator.vibrate?.(15) } catch {}
     // Optimistic update
     setFeed(prev => prev.map(p =>
       p.id === postId
@@ -890,8 +919,30 @@ export default function CommunityPage() {
             )}
 
             {loading && !refreshing ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+              /* Skeleton shimmer — Instagram-style placeholder */
+              <div className="space-y-4">
+                {[1, 2, 3].map(i => (
+                  <div key={i} className="animate-pulse">
+                    <div className="flex items-center gap-3 px-1 py-2.5">
+                      <div className="w-9 h-9 rounded-full bg-white/[0.06]" />
+                      <div className="flex-1 space-y-1.5">
+                        <div className="h-3 w-24 rounded bg-white/[0.06]" />
+                        <div className="h-2 w-16 rounded bg-white/[0.04]" />
+                      </div>
+                    </div>
+                    <div className="w-full aspect-[4/3] bg-white/[0.04] rounded-lg" />
+                    <div className="px-3.5 pt-3 space-y-2">
+                      <div className="flex gap-3">
+                        <div className="w-6 h-6 rounded-full bg-white/[0.06]" />
+                        <div className="w-6 h-6 rounded-full bg-white/[0.06]" />
+                        <div className="w-6 h-6 rounded-full bg-white/[0.06]" />
+                      </div>
+                      <div className="h-3 w-32 rounded bg-white/[0.06]" />
+                      <div className="h-2.5 w-full rounded bg-white/[0.04]" />
+                      <div className="h-2.5 w-3/4 rounded bg-white/[0.04]" />
+                    </div>
+                  </div>
+                ))}
               </div>
             ) : feed.length === 0 ? (
               <div className="text-center py-16">
@@ -900,18 +951,36 @@ export default function CommunityPage() {
                 <p className="text-neutral-600 text-xs mt-1">Seja o primeiro a compartilhar!</p>
               </div>
             ) : (
-              feed.map((post) => (
-                <FeedCard
-                  key={post.id}
-                  post={post}
-                  onLike={() => toggleLike(post.id)}
-                  onReaction={(type) => toggleReaction(post.id, type)}
-                  onCommentAdded={fetchFeed}
-                  isFollowing={!!post.studentId && followingIds.has(post.studentId)}
-                  isMe={post.studentId === myStudentId}
-                  onFollow={() => post.studentId && handleFollow(post.studentId)}
-                />
-              ))
+              <>
+                {feed.map((post) => (
+                  <FeedCard
+                    key={post.id}
+                    post={post}
+                    onLike={() => toggleLike(post.id)}
+                    onReaction={(type) => toggleReaction(post.id, type)}
+                    onCommentAdded={() => fetchFeed()}
+                    isFollowing={!!post.studentId && followingIds.has(post.studentId)}
+                    isMe={post.studentId === myStudentId}
+                    onFollow={() => post.studentId && handleFollow(post.studentId)}
+                  />
+                ))}
+                {/* Infinite scroll sentinel */}
+                {feedCursor && (
+                  <div ref={feedEndRef} className="flex items-center justify-center py-6">
+                    {loadingMore ? (
+                      <div className="w-5 h-5 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <div className="h-1" /> /* invisible trigger */
+                    )}
+                  </div>
+                )}
+                {!feedCursor && feed.length >= 5 && (
+                  <div className="text-center py-8">
+                    <p className="text-[11px] text-neutral-600">Você viu tudo por enquanto</p>
+                    <p className="text-[10px] text-neutral-700 mt-0.5">Puxe para baixo para atualizar</p>
+                  </div>
+                )}
+              </>
             )}
           </motion.div>
         )}
