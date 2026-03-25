@@ -227,6 +227,55 @@ Sets completados: ${currentWorkout.sets.length}`
 
     const planName = student.subscriptions[0]?.plan?.name || "Sem plano"
 
+    // ─── Energy balance: TDEE + deficit/surplus calculation ─────────────
+    let energyContext = ""
+    if (student.weight && student.height && age && student.gender) {
+      // Mifflin-St Jeor BMR
+      const bmr = student.gender === "MALE"
+        ? 10 * student.weight + 6.25 * student.height - 5 * age + 5
+        : 10 * student.weight + 6.25 * student.height - 5 * age - 161
+
+      // Activity factor from weekly sessions
+      const weeklySessionsCount = recentSessions.filter(s => {
+        const d = s.completedAt ? (now.getTime() - s.completedAt.getTime()) / 86400000 : 999
+        return d <= 7
+      }).length
+      const activityFactor = weeklySessionsCount >= 5 ? 1.725
+        : weeklySessionsCount >= 3 ? 1.55
+        : weeklySessionsCount >= 1 ? 1.375
+        : 1.2
+      const tdee = Math.round(bmr * activityFactor)
+
+      // Workout calories estimate (MET-based)
+      const avgSessionCal = avgDuration
+        ? Math.round(avgDuration * (student.weight || 70) * 0.08) // ~MET 5 resistance training
+        : 0
+
+      // Caloric balance vs nutrition
+      const avgCalIntake = recentNutrition.length > 0
+        ? Math.round(recentNutrition.reduce((s, n) => s + (n.totalCalories || 0), 0) / recentNutrition.length)
+        : 0
+      const balance = avgCalIntake > 0 ? avgCalIntake - tdee : 0
+      const balanceStatus = balance > 200 ? "SUPERÁVIT" : balance < -200 ? "DÉFICIT" : "MANUTENÇÃO"
+
+      // Goal alignment
+      const goal = (student.goals || "").toLowerCase()
+      const wantsLoss = goal.includes("emagrec") || goal.includes("perder") || goal.includes("definir") || goal.includes("secar")
+      const wantsGain = goal.includes("massa") || goal.includes("ganhar") || goal.includes("hipertrofia") || goal.includes("bulk")
+      let alignment = "OK"
+      if (wantsLoss && balance > 0) alignment = "DESALINHADO — quer perder peso mas está em superávit"
+      if (wantsGain && balance < -200) alignment = "DESALINHADO — quer ganhar massa mas está em déficit"
+
+      energyContext = `\nBALANÇO ENERGÉTICO:
+TMB (Mifflin-St Jeor): ${Math.round(bmr)}kcal
+TDEE estimado: ${tdee}kcal (fator ${activityFactor}x, ${weeklySessionsCount} treinos/semana)
+Gasto por treino (estimado): ~${avgSessionCal}kcal
+${avgCalIntake > 0 ? `Ingestão média (7 dias): ${avgCalIntake}kcal` : "Ingestão calórica: não registrada"}
+${avgCalIntake > 0 ? `Balanço: ${balance > 0 ? "+" : ""}${balance}kcal/dia → ${balanceStatus}` : ""}
+${avgCalIntake > 0 && alignment !== "OK" ? `⚠️ ${alignment}` : ""}
+Proteína ideal: ${Math.round(student.weight * 1.8)}-${Math.round(student.weight * 2.2)}g/dia`
+    }
+
     // ─── RAG: Search knowledge base for relevant context ────────────────
     let ragContext = ""
     try {
@@ -274,6 +323,7 @@ RECORDES PESSOAIS (30 dias):
 ${prsContext}
 
 ${nutritionContext ? `NUTRICAO:\n${nutritionContext}` : ""}
+${energyContext}
 ${bodyContext ? `BODY SCAN:\n${bodyContext}` : ""}
 ${workoutContext}
 
