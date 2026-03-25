@@ -129,9 +129,18 @@ export function WorkoutPlayer({
   isScheduledToday = true,
   viewingDayName,
 }: WorkoutPlayerProps) {
-  const [phase, setPhase] = useState<Phase>(
-    completedToday ? "done" : activeSession ? "active" : "preview"
-  )
+  const [phase, setPhase] = useState<Phase>(() => {
+    if (completedToday) return "done"
+    if (activeSession) {
+      // Check if workout was paused before navigation
+      try {
+        const paused = sessionStorage.getItem(`workout_paused_${activeSession.id}`)
+        if (paused === "true") return "preview" // Stay paused on remount
+      } catch {}
+      return "active"
+    }
+    return "preview"
+  })
   const [videoModal, setVideoModal] = useState<{ url: string; name: string } | null>(null)
   const [exerciseDetail, setExerciseDetail] = useState<ExerciseData | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(activeSession?.id || null)
@@ -151,24 +160,51 @@ export function WorkoutPlayer({
   )
   const [rpe, setRpe] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [elapsed, setElapsed] = useState(0)
+  const [elapsed, setElapsed] = useState(() => {
+    if (typeof window === "undefined" || !activeSession) return 0
+    try {
+      const saved = sessionStorage.getItem(`workout_elapsed_${activeSession.id}`)
+      return saved ? parseInt(saved, 10) || 0 : 0
+    } catch { return 0 }
+  })
   const [nextExName, setNextExName] = useState("")
   const startTimeRef = useRef<Date | null>(
-    activeSession ? new Date(activeSession.startedAt) : null
+    (() => {
+      if (!activeSession) return null
+      if (typeof window !== "undefined") {
+        try {
+          if (sessionStorage.getItem(`workout_paused_${activeSession.id}`) === "true") return null
+        } catch {}
+      }
+      return new Date(activeSession.startedAt)
+    })()
   )
   const timerRef = useRef<NodeJS.Timeout>(null)
-  const pausedElapsedRef = useRef(0) // accumulated seconds before pauses
+  const pausedElapsedRef = useRef(
+    (() => {
+      if (typeof window === "undefined" || !activeSession) return 0
+      try {
+        const saved = sessionStorage.getItem(`workout_elapsed_${activeSession.id}`)
+        return saved ? parseInt(saved, 10) || 0 : 0
+      } catch { return 0 }
+    })()
+  )
 
   const totalCompleted = Array.from(completedSets.values()).reduce((sum, arr) => sum + arr.length, 0)
   const progress = totalSets > 0 ? totalCompleted / totalSets : 0
   const currentEx = exercises[currentExIdx] ?? exercises[0]
 
-  // Elapsed timer — only runs during active/rest phases, pauses correctly
+  // Elapsed timer — only runs during active/rest, pauses correctly, persists across navigation
   useEffect(() => {
     if (phase === "active" || phase === "rest") {
-      // If resuming from pause, reset startTime to now
       if (!startTimeRef.current) {
         startTimeRef.current = new Date()
+      }
+      // Clear pause flag in sessionStorage
+      if (sessionId) {
+        try {
+          sessionStorage.removeItem(`workout_paused_${sessionId}`)
+        } catch {}
       }
       timerRef.current = setInterval(() => {
         if (startTimeRef.current) {
@@ -178,14 +214,21 @@ export function WorkoutPlayer({
       }, 1000)
       return () => { if (timerRef.current) clearInterval(timerRef.current) }
     }
-    // When going to preview (pause), save accumulated time and clear startTime
+    // When going to preview (pause), save accumulated time
     if (phase === "preview" && startTimeRef.current) {
       const sinceResume = Math.floor((Date.now() - startTimeRef.current.getTime()) / 1000)
       pausedElapsedRef.current += sinceResume
       startTimeRef.current = null
       if (timerRef.current) clearInterval(timerRef.current)
+      // Persist pause state so navigation doesn't lose it
+      if (sessionId) {
+        try {
+          sessionStorage.setItem(`workout_paused_${sessionId}`, "true")
+          sessionStorage.setItem(`workout_elapsed_${sessionId}`, String(pausedElapsedRef.current))
+        } catch {}
+      }
     }
-  }, [phase])
+  }, [phase, sessionId])
 
   // Rest timer
   const restTimer = useRestTimer(() => {
@@ -372,6 +415,12 @@ export function WorkoutPlayer({
       })
       const data = await res.json()
       setPhase("done")
+
+      // Clean up pause state from sessionStorage
+      try {
+        sessionStorage.removeItem(`workout_paused_${sessionId}`)
+        sessionStorage.removeItem(`workout_elapsed_${sessionId}`)
+      } catch {}
 
       if (data.achievements && data.achievements.length > 0) {
         const ach = data.achievements[0]
