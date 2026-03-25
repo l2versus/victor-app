@@ -35,6 +35,7 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
   const [search, setSearch] = useState("")
   const [selectedMuscle, setSelectedMuscle] = useState<string | null>(null)
   const [expandedExercise, setExpandedExercise] = useState<string | null>(null)
+  const [expandedEquip, setExpandedEquip] = useState<Set<string>>(new Set())
 
   const filtered = exercises.filter(ex => {
     const matchSearch = !search || ex.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -163,19 +164,32 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
               <span className="text-[10px] text-neutral-600">{totalInMuscle}</span>
             </div>
 
-            {/* Equipment sub-groups */}
-            <div className="space-y-3 pl-1">
-              {Object.entries(byEquip).sort(([a], [b]) => sortEquipment(a, b)).map(([equip, exs]) => (
-                <div key={`${muscle}-${equip}`}>
-                  {/* Equipment sub-header */}
-                  <div className="flex items-center gap-1.5 mb-1.5 ml-1">
+            {/* Equipment sub-groups — collapsible */}
+            <div className="space-y-1 pl-1">
+              {Object.entries(byEquip).sort(([a], [b]) => sortEquipment(a, b)).map(([equip, exs]) => {
+                const eqKey = `${muscle}-${equip}`
+                const isEqOpen = expandedEquip.has(eqKey)
+                return (
+                <div key={eqKey}>
+                  {/* Equipment sub-header — clickable accordion */}
+                  <button
+                    onClick={() => setExpandedEquip(prev => {
+                      const next = new Set(prev)
+                      if (next.has(eqKey)) next.delete(eqKey)
+                      else next.add(eqKey)
+                      return next
+                    })}
+                    className="w-full flex items-center gap-1.5 py-2 px-1 rounded-lg active:bg-white/[0.04] transition-colors"
+                  >
+                    <ChevronDown className={`w-3 h-3 text-neutral-600 transition-transform duration-200 ${isEqOpen ? "" : "-rotate-90"}`} />
                     <span className="text-xs">{equipmentIcons[equip] || "📦"}</span>
                     <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">{equip}</span>
                     <span className="text-[9px] text-neutral-600">({exs.length})</span>
-                  </div>
+                  </button>
 
-            {/* Exercise cards */}
-            <div className="space-y-1.5">
+            {/* Exercise cards — collapsible */}
+            {isEqOpen && (
+            <div className="space-y-1.5 pb-2">
               {exs.map(ex => {
                 const isExpanded = expandedExercise === ex.id
                 const has3D = !!find3DModel(ex.name)
@@ -302,8 +316,10 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
                 )
               })}
             </div>
+            )}
                 </div>
-              ))}
+                )
+              })}
             </div>
           </div>
           )

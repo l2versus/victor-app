@@ -49,6 +49,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
+  const [expandedEquip, setExpandedEquip] = useState<Set<string>>(new Set())
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
   const [editMedia, setEditMedia] = useState({ name: "", instructions: "", machine3dModel: "", gifUrl: "", videoUrl: "", imageUrl: "", machineBrand: "" })
   const [savingMedia, setSavingMedia] = useState(false)
@@ -125,6 +126,16 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
 
   function collapseAll() {
     setExpandedGroups(new Set())
+    setExpandedEquip(new Set())
+  }
+
+  function toggleEquipGroup(key: string) {
+    setExpandedEquip(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
   }
 
   // Group exercises by muscle → equipment (two-level)
@@ -263,14 +274,23 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                   >
                     <div className="overflow-hidden">
                       <div className="px-4 pb-3 pt-1 border-t border-neutral-800/50">
-                        {Object.entries(byEquip).sort(([a], [b]) => sortEquip(a, b)).map(([equip, exs]) => (
-                        <div key={`${muscleGroup}-${equip}`} className="mb-2 last:mb-0">
-                          <div className="flex items-center gap-1.5 py-1.5 px-1">
+                        {Object.entries(byEquip).sort(([a], [b]) => sortEquip(a, b)).map(([equip, exs]) => {
+                          const eqKey = `${muscleGroup}-${equip}`
+                          const isEquipOpen = expandedEquip.has(eqKey)
+                          return (
+                        <div key={eqKey} className="mb-1 last:mb-0">
+                          <button
+                            onClick={() => toggleEquipGroup(eqKey)}
+                            className="w-full flex items-center gap-1.5 py-2 px-1 hover:bg-white/[0.03] rounded-lg transition-colors"
+                          >
+                            <ChevronRight className={`w-3 h-3 text-neutral-600 transition-transform duration-200 ${isEquipOpen ? "rotate-90" : ""}`} />
                             <span className="text-xs">{equipIcons[equip] || "📦"}</span>
                             <span className="text-[10px] font-semibold text-neutral-500 uppercase tracking-wider">{equip}</span>
                             <span className="text-[9px] text-neutral-700">({exs.length})</span>
-                          </div>
-                        <div className="space-y-1">
+                          </button>
+                        <div className={`grid transition-all duration-200 ${isEquipOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0"}`}>
+                        <div className="overflow-hidden">
+                        <div className="space-y-1 pl-2">
                           {exs.map((ex) => (
                             <button
                               key={ex.id}
@@ -306,7 +326,10 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                           ))}
                         </div>
                         </div>
-                        ))}
+                        </div>
+                        </div>
+                        )
+                        })}
                       </div>
                     </div>
                   </div>
