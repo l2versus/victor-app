@@ -8,7 +8,7 @@ import {
   ArrowLeft, UserPlus, UserCheck, Dumbbell, Flame,
   Heart, MessageCircle, Grid3X3, Trophy, Calendar,
   Loader2, Target, Send, Pencil, X, Check, Link2, Briefcase,
-  ExternalLink,
+  ExternalLink, Plus, Camera, ChevronLeft, ChevronRight,
 } from "lucide-react"
 
 type ProfileData = {
@@ -78,6 +78,19 @@ export default function SocialProfilePage() {
   const [profileStories, setProfileStories] = useState<ProfileStory[]>([])
   const [viewingStoryIndex, setViewingStoryIndex] = useState<number | null>(null)
 
+  // Story Highlights
+  type Highlight = {
+    id: string; title: string; coverUrl: string; itemCount: number
+    items: Array<{ id: string; imageUrl: string; caption: string | null; createdAt: string }>
+  }
+  const [highlights, setHighlights] = useState<Highlight[]>([])
+  const [viewingHighlight, setViewingHighlight] = useState<{ highlight: Highlight; index: number } | null>(null)
+  const [showCreateHighlight, setShowCreateHighlight] = useState(false)
+  const [newHighlightTitle, setNewHighlightTitle] = useState("")
+  const [newHighlightFile, setNewHighlightFile] = useState<File | null>(null)
+  const [newHighlightPreview, setNewHighlightPreview] = useState<string | null>(null)
+  const [creatingHighlight, setCreatingHighlight] = useState(false)
+
   async function openFollowList(type: "followers" | "following") {
     setShowFollowList(type)
     setLoadingFollows(true)
@@ -93,9 +106,10 @@ export default function SocialProfilePage() {
 
   const fetchProfile = useCallback(async () => {
     try {
-      const [profileRes, storiesRes] = await Promise.all([
+      const [profileRes, storiesRes, highlightsRes] = await Promise.all([
         fetch(`/api/community/profile/${id}`),
         fetch("/api/community/stories"),
+        fetch(`/api/community/stories/highlights?studentId=${id}`),
       ])
       if (profileRes.ok) {
         const data = await profileRes.json()
@@ -109,6 +123,10 @@ export default function SocialProfilePage() {
         if (myGroup) {
           setProfileStories(myGroup.stories)
         }
+      }
+      if (highlightsRes.ok) {
+        const highlightsData = await highlightsRes.json()
+        setHighlights(highlightsData.highlights || [])
       }
     } catch { /* ignore */ }
     setLoading(false)
@@ -376,6 +394,193 @@ export default function SocialProfilePage() {
           </motion.div>
         )}
       </div>
+
+      {/* Story Highlights — permanent circles */}
+      {(highlights.length > 0 || profile.isMe) && (
+        <div className="px-4 pb-3">
+          <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
+            {/* Add highlight button — only for own profile */}
+            {profile.isMe && (
+              <button
+                onClick={() => setShowCreateHighlight(true)}
+                className="flex flex-col items-center gap-1 shrink-0"
+              >
+                <div className="w-16 h-16 rounded-full bg-white/[0.04] border-2 border-dashed border-white/[0.15] flex items-center justify-center">
+                  <Plus className="w-4 h-4 text-neutral-400" />
+                </div>
+                <span className="text-[10px] text-neutral-500 w-16 text-center truncate">Novo</span>
+              </button>
+            )}
+
+            {/* Highlight circles */}
+            {highlights.map((h) => (
+              <button
+                key={h.id}
+                onClick={() => h.items.length > 0 && setViewingHighlight({ highlight: h, index: 0 })}
+                className="flex flex-col items-center gap-1 shrink-0"
+              >
+                <div className="w-16 h-16 rounded-full p-[2px] border-2 border-neutral-600">
+                  <div className="w-full h-full rounded-full overflow-hidden bg-neutral-800">
+                    <img src={h.coverUrl} alt={h.title} className="w-full h-full object-cover" />
+                  </div>
+                </div>
+                <span className="text-[10px] text-neutral-400 w-16 text-center truncate">{h.title}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Create Highlight Modal */}
+      {showCreateHighlight && profile.isMe && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/80 flex items-end justify-center" onClick={() => { setShowCreateHighlight(false); setNewHighlightFile(null); setNewHighlightPreview(null); setNewHighlightTitle("") }}>
+          <motion.div
+            initial={{ y: "100%" }}
+            animate={{ y: 0 }}
+            className="w-full max-w-lg bg-[#111] border-t border-white/[0.08] rounded-t-2xl p-5 pb-10 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-white">Novo Destaque</h3>
+              <button onClick={() => { setShowCreateHighlight(false); setNewHighlightFile(null); setNewHighlightPreview(null); setNewHighlightTitle("") }} className="text-neutral-500"><X className="w-5 h-5" /></button>
+            </div>
+
+            <div>
+              <label className="text-[10px] uppercase tracking-wider text-neutral-500 mb-1 block">Nome do destaque</label>
+              <input
+                value={newHighlightTitle}
+                onChange={(e) => setNewHighlightTitle(e.target.value.slice(0, 30))}
+                placeholder="Ex: Treino, Antes/Depois, Dicas..."
+                className="w-full bg-white/[0.04] border border-white/[0.08] rounded-lg px-3 py-2.5 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/50"
+              />
+            </div>
+
+            {!newHighlightPreview ? (
+              <label className="flex items-center justify-center gap-2 py-4 rounded-xl bg-red-600/10 border border-red-500/20 text-red-400 text-sm font-semibold cursor-pointer active:scale-95 transition-transform">
+                <Camera className="w-5 h-5" />
+                Escolher capa + primeira foto
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    setNewHighlightFile(file)
+                    setNewHighlightPreview(URL.createObjectURL(file))
+                  }}
+                />
+              </label>
+            ) : (
+              <div className="relative rounded-xl overflow-hidden border border-white/[0.08]">
+                <img src={newHighlightPreview} alt="Preview" className="w-full max-h-[30dvh] object-cover" />
+                <button
+                  onClick={() => { setNewHighlightFile(null); setNewHighlightPreview(null) }}
+                  className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center"
+                >
+                  <X className="w-4 h-4 text-white" />
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={async () => {
+                if (!newHighlightTitle.trim() || !newHighlightFile || creatingHighlight) return
+                setCreatingHighlight(true)
+                try {
+                  const { upload } = await import("@vercel/blob/client")
+                  const blob = await upload(
+                    `highlights/${Date.now()}-${newHighlightFile.name}`,
+                    newHighlightFile,
+                    { access: "public", handleUploadUrl: "/api/upload" }
+                  )
+                  await fetch("/api/community/stories/highlights", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      action: "create",
+                      title: newHighlightTitle.trim(),
+                      coverUrl: blob.url,
+                      imageUrl: blob.url,
+                    }),
+                  })
+                  setShowCreateHighlight(false)
+                  setNewHighlightFile(null)
+                  setNewHighlightPreview(null)
+                  setNewHighlightTitle("")
+                  fetchProfile()
+                } catch { /* ignore */ }
+                setCreatingHighlight(false)
+              }}
+              disabled={!newHighlightTitle.trim() || !newHighlightFile || creatingHighlight}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-bold shadow-lg shadow-red-600/20 disabled:opacity-50 active:scale-[0.98] transition-all min-h-[48px] flex items-center justify-center gap-2"
+            >
+              {creatingHighlight ? <Loader2 className="w-5 h-5 animate-spin" /> : "Criar Destaque"}
+            </button>
+          </motion.div>
+        </div>,
+        document.getElementById("modal-portal") || document.body
+      )}
+
+      {/* Highlight Viewer Modal */}
+      {viewingHighlight && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black flex items-center justify-center" onClick={() => setViewingHighlight(null)}>
+          <div className="w-full max-w-lg h-full relative flex flex-col" onClick={(e) => e.stopPropagation()}>
+            {/* Progress bars */}
+            <div className="absolute top-2 left-3 right-3 flex gap-1 z-10">
+              {viewingHighlight.highlight.items.map((_, i) => (
+                <div key={i} className="flex-1 h-0.5 rounded-full bg-white/20 overflow-hidden">
+                  <div className={`h-full rounded-full transition-all duration-300 ${
+                    i <= viewingHighlight.index ? "bg-white w-full" : "w-0"
+                  }`} />
+                </div>
+              ))}
+            </div>
+
+            {/* Header */}
+            <div className="absolute top-6 left-3 right-3 flex items-center gap-2 z-10">
+              <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 border border-neutral-600">
+                <img src={viewingHighlight.highlight.coverUrl} alt="" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <span className="text-white text-sm font-semibold block">{viewingHighlight.highlight.title}</span>
+                {profile && <span className="text-white/50 text-[10px]">{profile.name.split(" ")[0]}</span>}
+              </div>
+              <button onClick={() => setViewingHighlight(null)} className="ml-auto text-white/70 p-1">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Media */}
+            <div className="flex-1 relative">
+              <img
+                src={viewingHighlight.highlight.items[viewingHighlight.index].imageUrl}
+                alt=""
+                className="w-full h-full object-contain"
+              />
+              {viewingHighlight.highlight.items[viewingHighlight.index].caption && (
+                <div className="absolute bottom-4 left-0 right-0 px-4">
+                  <p className="text-white text-sm bg-black/50 px-3 py-2 rounded-lg backdrop-blur-sm">
+                    {viewingHighlight.highlight.items[viewingHighlight.index].caption}
+                  </p>
+                </div>
+              )}
+
+              {/* Nav tap zones */}
+              <button className="absolute left-0 top-0 w-1/3 h-full" onClick={() => {
+                if (viewingHighlight.index > 0) setViewingHighlight({ ...viewingHighlight, index: viewingHighlight.index - 1 })
+                else setViewingHighlight(null)
+              }} />
+              <button className="absolute right-0 top-0 w-2/3 h-full" onClick={() => {
+                const next = viewingHighlight.index + 1
+                if (next < viewingHighlight.highlight.items.length) setViewingHighlight({ ...viewingHighlight, index: next })
+                else setViewingHighlight(null)
+              }} />
+            </div>
+          </div>
+        </div>,
+        document.getElementById("modal-portal") || document.body
+      )}
 
       {/* Tab divider */}
       <div className="flex border-t border-white/[0.06]">

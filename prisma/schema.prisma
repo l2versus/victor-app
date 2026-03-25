@@ -133,6 +133,7 @@ model Student {
   stories           Story[]
   storyViews        StoryView[]
   postViews         PostView[]
+  storyHighlights   StoryHighlight[]
 
   // Spotify OAuth tokens (salvo no DB, não em cookies)
   spotifyAccessToken  String?
@@ -698,6 +699,34 @@ model StoryView {
 
   @@unique([storyId, studentId])
   @@index([storyId])
+}
+
+model StoryHighlight {
+  id        String @id @default(cuid())
+  studentId String
+  title     String   /// Nome do highlight (ex: "Treino", "Antes/Depois")
+  coverUrl  String   /// Thumbnail do circle
+  items     StoryHighlightItem[]
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+}
+
+model StoryHighlightItem {
+  id          String @id @default(cuid())
+  highlightId String
+  imageUrl    String  /// Foto/vídeo do item
+  caption     String? /// Texto opcional
+
+  highlight StoryHighlight @relation(fields: [highlightId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([highlightId])
 }
 
 // ═══════════════════════════════════════

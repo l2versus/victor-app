@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { pushToFollowers } from "@/lib/push"
 
 // POST /api/community/posts — create a user post (text + optional photo)
 export async function POST(req: NextRequest) {
@@ -45,6 +46,18 @@ export async function POST(req: NextRequest) {
         student: { include: { user: { select: { name: true, avatar: true } } } },
       },
     })
+
+    // Push notification to followers: "Fulano postou"
+    if (studentId) {
+      const authorName = post.student?.user?.name || "Alguém"
+      const preview = post.content?.slice(0, 60) || "Nova publicação"
+      pushToFollowers(studentId, {
+        title: `${authorName} postou`,
+        body: preview,
+        url: "/community",
+        tag: `post-${post.id}`,
+      })
+    }
 
     return NextResponse.json({ post }, { status: 201 })
   } catch (e: unknown) {

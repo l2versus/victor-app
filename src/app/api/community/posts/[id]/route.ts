@@ -68,7 +68,7 @@ export async function POST(
       })
       if (likedPost?.student && likedPost.student.userId !== session.userId) {
         const me = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } })
-        notifySocial({ toUserId: likedPost.student.userId, fromName: me?.name || "Alguém", type: "social_like", postContent: likedPost.content })
+        notifySocial({ toUserId: likedPost.student.userId, fromUserId: session.userId, fromStudentId: student.id, fromName: me?.name || "Alguém", type: "social_like", postId, postContent: likedPost.content })
       }
 
       return NextResponse.json({ liked: true })
@@ -94,7 +94,7 @@ export async function POST(
       })
       const me = await prisma.user.findUnique({ where: { id: session.userId }, select: { name: true } })
       if (commentedPost?.student && commentedPost.student.userId !== session.userId) {
-        notifySocial({ toUserId: commentedPost.student.userId, fromName: me?.name || "Alguém", type: "social_comment", commentContent: content.trim() })
+        notifySocial({ toUserId: commentedPost.student.userId, fromUserId: session.userId, fromStudentId: student.id, fromName: me?.name || "Alguém", type: "social_comment", postId, commentContent: content.trim() })
       }
 
       // Notify @mentioned users

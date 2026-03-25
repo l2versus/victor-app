@@ -29,6 +29,7 @@ import {
   Send,
   Zap,
   GraduationCap,
+  Heart,
 } from "lucide-react"
 
 const mainItems = [
@@ -48,6 +49,7 @@ const moreItems = [
   { href: "/admin/payment-reminders", label: "Cobranças", icon: Bell },
   { href: "/admin/plans", label: "Planos", icon: Crown },
   { href: "/admin/messages", label: "Mensagens", icon: MessageCircle },
+  { href: "/community", label: "Comunidade", icon: Heart },
   { href: "/admin/broadcasts", label: "Broadcast", icon: Send },
   { href: "/admin/ai", label: "IA Tools", icon: Brain },
   { href: "/admin/academy", label: "Academia", icon: GraduationCap },
@@ -93,8 +95,8 @@ export function AdminMobileNav() {
                 <X className="w-3.5 h-3.5" />
               </button>
             </div>
-            <div className="overflow-y-auto flex-1 -mx-0.5 px-0.5">
-              <div className="grid grid-cols-4 gap-1.5">
+            <div className="overflow-y-auto flex-1 -mx-0.5 px-0.5 overscroll-contain">
+              <div className="grid grid-cols-4 gap-1.5 pb-2">
                 {moreItems.map((item) => {
                   const isActive = pathname.startsWith(item.href)
                   return (
