@@ -45,11 +45,27 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
     return matchSearch && matchMuscle
   })
 
+  // Group by muscle → equipment (two-level hierarchy)
   const grouped = filtered.reduce((acc, ex) => {
-    if (!acc[ex.muscle]) acc[ex.muscle] = []
-    acc[ex.muscle].push(ex)
+    if (!acc[ex.muscle]) acc[ex.muscle] = {}
+    if (!acc[ex.muscle][ex.equipment]) acc[ex.muscle][ex.equipment] = []
+    acc[ex.muscle][ex.equipment].push(ex)
     return acc
-  }, {} as Record<string, Exercise[]>)
+  }, {} as Record<string, Record<string, Exercise[]>>)
+
+  const equipmentIcons: Record<string, string> = {
+    Barbell: "🏋️", Dumbbell: "💪", Cable: "🔗", Machine: "⚙️",
+    Bodyweight: "🤸", Kettlebell: "🔔", Band: "🎗️", Other: "📦",
+    Barra: "🏋️", Halter: "💪", Cabo: "🔗", "Máquina": "⚙️",
+    "Peso Corporal": "🤸", "Elástico": "🎗️", Outro: "📦",
+  }
+
+  const equipmentOrder = ["Barbell", "Barra", "Dumbbell", "Halter", "Machine", "Máquina", "Cable", "Cabo", "Bodyweight", "Peso Corporal", "Kettlebell", "Band", "Elástico", "Other", "Outro"]
+  const sortEquipment = (a: string, b: string) => {
+    const ia = equipmentOrder.indexOf(a)
+    const ib = equipmentOrder.indexOf(b)
+    return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib)
+  }
 
   return (
     <div className="space-y-4">
@@ -135,15 +151,28 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
         {filtered.length} exercício{filtered.length !== 1 ? "s" : ""} encontrado{filtered.length !== 1 ? "s" : ""}
       </p>
 
-      {/* Exercise list by muscle group */}
+      {/* Exercise list by muscle → equipment */}
       <div className="space-y-5">
-        {Object.entries(grouped).map(([muscle, exs]) => (
+        {Object.entries(grouped).map(([muscle, byEquip]) => {
+          const totalInMuscle = Object.values(byEquip).reduce((s, arr) => s + arr.length, 0)
+          return (
           <div key={muscle}>
-            {/* Group header */}
-            <div className="flex items-center gap-2 mb-2">
+            {/* Muscle group header */}
+            <div className="flex items-center gap-2 mb-3">
               <MuscleBadge muscle={muscle} showInfoOnTap={true} />
-              <span className="text-[10px] text-neutral-600">{exs.length}</span>
+              <span className="text-[10px] text-neutral-600">{totalInMuscle}</span>
             </div>
+
+            {/* Equipment sub-groups */}
+            <div className="space-y-3 pl-1">
+              {Object.entries(byEquip).sort(([a], [b]) => sortEquipment(a, b)).map(([equip, exs]) => (
+                <div key={`${muscle}-${equip}`}>
+                  {/* Equipment sub-header */}
+                  <div className="flex items-center gap-1.5 mb-1.5 ml-1">
+                    <span className="text-xs">{equipmentIcons[equip] || "📦"}</span>
+                    <span className="text-[10px] font-semibold text-neutral-400 uppercase tracking-wider">{equip}</span>
+                    <span className="text-[9px] text-neutral-600">({exs.length})</span>
+                  </div>
 
             {/* Exercise cards */}
             <div className="space-y-1.5">
@@ -273,8 +302,12 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
                 )
               })}
             </div>
+                </div>
+              ))}
+            </div>
           </div>
-        ))}
+          )
+        })}
       </div>
 
       {/* Empty state */}
