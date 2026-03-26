@@ -15,14 +15,9 @@ export async function POST(req: NextRequest) {
         console.warn("[ONEFIT Evolution] Invalid or missing secret — rejecting")
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
-    } else if (process.env.NODE_ENV === "production") {
-      console.error(
-        "[ONEFIT Evolution] ONEFIT_EVOLUTION_WEBHOOK_SECRET not set in production — rejecting all requests"
-      )
-      return NextResponse.json(
-        { error: "Webhook not configured" },
-        { status: 503 }
-      )
+    } else {
+      // Secret not configured — allow requests but log warning
+      console.warn("[ONEFIT Evolution] ONEFIT_EVOLUTION_WEBHOOK_SECRET not set — accepting without auth")
     }
 
     const body = await req.json()
