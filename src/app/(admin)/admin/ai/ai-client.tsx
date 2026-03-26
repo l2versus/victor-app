@@ -23,7 +23,7 @@ const tabs = [
     id: "anamnesis" as Tab,
     label: "Anamnese",
     icon: Stethoscope,
-    desc: "Analise automatica de anamnese",
+    desc: "Análise automática de anamnese",
     accent: "emerald",
   },
   {
@@ -50,7 +50,7 @@ export default function AdminAIPage() {
         </div>
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-white flex items-center gap-2">
-            Inteligencia Artificial
+            Inteligência Artificial
             <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-violet-500/10 text-violet-400 border border-violet-500/15 uppercase tracking-wider">
               Beta
             </span>

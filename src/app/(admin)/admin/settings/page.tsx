@@ -13,9 +13,9 @@ export default async function SettingsPage() {
       <div>
         <h1 className="text-xl font-bold text-white flex items-center gap-2">
           <Settings className="w-5 h-5 text-neutral-400" />
-          Configuracoes
+          Configurações
         </h1>
-        <p className="text-xs text-neutral-500 mt-1">Gerenciar conta e preferencias</p>
+        <p className="text-xs text-neutral-500 mt-1">Gerenciar conta e preferências</p>
       </div>
 
       <div className="space-y-2">

@@ -253,7 +253,7 @@ export function PlansClient({
       {/* Create Plan Modal */}
       {showForm && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#0a0a0a] p-6 shadow-2xl">
+          <div className="w-full max-w-md max-h-[85dvh] rounded-2xl border border-white/[0.08] bg-[#0a0a0a] p-6 shadow-2xl overflow-y-auto">
             <h2 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
               <Crown className="w-5 h-5 text-amber-400" />
               Novo Plano
@@ -361,7 +361,7 @@ export function PlansClient({
       {/* Assign Plan Modal */}
       {showAssign && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="w-full max-w-sm rounded-2xl border border-white/[0.08] bg-[#0a0a0a] p-6 shadow-2xl">
+          <div className="w-full max-w-sm max-h-[85dvh] rounded-2xl border border-white/[0.08] bg-[#0a0a0a] p-6 shadow-2xl overflow-y-auto">
             <h2 className="text-lg font-bold text-white mb-1 flex items-center gap-2">
               <UserPlus className="w-5 h-5 text-amber-400" />
               Atribuir Plano

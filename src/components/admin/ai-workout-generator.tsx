@@ -169,12 +169,12 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
 
           <div>
             <label className="block text-xs font-medium text-neutral-400 mb-1 flex items-center gap-1">
-              <AlertTriangle className="w-3 h-3" /> Restricoes
+              <AlertTriangle className="w-3 h-3" /> Restrições
             </label>
             <Textarea
               value={restrictions}
               onChange={(e) => setRestrictions(e.target.value)}
-              placeholder="Lesoes, limitacoes, exercicios proibidos..."
+              placeholder="Lesões, limitações, exercícios proibidos..."
               rows={2}
             />
           </div>
@@ -209,7 +209,7 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
                 {result.name}
               </h3>
               <p className="text-neutral-500 text-xs mt-0.5">
-                {result.type} &middot; {result.exercises.length} exercicios &middot; Gerado por IA
+                {result.type} &middot; {result.exercises.length} exercícios &middot; Gerado por IA
               </p>
             </div>
             <button

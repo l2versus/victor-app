@@ -40,7 +40,7 @@ export function ChatWidget() {
     if (open && messages.length === 0) {
       setMessages([{
         role: "assistant",
-        content: "Oi! Sou o Victor Virtual, assistente do Victor Oliveira. Posso te ajudar com duvidas sobre treinos, planos e como funciona a consultoria. O que voce gostaria de saber?"
+        content: "Oi! Sou o Victor Virtual, assistente do Victor Oliveira. Posso te ajudar com dúvidas sobre treinos, planos e como funciona a consultoria. O que você gostaria de saber?"
       }])
     }
   }, [open, messages.length])

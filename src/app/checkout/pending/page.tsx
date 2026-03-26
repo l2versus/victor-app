@@ -16,8 +16,8 @@ export default function CheckoutPendingPage() {
         </h1>
 
         <p className="text-zinc-400">
-          Seu pagamento esta sendo processado. Assim que for confirmado,
-          sua conta sera ativada automaticamente e voce recebera um email
+          Seu pagamento está sendo processado. Assim que for confirmado,
+          sua conta será ativada automaticamente e você receberá um email
           com as credenciais de acesso.
         </p>
 

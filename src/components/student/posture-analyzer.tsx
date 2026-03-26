@@ -469,7 +469,7 @@ export function PostureAnalyzer() {
                   type="text"
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  placeholder={`Buscar entre ${TOTAL_EXERCISES_WITH_POSTURE} exercicios...`}
+                  placeholder={`Buscar entre ${TOTAL_EXERCISES_WITH_POSTURE} exercícios...`}
                   className="w-full pl-8 pr-3 py-2 bg-white/[0.05] rounded-lg text-sm text-white placeholder:text-neutral-600 border-0 outline-none focus:ring-1 focus:ring-red-600/50"
                   autoFocus
                 />
@@ -693,7 +693,7 @@ export function PostureAnalyzer() {
           className="w-full py-3.5 rounded-xl bg-zinc-800 text-white text-sm font-semibold hover:bg-zinc-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
         >
           <X className="w-4 h-4" />
-          Parar Analise
+          Parar Análise
         </button>
       ) : null}
 
@@ -852,7 +852,7 @@ export function PostureAnalyzer() {
       {/* ─── Footer info ─── */}
       <div className="flex items-center justify-between text-[10px] text-neutral-600 px-1">
         <span>100% no dispositivo • privacidade total</span>
-        <span>{TOTAL_EXERCISES_WITH_POSTURE} exercicios</span>
+        <span>{TOTAL_EXERCISES_WITH_POSTURE} exercícios</span>
       </div>
     </div>
   )

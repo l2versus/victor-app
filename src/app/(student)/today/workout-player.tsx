@@ -13,6 +13,8 @@ import { useCelebration, type CelebrationType } from "@/components/student/celeb
 // Spotify removed — was breaking layout
 import { RMCalculatorButton } from "@/components/student/rm-calculator"
 import { ExerciseDetailModal } from "@/components/student/exercise-detail-modal"
+import { SafeImage } from "@/components/ui/safe-image"
+import { ShareWorkoutCard } from "@/components/student/share-workout-card"
 
 // ═══ HELPERS ═══
 /** Format kg: 80 → "80", 80.5 → "80.5", 80.0 → "80" */
@@ -141,6 +143,7 @@ export function WorkoutPlayer({
     }
     return "preview"
   })
+  const [showShareCard, setShowShareCard] = useState(false)
   const [videoModal, setVideoModal] = useState<{ url: string; name: string } | null>(null)
   const [exerciseDetail, setExerciseDetail] = useState<ExerciseData | null>(null)
   const [sessionId, setSessionId] = useState<string | null>(activeSession?.id || null)
@@ -239,6 +242,7 @@ export function WorkoutPlayer({
 
   // Rest timer
   const restTimer = useRestTimer(() => {
+    navigator.vibrate?.([200])
     setPhase("active")
   })
 
@@ -504,9 +508,30 @@ export function WorkoutPlayer({
           </div>
         </div>
 
+        {/* Share button */}
+        <button
+          onClick={() => setShowShareCard(true)}
+          className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-transform shadow-lg shadow-red-600/20"
+        >
+          <Trophy className="w-4 h-4" />
+          Compartilhar Treino
+        </button>
+
         <p className="text-center text-xs text-neutral-600 pb-2">
-          Descanse bem e volte amanha para o proximo treino
+          Descanse bem e volte amanhã para o próximo treino
         </p>
+
+        {/* Share card modal */}
+        {showShareCard && (
+          <ShareWorkoutCard
+            templateName={templateName}
+            exerciseCount={exercises.length}
+            totalVolume={Array.from(completedSets.values()).flat().reduce((sum, s) => sum + (s.reps * s.loadKg), 0)}
+            durationMin={completedToday?.durationMin || 0}
+            streak={0}
+            onClose={() => setShowShareCard(false)}
+          />
+        )}
       </div>
     )
   }
@@ -629,6 +654,17 @@ export function WorkoutPlayer({
                   </div>
                 </div>
 
+                {/* Inline GIF / Video preview */}
+                {(ex.gifUrl || (ex.videoUrl && !ex.imageUrl)) && (
+                  <div className="px-4 pb-2">
+                    {ex.gifUrl ? (
+                      <SafeImage src={ex.gifUrl} alt={ex.name} className="w-full rounded-xl max-h-48 object-contain bg-black" />
+                    ) : ex.videoUrl ? (
+                      <video src={ex.videoUrl} className="w-full rounded-xl max-h-48 object-contain bg-black" autoPlay loop muted playsInline />
+                    ) : null}
+                  </div>
+                )}
+
                 {/* Extra info row */}
                 {(ex.notes || ex.technique !== "NORMAL") && (
                   <div className="px-4 pb-3 space-y-2">
@@ -726,17 +762,17 @@ export function WorkoutPlayer({
 
   // ═══ REST TIMER OVERLAY ═══
   if (phase === "rest") {
-    const circumference = 2 * Math.PI * 54
+    const circumference = 2 * Math.PI * 70
     const offset = circumference * (1 - restTimer.progress)
 
     return (
-      <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[#050505]/95 backdrop-blur-xl animate-slide-up">
-        <div className="relative w-48 h-48 mb-8 animate-timer-pulse">
-          <svg className="w-full h-full timer-circle" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="54" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="4" />
+      <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[#050505]/97 backdrop-blur-2xl animate-slide-up">
+        <div className="relative w-56 h-56 mb-10 animate-timer-pulse">
+          <svg className="w-full h-full timer-circle" viewBox="0 0 160 160">
+            <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="5" />
             <circle
-              cx="60" cy="60" r="54" fill="none"
-              stroke="url(#timerGradient)" strokeWidth="4" strokeLinecap="round"
+              cx="80" cy="80" r="70" fill="none"
+              stroke="url(#timerGradient)" strokeWidth="5" strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={offset}
               style={{ transition: "stroke-dashoffset 1s linear" }}
@@ -750,13 +786,13 @@ export function WorkoutPlayer({
           </svg>
 
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-5xl font-bold text-white tabular-nums">{restTimer.remaining}</p>
-            <p className="text-[10px] text-neutral-500 uppercase tracking-widest mt-1">Descanso</p>
+            <p className="text-7xl font-bold text-white tabular-nums drop-shadow-[0_0_24px_rgba(239,68,68,0.3)]">{restTimer.remaining}</p>
+            <p className="text-xs text-neutral-400 uppercase tracking-[0.2em] mt-2 font-medium">Descanso</p>
           </div>
         </div>
 
         {nextExName && (
-          <div className="text-center mb-8">
+          <div className="text-center mb-10">
             <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">Próximo</p>
             <p className="text-sm text-neutral-300 font-medium">{nextExName}</p>
           </div>
@@ -764,9 +800,9 @@ export function WorkoutPlayer({
 
         <button
           onClick={() => { restTimer.skip(); setPhase("active") }}
-          className="px-6 py-2.5 rounded-xl border border-white/[0.08] bg-white/[0.03] text-neutral-400 text-sm font-medium hover:bg-white/[0.06] hover:text-white transition-all active:scale-95"
+          className="px-8 py-3 rounded-xl border border-white/10 bg-white/5 text-neutral-300 text-sm font-semibold hover:bg-white/10 hover:text-white transition-all active:scale-95"
         >
-          Pular
+          Pular Descanso
         </button>
       </div>
     )

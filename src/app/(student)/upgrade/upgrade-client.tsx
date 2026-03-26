@@ -26,12 +26,12 @@ const tiers = [
     features: [
       { key: "treino", label: "Treino 100% personalizado", included: true },
       { key: "app", label: "App com timer e registro", included: true },
-      { key: "historico", label: "Historico de evolucao", included: true },
+      { key: "historico", label: "Histórico de evolução", included: true },
       { key: "sessoes", label: "3 treinos por semana", included: true },
-      { key: "hasAI", label: "Assistente virtual pos-treino", included: false },
-      { key: "hasPostureCamera", label: "Correcao de postura por IA", included: false },
+      { key: "hasAI", label: "Assistente virtual pós-treino", included: false },
+      { key: "hasPostureCamera", label: "Correção de postura por IA", included: false },
       { key: "hasVipGroup", label: "Rede Social Ironberg", included: false },
-      { key: "hasNutrition", label: "Orientacao nutricional", included: false },
+      { key: "hasNutrition", label: "Orientação nutricional", included: false },
     ],
   },
   {
@@ -41,12 +41,12 @@ const tiers = [
     features: [
       { key: "tudo_essencial", label: "Tudo do Essencial", included: true },
       { key: "ilimitado", label: "Treinos ilimitados", included: true },
-      { key: "hasAI", label: "Assistente virtual pos-treino", included: true },
+      { key: "hasAI", label: "Assistente virtual pós-treino", included: true },
       { key: "tech", label: "Victor + tecnologia no treino", included: true },
-      { key: "analise", label: "Analise inteligente da ficha", included: true },
-      { key: "suporte", label: "Suporte prioritario", included: true },
-      { key: "hasPostureCamera", label: "Correcao de postura por IA", included: false },
-      { key: "hasNutrition", label: "Orientacao nutricional", included: false },
+      { key: "analise", label: "Análise inteligente da ficha", included: true },
+      { key: "suporte", label: "Suporte prioritário", included: true },
+      { key: "hasPostureCamera", label: "Correção de postura por IA", included: false },
+      { key: "hasNutrition", label: "Orientação nutricional", included: false },
     ],
   },
   {
@@ -55,9 +55,9 @@ const tiers = [
     monthly: 499.90,
     features: [
       { key: "tudo_pro", label: "Tudo do Pro", included: true },
-      { key: "hasPostureCamera", label: "Correcao postura por camera IA", included: true },
+      { key: "hasPostureCamera", label: "Correção postura por câmera IA", included: true },
       { key: "hasVipGroup", label: "Rede Social Ironberg", included: true },
-      { key: "hasNutrition", label: "Orientacao nutricional", included: true },
+      { key: "hasNutrition", label: "Orientação nutricional", included: true },
       { key: "whatsapp", label: "WhatsApp direto com Victor", included: true },
       { key: "prioridade", label: "Prioridade total", included: true },
       { key: "dieta", label: "Bonus: planilha de dieta", included: true },
@@ -155,7 +155,7 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-sm font-bold text-white">Correcao de Postura por IA</h3>
+                  <h3 className="text-sm font-bold text-white">Correção de Postura por IA</h3>
                   <span className="text-[9px] px-2 py-0.5 rounded-full bg-blue-500/15 text-blue-300 border border-blue-500/20 font-semibold uppercase tracking-wider">
                     Exclusivo
                   </span>
@@ -179,8 +179,8 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
                 {[
                   { icon: Eye, text: "Análise corporal com IA em tempo real", color: "text-blue-400" },
                   { icon: Activity, text: "194 exercícios com correção biomecânica", color: "text-blue-400" },
-                  { icon: Zap, text: "Feedback visual instantaneo — verde, amarelo, vermelho", color: "text-emerald-400" },
-                  { icon: Shield, text: "Prevencao de lesoes baseada em fisiologia do exercicio", color: "text-amber-400" },
+                  { icon: Zap, text: "Feedback visual instantâneo — verde, amarelo, vermelho", color: "text-emerald-400" },
+                  { icon: Shield, text: "Prevenção de lesões baseada em fisiologia do exercício", color: "text-amber-400" },
                   { icon: Camera, text: "100% offline — nenhuma imagem sai do seu celular", color: "text-purple-400" },
                 ].map((item) => (
                   <div key={item.text} className="flex items-start gap-2.5">
@@ -194,15 +194,15 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
 
               <div className="rounded-xl bg-blue-600/[0.06] border border-blue-500/10 p-3">
                 <p className="text-blue-200 text-xs leading-relaxed">
-                  <strong>Como funciona:</strong> A camera do celular detecta seus movimentos em tempo real.
-                  O sistema compara os angulos das articulacoes com o padrao correto de cada exercicio e
-                  da feedback visual instantaneo: &quot;Desca mais o quadril&quot;, &quot;Cotovelos mais proximos&quot;.
-                  E como ter o Victor do seu lado em cada repeticao.
+                  <strong>Como funciona:</strong> A câmera do celular detecta seus movimentos em tempo real.
+                  O sistema compara os ângulos das articulações com o padrão correto de cada exercício e
+                  dá feedback visual instantâneo: &quot;Desça mais o quadril&quot;, &quot;Cotovelos mais próximos&quot;.
+                  É como ter o Victor do seu lado em cada repetição.
                 </p>
               </div>
 
               <p className="text-center text-[10px] text-blue-400/60 font-medium">
-                Disponivel nos planos Elite
+                Disponível nos planos Elite
               </p>
             </div>
           )}
@@ -393,15 +393,15 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
         <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-3">
           <h3 className="text-sm font-bold text-white flex items-center gap-2">
             <Camera className="w-4 h-4 text-blue-400" />
-            Por que a Correcao de Postura vale a pena?
+            Por que a Correção de Postura vale a pena?
           </h3>
           <div className="space-y-2">
             {[
-              "Previne lesoes que podem te afastar do treino por meses",
-              "Maximiza a ativacao muscular — mais resultado com o mesmo esforco",
-              "Corrige vicios de postura que voce nem sabe que tem",
+              "Previne lesões que podem te afastar do treino por meses",
+              "Maximiza a ativação muscular — mais resultado com o mesmo esforço",
+              "Corrige vícios de postura que você nem sabe que tem",
               "Funciona offline — sua privacidade 100% protegida",
-              "E como ter o Victor do seu lado em cada repeticao, 24 horas",
+              "É como ter o Victor do seu lado em cada repetição, 24 horas",
             ].map((text) => (
               <div key={text} className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />

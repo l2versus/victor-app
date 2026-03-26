@@ -16,7 +16,7 @@ export default async function NutritionPage() {
 
   if (!hasNutrition) {
     return (
-      <div className="p-4 max-w-lg mx-auto">
+      <div>
         <div className="text-center space-y-6 py-8">
           <div className="w-20 h-20 rounded-2xl bg-emerald-600/20 flex items-center justify-center mx-auto">
             <Utensils className="w-10 h-10 text-emerald-400" />

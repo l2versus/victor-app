@@ -47,7 +47,7 @@ export function AIAnamnesisAnalyzer({ studentId, assessmentId }: { studentId?: s
           <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-emerald-600/20 to-emerald-800/20 flex items-center justify-center">
             <Stethoscope className="w-4 h-4 text-emerald-400" />
           </div>
-          Analise de Anamnese com IA
+          Análise de Anamnese com IA
         </h3>
 
         {!assessmentId && (
@@ -58,7 +58,7 @@ export function AIAnamnesisAnalyzer({ studentId, assessmentId }: { studentId?: s
             <Textarea
               value={rawText}
               onChange={(e) => setRawText(e.target.value)}
-              placeholder="Cole aqui os dados da anamnese do aluno: historico medico, lesoes, medicamentos, habitos, etc..."
+              placeholder="Cole aqui os dados da anamnese do aluno: histórico médico, lesões, medicamentos, hábitos, etc..."
               rows={6}
             />
           </div>
@@ -90,7 +90,7 @@ export function AIAnamnesisAnalyzer({ studentId, assessmentId }: { studentId?: s
         <div className="rounded-2xl border border-emerald-500/20 bg-[#111] p-5 space-y-4">
           <div className="flex items-center gap-2 mb-2">
             <Sparkles className="w-5 h-5 text-emerald-400" />
-            <h3 className="text-white font-bold">Resultado da Analise</h3>
+            <h3 className="text-white font-bold">Resultado da Análise</h3>
           </div>
 
           <div className="prose prose-invert prose-sm max-w-none">

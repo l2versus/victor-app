@@ -194,7 +194,7 @@ function DetailModal({ open, onClose, title, icon: Icon, iconColor, children, ma
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
       <div className={cn(
-        "relative z-10 w-full rounded-2xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl overflow-hidden",
+        "relative z-10 w-full max-h-[85dvh] rounded-2xl border border-white/[0.08] bg-[#0a0a0a] shadow-2xl overflow-hidden overflow-y-auto",
         "animate-in fade-in slide-in-from-bottom-4 duration-300",
         maxWidth
       )}>
@@ -511,7 +511,7 @@ export function FinanceClient({ students }: { students: { id: string; name: stri
       {/* ═══ TABS ═══ */}
       <div className="flex items-center gap-1 p-1 rounded-xl bg-white/[0.03] border border-white/[0.05] w-fit overflow-x-auto">
         {([
-          { key: "overview", label: "Visao Geral", icon: BarChart3 },
+          { key: "overview", label: "Visão Geral", icon: BarChart3 },
           { key: "costs", label: "Custos", icon: TrendingDown },
           { key: "payments", label: "Pagamentos", icon: Wallet },
         ] as const).map(t => (
@@ -1327,7 +1327,7 @@ export function FinanceClient({ students }: { students: { id: string; name: stri
       <DetailModal
         open={kpiModal === "lucro"}
         onClose={() => setKpiModal(null)}
-        title="Analise de Lucro"
+        title="Análise de Lucro"
         icon={TrendingUp}
         iconColor={overview.monthProfit >= 0 ? "text-emerald-400 bg-emerald-500/10 border-emerald-500/20" : "text-red-400 bg-red-500/10 border-red-500/20"}
         maxWidth="max-w-md"
@@ -1602,7 +1602,7 @@ function AddCostModal({ onClose, onSaved }: { onClose: () => void; onSaved: () =
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="relative w-full max-w-md max-h-[85dvh] rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="p-6">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-lg font-bold text-white">Novo Custo</h3>
@@ -1744,7 +1744,7 @@ function AddPaymentModal({ students, onClose, onSaved }: {
   return (
     <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-md animate-in fade-in duration-200" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-300">
+      <div className="relative w-full max-w-md max-h-[85dvh] rounded-2xl bg-[#0a0a0a] border border-white/[0.08] shadow-2xl overflow-hidden overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-300">
         <div className="p-6">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-lg font-bold text-white">Registrar Pagamento</h3>

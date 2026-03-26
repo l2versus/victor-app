@@ -16,16 +16,16 @@ export default async function PosturePage() {
 
   if (!hasPosture) {
     return (
-      <div className="p-4 max-w-lg mx-auto">
+      <div>
         <div className="text-center space-y-6 py-8">
           <div className="w-20 h-20 rounded-2xl bg-amber-600/20 flex items-center justify-center mx-auto">
             <Lock className="w-10 h-10 text-amber-400" />
           </div>
 
           <div>
-            <h1 className="text-xl font-bold text-white mb-2">Correcao de Postura por IA</h1>
+            <h1 className="text-xl font-bold text-white mb-2">Correção de Postura por IA</h1>
             <p className="text-neutral-400 text-sm leading-relaxed">
-              Analise biomecanica em tempo real com inteligencia artificial.
+              Análise biomecânica em tempo real com inteligência artificial.
               Exclusivo do <span className="text-amber-400 font-semibold">plano Elite</span>.
             </p>
           </div>
@@ -33,7 +33,7 @@ export default async function PosturePage() {
           <div className="bg-amber-600/10 border border-amber-500/20 rounded-xl p-4 space-y-3">
             <div className="flex items-center gap-2 text-amber-300 text-sm font-semibold">
               <Crown className="w-4 h-4" />
-              O que voce ganha no Elite:
+              O que você ganha no Elite:
             </div>
             <ul className="text-sm text-neutral-400 space-y-2 text-left">
               <li className="flex items-start gap-2">
@@ -42,19 +42,19 @@ export default async function PosturePage() {
               </li>
               <li className="flex items-start gap-2">
                 <Activity className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
-                <span><strong className="text-amber-300">{TOTAL_EXERCISES_WITH_POSTURE} exercicios</strong> com regras biomecanicas profissionais</span>
+                <span><strong className="text-amber-300">{TOTAL_EXERCISES_WITH_POSTURE} exercícios</strong> com regras biomecânicas profissionais</span>
               </li>
               <li className="flex items-start gap-2">
                 <Zap className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
-                <span>Feedback visual instantaneo (verde / amarelo / vermelho)</span>
+                <span>Feedback visual instantâneo (verde / amarelo / vermelho)</span>
               </li>
               <li className="flex items-start gap-2">
                 <Shield className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
-                <span>Prevencao de lesoes — correcao baseada em fisiologia do exercicio</span>
+                <span>Prevenção de lesões — correção baseada em fisiologia do exercício</span>
               </li>
               <li className="flex items-start gap-2">
                 <Camera className="w-4 h-4 text-amber-500/70 shrink-0 mt-0.5" />
-                <span>100% offline apos carregar — nenhuma imagem sai do seu celular</span>
+                <span>100% offline após carregar — nenhuma imagem sai do seu celular</span>
               </li>
             </ul>
           </div>
@@ -84,14 +84,14 @@ export default async function PosturePage() {
   }
 
   return (
-    <div className="p-4 max-w-lg mx-auto space-y-3">
+    <div className="space-y-3">
       <div>
         <h1 className="text-lg font-bold text-white flex items-center gap-2">
           <Camera className="w-5 h-5 text-red-400" />
-          Correcao de Postura
+          Correção de Postura
         </h1>
         <p className="text-[11px] text-neutral-500 mt-1">
-          {TOTAL_EXERCISES_WITH_POSTURE} exercicios • Selecione, posicione-se e clique para analisar.
+          {TOTAL_EXERCISES_WITH_POSTURE} exercícios • Selecione, posicione-se e clique para analisar.
         </p>
       </div>
 
@@ -105,8 +105,8 @@ export default async function PosturePage() {
             <Scan className="w-4 h-4 text-red-400" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-white">Avaliacao Corporal IA</p>
-            <p className="text-[10px] text-neutral-500">Analise de proporcoes por camera</p>
+            <p className="text-xs font-semibold text-white">Avaliação Corporal IA</p>
+            <p className="text-[10px] text-neutral-500">Análise de proporções por câmera</p>
           </div>
         </div>
         <Activity className="w-4 h-4 text-neutral-600" />

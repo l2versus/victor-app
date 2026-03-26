@@ -163,7 +163,7 @@ function ChartTooltip({ active, payload, label, unit }: {
             </div>
           ))}
           {exercises.length > 6 && (
-            <p className="text-[7px] text-neutral-600 text-center">+{exercises.length - 6} exercicios</p>
+            <p className="text-[7px] text-neutral-600 text-center">+{exercises.length - 6} exercícios</p>
           )}
         </div>
       )}
@@ -322,7 +322,7 @@ export function EvolutionClient() {
       return `<div class="ex-card"><div class="ex-header"><span>${esc(ex.exerciseName)}</span><span class="dim">${esc(ex.muscle)}</span><span style="color:${diffColor};font-weight:700">${diffStr}</span></div><table><thead><tr><th>Data</th><th class="r">Carga Max</th><th style="width:120px">Progresso</th></tr></thead><tbody>${rows}</tbody></table></div>`
     }).join("")
     const loadSection = topExercises.length > 0
-      ? `<h2>📈 Progressao de Carga</h2><p class="sub">Top ${topExercises.length} exercicios com mais sessoes</p>${loadSections}`
+      ? `<h2>📈 Progressão de Carga</h2><p class="sub">Top ${topExercises.length} exercícios com mais sessões</p>${loadSections}`
       : ""
 
     const html = [

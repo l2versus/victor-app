@@ -128,9 +128,9 @@ export default function PWAProvider() {
           <div className="px-6 py-5">
             <div className="space-y-3 mb-6">
               {[
-                { icon: Zap, title: "Acesso instantaneo", desc: "Abra direto da tela inicial" },
-                { icon: Bell, title: "Notificacoes", desc: "Lembretes de treino e evolucao" },
-                { icon: Dumbbell, title: "Seu treino sempre a mao", desc: "Timer, series e carga na palma" },
+                { icon: Zap, title: "Acesso instantâneo", desc: "Abra direto da tela inicial" },
+                { icon: Bell, title: "Notificações", desc: "Lembretes de treino e evolução" },
+                { icon: Dumbbell, title: "Seu treino sempre à mão", desc: "Timer, séries e carga na palma" },
               ].map((item) => (
                 <div key={item.title} className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-red-600/10 border border-red-500/10 flex items-center justify-center shrink-0">
