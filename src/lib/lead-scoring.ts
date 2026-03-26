@@ -125,19 +125,28 @@ export async function scoreAndNotify(leadId: string): Promise<void> {
   if (!result || result.temperature !== "HOT") return
 
   try {
-    const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { name: true, trainerId: true } })
+    const lead = await prisma.lead.findUnique({ where: { id: leadId }, select: { name: true, trainerId: true, nutritionistId: true } })
     if (!lead) return
 
-    const trainer = await prisma.trainerProfile.findUnique({
+    // Notify the owner (trainer or nutritionist)
+    const ownerId = lead.trainerId || lead.nutritionistId
+    if (!ownerId) return
+
+    const trainer = lead.trainerId ? await prisma.trainerProfile.findUnique({
       where: { id: lead.trainerId },
       select: { userId: true },
-    })
-    if (!trainer) return
+    }) : null
+    const nutri = !trainer && lead.nutritionistId ? await prisma.nutritionistProfile.findUnique({
+      where: { id: lead.nutritionistId },
+      select: { userId: true },
+    }) : null
+    const ownerUserId = trainer?.userId || nutri?.userId
+    if (!ownerUserId) return
 
     // Notificar só se score recém ficou HOT
     await prisma.notification.create({
       data: {
-        userId: trainer.userId,
+        userId: ownerUserId,
         type: "hot_lead",
         title: `🔥 Lead quente: ${lead.name}`,
         body: `Score ${result.score}/100 — ${result.label}. Hora de entrar em contato!`,

@@ -76,10 +76,10 @@ export async function PATCH(req: NextRequest) {
     })
 
     // Notify trainer about student's response
-    const trainer = await prisma.trainerProfile.findUnique({
+    const trainer = slot.trainerId ? await prisma.trainerProfile.findUnique({
       where: { id: slot.trainerId },
       select: { userId: true },
-    })
+    }) : null
     if (trainer) {
       const studentName = student.user.name
       const dateStr = new Date(slot.date).toLocaleDateString("pt-BR", {

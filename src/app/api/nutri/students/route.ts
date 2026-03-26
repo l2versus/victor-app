@@ -49,6 +49,7 @@ export async function GET() {
 
       return {
         id: s.id,
+        userId: s.userId,
         name: s.user.name,
         email: s.user.email,
         avatar: s.user.avatar,

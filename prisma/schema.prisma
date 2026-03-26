@@ -145,6 +145,12 @@ model NutritionistProfile {
   mealPlans    MealPlan[]
   students     Student[]     @relation("StudentNutritionist")
   knowledge    KnowledgeDocument[] @relation("NutriKnowledge")
+  leads         Lead[]
+  scheduleSlots ScheduleSlot[]
+  crmTemplates  CrmTemplate[]
+  crmWebhooks   CrmWebhook[]
+  crmBroadcasts CrmBroadcast[]
+  crmBotFlows   CrmBotFlow[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1103,26 +1109,29 @@ enum SessionType {
 }
 
 model ScheduleSlot {
-  id          String         @id @default(cuid())
-  trainerId   String
-  studentId   String?        // null = horário livre
-  title       String?        // "Treino Força", "Avaliação", etc
-  date        DateTime       // data e hora de início
-  duration    Int            @default(60) // duração em minutos
-  status      ScheduleStatus @default(SCHEDULED)
-  sessionType SessionType    @default(PRESENCIAL) // modalidade da sessão
-  paidOutside Boolean        @default(false)      // pagou fora do app (pix/dinheiro)
-  notes       String?
-  recurring   Boolean        @default(false) // se repete toda semana
-  color       String?        // cor customizada no calendário
+  id             String         @id @default(cuid())
+  trainerId      String?
+  nutritionistId String?
+  studentId      String?        // null = horário livre
+  title          String?        // "Treino Força", "Consulta Nutricional", etc
+  date           DateTime       // data e hora de início
+  duration       Int            @default(60) // duração em minutos
+  status         ScheduleStatus @default(SCHEDULED)
+  sessionType    SessionType    @default(PRESENCIAL) // modalidade da sessão
+  paidOutside    Boolean        @default(false)      // pagou fora do app (pix/dinheiro)
+  notes          String?
+  recurring      Boolean        @default(false) // se repete toda semana
+  color          String?        // cor customizada no calendário
 
-  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
-  student Student?       @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id])
+  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id])
+  student      Student?             @relation(fields: [studentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
+  @@index([nutritionistId])
   @@index([studentId])
   @@index([date])
   @@index([status])
@@ -1285,7 +1294,8 @@ enum LeadTemperature {
 
 model Lead {
   id             String          @id @default(cuid())
-  trainerId      String
+  trainerId      String?
+  nutritionistId String?
   name           String
   phone          String?
   email          String?
@@ -1301,7 +1311,8 @@ model Lead {
   convertedAt    DateTime?
   lostReason     String?
 
-  trainer        TrainerProfile    @relation(fields: [trainerId], references: [id])
+  trainer        TrainerProfile?       @relation(fields: [trainerId], references: [id])
+  nutritionist   NutritionistProfile?  @relation(fields: [nutritionistId], references: [id])
   followUps      LeadFollowUp[]
   activities     CrmActivity[]
   conversations  CrmConversation[]
@@ -1310,6 +1321,7 @@ model Lead {
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
+  @@index([nutritionistId])
   @@index([status])
   @@index([temperature])
   @@index([score])
@@ -1350,38 +1362,44 @@ model CrmActivity {
 }
 
 model CrmTemplate {
-  id        String   @id @default(cuid())
-  trainerId String
-  name      String
-  content   String
-  type      String   @default("whatsapp") // whatsapp, email, sms
-  category  String?
-  variables String[] // detected {{var}} placeholders
+  id             String   @id @default(cuid())
+  trainerId      String?
+  nutritionistId String?
+  name           String
+  content        String
+  type           String   @default("whatsapp") // whatsapp, email, sms
+  category       String?
+  variables      String[] // detected {{var}} placeholders
 
-  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id])
+  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
+  @@index([nutritionistId])
 }
 
 model CrmWebhook {
-  id        String  @id @default(cuid())
-  trainerId String
-  name      String
-  token     String  @unique @default(cuid())
-  action    String  @default("create_lead") // create_lead, update_lead, custom
-  active    Boolean @default(true)
-  config    Json?   // field mapping, default values
+  id             String  @id @default(cuid())
+  trainerId      String?
+  nutritionistId String?
+  name           String
+  token          String  @unique @default(cuid())
+  action         String  @default("create_lead") // create_lead, update_lead, custom
+  active         Boolean @default(true)
+  config         Json?   // field mapping, default values
 
-  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
-  logs    CrmWebhookLog[]
+  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id])
+  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id])
+  logs         CrmWebhookLog[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
+  @@index([nutritionistId])
   @@index([token])
 }
 
@@ -1438,24 +1456,27 @@ model CrmMessage {
 }
 
 model CrmBroadcast {
-  id          String    @id @default(cuid())
-  trainerId   String
-  name        String
-  content     String
-  templateId  String?
-  status      String    @default("DRAFT") // DRAFT, SENDING, COMPLETED, CANCELLED, FAILED
-  filters     Json?     // { statuses[], temperatures[], tags[], minScore }
-  sentCount   Int       @default(0)
-  failedCount Int       @default(0)
-  scheduledAt DateTime?
+  id             String    @id @default(cuid())
+  trainerId      String?
+  nutritionistId String?
+  name           String
+  content        String
+  templateId     String?
+  status         String    @default("DRAFT") // DRAFT, SENDING, COMPLETED, CANCELLED, FAILED
+  filters        Json?     // { statuses[], temperatures[], tags[], minScore }
+  sentCount      Int       @default(0)
+  failedCount    Int       @default(0)
+  scheduledAt    DateTime?
 
-  trainer    TrainerProfile        @relation(fields: [trainerId], references: [id])
-  recipients CrmBroadcastRecipient[]
+  trainer      TrainerProfile?       @relation(fields: [trainerId], references: [id])
+  nutritionist NutritionistProfile?  @relation(fields: [nutritionistId], references: [id])
+  recipients   CrmBroadcastRecipient[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
+  @@index([nutritionistId])
   @@index([status])
 }
 
@@ -1475,20 +1496,23 @@ model CrmBroadcastRecipient {
 }
 
 model CrmBotFlow {
-  id        String  @id @default(cuid())
-  trainerId String
-  name      String
-  trigger   String  @default("new_lead") // new_lead, keyword, status_change, manual
-  nodes     Json    @default("[]")
-  edges     Json    @default("[]")
-  active    Boolean @default(false)
+  id             String  @id @default(cuid())
+  trainerId      String?
+  nutritionistId String?
+  name           String
+  trigger        String  @default("new_lead") // new_lead, keyword, status_change, manual
+  nodes          Json    @default("[]")
+  edges          Json    @default("[]")
+  active         Boolean @default(false)
 
-  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id])
+  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
+  @@index([nutritionistId])
   @@index([active])
 }
 

@@ -388,3 +388,47 @@ ManyChat (Flow de Automacao)
 - [ ] Criar flow para **Stories** (reply to story mention)
 - [ ] Adicionar **retargeting** — se o lead nao respondeu em 24h, mandar follow-up
 - [ ] Integrar com **Facebook Ads** — leads de anuncio caem direto no flow
+
+---
+
+## Bonus: WhatsApp Bot ONEFIT (Evolution API)
+
+Alem do ManyChat no Instagram, voce pode ter um bot no WhatsApp que:
+- Responde automaticamente sobre planos e precos
+- Cria leads no CRM automaticamente
+- Usa IA para responder perguntas sobre a plataforma
+- Detecta tipo de lead (Personal, Nutricionista, Academia) e adapta o pitch
+- Classifica temperatura automaticamente (HOT/WARM/COLD)
+
+### Configuracao:
+
+1. Defina as variaveis de ambiente no Vercel:
+   - `ONEFIT_EVOLUTION_URL` = URL do seu servidor Evolution API
+   - `ONEFIT_EVOLUTION_KEY` = API Key da instancia
+   - `ONEFIT_EVOLUTION_WEBHOOK_SECRET` = Secret para validar webhooks (obrigatorio em producao)
+2. Execute o script de setup: `npx tsx scripts/setup-onefit-evolution.ts`
+3. Escaneie o QR code com o WhatsApp do numero 85 998500344
+4. Pronto! O bot ja esta respondendo e capturando leads
+
+### Arquitetura:
+
+```
+WhatsApp (85 998500344)
+    |
+    v
+Evolution API (instancia: onefit-b2b)
+    |
+    v
+Webhook POST → /api/webhooks/onefit-evolution
+    |
+    ├── Lead novo? → Cria no SaasLead (CRM Master)
+    ├── Lead existente? → Atualiza status + historico
+    |
+    v
+IA (Groq/Llama) gera resposta de vendas
+    |
+    v
+Evolution API envia resposta no WhatsApp
+```
+
+> **Importante:** Esta instancia e SEPARADA do bot do Victor (trainer). Cada um tem seu proprio numero, instancia e webhook.

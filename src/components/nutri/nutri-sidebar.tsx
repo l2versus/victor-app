@@ -14,6 +14,9 @@ import {
   Settings,
   LogOut,
   ExternalLink,
+  Calendar,
+  Target,
+  BarChart3,
 } from "lucide-react"
 
 const navGroups = [
@@ -22,6 +25,7 @@ const navGroups = [
     items: [
       { href: "/nutri/dashboard", label: "Painel", icon: LayoutDashboard },
       { href: "/nutri/students", label: "Pacientes", icon: Users },
+      { href: "/nutri/schedule", label: "Agenda", icon: Calendar },
       { href: "/nutri/messages", label: "Mensagens", icon: MessageCircle },
     ],
   },
@@ -33,8 +37,15 @@ const navGroups = [
     ],
   },
   {
+    label: "Marketing",
+    items: [
+      { href: "/nutri/crm", label: "CRM", icon: Target },
+    ],
+  },
+  {
     label: "Inteligência",
     items: [
+      { href: "/nutri/bi", label: "BI Nutri", icon: BarChart3 },
       { href: "/nutri/knowledge", label: "Base IA", icon: BookOpen },
     ],
   },

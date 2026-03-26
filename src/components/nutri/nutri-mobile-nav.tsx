@@ -16,6 +16,9 @@ import {
   Globe,
   LogOut,
   X,
+  Calendar,
+  Target,
+  BarChart3,
 } from "lucide-react"
 
 const mainItems = [
@@ -26,7 +29,10 @@ const mainItems = [
 ]
 
 const moreItems = [
+  { href: "/nutri/schedule", label: "Agenda", icon: Calendar },
   { href: "/nutri/messages", label: "Mensagens", icon: MessageCircle },
+  { href: "/nutri/crm", label: "CRM", icon: Target },
+  { href: "/nutri/bi", label: "BI Nutri", icon: BarChart3 },
   { href: "/nutri/knowledge", label: "Base IA", icon: BookOpen },
   { href: "/nutri/settings", label: "Configurações", icon: Settings },
 ]
