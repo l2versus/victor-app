@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { Share2, X, Dumbbell, Clock, Flame, Trophy } from "lucide-react"
+import { Share2, X, Dumbbell, Clock, Flame, Trophy, Send, Loader2 } from "lucide-react"
 
 interface ShareWorkoutCardProps {
   templateName: string
@@ -15,6 +15,41 @@ interface ShareWorkoutCardProps {
 export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, durationMin, streak, onClose }: ShareWorkoutCardProps) {
   const cardRef = useRef<HTMLDivElement>(null)
   const [sharing, setSharing] = useState(false)
+  const [posting, setPosting] = useState(false)
+  const [posted, setPosted] = useState(false)
+
+  async function handlePostToFeed() {
+    if (!cardRef.current || posting) return
+    setPosting(true)
+    try {
+      const { default: html2canvas } = await import("html2canvas")
+      const canvas = await html2canvas(cardRef.current, { backgroundColor: "#0a0a0a", scale: 2 })
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/png")
+      )
+      // Upload image via Vercel Blob
+      const { upload } = await import("@vercel/blob/client")
+      const blobResult = await upload(
+        `workouts/${Date.now()}-treino.png`,
+        blob,
+        { access: "public", handleUploadUrl: "/api/upload" }
+      )
+      // Create community post
+      await fetch("/api/community/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "WORKOUT",
+          content: `Treino concluído: ${templateName} 💪\n${exerciseCount} exercícios · ${totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${totalVolume}kg`} volume · ${durationMin}min`,
+          imageUrl: blobResult.url,
+        }),
+      })
+      setPosted(true)
+    } catch {
+      console.error("Failed to post to feed")
+    }
+    setPosting(false)
+  }
 
   async function handleShare() {
     if (!cardRef.current) return
@@ -88,13 +123,29 @@ export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, dur
         </div>
 
         {/* Action buttons — outside the captured area */}
-        <div className="flex gap-3">
-          <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/[0.06] border border-white/[0.08] text-neutral-400 text-sm font-medium flex items-center justify-center gap-2">
-            <X className="w-4 h-4" /> Fechar
+        <div className="space-y-2">
+          {/* Post to community feed */}
+          <button
+            onClick={handlePostToFeed}
+            disabled={posting || posted}
+            className={`w-full py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 active:scale-[0.98] transition-all ${
+              posted
+                ? "bg-emerald-600/20 border border-emerald-500/20 text-emerald-400"
+                : "bg-white/[0.06] border border-white/[0.08] text-white hover:bg-white/[0.1]"
+            }`}
+          >
+            {posting ? <Loader2 className="w-4 h-4 animate-spin" /> : posted ? "✓ Publicado no Feed" : <><Send className="w-4 h-4" /> Postar na Comunidade</>}
           </button>
-          <button onClick={handleShare} disabled={sharing} className="flex-1 py-3 rounded-xl bg-red-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-transform">
-            <Share2 className="w-4 h-4" /> {sharing ? "..." : "Compartilhar"}
-          </button>
+
+          {/* Share externally + close */}
+          <div className="flex gap-3">
+            <button onClick={onClose} className="flex-1 py-3 rounded-xl bg-white/[0.06] border border-white/[0.08] text-neutral-400 text-sm font-medium flex items-center justify-center gap-2">
+              <X className="w-4 h-4" /> Fechar
+            </button>
+            <button onClick={handleShare} disabled={sharing} className="flex-1 py-3 rounded-xl bg-red-600 text-white text-sm font-bold flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.98] transition-transform">
+              <Share2 className="w-4 h-4" /> {sharing ? "..." : "Compartilhar"}
+            </button>
+          </div>
         </div>
       </div>
     </div>
