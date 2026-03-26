@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { ArrowLeft } from "lucide-react"
 import Link from "next/link"
 import { AuthLayout } from "@/components/auth/auth-layout"
+import { BRAND } from "@/lib/branding"
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -53,7 +54,7 @@ export default function RegisterPage() {
 
       <div className="text-center mb-8 lg:text-left">
         <h1 className="text-2xl font-bold text-white mb-1">Criar Conta</h1>
-        <p className="text-sm text-neutral-400">Comece sua transformação com Victor</p>
+        <p className="text-sm text-neutral-400">Comece sua transformação com {BRAND.trainerFirstName}</p>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-3.5">

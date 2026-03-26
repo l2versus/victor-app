@@ -2,9 +2,10 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
+import { BRAND } from "@/lib/branding"
 
 const phrases = [
-  "Victor Oliveira — Personal Trainer",
+  `${BRAND.trainerName} — ${BRAND.trainerTitle}`,
   "Seu corpo. Sua evolução. Sua história.",
   "Cada repetição te aproxima do impossível.",
   "Disciplina supera talento quando talento não tem disciplina.",

@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import { MessageCircle, X, Send, Bot, User, Loader2 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { BRAND } from "@/lib/branding"
 
 interface Message {
   role: "user" | "assistant"
@@ -40,7 +41,7 @@ export function ChatWidget() {
     if (open && messages.length === 0) {
       setMessages([{
         role: "assistant",
-        content: "Oi! Sou o Victor Virtual, assistente do Victor Oliveira. Posso te ajudar com dúvidas sobre treinos, planos e como funciona a consultoria. O que você gostaria de saber?"
+        content: `Oi! Sou o ${BRAND.aiAssistantName}, assistente do ${BRAND.trainerName}. Posso te ajudar com dúvidas sobre treinos, planos e como funciona a consultoria. O que você gostaria de saber?`
       }])
     }
   }, [open, messages.length])
@@ -82,7 +83,7 @@ export function ChatWidget() {
           const updated = [...prev]
           updated[updated.length - 1] = {
             role: "assistant",
-            content: err.error || "Desculpe, tive um problema. Tente novamente ou fale com Victor no WhatsApp: (85) 9.9698-5823"
+            content: err.error || `Desculpe, tive um problema. Tente novamente ou fale com ${BRAND.trainerFirstName} no WhatsApp: ${BRAND.whatsappFormatted}`
           }
           return updated
         })
@@ -114,7 +115,7 @@ export function ChatWidget() {
         const updated = [...prev]
         updated[updated.length - 1] = {
           role: "assistant",
-          content: "Ops, algo deu errado. Tente novamente ou fale direto com Victor no WhatsApp: (85) 9.9698-5823"
+          content: `Ops, algo deu errado. Tente novamente ou fale direto com ${BRAND.trainerFirstName} no WhatsApp: ${BRAND.whatsappFormatted}`
         }
         return updated
       })
@@ -128,7 +129,7 @@ export function ChatWidget() {
       {/* Floating button */}
       <button
         onClick={() => setOpen(!open)}
-        aria-label={open ? "Fechar chat" : "Falar com Victor Virtual"}
+        aria-label={open ? "Fechar chat" : `Falar com ${BRAND.aiAssistantName}`}
         className={cn(
           "fixed bottom-20 sm:bottom-6 right-4 sm:right-6 z-[60] w-14 h-14 rounded-full flex items-center justify-center shadow-2xl transition-all duration-500",
           open
@@ -158,7 +159,7 @@ export function ChatWidget() {
               <Bot className="w-5 h-5 text-red-400" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-white">Victor Virtual</p>
+              <p className="text-sm font-semibold text-white">{BRAND.aiAssistantName}</p>
               <p className="text-[10px] text-emerald-400 flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
                 Online agora
@@ -198,7 +199,7 @@ export function ChatWidget() {
           {/* Lead capture mini-form — aparece após 3 msgs */}
           {showLeadForm && !leadCaptured && (
             <div className="px-4 py-3 border-t border-white/[0.06] bg-red-600/5">
-              <p className="text-[10px] text-neutral-400 mb-2">Quer que o Victor te responda pessoalmente?</p>
+              <p className="text-[10px] text-neutral-400 mb-2">Quer que o {BRAND.trainerFirstName} te responda pessoalmente?</p>
               <form onSubmit={async (e) => {
                 e.preventDefault()
                 if (!leadForm.name || !leadForm.phone) return
@@ -218,7 +219,7 @@ export function ChatWidget() {
                 } catch { /* silent */ }
                 setLeadCaptured(true)
                 setShowLeadForm(false)
-                setMessages(prev => [...prev, { role: "assistant", content: "Show! Victor vai te chamar no WhatsApp em breve. Enquanto isso, pode continuar perguntando aqui!" }])
+                setMessages(prev => [...prev, { role: "assistant", content: `Show! ${BRAND.trainerFirstName} vai te chamar no WhatsApp em breve. Enquanto isso, pode continuar perguntando aqui!` }])
               }} className="flex gap-2">
                 <input type="text" placeholder="Nome" required value={leadForm.name} onChange={e => setLeadForm(p => ({ ...p, name: e.target.value }))}
                   className="flex-1 px-2.5 py-2 rounded-lg bg-white/[0.05] border border-white/[0.08] text-white text-xs placeholder:text-neutral-600 focus:outline-none focus:border-red-500/40" />

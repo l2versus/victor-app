@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
+import { BRAND } from "@/lib/branding"
 import {
   getStudentContextByPhone,
   generateBotResponse,
@@ -112,7 +113,7 @@ export async function POST(req: NextRequest) {
       // Fallback se Groq falhar
       if (!reply) {
         const firstName = contactName.split(" ")[0] || "amigo"
-        reply = `Oi ${firstName}! Sou o Victor Oliveira, personal trainer 💪\n\n` +
+        reply = `Oi ${firstName}! Sou o ${BRAND.trainerName}, personal trainer 💪\n\n` +
           `Me conta: o que tu tá procurando?\n\n` +
           `1️⃣ Emagrecer\n2️⃣ Ganhar massa\n3️⃣ Condicionamento\n4️⃣ Preços\n5️⃣ Aula experimental grátis`
       }
@@ -155,7 +156,7 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // ─── Notify Victor in-app ────────────────────────────────
+    // ─── Notify trainer (BRAND.trainerFirstName) in-app ─────
     if (trainer) {
       await prisma.notification.create({
         data: {

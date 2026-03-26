@@ -2,6 +2,7 @@
 
 import { Clock, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { BRAND } from "@/lib/branding"
 
 export default function CheckoutPendingPage() {
   return (
@@ -41,7 +42,7 @@ export default function CheckoutPendingPage() {
 
         <div className="pt-4 border-t border-zinc-800">
           <p className="text-xs text-zinc-600">
-            Duvidas? Fale com Victor no WhatsApp: (85) 9.9698-5823
+            Duvidas? Fale com {BRAND.trainerFirstName} no WhatsApp: {BRAND.whatsappFormatted}
           </p>
         </div>
       </div>

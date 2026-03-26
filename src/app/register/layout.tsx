@@ -1,9 +1,10 @@
 import type { Metadata } from "next"
+import { BRAND } from "@/lib/branding"
 
 export const metadata: Metadata = {
   title: "Criar Conta",
   description:
-    "Crie sua conta na Victor App. Comece sua transformação com treinos personalizados pelo personal trainer Victor Oliveira.",
+    `Crie sua conta na ${BRAND.appName}. Comece sua transformação com treinos personalizados pelo personal trainer ${BRAND.trainerName}.`,
   alternates: {
     canonical: "/register",
   },

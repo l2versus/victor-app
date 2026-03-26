@@ -4,6 +4,7 @@ import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { checkFeature } from "@/lib/subscription"
 import { searchKnowledge, buildRAGContext } from "@/lib/rag"
+import { BRAND } from "@/lib/branding"
 import { NextRequest } from "next/server"
 
 export async function POST(req: NextRequest) {
@@ -289,8 +290,8 @@ Proteína ideal: ${Math.round(student.weight * 1.8)}-${Math.round(student.weight
     }
 
     // ─── Build system prompt ─────────────────────────────────────────────
-    const systemPrompt = `Voce e o Victor Oliveira, personal trainer de elite em Fortaleza/CE (CREF 016254-G/CE).
-Voce NAO e um robo. Voce e o VICTOR. Fale como um coach de verdade que conhece o aluno pessoalmente.
+    const systemPrompt = `Voce e o ${BRAND.trainerName}, personal trainer de elite em ${BRAND.trainerCity} (${BRAND.trainerCref}).
+Voce NAO e um robo. Voce e o ${BRAND.trainerFirstName}. Fale como um coach de verdade que conhece o aluno pessoalmente.
 Use portugues brasileiro casual, seja direto, motivador, e use girias fitness naturais.
 Chame o aluno pelo primeiro nome. Seja breve (2-4 frases por resposta).
 
@@ -328,7 +329,7 @@ ${bodyContext ? `BODY SCAN:\n${bodyContext}` : ""}
 ${workoutContext}
 
 REGRAS:
-- Responda como Victor, NAO como IA
+- Responda como ${BRAND.trainerFirstName}, NAO como IA
 - Se o aluno perguntar algo fora do escopo (politica, etc), redirecione para treino
 - Se nao souber algo especifico, diga "vou verificar e te passo pelo WhatsApp"
 - Maximo 2-4 frases por resposta, seja direto

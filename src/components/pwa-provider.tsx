@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react"
 import { Zap, Bell, Dumbbell, X, Share, Plus, MoreVertical, Download } from "lucide-react"
+import { BRAND } from "@/lib/branding"
 
 interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>
@@ -118,9 +119,9 @@ export default function PWAProvider() {
             </button>
 
             <div className="mx-auto w-20 h-20 rounded-2xl bg-white/5 backdrop-blur-sm flex items-center justify-center mb-4 shadow-xl border border-white/[0.08]">
-              <img src="/icon-192x192.png" alt="Victor App" className="w-14 h-14 rounded-xl" />
+              <img src="/icon-192x192.png" alt={BRAND.appName} className="w-14 h-14 rounded-xl" />
             </div>
-            <h2 className="text-white text-xl font-black tracking-tight">Victor App</h2>
+            <h2 className="text-white text-xl font-black tracking-tight">{BRAND.appName}</h2>
             <p className="text-red-400/80 text-xs font-medium mt-1 uppercase tracking-[0.15em]">Personal Trainer</p>
           </div>
 

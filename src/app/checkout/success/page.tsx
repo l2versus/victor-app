@@ -2,6 +2,7 @@
 
 import { CheckCircle, ArrowRight } from "lucide-react"
 import Link from "next/link"
+import { BRAND } from "@/lib/branding"
 
 export default function CheckoutSuccessPage() {
   return (
@@ -16,14 +17,14 @@ export default function CheckoutSuccessPage() {
         </h1>
 
         <p className="text-zinc-400">
-          Sua assinatura foi ativada com sucesso! Victor vai entrar em contato
+          Sua assinatura foi ativada com sucesso! {BRAND.trainerFirstName} vai entrar em contato
           pelo WhatsApp para enviar suas credenciais de acesso e montar seu treino.
         </p>
 
         <div className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-left space-y-2">
           <h3 className="text-sm font-semibold text-zinc-300">Proximos passos:</h3>
           <ol className="text-sm text-zinc-400 space-y-1 list-decimal list-inside">
-            <li>Victor vai te enviar login e senha pelo WhatsApp</li>
+            <li>{BRAND.trainerFirstName} vai te enviar login e senha pelo WhatsApp</li>
             <li>Acesse o app e faca login</li>
             <li>Altere sua senha no perfil</li>
             <li>Seu treino personalizado sera montado em ate 24h</li>
@@ -49,7 +50,7 @@ export default function CheckoutSuccessPage() {
 
         <div className="pt-4 border-t border-zinc-800">
           <p className="text-xs text-zinc-600">
-            Duvidas? Fale com Victor no WhatsApp: (85) 9.9698-5823
+            Duvidas? Fale com {BRAND.trainerFirstName} no WhatsApp: {BRAND.whatsappFormatted}
           </p>
         </div>
       </div>

@@ -7,6 +7,7 @@ import {
   Phone, ChevronDown, Lock, Star,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { BRAND, whatsappLink } from "@/lib/branding"
 import Link from "next/link"
 
 type Duration = "MONTHLY" | "QUARTERLY" | "SEMIANNUAL" | "ANNUAL"
@@ -42,7 +43,7 @@ const tiers = [
       { key: "tudo_essencial", label: "Tudo do Essencial", included: true },
       { key: "ilimitado", label: "Treinos ilimitados", included: true },
       { key: "hasAI", label: "Assistente virtual pós-treino", included: true },
-      { key: "tech", label: "Victor + tecnologia no treino", included: true },
+      { key: "tech", label: `${BRAND.trainerFirstName} + tecnologia no treino`, included: true },
       { key: "analise", label: "Análise inteligente da ficha", included: true },
       { key: "suporte", label: "Suporte prioritário", included: true },
       { key: "hasPostureCamera", label: "Correção de postura por IA", included: false },
@@ -58,7 +59,7 @@ const tiers = [
       { key: "hasPostureCamera", label: "Correção postura por câmera IA", included: true },
       { key: "hasVipGroup", label: "Rede Social Ironberg", included: true },
       { key: "hasNutrition", label: "Orientação nutricional", included: true },
-      { key: "whatsapp", label: "WhatsApp direto com Victor", included: true },
+      { key: "whatsapp", label: `WhatsApp direto com ${BRAND.trainerFirstName}`, included: true },
       { key: "prioridade", label: "Prioridade total", included: true },
       { key: "dieta", label: "Bonus: planilha de dieta", included: true },
     ],
@@ -96,8 +97,6 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
   const [checkoutLoading, setCheckoutLoading] = useState<string | null>(null)
   const currentTier = getTierIndex(currentPlan)
 
-  const whatsappBase = "https://wa.me/5585996985823"
-
   async function handleCheckout(tierName: string) {
     setCheckoutLoading(tierName)
     try {
@@ -115,12 +114,12 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
       } else {
         // Fallback to WhatsApp if checkout fails
         const price = getPrice(tiers.find(t => t.name === tierName)!.monthly, duration)
-        const msg = encodeURIComponent(`Ola Victor! Quero assinar o plano ${tierName} ${durations.find(d => d.key === duration)!.label} por R$ ${price.monthly.toFixed(2)}/mes`)
-        window.open(`${whatsappBase}?text=${msg}`, "_blank")
+        const msg = `Ola ${BRAND.trainerFirstName}! Quero assinar o plano ${tierName} ${durations.find(d => d.key === duration)!.label} por R$ ${price.monthly.toFixed(2)}/mes`
+        window.open(whatsappLink(msg), "_blank")
       }
     } catch {
       // Fallback to WhatsApp on error
-      window.open(`${whatsappBase}?text=${encodeURIComponent(`Quero assinar o plano ${tierName}`)}`, "_blank")
+      window.open(whatsappLink(`Quero assinar o plano ${tierName}`), "_blank")
     } finally {
       setCheckoutLoading(null)
     }
@@ -197,7 +196,7 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
                   <strong>Como funciona:</strong> A câmera do celular detecta seus movimentos em tempo real.
                   O sistema compara os ângulos das articulações com o padrão correto de cada exercício e
                   dá feedback visual instantâneo: &quot;Desça mais o quadril&quot;, &quot;Cotovelos mais próximos&quot;.
-                  É como ter o Victor do seu lado em cada repetição.
+                  É como ter o {BRAND.trainerFirstName} do seu lado em cada repetição.
                 </p>
               </div>
 
@@ -250,9 +249,7 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
           const isPro = tier.name === "Pro"
           const isElite = tier.name === "Elite"
 
-          const whatsappMsg = encodeURIComponent(
-            `Ola Victor! Quero fazer upgrade para o plano ${tier.name} ${durations.find(d => d.key === duration)?.label} por R$ ${p.monthly.toFixed(2)}/mes`
-          )
+          const whatsappMsg = `Ola ${BRAND.trainerFirstName}! Quero fazer upgrade para o plano ${tier.name} ${durations.find(d => d.key === duration)?.label} por R$ ${p.monthly.toFixed(2)}/mes`
 
           return (
             <div
@@ -401,7 +398,7 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
               "Maximiza a ativação muscular — mais resultado com o mesmo esforço",
               "Corrige vícios de postura que você nem sabe que tem",
               "Funciona offline — sua privacidade 100% protegida",
-              "É como ter o Victor do seu lado em cada repetição, 24 horas",
+              `É como ter o ${BRAND.trainerFirstName} do seu lado em cada repetição, 24 horas`,
             ].map((text) => (
               <div key={text} className="flex items-start gap-2">
                 <Check className="w-3.5 h-3.5 text-blue-400 shrink-0 mt-0.5" />
@@ -425,13 +422,13 @@ export function UpgradeClient({ currentPlan, currentFeatures }: UpgradeClientPro
 
       {/* WhatsApp CTA */}
       <a
-        href={`${whatsappBase}?text=${encodeURIComponent("Ola Victor! Quero saber mais sobre os planos")}`}
+        href={whatsappLink(`Ola ${BRAND.trainerFirstName}! Quero saber mais sobre os planos`)}
         target="_blank"
         rel="noopener noreferrer"
         className="w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-white/[0.06] bg-white/[0.02] text-neutral-400 text-xs font-medium hover:bg-white/[0.04] hover:text-white transition-all"
       >
         <Phone className="w-3.5 h-3.5" />
-        Duvidas? Fale com Victor no WhatsApp
+        Duvidas? Fale com {BRAND.trainerFirstName} no WhatsApp
       </a>
     </div>
   )

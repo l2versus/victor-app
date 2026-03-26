@@ -1,5 +1,6 @@
 import { streamText } from "ai"
 import { freeModel, SYSTEM_PROMPTS } from "@/lib/ai"
+import { BRAND } from "@/lib/branding"
 import { NextRequest } from "next/server"
 
 // Rate limit: simple in-memory counter per IP (resets on deploy)
@@ -20,14 +21,14 @@ function checkRateLimit(ip: string): boolean {
   return true
 }
 
-// POST /api/chat — Public Victor Virtual chat (no auth required)
+// POST /api/chat — Public BRAND.aiAssistantName chat (no auth required)
 export async function POST(req: NextRequest) {
   try {
     const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
 
     if (!checkRateLimit(ip)) {
       return Response.json(
-        { error: "Muitas mensagens. Tente novamente em alguns minutos ou fale com Victor no WhatsApp: (85) 9.9698-5823" },
+        { error: `Muitas mensagens. Tente novamente em alguns minutos ou fale com ${BRAND.trainerFirstName} no WhatsApp: ${BRAND.whatsappFormatted}` },
         { status: 429 }
       )
     }
@@ -55,7 +56,7 @@ export async function POST(req: NextRequest) {
 
     return result.toTextStreamResponse()
   } catch (error) {
-    console.error("[Victor Virtual] Error:", error)
+    console.error(`[${BRAND.aiAssistantName}] Error:`, error)
     return Response.json({ error: "Erro interno" }, { status: 500 })
   }
 }

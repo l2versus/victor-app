@@ -118,7 +118,7 @@ export async function scoreAndUpdateLead(leadId: string): Promise<ScoreResult | 
 }
 
 /**
- * Score + update um lead + notificar Victor se ficou HOT.
+ * Score + update um lead + notificar trainer (BRAND.trainerFirstName) se ficou HOT.
  */
 export async function scoreAndNotify(leadId: string): Promise<void> {
   const result = await scoreAndUpdateLead(leadId)

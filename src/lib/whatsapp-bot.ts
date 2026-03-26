@@ -1,19 +1,20 @@
 /**
- * Victor App — WhatsApp Bot powered by Claude
+ * WhatsApp Bot powered by Claude — uses BRAND config for trainer identity.
  *
  * Integra WhatsApp Cloud API (oficial Meta) com Claude (Anthropic)
- * pra responder alunos como se fosse o Victor em pessoa.
+ * pra responder alunos como se fosse o BRAND.trainerFirstName em pessoa.
  *
  * Fluxo:
- * 1. Aluno manda msg no WhatsApp do Victor
+ * 1. Aluno manda msg no WhatsApp do trainer (BRAND.trainerFirstName)
  * 2. Meta webhook chega em /api/webhooks/whatsapp
  * 3. Bot identifica o aluno pelo telefone
  * 4. Puxa contexto: treinos, evolução, plano, restrições
- * 5. Claude gera resposta humanizada com a persona do Victor
+ * 5. Claude gera resposta humanizada com a persona do trainer (BRAND)
  * 6. Responde no WhatsApp + salva no banco (DirectMessage)
- * 7. Victor vê tudo em /admin/messages
+ * 7. Trainer vê tudo em /admin/messages
  */
 
+import { BRAND } from "@/lib/branding"
 import { prisma } from "./prisma"
 
 // ═══════════════════════════════════════════════════════════════
@@ -21,13 +22,13 @@ import { prisma } from "./prisma"
 // ═══════════════════════════════════════════════════════════════
 
 export function buildSystemPrompt(context: StudentContext): string {
-  return `Voce é o Victor Oliveira, personal trainer em Fortaleza-CE, CREF 016254-G/CE.
+  return `Voce é o ${BRAND.trainerName}, personal trainer em ${BRAND.trainerCity}, ${BRAND.trainerCref}.
 Voce está respondendo pelo WhatsApp. O aluno acha que está falando COM VOCE, não com um robô.
 
 ═══ REGRAS DE OURO (NUNCA QUEBRE) ═══
 
 1. NUNCA diga que é IA, bot, assistente virtual, modelo de linguagem ou similar.
-2. NUNCA diga "como IA" ou "como assistente". Voce É o Victor.
+2. NUNCA diga "como IA" ou "como assistente". Voce É o ${BRAND.trainerFirstName}.
 3. Fale como um cearense de Fortaleza — informal, direto, motivacional.
 4. Use "tu" não "você". Ex: "Bora treinar hoje?" não "Você deveria treinar".
 5. Emojis com moderação (1-2 por mensagem, máximo). Nada exagerado.
@@ -80,7 +81,7 @@ Total de sessões: ${context.totalSessions}
 
 ${context.recentMessages.length > 0 ? "Últimas mensagens da conversa:\n" + context.recentMessages.map(m => `${m.from}: ${m.text}`).join("\n") : "Primeira mensagem do aluno."}
 
-Responda a próxima mensagem como Victor. Curto, direto, humano.`
+Responda a próxima mensagem como ${BRAND.trainerFirstName}. Curto, direto, humano.`
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -212,7 +213,7 @@ export async function getStudentContextByPhone(phone: string): Promise<{
         : null,
       totalSessions,
       recentMessages: recentMsgs.reverse().map(m => ({
-        from: m.sender.role === "ADMIN" ? "Victor" : m.sender.name,
+        from: m.sender.role === "ADMIN" ? BRAND.trainerFirstName : m.sender.name,
         text: m.content,
       })),
     },

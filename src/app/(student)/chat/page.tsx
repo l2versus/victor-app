@@ -8,6 +8,7 @@ import {
   Apple, Flame, HelpCircle,
 } from "lucide-react"
 import Link from "next/link"
+import { BRAND } from "@/lib/branding"
 
 type Message = {
   id: string
@@ -47,7 +48,7 @@ export default function ChatPage() {
           id: "welcome",
           role: "assistant",
           content:
-            "Olá! Sou o assistente IA do Victor. Posso te ajudar com dúvidas sobre treino, nutrição, e coletar seu feedback pós-treino. Como posso ajudar?",
+            `Olá! Sou o assistente IA do ${BRAND.trainerFirstName}. Posso te ajudar com dúvidas sobre treino, nutrição, e coletar seu feedback pós-treino. Como posso ajudar?`,
         },
       ])
     }
@@ -87,7 +88,17 @@ export default function ChatPage() {
         body: JSON.stringify({ messages: apiMessages }),
       })
 
-      if (!res.ok) throw new Error("API error")
+      if (!res.ok) {
+        const contentType = res.headers.get("content-type") || ""
+        let errorMsg = "Serviço temporariamente indisponível. Tente novamente em alguns segundos."
+        if (contentType.includes("application/json")) {
+          const data = await res.json()
+          if (res.status === 401) errorMsg = "Sessão expirada. Faça login novamente."
+          else if (res.status === 403) errorMsg = data.error || "Acesso negado."
+          else if (data.error) errorMsg = data.error
+        }
+        throw new Error(errorMsg)
+      }
 
       const reader = res.body?.getReader()
       const decoder = new TextDecoder()
@@ -104,11 +115,14 @@ export default function ChatPage() {
           )
         }
       }
-    } catch {
+    } catch (err) {
+      const errorMessage = err instanceof Error && err.message !== "Failed to fetch"
+        ? err.message
+        : "Não foi possível conectar ao assistente. Verifique sua conexão e tente novamente."
       setMessages((prev) =>
         prev.map((m) =>
           m.id === assistantMsg.id
-            ? { ...m, content: "Desculpe, ocorreu um erro. Tente novamente." }
+            ? { ...m, content: errorMessage }
             : m
         )
       )

@@ -2,6 +2,7 @@
 
 import { Dumbbell } from "lucide-react"
 import { useState, useEffect } from "react"
+import { BRAND } from "@/lib/branding"
 
 export function AuthLayout({ children }: { children: React.ReactNode }) {
   const [mousePos, setMousePos] = useState({ x: 50, y: 50 })
@@ -48,8 +49,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               <Dumbbell className="w-5 h-5 text-white" />
             </div>
             <div>
-              <p className="text-white font-bold text-lg tracking-tight">Victor Oliveira</p>
-              <p className="text-red-400 text-[10px] font-semibold uppercase tracking-[0.2em]">Personal Trainer</p>
+              <p className="text-white font-bold text-lg tracking-tight">{BRAND.trainerName}</p>
+              <p className="text-red-400 text-[10px] font-semibold uppercase tracking-[0.2em]">{BRAND.trainerTitle}</p>
             </div>
           </div>
 
@@ -129,8 +130,8 @@ export function AuthLayout({ children }: { children: React.ReactNode }) {
               <Dumbbell className="w-6 h-6 text-white" />
             </div>
             <div>
-              <p className="text-white font-bold text-xl tracking-tight">Victor Oliveira</p>
-              <p className="text-red-400 text-xs font-semibold uppercase tracking-[0.2em]">Personal Trainer</p>
+              <p className="text-white font-bold text-xl tracking-tight">{BRAND.trainerName}</p>
+              <p className="text-red-400 text-xs font-semibold uppercase tracking-[0.2em]">{BRAND.trainerTitle}</p>
             </div>
           </div>
 

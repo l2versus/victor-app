@@ -1,4 +1,5 @@
 import { Resend } from "resend"
+import { BRAND } from "@/lib/branding"
 
 let _resend: Resend | null = null
 function getResend(): Resend | null {
@@ -44,14 +45,14 @@ export async function sendWelcomeEmail({
 
   try {
     await resend.emails.send({
-      from: "Victor App <onboarding@resend.dev>",
+      from: BRAND.emailFrom,
       to,
-      subject: `Bem-vindo ao Victor App, ${firstName}!`,
+      subject: `Bem-vindo ao ${BRAND.appName}, ${firstName}!`,
       html: `
         <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 520px; margin: 0 auto; padding: 32px 24px; background: #0a0a0a; color: #e5e5e5;">
           <div style="text-align: center; margin-bottom: 32px;">
-            <h1 style="color: #fff; font-size: 24px; margin: 0;">Victor App</h1>
-            <p style="color: #737373; font-size: 13px; margin-top: 4px;">Personal Trainer Victor Oliveira</p>
+            <h1 style="color: #fff; font-size: 24px; margin: 0;">${BRAND.appName}</h1>
+            <p style="color: #737373; font-size: 13px; margin-top: 4px;">${BRAND.trainerTitle} ${BRAND.trainerName}</p>
           </div>
 
           <p style="font-size: 15px; line-height: 1.6; color: #d4d4d4;">
@@ -91,9 +92,9 @@ export async function sendWelcomeEmail({
           <hr style="border: none; border-top: 1px solid #262626; margin: 32px 0;" />
 
           <p style="font-size: 12px; color: #525252; text-align: center; line-height: 1.5;">
-            Duvidas? Fale com o Victor pelo WhatsApp: (85) 9.9698-5823
+            Duvidas? Fale com o ${BRAND.trainerFirstName} pelo WhatsApp: ${BRAND.whatsappFormatted}
             <br />
-            Victor Oliveira — Personal Trainer | CREF 016254-G/CE
+            ${BRAND.trainerName} — ${BRAND.trainerTitle} | ${BRAND.trainerCref}
           </p>
         </div>
       `,

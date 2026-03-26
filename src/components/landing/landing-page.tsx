@@ -11,6 +11,7 @@ import {
   X, ChevronRight, Menu, XIcon,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { BRAND, whatsappLink } from "@/lib/branding"
 import { TextEffect } from "@/components/ui/text-effect"
 import { PremiumTestimonials } from "@/components/ui/premium-testimonials"
 import { TypingEffect } from "@/components/ui/typing-effect"
@@ -101,7 +102,7 @@ const tiers = [
       { t: "Tudo do Essencial", ok: true },
       { t: "Treinos ilimitados", ok: true },
       { t: "Assistente virtual pós-treino", ok: true },
-      { t: "Victor + tecnologia no seu treino", ok: true },
+      { t: `${BRAND.trainerFirstName} + tecnologia no seu treino`, ok: true },
       { t: "Análise inteligente da sua ficha", ok: true },
       { t: "Suporte prioritário", ok: true },
       { t: "Correção de postura", ok: false },
@@ -115,7 +116,7 @@ const tiers = [
       { t: "Correção postura por câmera", ok: true },
       { t: "Rede Social Ironberg exclusivo", ok: true },
       { t: "Orientação nutricional", ok: true },
-      { t: "WhatsApp direto com Victor", ok: true },
+      { t: `WhatsApp direto com ${BRAND.trainerFirstName}`, ok: true },
       { t: "Prioridade total", ok: true },
       { t: "Bônus: planilha de dieta", ok: true },
     ],
@@ -138,7 +139,7 @@ function TrainerPhoto({ className, hero = false }: { className?: string; hero?: 
       {/* Photo */}
       <Image
         src="/img/victor-profile.png"
-        alt="Victor Oliveira — Personal Trainer"
+        alt={`${BRAND.trainerName} — ${BRAND.trainerTitle}`}
         width={500}
         height={625}
         className={cn("w-full h-full object-cover object-top", hero && "scale-110")}
@@ -152,8 +153,8 @@ function TrainerPhoto({ className, hero = false }: { className?: string; hero?: 
       {/* Bottom info */}
       {!hero && (
         <div className="absolute bottom-6 left-6 right-6">
-          <p className="text-white font-bold text-lg">Victor Oliveira</p>
-          <p className="text-red-400 text-xs font-medium tracking-wider uppercase">CREF 016254-G/CE</p>
+          <p className="text-white font-bold text-lg">{BRAND.trainerName}</p>
+          <p className="text-red-400 text-xs font-medium tracking-wider uppercase">{BRAND.trainerCref}</p>
         </div>
       )}
     </div>
@@ -215,7 +216,7 @@ function LeadCaptureForm() {
       <div className="mt-8 p-6 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 max-w-md mx-auto">
         <CheckCircle2 className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
         <p className="text-emerald-400 font-semibold text-sm">Recebemos seu contato!</p>
-        <p className="text-neutral-500 text-xs mt-1">Victor vai te chamar no WhatsApp em breve.</p>
+        <p className="text-neutral-500 text-xs mt-1">{BRAND.trainerFirstName} vai te chamar no WhatsApp em breve.</p>
       </div>
     )
   }
@@ -247,7 +248,7 @@ function LeadCaptureForm() {
             disabled={loading}
             className="w-full py-3.5 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-bold shadow-lg shadow-red-600/20 hover:from-red-500 hover:to-red-600 transition-all disabled:opacity-50"
           >
-            {loading ? "Enviando..." : "Victor vai me chamar no WhatsApp"}
+            {loading ? "Enviando..." : `${BRAND.trainerFirstName} vai me chamar no WhatsApp`}
           </button>
         </form>
         <p className="text-neutral-700 text-[10px] mt-3 text-center">Resposta em até 2 horas · Sem spam</p>
@@ -319,7 +320,7 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
       } else {
         const detail = data.detail || data.error || "Erro desconhecido"
         console.error("Checkout failed:", data)
-        alert(`Erro ao gerar link de pagamento: ${detail}\n\nTente novamente ou fale com Victor no WhatsApp.`)
+        alert(`Erro ao gerar link de pagamento: ${detail}\n\nTente novamente ou fale com ${BRAND.trainerFirstName} no WhatsApp.`)
       }
     } catch {
       alert("Erro de conexão. Tente novamente.")
@@ -424,7 +425,7 @@ function PlanModal({ tier, duration, onClose }: { tier: typeof tiers[0]; duratio
 
           {/* WhatsApp fallback */}
           <a
-            href={`https://wa.me/5585996985823?text=${encodeURIComponent(`Olá Victor! Quero assinar o plano ${tier.name} ${durations.find(d => d.key === duration)?.label} por R$ ${p.monthly.toFixed(2)}/mês`)}`}
+            href={whatsappLink(`Olá ${BRAND.trainerFirstName}! Quero assinar o plano ${tier.name} ${durations.find(d => d.key === duration)?.label} por R$ ${p.monthly.toFixed(2)}/mês`)}
             target="_blank"
             rel="noopener noreferrer"
             className="w-full py-3 rounded-xl border border-white/[0.06] text-neutral-400 text-xs font-medium text-center block hover:bg-white/[0.03] hover:text-white transition-all"
@@ -475,11 +476,11 @@ function FeatureModal({ feature, onClose }: { feature: NonNullable<FeatureDetail
    FAQ with floating 3D logos + premium accordion
    ═══════════════════════════════════════════ */
 const faqData = [
-  { q: "Preciso ter experiência com treino?", a: "Não! Victor monta o treino de acordo com seu nível — do iniciante ao avançado. A tecnologia adapta tudo conforme seu progresso.", icon: Dumbbell },
+  { q: "Preciso ter experiência com treino?", a: `Não! ${BRAND.trainerFirstName} monta o treino de acordo com seu nível — do iniciante ao avançado. A tecnologia adapta tudo conforme seu progresso.`, icon: Dumbbell },
   { q: "Posso cancelar a qualquer momento?", a: "Sim. Sem multa, sem burocracia. Mas quando você vir os resultados, não vai querer parar.", icon: Shield },
-  { q: "Como funciona a correção de postura?", a: "No plano Elite, a câmera do seu celular analisa seus movimentos em tempo real e te corrige durante o exercício — como ter o Victor do seu lado a cada repetição.", icon: Camera },
-  { q: "Tenho lesão/restrição. Posso treinar?", a: "Com certeza. Victor analisa sua ficha médica com apoio de tecnologia inteligente. Todas as restrições são respeitadas na prescrição. Sua segurança é prioridade #1.", icon: Heart },
-  { q: "Preciso ir à academia?", a: "Não necessariamente. Victor monta treinos para academia, home workout ou ao ar livre. Você escolhe.", icon: Target },
+  { q: "Como funciona a correção de postura?", a: `No plano Elite, a câmera do seu celular analisa seus movimentos em tempo real e te corrige durante o exercício — como ter o ${BRAND.trainerFirstName} do seu lado a cada repetição.`, icon: Camera },
+  { q: "Tenho lesão/restrição. Posso treinar?", a: `Com certeza. ${BRAND.trainerFirstName} analisa sua ficha médica com apoio de tecnologia inteligente. Todas as restrições são respeitadas na prescrição. Sua segurança é prioridade #1.`, icon: Heart },
+  { q: "Preciso ir à academia?", a: `Não necessariamente. ${BRAND.trainerFirstName} monta treinos para academia, home workout ou ao ar livre. Você escolhe.`, icon: Target },
 ]
 
 function FloatingLogo({ size, className, delay, variant = 1 }: {
@@ -645,8 +646,8 @@ export function LandingPage() {
           <div className="flex items-center gap-3">
             <Logo size={48} glow />
             <div className="hidden sm:block">
-              <p className="font-bold text-[15px] text-white tracking-tight">Victor Oliveira</p>
-              <p className="text-[9px] text-red-400/70 uppercase tracking-[0.25em] font-semibold">Personal Trainer</p>
+              <p className="font-bold text-[15px] text-white tracking-tight">{BRAND.trainerName}</p>
+              <p className="text-[9px] text-red-400/70 uppercase tracking-[0.25em] font-semibold">{BRAND.trainerTitle}</p>
             </div>
           </div>
 
@@ -762,9 +763,9 @@ export function LandingPage() {
             <Reveal delay={200}>
               <p className="text-neutral-400 text-base sm:text-lg max-w-xl leading-relaxed mb-10">
                 Consultoria fitness com <span className="text-white font-semibold">acompanhamento inteligente</span>,
-                treinos 100% individualizados e evolução monitorada em tempo real pelo Victor e sua equipe tecnológica.
+                treinos 100% individualizados e evolução monitorada em tempo real pelo {BRAND.trainerFirstName} e sua equipe tecnológica.
                 <span className="text-neutral-500 block mt-2 text-sm">
-                  Por Victor Oliveira — CREF 016254-G/CE
+                  Por {BRAND.trainerName} — {BRAND.trainerCref}
                 </span>
               </p>
             </Reveal>
@@ -877,7 +878,7 @@ export function LandingPage() {
           </Reveal>
           <div>
             <Reveal direction="right">
-              <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4">Quem é Victor</p>
+              <p className="text-red-400 text-[11px] font-semibold uppercase tracking-[0.25em] mb-4">Quem é {BRAND.trainerFirstName}</p>
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-black tracking-tight leading-[1.05] mb-6">
                 Seu personal.
                 <br />
@@ -886,12 +887,12 @@ export function LandingPage() {
             </Reveal>
             <Reveal direction="right" delay={100}>
               <p className="text-neutral-400 text-base leading-relaxed mb-6">
-                Victor Oliveira é especialista em <span className="text-white font-medium">hipertrofia e emagrecimento</span> com
+                {BRAND.trainerName} é especialista em <span className="text-white font-medium">{BRAND.trainerSpecialties}</span> com
                 mais de 5 anos de experiência e centenas de vidas transformadas. Formado em Educação Física, combina
                 conhecimento científico com tecnologia de ponta para entregar resultados reais.
               </p>
               <p className="text-neutral-500 text-sm leading-relaxed mb-8">
-                Cada aluno recebe um tratamento 100% individualizado — Victor analisa suas restrições médicas,
+                Cada aluno recebe um tratamento 100% individualizado — {BRAND.trainerFirstName} analisa suas restrições médicas,
                 prescreve com ciência e usa tecnologia de ponta para corrigir sua postura em tempo real. Sem planilhas genéricas. Sem achismo.
               </p>
             </Reveal>
@@ -900,7 +901,7 @@ export function LandingPage() {
                 {[
                   { icon: Dumbbell, label: "Especialista em\nhipertrofia", color: "text-red-400 bg-red-600/10 border-red-500/10" },
                   { icon: Brain, label: "Método +\ntecnologia", color: "text-purple-400 bg-purple-600/10 border-purple-500/10" },
-                  { icon: Shield, label: "CREF ativo\n016254-G/CE", color: "text-emerald-400 bg-emerald-600/10 border-emerald-500/10" },
+                  { icon: Shield, label: `CREF ativo\n${BRAND.trainerCref.replace("CREF ", "")}`, color: "text-emerald-400 bg-emerald-600/10 border-emerald-500/10" },
                 ].map(item => (
                   <div key={item.label} className="p-4 rounded-2xl border border-white/[0.04] bg-white/[0.01] text-center hover:bg-white/[0.03] transition-all duration-500">
                     <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center mx-auto mb-3 border", item.color)}>
@@ -931,12 +932,12 @@ export function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
             {[
-              { icon: Brain, title: "Victor entende seu corpo", desc: "Treinos montados considerando seu histórico, restrições, objetivos e feedback — com apoio de tecnologia para não deixar nada passar.", long: "Victor analisa mais de 15 variáveis do seu perfil: histórico de lesões, nível de condicionamento, objetivos, equipamentos disponíveis, feedback das sessões anteriores e padrões de sono/nutrição. Com apoio de tecnologia inteligente, o resultado é um treino que evolui junto com você — cada semana mais preciso.", color: "from-purple-500 to-violet-600", bg: "bg-purple-500/5 border-purple-500/10 hover:border-purple-500/25" },
-              { icon: Camera, title: "Correção em tempo real", desc: "A câmera do celular analisa seus movimentos durante o exercício e corrige postura instantaneamente — como ter Victor do seu lado.", long: "A câmera do seu celular analisa seu corpo em tempo real usando inteligência artificial exclusiva do Victor App. O sistema compara os ângulos das suas articulações com o padrão correto que Victor definiu para cada exercício e dá feedback visual instantâneo: 'Desça mais o quadril', 'Cotovelos mais próximos'. Disponível no plano Elite.", color: "from-blue-500 to-cyan-500", bg: "bg-blue-500/5 border-blue-500/10 hover:border-blue-500/25" },
-              { icon: Target, title: "Treino sob medida", desc: "Cada série, carga e descanso calculados para o SEU corpo. Nada genérico, nada copiado. 100% do Victor para você.", long: "Victor utiliza periodização inteligente baseada nos seus objetivos. Cada exercício, número de séries, repetições, tempo de descanso e progressão de carga são pensados para maximizar seus resultados. O app registra tudo e ajusta conforme sua evolução.", color: "from-red-500 to-red-600", bg: "bg-red-500/5 border-red-500/10 hover:border-red-500/25" },
-              { icon: TrendingUp, title: "Evolução visível", desc: "Dashboard pessoal com gráficos de carga, frequência, streaks e histórico. Você VÊ o progresso acontecendo.", long: "Acompanhe sua evolução em tempo real: gráficos de carga por exercício, frequência semanal, streaks de treino consecutivos, calendar heatmap e comparativo mensal. Você treina, Victor acompanha e o app organiza tudo.", color: "from-emerald-500 to-green-500", bg: "bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/25" },
-              { icon: MessageCircle, title: "Acompanhamento pós-treino", desc: "Após cada treino, Victor acompanha seu feedback (energia, dor, sono) e ajusta a próxima sessão para você.", long: "Ao finalizar o treino, o assistente coleta informações sobre como você se sentiu: nível de energia, dores, qualidade do sono, alimentação. Esses dados ajudam Victor a ajustar seu próximo treino — mais carga se dormiu bem, exercícios alternativos se reportou dor.", color: "from-amber-500 to-orange-500", bg: "bg-amber-500/5 border-amber-500/10 hover:border-amber-500/25" },
-              { icon: Shield, title: "Segurança clínica", desc: "Lesões, medicamentos e restrições analisados por Victor antes de qualquer prescrição. Seu treino respeita seu corpo.", long: "Antes de prescrever qualquer exercício, Victor analisa sua ficha completa com apoio de tecnologia: lesões ativas, cirurgias anteriores, medicamentos em uso (ex: anti-hipertensivos que contraindicam isométricos), restrições ortopédicas e cardiológicas. Exercícios contraindicados são automaticamente removidos.", color: "from-teal-400 to-cyan-500", bg: "bg-teal-500/5 border-teal-500/10 hover:border-teal-500/25" },
+              { icon: Brain, title: `${BRAND.trainerFirstName} entende seu corpo`, desc: "Treinos montados considerando seu histórico, restrições, objetivos e feedback — com apoio de tecnologia para não deixar nada passar.", long: `${BRAND.trainerFirstName} analisa mais de 15 variáveis do seu perfil: histórico de lesões, nível de condicionamento, objetivos, equipamentos disponíveis, feedback das sessões anteriores e padrões de sono/nutrição. Com apoio de tecnologia inteligente, o resultado é um treino que evolui junto com você — cada semana mais preciso.`, color: "from-purple-500 to-violet-600", bg: "bg-purple-500/5 border-purple-500/10 hover:border-purple-500/25" },
+              { icon: Camera, title: "Correção em tempo real", desc: `A câmera do celular analisa seus movimentos durante o exercício e corrige postura instantaneamente — como ter ${BRAND.trainerFirstName} do seu lado.`, long: `A câmera do seu celular analisa seu corpo em tempo real usando inteligência artificial exclusiva do ${BRAND.appName}. O sistema compara os ângulos das suas articulações com o padrão correto que ${BRAND.trainerFirstName} definiu para cada exercício e dá feedback visual instantâneo: 'Desça mais o quadril', 'Cotovelos mais próximos'. Disponível no plano Elite.`, color: "from-blue-500 to-cyan-500", bg: "bg-blue-500/5 border-blue-500/10 hover:border-blue-500/25" },
+              { icon: Target, title: "Treino sob medida", desc: `Cada série, carga e descanso calculados para o SEU corpo. Nada genérico, nada copiado. 100% do ${BRAND.trainerFirstName} para você.`, long: `${BRAND.trainerFirstName} utiliza periodização inteligente baseada nos seus objetivos. Cada exercício, número de séries, repetições, tempo de descanso e progressão de carga são pensados para maximizar seus resultados. O app registra tudo e ajusta conforme sua evolução.`, color: "from-red-500 to-red-600", bg: "bg-red-500/5 border-red-500/10 hover:border-red-500/25" },
+              { icon: TrendingUp, title: "Evolução visível", desc: "Dashboard pessoal com gráficos de carga, frequência, streaks e histórico. Você VÊ o progresso acontecendo.", long: `Acompanhe sua evolução em tempo real: gráficos de carga por exercício, frequência semanal, streaks de treino consecutivos, calendar heatmap e comparativo mensal. Você treina, ${BRAND.trainerFirstName} acompanha e o app organiza tudo.`, color: "from-emerald-500 to-green-500", bg: "bg-emerald-500/5 border-emerald-500/10 hover:border-emerald-500/25" },
+              { icon: MessageCircle, title: "Acompanhamento pós-treino", desc: `Após cada treino, ${BRAND.trainerFirstName} acompanha seu feedback (energia, dor, sono) e ajusta a próxima sessão para você.`, long: `Ao finalizar o treino, o assistente coleta informações sobre como você se sentiu: nível de energia, dores, qualidade do sono, alimentação. Esses dados ajudam ${BRAND.trainerFirstName} a ajustar seu próximo treino — mais carga se dormiu bem, exercícios alternativos se reportou dor.`, color: "from-amber-500 to-orange-500", bg: "bg-amber-500/5 border-amber-500/10 hover:border-amber-500/25" },
+              { icon: Shield, title: "Segurança clínica", desc: `Lesões, medicamentos e restrições analisados por ${BRAND.trainerFirstName} antes de qualquer prescrição. Seu treino respeita seu corpo.`, long: `Antes de prescrever qualquer exercício, ${BRAND.trainerFirstName} analisa sua ficha completa com apoio de tecnologia: lesões ativas, cirurgias anteriores, medicamentos em uso (ex: anti-hipertensivos que contraindicam isométricos), restrições ortopédicas e cardiológicas. Exercícios contraindicados são automaticamente removidos.`, color: "from-teal-400 to-cyan-500", bg: "bg-teal-500/5 border-teal-500/10 hover:border-teal-500/25" },
             ].map((feat, i) => (
               <Reveal key={feat.title} delay={i * 80}>
                 <button
@@ -992,9 +993,9 @@ export function LandingPage() {
             <div className="space-y-8">
               {[
                 { n: "01", t: "Escolha seu plano", d: "Selecione o plano e duração ideais. Pague por Pix, cartão ou boleto com segurança total.", icon: Crown, accent: "bg-gradient-to-br from-amber-500 to-orange-600" },
-                { n: "02", t: "Preencha sua ficha", d: "Anamnese guiada em 5 minutos. Victor analisa suas restrições com apoio tecnológico e monta seu perfil de segurança.", icon: Shield, accent: "bg-gradient-to-br from-emerald-500 to-green-600" },
+                { n: "02", t: "Preencha sua ficha", d: `Anamnese guiada em 5 minutos. ${BRAND.trainerFirstName} analisa suas restrições com apoio tecnológico e monta seu perfil de segurança.`, icon: Shield, accent: "bg-gradient-to-br from-emerald-500 to-green-600" },
                 { n: "03", t: "Receba seu treino", d: "Treino na medida certa direto no app com timer de descanso, instruções e vídeos de execução.", icon: Dumbbell, accent: "bg-gradient-to-br from-red-500 to-red-700" },
-                { n: "04", t: "Evolua e acompanhe", d: "Registre séries, receba feedback de Victor e acompanhe sua evolução em gráficos detalhados.", icon: TrendingUp, accent: "bg-gradient-to-br from-blue-500 to-indigo-600" },
+                { n: "04", t: "Evolua e acompanhe", d: `Registre séries, receba feedback de ${BRAND.trainerFirstName} e acompanhe sua evolução em gráficos detalhados.`, icon: TrendingUp, accent: "bg-gradient-to-br from-blue-500 to-indigo-600" },
               ].map((step, i) => (
                 <Reveal key={step.n} delay={i * 120}>
                   <div className="group flex items-start gap-6 sm:gap-8">
@@ -1265,13 +1266,13 @@ export function LandingPage() {
                 <p className="text-neutral-500 text-sm">Entre em contato e comece sua jornada hoje mesmo.</p>
               </div>
               <a
-                href={`https://wa.me/5585996985823?text=${encodeURIComponent("Olá Victor! Quero começar minha transformação!")}`}
+                href={whatsappLink(`Olá ${BRAND.trainerFirstName}! Quero começar minha transformação!`)}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="shrink-0 inline-flex items-center gap-3 px-8 py-4 rounded-2xl bg-red-600 text-white font-bold text-sm shadow-xl shadow-red-600/20 hover:bg-red-500 hover:shadow-red-600/40 transition-all duration-500 hover:scale-[1.02] active:scale-[0.98]"
               >
                 <Phone className="w-4 h-4" />
-                Falar com Victor
+                Falar com {BRAND.trainerFirstName}
                 <ArrowRight className="w-4 h-4" />
               </a>
             </div>
@@ -1284,19 +1285,19 @@ export function LandingPage() {
               <div className="flex items-center gap-3 mb-5">
                 <Logo size={44} glow />
                 <div>
-                  <p className="font-bold text-[15px] text-white tracking-tight">Victor Oliveira</p>
-                  <p className="text-[9px] text-red-400/60 uppercase tracking-[0.25em] font-semibold">Personal Trainer</p>
+                  <p className="font-bold text-[15px] text-white tracking-tight">{BRAND.trainerName}</p>
+                  <p className="text-[9px] text-red-400/60 uppercase tracking-[0.25em] font-semibold">{BRAND.trainerTitle}</p>
                 </div>
               </div>
               <p className="text-neutral-500 text-sm leading-relaxed max-w-xs mb-6">
-                Especialista em hipertrofia e emagrecimento. Treinos 100% individualizados com tecnologia de ponta.
+                Especialista em {BRAND.trainerSpecialties}. Treinos 100% individualizados com tecnologia de ponta.
               </p>
               {/* Social icons */}
               <div className="flex items-center gap-3">
                 <a href="https://instagram.com/victoroliveiraapersonal_" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-pink-400 hover:border-pink-500/20 hover:bg-pink-500/[0.08] transition-all duration-300">
                   <Instagram className="w-4 h-4" />
                 </a>
-                <a href="https://wa.me/5585996985823" target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-emerald-400 hover:border-emerald-500/20 hover:bg-emerald-500/[0.08] transition-all duration-300">
+                <a href={whatsappLink("")} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-emerald-400 hover:border-emerald-500/20 hover:bg-emerald-500/[0.08] transition-all duration-300">
                   <Phone className="w-4 h-4" />
                 </a>
                 <a href="mailto:contato@victoroliveiraapersonal_.com" className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-white hover:border-white/[0.15] hover:bg-white/[0.06] transition-all duration-300">
@@ -1341,10 +1342,10 @@ export function LandingPage() {
             <div>
               <h4 className="text-[11px] font-bold text-white uppercase tracking-[0.2em] mb-5">Contato</h4>
               <div className="space-y-4">
-                <a href="https://wa.me/5585996985823" target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-neutral-500 text-sm hover:text-emerald-400 transition-colors group">
+                <a href={`https://wa.me/${BRAND.whatsapp}`} target="_blank" rel="noopener noreferrer" className="flex items-start gap-3 text-neutral-500 text-sm hover:text-emerald-400 transition-colors group">
                   <Phone className="w-4 h-4 mt-0.5 shrink-0" />
                   <div>
-                    <p className="group-hover:text-emerald-400 transition-colors">(85) 99698-5823</p>
+                    <p className="group-hover:text-emerald-400 transition-colors">{BRAND.whatsappFormatted}</p>
                     <p className="text-neutral-700 text-xs mt-0.5">WhatsApp</p>
                   </div>
                 </a>
@@ -1371,7 +1372,7 @@ export function LandingPage() {
             <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                <p className="text-neutral-600 text-xs">© 2026 Victor Oliveira · CREF 016254-G/CE</p>
+                <p className="text-neutral-600 text-xs">© 2026 {BRAND.trainerName} · {BRAND.trainerCref}</p>
               </div>
               <div className="flex items-center gap-4">
                 <p className="text-neutral-800 text-[10px] tracking-wider uppercase flex items-center gap-2">
