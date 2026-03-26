@@ -12,6 +12,7 @@ import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, BarChart, Bar, Cell,
   PieChart, Pie, LineChart, Line,
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis,
 } from "recharts"
 import { BodyMap, BodyMapLegend } from "@/components/student/body-map"
 import { EnergyBalanceCard } from "@/components/student/energy-balance-card"
@@ -803,6 +804,31 @@ export function EvolutionClient() {
                   </div>
                 </div>
               </Section>
+            )
+          })()}
+
+          {/* ═══ RADAR — Muscle Distribution ═══ */}
+          {evo.muscleDistribution.length > 0 && (() => {
+            const totalVol = evo.muscleDistribution.reduce((a, b) => a + b.volume, 0)
+            const radarData = evo.muscleDistribution.map(m => ({
+              muscle: m.muscle,
+              value: totalVol > 0 ? Math.round((m.volume / totalVol) * 100) : 0,
+            }))
+            return (
+              <FadeIn delay={0.15}>
+                <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5">
+                  <h3 className="text-sm font-semibold text-white mb-4">Distribuição Muscular</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <RadarChart data={radarData}>
+                      <PolarGrid stroke="rgba(255,255,255,0.08)" />
+                      <PolarAngleAxis dataKey="muscle" tick={{ fill: "#a3a3a3", fontSize: 12 }} />
+                      <PolarRadiusAxis tick={false} axisLine={false} />
+                      <Radar name="Volume" dataKey="value" stroke="#dc2626" fill="#dc2626" fillOpacity={0.3} strokeWidth={2} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                  <p className="text-[9px] text-neutral-600 text-center mt-2">% de séries por grupo muscular</p>
+                </div>
+              </FadeIn>
             )
           })()}
 

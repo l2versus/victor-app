@@ -2,12 +2,13 @@
 
 import { useState, useEffect, useCallback } from "react"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
 import {
   ArrowLeft, Heart, MessageSquare, UserPlus, AtSign, Bell,
   Trophy, Zap, Megaphone, Calendar, CalendarCheck, CalendarX,
-  Check, Loader2,
+  Check, Loader2, Eye, X,
 } from "lucide-react"
+import { SafeAvatar } from "@/components/ui/safe-image"
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/motion"
 
 interface Notification {
   id: string
@@ -26,18 +27,18 @@ interface Notification {
 type Filter = "all" | "follows" | "comments"
 
 const TYPE_ICON: Record<string, React.ReactNode> = {
-  social_like: <Heart className="w-4 h-4 text-red-400" />,
-  social_comment: <MessageSquare className="w-4 h-4 text-blue-400" />,
-  social_follow: <UserPlus className="w-4 h-4 text-green-400" />,
-  social_mention: <AtSign className="w-4 h-4 text-purple-400" />,
-  achievement: <Trophy className="w-4 h-4 text-amber-400" />,
-  challenge_started: <Zap className="w-4 h-4 text-purple-400" />,
-  announcement: <Megaphone className="w-4 h-4 text-red-400" />,
-  new_message: <MessageSquare className="w-4 h-4 text-blue-400" />,
-  schedule_new: <Calendar className="w-4 h-4 text-blue-400" />,
-  schedule_confirmed: <CalendarCheck className="w-4 h-4 text-green-400" />,
-  schedule_cancelled: <CalendarX className="w-4 h-4 text-red-400" />,
-  schedule_completed: <CalendarCheck className="w-4 h-4 text-neutral-400" />,
+  social_like: <Heart className="w-5 h-5 text-red-400" />,
+  social_comment: <MessageSquare className="w-5 h-5 text-blue-400" />,
+  social_follow: <UserPlus className="w-5 h-5 text-green-400" />,
+  social_mention: <AtSign className="w-5 h-5 text-purple-400" />,
+  achievement: <Trophy className="w-5 h-5 text-amber-400" />,
+  challenge_started: <Zap className="w-5 h-5 text-purple-400" />,
+  announcement: <Megaphone className="w-5 h-5 text-red-400" />,
+  new_message: <MessageSquare className="w-5 h-5 text-blue-400" />,
+  schedule_new: <Calendar className="w-5 h-5 text-blue-400" />,
+  schedule_confirmed: <CalendarCheck className="w-5 h-5 text-green-400" />,
+  schedule_cancelled: <CalendarX className="w-5 h-5 text-red-400" />,
+  schedule_completed: <CalendarCheck className="w-5 h-5 text-neutral-400" />,
 }
 
 function timeAgo(date: string): string {
@@ -52,8 +53,44 @@ function timeAgo(date: string): string {
   return `${Math.floor(days / 7)} sem`
 }
 
-function getInitials(name: string) {
-  return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+/** Returns readable body text for each notification type */
+function getNotificationText(n: Notification): React.ReactNode {
+  switch (n.type) {
+    case "social_follow":
+      return "comecou a seguir voce."
+    case "social_like":
+      return "curtiu seu post."
+    case "social_comment":
+      return (
+        <>
+          comentou: <span className="text-neutral-400">&ldquo;{n.body?.replace(/^"/, "").replace(/"$/, "")}&rdquo;</span>
+        </>
+      )
+    case "social_mention":
+      return (
+        <>
+          mencionou voce: <span className="text-neutral-400">&ldquo;{n.body?.replace(/^"/, "").replace(/"$/, "")}&rdquo;</span>
+        </>
+      )
+    case "achievement":
+      return "compartilhou um novo PR!"
+    case "schedule_new":
+    case "schedule_confirmed":
+    case "schedule_cancelled":
+    case "schedule_completed":
+      return <span className="text-neutral-400">{n.body}</span>
+    default:
+      return <span className="text-neutral-400">{n.body}</span>
+  }
+}
+
+/** Whether this notification type is a "reminder" style (no sender, uses icon) */
+function isReminderType(type: string): boolean {
+  return (
+    type.startsWith("schedule") ||
+    type === "announcement" ||
+    type === "challenge_started"
+  )
 }
 
 function groupByTime(notifications: Notification[]): { label: string; items: Notification[] }[] {
@@ -61,7 +98,7 @@ function groupByTime(notifications: Notification[]): { label: string; items: Not
   const groups: { label: string; items: Notification[] }[] = [
     { label: "Hoje", items: [] },
     { label: "Ontem", items: [] },
-    { label: "Últimos 7 dias", items: [] },
+    { label: "Ultimos 7 dias", items: [] },
     { label: "Anteriores", items: [] },
   ]
   for (const n of notifications) {
@@ -81,6 +118,7 @@ export default function NotificationsPage() {
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>("all")
   const [followingLoading, setFollowingLoading] = useState<Set<string>>(new Set())
+  const [dismissed, setDismissed] = useState<Set<string>>(new Set())
 
   const fetchNotifications = useCallback(async () => {
     try {
@@ -114,7 +152,6 @@ export default function NotificationsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ studentId }),
       })
-      // Update local state
       setNotifications(prev => prev.map(n =>
         n.senderStudentId === studentId ? { ...n, isFollowingSender: true } : n
       ))
@@ -123,7 +160,6 @@ export default function NotificationsPage() {
   }
 
   function handleNotificationClick(n: Notification) {
-    // Navigate based on type
     if (n.senderStudentId && (n.type === "social_follow" || n.type === "social_like" || n.type === "social_comment" || n.type === "social_mention")) {
       router.push(`/community/profile/${n.senderStudentId}`)
     } else if (n.type === "new_message") {
@@ -135,8 +171,13 @@ export default function NotificationsPage() {
     }
   }
 
+  function handleDismiss(id: string) {
+    setDismissed(prev => new Set(prev).add(id))
+  }
+
   // Filter notifications
   const filtered = notifications.filter(n => {
+    if (dismissed.has(n.id)) return false
     if (filter === "follows") return n.type === "social_follow"
     if (filter === "comments") return n.type === "social_comment" || n.type === "social_mention"
     return true
@@ -146,35 +187,106 @@ export default function NotificationsPage() {
 
   const filters: { id: Filter; label: string }[] = [
     { id: "all", label: "Tudo" },
-    { id: "follows", label: "Pessoas que você segue" },
-    { id: "comments", label: "Comentários" },
+    { id: "follows", label: "Seguidores" },
+    { id: "comments", label: "Comentarios" },
   ]
+
+  /** Render the action button on the right side of each card */
+  function renderAction(n: Notification) {
+    // Follow back button
+    if (n.type === "social_follow" && n.senderStudentId && !n.isFollowingSender) {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            handleFollow(n.senderStudentId!)
+          }}
+          disabled={followingLoading.has(n.senderStudentId)}
+          className="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold shrink-0 min-h-[32px] min-w-[72px] flex items-center justify-center active:scale-95 transition-all disabled:opacity-50"
+        >
+          {followingLoading.has(n.senderStudentId) ? (
+            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          ) : (
+            "Aceitar"
+          )}
+        </button>
+      )
+    }
+
+    // Already following
+    if (n.type === "social_follow" && n.senderStudentId && n.isFollowingSender) {
+      return (
+        <span className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-[11px] text-neutral-400 shrink-0">
+          <Check className="w-3 h-3" /> Seguindo
+        </span>
+      )
+    }
+
+    // Reminder-type: dismiss button
+    if (isReminderType(n.type)) {
+      return (
+        <button
+          onClick={(e) => {
+            e.stopPropagation()
+            handleDismiss(n.id)
+          }}
+          className="px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-neutral-400 hover:text-neutral-300 text-xs font-semibold shrink-0 min-h-[32px] flex items-center gap-1.5 active:scale-95 transition-all"
+        >
+          <X className="w-3 h-3" />
+          Dispensar
+        </button>
+      )
+    }
+
+    // Default: "Ver" button
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation()
+          handleNotificationClick(n)
+        }}
+        className="px-4 py-1.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-xs font-bold shrink-0 min-h-[32px] min-w-[56px] flex items-center gap-1.5 justify-center active:scale-95 transition-all"
+      >
+        <Eye className="w-3 h-3" />
+        Ver
+      </button>
+    )
+  }
 
   return (
     <div className="min-h-screen">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 py-3 sticky top-0 bg-[#030303]/90 backdrop-blur-xl z-10 border-b border-white/[0.04]">
-        <button onClick={() => router.back()} className="p-1.5 -ml-1.5 text-neutral-400 hover:text-white">
-          <ArrowLeft className="w-5 h-5" />
-        </button>
-        <h1 className="text-base font-semibold text-white flex-1">Notificações</h1>
-      </div>
-
-      {/* Filter tabs — Instagram style */}
-      <div className="flex gap-2 px-4 py-3 overflow-x-auto scrollbar-none">
-        {filters.map(f => (
-          <button
-            key={f.id}
-            onClick={() => setFilter(f.id)}
-            className={`px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap transition-all min-h-[36px] ${
-              filter === f.id
-                ? "bg-white text-black"
-                : "bg-white/[0.06] border border-white/[0.08] text-neutral-400 hover:text-white"
-            }`}
-          >
-            {f.label}
+      <div className="sticky top-0 bg-[#030303]/90 backdrop-blur-xl z-10 border-b border-white/[0.04]">
+        <div className="flex items-center gap-3 px-4 py-3">
+          <button onClick={() => router.back()} className="p-1.5 -ml-1.5 text-neutral-400 hover:text-white transition-colors">
+            <ArrowLeft className="w-5 h-5" />
           </button>
-        ))}
+          <div className="flex-1" />
+        </div>
+
+        <FadeIn direction="up" distance={10}>
+          <div className="px-4 pb-4">
+            <h1 className="text-2xl font-bold text-white">Atividade e Social</h1>
+            <p className="text-sm text-neutral-500 mt-0.5">Suas interacoes recentes e notificacoes</p>
+          </div>
+        </FadeIn>
+
+        {/* Filter tabs */}
+        <div className="flex gap-2 px-4 pb-3 overflow-x-auto scrollbar-none">
+          {filters.map(f => (
+            <button
+              key={f.id}
+              onClick={() => setFilter(f.id)}
+              className={`px-4 py-2 rounded-full text-xs font-semibold whitespace-nowrap transition-all min-h-[34px] ${
+                filter === f.id
+                  ? "bg-white text-black"
+                  : "bg-white/[0.06] border border-white/[0.08] text-neutral-400 hover:text-white"
+              }`}
+            >
+              {f.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Content */}
@@ -183,86 +295,90 @@ export default function NotificationsPage() {
           <Loader2 className="w-6 h-6 text-red-500 animate-spin" />
         </div>
       ) : filtered.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-3">
-          <Bell className="w-12 h-12 text-neutral-700" />
-          <p className="text-neutral-500 text-sm">Nenhuma notificação</p>
-        </div>
+        <FadeIn className="flex flex-col items-center justify-center py-20 gap-3">
+          <div className="w-16 h-16 rounded-full bg-white/[0.04] flex items-center justify-center">
+            <Bell className="w-8 h-8 text-neutral-700" />
+          </div>
+          <p className="text-neutral-500 text-sm">Nenhuma notificacao</p>
+        </FadeIn>
       ) : (
         <div className="pb-24">
           {grouped.map(group => (
             <div key={group.label}>
               {/* Time group header */}
-              <div className="px-4 pt-4 pb-2">
-                <p className="text-sm font-bold text-white">{group.label}</p>
-              </div>
+              <FadeIn direction="none">
+                <div className="px-4 pt-5 pb-2">
+                  <p className="text-xs font-semibold text-neutral-500 uppercase tracking-wider">{group.label}</p>
+                </div>
+              </FadeIn>
 
-              {group.items.map(n => (
-                <motion.button
-                  key={n.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  onClick={() => handleNotificationClick(n)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-white/[0.03] active:bg-white/[0.05] transition-colors ${
-                    !n.read ? "bg-white/[0.02]" : ""
-                  }`}
-                >
-                  {/* Sender avatar */}
-                  <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold shrink-0 overflow-hidden">
-                    {n.senderAvatar ? (
-                      <img src={n.senderAvatar} alt="" className="w-full h-full object-cover" />
-                    ) : n.senderName ? (
-                      getInitials(n.senderName)
-                    ) : (
-                      <div className="w-6 h-6 flex items-center justify-center">
-                        {TYPE_ICON[n.type] ?? <Bell className="w-4 h-4 text-neutral-500" />}
-                      </div>
-                    )}
-                  </div>
+              <StaggerContainer stagger={0.04}>
+                {group.items.map(n => {
+                  const isReminder = isReminderType(n.type) && !n.senderName
 
-                  {/* Content */}
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[13px] text-neutral-300 leading-snug">
-                      <span className="font-semibold text-white">{n.senderName || n.title}</span>
-                      {" "}
-                      {n.type === "social_follow" && "começou a seguir você."}
-                      {n.type === "social_like" && "curtiu seu post."}
-                      {n.type === "social_comment" && (
-                        <>comentou: <span className="text-neutral-400">{n.body?.replace(/^"/, "").replace(/"$/, "")}</span></>
-                      )}
-                      {n.type === "social_mention" && (
-                        <>mencionou você: <span className="text-neutral-400">{n.body?.replace(/^"/, "").replace(/"$/, "")}</span></>
-                      )}
-                      {!n.type.startsWith("social_") && (
-                        <span className="text-neutral-400">{n.body}</span>
-                      )}
-                      <span className="text-neutral-600 ml-1">{timeAgo(n.createdAt)}</span>
-                    </p>
-                  </div>
+                  return (
+                    <StaggerItem key={n.id}>
+                      <button
+                        onClick={() => handleNotificationClick(n)}
+                        className={`w-full flex items-center gap-3.5 px-4 py-3.5 text-left transition-colors border-b border-white/[0.04] hover:bg-white/[0.03] active:bg-white/[0.05] relative ${
+                          !n.read ? "bg-white/[0.02]" : ""
+                        }`}
+                      >
+                        {/* Unread dot indicator */}
+                        {!n.read && (
+                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-red-500" />
+                        )}
 
-                  {/* Right side: Follow back button or post thumbnail */}
-                  {n.type === "social_follow" && n.senderStudentId && !n.isFollowingSender && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleFollow(n.senderStudentId!)
-                      }}
-                      disabled={followingLoading.has(n.senderStudentId)}
-                      className="px-4 py-1.5 rounded-lg bg-red-600 text-white text-xs font-bold shrink-0 min-h-[32px] min-w-[80px] flex items-center justify-center active:scale-95 transition-transform disabled:opacity-50"
-                    >
-                      {followingLoading.has(n.senderStudentId) ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        "Seguir"
-                      )}
-                    </button>
-                  )}
-                  {n.type === "social_follow" && n.senderStudentId && n.isFollowingSender && (
-                    <span className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-[11px] text-neutral-400 shrink-0">
-                      <Check className="w-3 h-3" /> Seguindo
-                    </span>
-                  )}
-                </motion.button>
-              ))}
+                        {/* Avatar or Icon */}
+                        <div className="relative shrink-0">
+                          {isReminder ? (
+                            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-neutral-800 to-neutral-900 border border-white/[0.08] flex items-center justify-center">
+                              {TYPE_ICON[n.type] ?? <Bell className="w-5 h-5 text-neutral-500" />}
+                            </div>
+                          ) : (
+                            <SafeAvatar
+                              src={n.senderAvatar}
+                              name={n.senderName || n.title || "?"}
+                              className="w-14 h-14 text-lg"
+                            />
+                          )}
+
+                          {/* Type badge overlay on avatar */}
+                          {!isReminder && (
+                            <div className="absolute -bottom-0.5 -right-0.5 w-6 h-6 rounded-full bg-[#0a0a0a] border border-white/[0.08] flex items-center justify-center">
+                              {TYPE_ICON[n.type] ?? <Bell className="w-3 h-3 text-neutral-500" />}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Content */}
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] text-neutral-300 leading-relaxed">
+                            {isReminder ? (
+                              <>
+                                <span className="font-bold text-white">Lembrete: </span>
+                                <span className="text-neutral-400">{n.body || n.title}</span>
+                              </>
+                            ) : (
+                              <>
+                                <span className="font-bold text-white">{n.senderName || n.title}</span>
+                                {" "}
+                                {getNotificationText(n)}
+                              </>
+                            )}
+                          </p>
+                          <p className="text-[11px] text-neutral-600 mt-0.5">{timeAgo(n.createdAt)}</p>
+                        </div>
+
+                        {/* Action button */}
+                        <div className="shrink-0">
+                          {renderAction(n)}
+                        </div>
+                      </button>
+                    </StaggerItem>
+                  )
+                })}
+              </StaggerContainer>
             </div>
           ))}
         </div>

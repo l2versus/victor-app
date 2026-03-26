@@ -14,7 +14,7 @@ import {
 } from "lucide-react"
 import { NotificationBell } from "@/components/student/notification-bell"
 import { SafeImage, SafeAvatar } from "@/components/ui/safe-image"
-import { FadeIn } from "@/components/ui/motion"
+import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/motion"
 import { EmptyState } from "@/components/ui/empty-state"
 
 // ═══════════════════════════════════════
@@ -924,7 +924,7 @@ export default function CommunityPage() {
                   onClick={() => setPeriod(p)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all min-h-[36px] ${
                     period === p
-                      ? "bg-red-600/15 text-red-400 border border-red-500/20"
+                      ? "bg-amber-500/15 text-amber-400 border border-amber-500/20"
                       : "text-neutral-500 bg-white/[0.03] border border-white/[0.06] hover:text-neutral-300"
                   }`}
                 >
@@ -935,7 +935,7 @@ export default function CommunityPage() {
 
             {loading ? (
               <div className="flex items-center justify-center py-16">
-                <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                <div className="w-6 h-6 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : ranking.length === 0 ? (
               <div className="text-center py-16">
@@ -944,37 +944,56 @@ export default function CommunityPage() {
               </div>
             ) : (
               <>
+                {/* ── Podium Top 3 ── */}
                 {ranking.length >= 3 && (
-                  <div className="flex items-end justify-center gap-3 pt-4 pb-2">
-                    <PodiumCard student={ranking[1]} position={2} />
-                    <PodiumCard student={ranking[0]} position={1} />
-                    <PodiumCard student={ranking[2]} position={3} />
-                  </div>
+                  <FadeIn direction="up" delay={0.1}>
+                    <div className="flex items-end justify-center gap-2 mb-6 pt-6">
+                      {/* 2nd place — left */}
+                      <PodiumCard student={ranking[1]} position={2} myStudentId={myStudentId} onNavigate={(id) => router.push(`/community/profile/${id}`)} />
+                      {/* 1st place — center, taller */}
+                      <PodiumCard student={ranking[0]} position={1} myStudentId={myStudentId} onNavigate={(id) => router.push(`/community/profile/${id}`)} />
+                      {/* 3rd place — right */}
+                      <PodiumCard student={ranking[2]} position={3} myStudentId={myStudentId} onNavigate={(id) => router.push(`/community/profile/${id}`)} />
+                    </div>
+                  </FadeIn>
                 )}
-                <div className="space-y-2">
-                  {ranking.slice(ranking.length >= 3 ? 3 : 0).map((student) => (
-                    <motion.div
-                      key={student.studentId}
-                      initial={{ opacity: 0, x: -8 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      onClick={() => router.push(`/community/profile/${student.studentId}`)}
-                      className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm cursor-pointer active:bg-white/[0.05] transition-colors"
-                    >
-                      <span className="text-xs font-bold text-neutral-600 w-6 text-center">{student.position}</span>
-                      <Avatar name={student.name} avatar={student.avatar} size="sm" />
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-white truncate">{student.name}</p>
-                        <p className="text-[10px] text-neutral-500">
-                          {formatVolume(student.totalVolume)} · {student.totalSessions} sessões · {student.streakWeeks}w streak
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xs font-semibold text-red-400">{student.consistency}%</p>
-                        <p className="text-[9px] text-neutral-600 uppercase tracking-wider">consist.</p>
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
+
+                {/* ── List 4th+ ── */}
+                <StaggerContainer className="space-y-2" stagger={0.05}>
+                  {ranking.slice(ranking.length >= 3 ? 3 : 0).map((student) => {
+                    const isMe = student.studentId === myStudentId
+                    return (
+                      <StaggerItem key={student.studentId} direction="up">
+                        <div
+                          onClick={() => router.push(`/community/profile/${student.studentId}`)}
+                          className={`flex items-center gap-3 p-3 rounded-xl backdrop-blur-sm cursor-pointer active:bg-white/[0.05] transition-colors ${
+                            isMe
+                              ? "bg-amber-500/10 border border-amber-500/20"
+                              : "bg-white/[0.02] border border-amber-500/10"
+                          }`}
+                        >
+                          <span className="text-xs font-bold text-amber-400 w-6 text-center">{student.position}</span>
+                          <SafeAvatar src={student.avatar} name={student.name} size="sm" className="ring-1 ring-amber-500/30" />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-1.5">
+                              <p className="text-sm font-medium text-white truncate">{student.name}</p>
+                              {isMe && (
+                                <span className="text-[9px] font-bold text-amber-400 bg-amber-400/15 px-1.5 py-0.5 rounded">YOU</span>
+                              )}
+                            </div>
+                            <p className="text-[10px] text-neutral-500">
+                              {formatVolume(student.totalVolume)} · {student.totalSessions} sessões · {student.streakWeeks}w streak
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs font-semibold text-amber-400">{student.consistency}%</p>
+                            <p className="text-[9px] text-neutral-600 uppercase tracking-wider">consist.</p>
+                          </div>
+                        </div>
+                      </StaggerItem>
+                    )
+                  })}
+                </StaggerContainer>
               </>
             )}
           </motion.div>
@@ -2025,31 +2044,64 @@ function Avatar({ name, avatar, size = "sm", isOnline }: { name: string; avatar:
   )
 }
 
-function PodiumCard({ student, position }: { student: RankedStudent; position: 1 | 2 | 3 }) {
+function PodiumCard({ student, position, myStudentId, onNavigate }: { student: RankedStudent; position: 1 | 2 | 3; myStudentId: string | null; onNavigate: (id: string) => void }) {
   const isFirst = position === 1
+  const isMe = student.studentId === myStudentId
+
+  // Sizing per position
+  const avatarSize = isFirst ? "w-20 h-20" : position === 2 ? "w-16 h-16" : "w-14 h-14"
+  const ringColor = isFirst ? "ring-amber-400 shadow-lg shadow-amber-400/20" : position === 2 ? "ring-neutral-300" : "ring-amber-700"
+  const ringWidth = isFirst ? "ring-[3px]" : "ring-2"
+  const podiumHeight = isFirst ? "h-28" : position === 2 ? "h-20" : "h-16"
+  const podiumWidth = isFirst ? "w-24" : "w-20"
+  const podiumGradient = isFirst
+    ? "from-amber-400 to-amber-600"
+    : position === 2
+    ? "from-neutral-400 to-neutral-600"
+    : "from-amber-700 to-amber-900"
+  const numberColor = isFirst ? "text-amber-900" : position === 2 ? "text-neutral-800" : "text-amber-950"
+  const numberSize = isFirst ? "text-3xl" : position === 2 ? "text-2xl" : "text-xl"
+  const xpColor = isFirst ? "text-amber-400 text-sm font-bold" : position === 2 ? "text-neutral-400 text-xs" : "text-amber-600 text-xs"
+  const nameSize = isFirst ? "text-base" : "text-sm"
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: position * 0.1 }}
-      className={`flex flex-col items-center ${isFirst ? "mb-4" : ""}`}
+      className={`flex flex-col items-center cursor-pointer ${isFirst ? "-mt-6" : ""}`}
+      onClick={() => onNavigate(student.studentId)}
     >
-      <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${MEDAL_COLORS[position - 1]} flex items-center justify-center mb-2 shadow-lg ${MEDAL_GLOW[position - 1]}`}>
-        {position === 1 ? <Crown className="w-4 h-4 text-white" /> : <Medal className="w-4 h-4 text-white" />}
+      {/* Crown for 1st */}
+      {isFirst && <span className="text-2xl mb-1">👑</span>}
+
+      {/* Avatar */}
+      <div className={`${avatarSize} rounded-full ${ringWidth} ${ringColor} overflow-hidden bg-gradient-to-br from-neutral-800 to-neutral-900 flex items-center justify-center`}>
+        {student.avatar ? (
+          <SafeImage src={student.avatar} alt={student.name} className="w-full h-full object-cover" />
+        ) : (
+          <span className={`font-bold text-neutral-300 ${isFirst ? "text-xl" : "text-sm"}`}>{getInitials(student.name)}</span>
+        )}
       </div>
-      <div className={`relative mb-2 ${isFirst ? "scale-110" : ""}`}>
-        <Avatar name={student.name} avatar={student.avatar} size="md" />
-        <div className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-gradient-to-br ${MEDAL_COLORS[position - 1]} flex items-center justify-center text-[10px] font-bold text-white shadow-md`}>
-          {position}
-        </div>
-      </div>
-      <p className="text-xs font-semibold text-white text-center max-w-[90px] truncate">{student.name.split(" ")[0]}</p>
-      <p className="text-[10px] text-neutral-500 text-center">{formatVolume(student.totalVolume)}</p>
-      <p className="text-[9px] text-red-400/80 font-medium">{student.consistency}%</p>
-      <div className={`mt-2 rounded-t-lg bg-gradient-to-t from-white/[0.02] to-white/[0.06] border border-white/[0.08] border-b-0 ${
-        isFirst ? "w-20 h-16" : position === 2 ? "w-18 h-12" : "w-18 h-8"
-      } flex items-center justify-center`}>
-        <TrendingUp className="w-3.5 h-3.5 text-neutral-600" />
+
+      {/* Name */}
+      <p className={`${nameSize} font-bold text-white mt-1 text-center max-w-[100px] truncate`}>
+        {student.name.split(" ")[0]}
+      </p>
+
+      {/* XP / Volume */}
+      <p className={xpColor}>
+        {formatVolume(student.totalVolume)}
+      </p>
+
+      {/* "YOU" badge */}
+      {isMe && (
+        <span className="text-[9px] font-bold text-amber-400 bg-amber-400/15 px-1.5 py-0.5 rounded mt-0.5">YOU</span>
+      )}
+
+      {/* Podium block */}
+      <div className={`${podiumWidth} ${podiumHeight} bg-gradient-to-b ${podiumGradient} rounded-t-lg mt-2 flex items-center justify-center`}>
+        <span className={`${numberSize} font-bold ${numberColor}`}>{position}</span>
       </div>
     </motion.div>
   )
