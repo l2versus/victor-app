@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils"
 /* ===================================================================
    CONSTANTS
    =================================================================== */
-const EMMANUEL_WHATSAPP = "5585996985823"
+const EMMANUEL_WHATSAPP = "5585998500344"
 const EMMANUEL_EMAIL = "contato@emmanuelbezerra.dev"
 
 function waLink(msg: string) {
