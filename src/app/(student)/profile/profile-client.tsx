@@ -373,7 +373,7 @@ function SectionCard({ icon: Icon, iconColor, iconBg, title, onEdit, children }:
         </h3>
         <button
           onClick={onEdit}
-          className="text-neutral-500 hover:text-white transition-colors p-1.5 rounded-lg hover:bg-white/[0.05]"
+          className="text-neutral-500 hover:text-white transition-colors p-2.5 rounded-lg hover:bg-white/[0.05]"
         >
           <Edit3 className="w-4 h-4" />
         </button>
@@ -394,7 +394,7 @@ function BottomSheet({ title, onClose, children }: { title: string; onClose: () 
   }, [])
 
   return (
-    <div className="fixed inset-0 z-9999 flex items-end justify-center">
+    <div className="fixed inset-0 z-100 flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-lg bg-neutral-900 border-t border-white/10 rounded-t-3xl max-h-[85dvh] flex flex-col animate-slide-up">
         <div className="px-6 pt-6 pb-0 shrink-0">

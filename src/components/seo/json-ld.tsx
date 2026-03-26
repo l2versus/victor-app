@@ -1,15 +1,17 @@
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://victorapp.com.br"
+import { BRAND } from "@/lib/branding"
+
+const APP_URL = BRAND.appUrl
 
 // All values are static constants — no user input involved, safe from XSS
 const jsonLdData = {
   "@context": "https://schema.org",
   "@type": "Person",
-  name: "Victor Oliveira",
-  jobTitle: "Personal Trainer",
+  name: BRAND.trainerName,
+  jobTitle: BRAND.trainerTitle,
   url: APP_URL,
   image: `${APP_URL}/victor-profile.jpg`,
   sameAs: [
-    "https://instagram.com/victoroliveirapersonal_",
+    `https://instagram.com/${BRAND.instagram.replace("@", "")}`,
   ],
   knowsAbout: [
     "Musculação",

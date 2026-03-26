@@ -814,7 +814,7 @@ export default function CommunityPage() {
                       <p className="text-[10px] text-neutral-300 text-center truncate w-full">{u.name.split(" ")[0]}</p>
                       <button
                         onClick={() => handleFollow(u.studentId)}
-                        className="px-3 py-1 rounded-md bg-red-600 text-white text-[10px] font-bold active:scale-95 transition-transform w-full"
+                        className="px-3 py-2 min-h-11 rounded-md bg-red-600 text-white text-[10px] font-bold active:scale-95 transition-transform w-full"
                       >
                         Seguir
                       </button>
@@ -1188,7 +1188,7 @@ function FeedCard({
         )}
         {/* 3-dot menu */}
         <div className="relative">
-          <button onClick={() => setShowMenu(!showMenu)} className="p-1.5 text-neutral-500 hover:text-white">
+          <button onClick={() => setShowMenu(!showMenu)} className="p-2.5 min-h-11 min-w-11 flex items-center justify-center text-neutral-500 hover:text-white">
             <span className="text-lg leading-none">···</span>
           </button>
           {showMenu && (
@@ -1535,7 +1535,7 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
         exit={{ y: "100%" }}
         transition={{ type: "spring", damping: 25, stiffness: 300 }}
         className="absolute inset-x-0 bottom-0 w-full max-w-lg mx-auto bg-[#0a0a0a] rounded-t-2xl flex flex-col"
-        style={{ maxHeight: "90dvh" }}
+        style={{ maxHeight: "85dvh" }}
       >
         {/* Drag handle */}
         <div className="flex justify-center pt-3 pb-1 shrink-0">

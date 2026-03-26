@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { JsonLd } from "@/components/seo/json-ld";
 import PWAProvider from "@/components/pwa-provider";
+import { BRAND } from "@/lib/branding";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,21 +15,20 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const APP_NAME = "Ironberg App";
-const APP_DESCRIPTION =
-  "Plataforma de treinos personalizados com máquinas 3D, IA e correção postural. Treinos sob medida, acompanhamento inteligente e evolução real.";
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || "https://victor-app-seven.vercel.app";
+const APP_NAME = BRAND.appName;
+const APP_DESCRIPTION = BRAND.appDescription;
+const APP_URL = BRAND.appUrl;
 
 export const metadata: Metadata = {
   title: {
-    default: `${APP_NAME} — Personal Trainer`,
+    default: `${APP_NAME} — ${BRAND.trainerTitle}`,
     template: `%s | ${APP_NAME}`,
   },
   description: APP_DESCRIPTION,
   keywords: [
     "personal trainer",
     "treino personalizado",
-    "Victor Oliveira",
+    BRAND.trainerName,
     "personal trainer Fortaleza",
     "treino online",
     "plano de treino",
@@ -38,8 +38,8 @@ export const metadata: Metadata = {
     "acompanhamento fitness",
     "app de treino",
   ],
-  authors: [{ name: "Victor Oliveira", url: APP_URL }],
-  creator: "Victor Oliveira",
+  authors: [{ name: BRAND.trainerName, url: APP_URL }],
+  creator: BRAND.trainerName,
   metadataBase: new URL(APP_URL),
   alternates: {
     canonical: "/",
@@ -49,23 +49,23 @@ export const metadata: Metadata = {
     locale: "pt_BR",
     url: APP_URL,
     siteName: APP_NAME,
-    title: `${APP_NAME} — Personal Trainer`,
+    title: `${APP_NAME} — ${BRAND.trainerTitle}`,
     description: APP_DESCRIPTION,
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Victor Oliveira — Personal Trainer",
+        alt: `${BRAND.trainerName} — ${BRAND.trainerTitle}`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${APP_NAME} — Personal Trainer`,
+    title: `${APP_NAME} — ${BRAND.trainerTitle}`,
     description: APP_DESCRIPTION,
     images: ["/og-image.jpg"],
-    creator: "@victoroliveirapersonal_",
+    creator: BRAND.instagram,
   },
   robots: {
     index: true,
