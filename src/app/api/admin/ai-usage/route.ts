@@ -38,19 +38,22 @@ export async function GET(req: NextRequest) {
     })
 
     // ─── Por dia (últimos N dias) ───
-    const daily = await prisma.$queryRawUnsafe<
+    // SECURITY: Use parameterized query to prevent SQL injection.
+    // Previously used $queryRawUnsafe with string interpolation for LIMIT.
+    const safeDays = Math.max(1, Math.min(days, 365)) // clamp to sane range
+    const daily = await prisma.$queryRaw<
       { date: string; tokens: bigint; calls: bigint }[]
-    >(`
+    >`
       SELECT
         DATE("createdAt") as date,
         SUM("totalTokens") as tokens,
         COUNT(*) as calls
       FROM "AiTokenUsage"
-      WHERE "createdAt" >= $1
+      WHERE "createdAt" >= ${since}
       GROUP BY DATE("createdAt")
       ORDER BY date DESC
-      LIMIT ${days}
-    `, since)
+      LIMIT ${safeDays}
+    `
 
     // ─── Erros recentes ───
     const errors = await prisma.aiTokenUsage.findMany({

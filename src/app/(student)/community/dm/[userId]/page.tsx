@@ -114,7 +114,7 @@ export default function DMThreadPage() {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-white truncate">{partner?.name || "Usuário"}</p>
-          <p className="text-[10px] text-neutral-500">Ironberg Family</p>
+          <p className="text-[10px] text-neutral-500">Victor Personal Family</p>
         </div>
       </div>
 

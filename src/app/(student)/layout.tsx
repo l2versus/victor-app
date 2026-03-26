@@ -76,9 +76,9 @@ export default async function StudentLayout({ children }: { children: React.Reac
       <ImpersonateHandler />
       <ImpersonateBanner studentName={userName} />
 
-      {/* ═══ Premium Background — Ironberg hero + cinematic overlay ═══ */}
+      {/* ═══ Premium Background — Victor Personal hero + cinematic overlay ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0" aria-hidden="true">
-        {/* Ironberg gym photo — fixed, covers viewport */}
+        {/* Victor Personal gym photo — fixed, covers viewport */}
         <img
           src="/img/ironberg.webp"
           alt=""

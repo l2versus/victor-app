@@ -208,8 +208,7 @@ export default function SocialProfilePage() {
     )
   }
 
-  const postsWithImage = posts.filter(p => p.imageUrl && p.type !== "WORKOUT")
-  const postsTextOnly = posts.filter(p => !p.imageUrl && p.type !== "WORKOUT")
+  const postsWithImage = posts.filter(p => p.imageUrl)
 
   return (
     <div className="space-y-0 -mx-4">
@@ -599,8 +598,8 @@ export default function SocialProfilePage() {
         </div>
       </div>
 
-      {/* Posts grid — Instagram 3-column */}
-      {postsWithImage.length === 0 && postsTextOnly.length === 0 ? (
+      {/* Posts grid — Instagram 3-column (profile only shows photo posts) */}
+      {postsWithImage.length === 0 ? (
         <FadeIn direction="up" delay={0.2}>
           <EmptyState
             icon={Grid3X3}
@@ -610,53 +609,27 @@ export default function SocialProfilePage() {
           />
         </FadeIn>
       ) : (
-        <>
-          {/* Image grid */}
-          {postsWithImage.length > 0 && (
-            <StaggerContainer className="grid grid-cols-3 gap-px" stagger={0.04}>
-              {postsWithImage.map((post) => (
-                <StaggerItem key={post.id}>
-                  <button
-                    onClick={() => setSelectedPost(post)}
-                    className="relative aspect-square bg-neutral-900 overflow-hidden group w-full"
-                  >
-                    <SafeImage src={post.imageUrl!} alt="" className="w-full h-full object-cover" />
-                    {/* Hover overlay */}
-                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                      <span className="flex items-center gap-1 text-white text-xs font-semibold">
-                        <Heart className="w-4 h-4 fill-white" /> {post.likesCount}
-                      </span>
-                      <span className="flex items-center gap-1 text-white text-xs font-semibold">
-                        <MessageCircle className="w-4 h-4 fill-white" /> {post.commentsCount}
-                      </span>
-                    </div>
-                  </button>
-                </StaggerItem>
-              ))}
-            </StaggerContainer>
-          )}
-
-          {/* Text-only posts below grid */}
-          {postsTextOnly.length > 0 && (
-            <div className="px-4 pt-4 space-y-3">
-              {postsTextOnly.map((post) => (
-                <div key={post.id} className="p-3.5 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-                  <p className="text-sm text-neutral-300 leading-relaxed break-words whitespace-pre-wrap">{post.content}</p>
-                  <div className="flex items-center gap-4 mt-2.5 text-xs text-neutral-600">
-                    <button onClick={() => toggleLike(post.id)} className="flex items-center gap-1">
-                      <Heart className={`w-3.5 h-3.5 ${post.isLiked ? "fill-red-500 text-red-500" : ""}`} />
-                      {post.likesCount}
-                    </button>
-                    <span className="flex items-center gap-1">
-                      <MessageCircle className="w-3.5 h-3.5" /> {post.commentsCount}
-                    </span>
-                    <span className="ml-auto">{timeAgo(post.createdAt)}</span>
-                  </div>
+        <StaggerContainer className="grid grid-cols-3 gap-px" stagger={0.04}>
+          {postsWithImage.map((post) => (
+            <StaggerItem key={post.id}>
+              <button
+                onClick={() => setSelectedPost(post)}
+                className="relative aspect-square bg-neutral-900 overflow-hidden group w-full"
+              >
+                <SafeImage src={post.imageUrl!} alt="" className="w-full h-full object-cover" />
+                {/* Hover overlay */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                  <span className="flex items-center gap-1 text-white text-xs font-semibold">
+                    <Heart className="w-4 h-4 fill-white" /> {post.likesCount}
+                  </span>
+                  <span className="flex items-center gap-1 text-white text-xs font-semibold">
+                    <MessageCircle className="w-4 h-4 fill-white" /> {post.commentsCount}
+                  </span>
                 </div>
-              ))}
-            </div>
-          )}
-        </>
+              </button>
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
       )}
 
       {/* Profile Story Viewer Modal */}
@@ -742,7 +715,7 @@ export default function SocialProfilePage() {
             initial={{ y: "100%" }}
             animate={{ y: 0 }}
             className="absolute inset-x-0 bottom-0 max-w-lg mx-auto bg-[#111] rounded-t-2xl flex flex-col"
-            style={{ maxHeight: "80dvh" }}
+            style={{ maxHeight: "85dvh" }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}

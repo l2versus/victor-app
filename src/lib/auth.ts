@@ -16,7 +16,7 @@ const JWT_EXPIRES_IN = "7d"
 export interface TokenPayload {
   userId: string
   email: string
-  role: "ADMIN" | "STUDENT"
+  role: "ADMIN" | "STUDENT" | "NUTRITIONIST" | "MASTER"
   /** Session version — must match User.sessionVersion or session is invalid */
   sv?: number
 }
@@ -86,5 +86,38 @@ export async function requireAuth(): Promise<TokenPayload> {
 export async function requireAdmin(): Promise<TokenPayload> {
   const session = await requireAuth()
   if (session.role !== "ADMIN") throw new Error("Forbidden")
+  return session
+}
+
+export async function requireStudent(): Promise<TokenPayload> {
+  const session = await requireAuth()
+  if (session.role !== "STUDENT") throw new Error("Forbidden")
+  return session
+}
+
+/** Require MASTER role (platform super-admin) */
+export async function requireMaster() {
+  const session = await requireAuth()
+  if (session.role !== "MASTER") {
+    throw new Error("Forbidden")
+  }
+  return session
+}
+
+/** Require NUTRITIONIST role */
+export async function requireNutritionist() {
+  const session = await requireAuth()
+  if (session.role !== "NUTRITIONIST") {
+    throw new Error("Forbidden")
+  }
+  return session
+}
+
+/** Require any of the specified roles */
+export async function requireRole(...roles: TokenPayload["role"][]) {
+  const session = await requireAuth()
+  if (!roles.includes(session.role)) {
+    throw new Error("Forbidden")
+  }
   return session
 }

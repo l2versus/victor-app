@@ -81,7 +81,7 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
         </p>
       </div>
 
-      {/* Ironberg 3D Machines banner */}
+      {/* Victor Personal 3D Machines banner */}
       <Link
         href="/exercises/machines"
         className="flex items-center justify-between px-4 py-3 rounded-2xl bg-gradient-to-r from-red-600/15 to-red-900/10 border border-red-500/20 hover:from-red-600/20 transition-all active:scale-[0.98]"
@@ -91,7 +91,7 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
             <span className="text-sm">🏋️</span>
           </div>
           <div>
-            <p className="text-xs font-bold text-red-400">Maquinas Ironberg 3D</p>
+            <p className="text-xs font-bold text-red-400">Maquinas Victor Personal 3D</p>
             <p className="text-[10px] text-neutral-500">Visualize as maquinas em 3D</p>
           </div>
         </div>

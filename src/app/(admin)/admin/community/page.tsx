@@ -196,7 +196,7 @@ export default function AdminCommunityPage() {
       {/* Members — suggestions */}
       {members.length > 0 && (
         <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
-          <p className="text-sm font-semibold text-white mb-3">Membros da Ironberg Family</p>
+          <p className="text-sm font-semibold text-white mb-3">Membros da Victor Personal Family</p>
           <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
             {members.map((u) => (
               <button

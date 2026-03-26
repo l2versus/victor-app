@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { exchangeCodeForTokens, getSpotifyProfile } from "@/lib/spotify"
+import { getSession } from "@/lib/auth"
 
 // GET /api/spotify/callback — Spotify redireciona aqui após login
-// Rota PÚBLICA — studentId + origin vêm no state param (base64url encoded)
+// SECURITY: Validates that the studentId in state matches the authenticated session
+// to prevent CSRF attacks where an attacker tricks a user into linking to the wrong account.
 export async function GET(req: NextRequest) {
   const code = req.nextUrl.searchParams.get("code")
   const stateRaw = req.nextUrl.searchParams.get("state")
@@ -48,13 +50,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(new URL("/today?spotify=denied", baseUrl))
   }
 
+  // SECURITY: Verify the authenticated user owns this studentId to prevent
+  // an attacker from forging the state param and linking Spotify to another account.
+  const session = await getSession()
+  if (!session) {
+    return NextResponse.redirect(new URL("/login?redirect=/today", baseUrl))
+  }
+
   const student = await prisma.student.findUnique({
     where: { id: studentId },
-    select: { id: true },
+    select: { id: true, userId: true },
   })
 
   if (!student) {
     return NextResponse.redirect(new URL("/today?spotify=error&reason=student", baseUrl))
+  }
+
+  if (student.userId !== session.userId) {
+    console.warn(`[Spotify Callback] CSRF blocked: session user ${session.userId} != student owner ${student.userId}`)
+    return NextResponse.redirect(new URL("/today?spotify=error&reason=unauthorized", baseUrl))
   }
 
   try {

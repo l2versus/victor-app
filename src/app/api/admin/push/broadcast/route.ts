@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
-import { requireAuth } from "@/lib/auth"
+import { requireAdmin } from "@/lib/auth"
 import webpush from "web-push"
 
 function getWebPush() {
@@ -20,10 +20,8 @@ function getWebPush() {
 // studentId = null → broadcast to all; studentId = "..." → individual
 export async function POST(req: NextRequest) {
   try {
-    const session = await requireAuth()
-    if (session.role !== "ADMIN") {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
-    }
+    // SECURITY: Use requireAdmin() instead of manual role check
+    const session = await requireAdmin()
 
     const wp = getWebPush()
     if (!wp) {

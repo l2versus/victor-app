@@ -34,8 +34,8 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/* ═══ IRONBERG DARK THEME ═══ */
-/* Vermelho (#dc2626) + Preto (#0a0a0a) — identidade Victor Oliveira / Ironberg */
+/* ═══ VICTOR PERSONAL DARK THEME ═══ */
+/* Vermelho (#dc2626) + Preto (#0a0a0a) — identidade Victor Oliveira / Victor Personal */
 :root {
   --radius: 0.625rem;
   --background: #0a0a0a;

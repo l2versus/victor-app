@@ -192,7 +192,7 @@ export default function OnboardingPage() {
                       type="text"
                       value={gymName}
                       onChange={(e) => setGymName(e.target.value)}
-                      placeholder="Ex: Ironberg Fitness"
+                      placeholder="Ex: Victor Personal"
                       className="w-full bg-white/[0.06] border border-white/[0.08] rounded-xl px-4 py-3 text-white placeholder:text-white/25 focus:outline-none focus:ring-2 focus:ring-red-500/40 transition-all"
                     />
                   </div>

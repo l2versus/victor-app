@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { Share2, X, Dumbbell, Clock, Flame, Trophy, Send, Loader2 } from "lucide-react"
+import { Share2, X, Dumbbell, Clock, Flame, Trophy, Send, Loader2, AlertCircle } from "lucide-react"
 
 interface ShareWorkoutCardProps {
   templateName: string
@@ -17,16 +17,27 @@ export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, dur
   const [sharing, setSharing] = useState(false)
   const [posting, setPosting] = useState(false)
   const [posted, setPosted] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  /** Capture the card as a PNG blob using html2canvas */
+  async function captureCard(): Promise<Blob> {
+    if (!cardRef.current) throw new Error("Card ref not available")
+    const { default: html2canvas } = await import("html2canvas")
+    const canvas = await html2canvas(cardRef.current, { backgroundColor: "#0a0a0a", scale: 2 })
+    const blob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob((b) => resolve(b), "image/png")
+    )
+    if (!blob) throw new Error("Falha ao gerar imagem")
+    return blob
+  }
 
   async function handlePostToFeed() {
     if (!cardRef.current || posting) return
     setPosting(true)
+    setError(null)
     try {
-      const { default: html2canvas } = await import("html2canvas")
-      const canvas = await html2canvas(cardRef.current, { backgroundColor: "#0a0a0a", scale: 2 })
-      const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b!), "image/png")
-      )
+      const blob = await captureCard()
+
       // Upload image via Vercel Blob
       const { upload } = await import("@vercel/blob/client")
       const blobResult = await upload(
@@ -34,19 +45,25 @@ export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, dur
         blob,
         { access: "public", handleUploadUrl: "/api/upload" }
       )
+
       // Create community post
-      await fetch("/api/community/posts", {
+      const content = `Treino concluído: ${templateName} 💪\n${exerciseCount} exercícios · ${totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${totalVolume}kg`} volume · ${durationMin}min`
+      const res = await fetch("/api/community/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: "WORKOUT",
-          content: `Treino concluído: ${templateName} 💪\n${exerciseCount} exercícios · ${totalVolume >= 1000 ? `${(totalVolume / 1000).toFixed(1)}t` : `${totalVolume}kg`} volume · ${durationMin}min`,
-          imageUrl: blobResult.url,
-        }),
+        body: JSON.stringify({ content, imageUrl: blobResult.url }),
       })
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || `Erro ${res.status}`)
+      }
+
       setPosted(true)
-    } catch {
-      console.error("Failed to post to feed")
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Erro ao postar no feed"
+      setError(msg)
+      console.error("Failed to post to feed:", msg)
     }
     setPosting(false)
   }
@@ -54,16 +71,9 @@ export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, dur
   async function handleShare() {
     if (!cardRef.current) return
     setSharing(true)
+    setError(null)
     try {
-      // Use html2canvas dynamic import
-      const { default: html2canvas } = await import("html2canvas")
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: "#0a0a0a",
-        scale: 2,
-      })
-      const blob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b!), "image/png")
-      )
+      const blob = await captureCard()
       const file = new File([blob], "treino.png", { type: "image/png" })
 
       if (navigator.share && navigator.canShare?.({ files: [file] })) {
@@ -77,8 +87,15 @@ export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, dur
         a.click()
         URL.revokeObjectURL(url)
       }
-    } catch { /* user cancelled */ }
-    setSharing(false)
+    } catch (e) {
+      // AbortError = user cancelled the share dialog — not a real error
+      if (e instanceof Error && e.name === "AbortError") return
+      const msg = e instanceof Error ? e.message : "Erro ao compartilhar"
+      setError(msg)
+      console.error("Failed to share:", msg)
+    } finally {
+      setSharing(false)
+    }
   }
 
   return (
@@ -118,9 +135,20 @@ export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, dur
 
           {/* Branding footer */}
           <div className="text-center pt-2 border-t border-white/[0.06]">
-            <p className="text-[10px] text-neutral-600">Powered by Ironberg App</p>
+            <p className="text-[10px] text-neutral-600">Powered by Victor Personal</p>
           </div>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-xs animate-slide-up">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span className="flex-1">{error}</span>
+            <button onClick={() => setError(null)} className="shrink-0">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Action buttons — outside the captured area */}
         <div className="space-y-2">

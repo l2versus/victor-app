@@ -3,7 +3,7 @@ const path = require("path")
 const { execFileSync } = require("child_process")
 
 // ══════════════════════════════════════════════════════════════════════════════
-// SCRIPT: Processar modelos 3D (.glb) das máquinas do Ironberg
+// SCRIPT: Processar modelos 3D (.glb) das máquinas do Victor Personal
 //
 // USO:
 //   1. Coloque os arquivos .glb na pasta: scripts/glb-input/

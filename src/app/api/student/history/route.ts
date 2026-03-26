@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
         include: {
           template: { select: { name: true, type: true } },
           sets: {
-            include: { session: { select: { id: true } } },
+            select: { id: true, exerciseId: true, setNumber: true, reps: true, loadKg: true, rpe: true, completed: true, technique: true, isExtra: true },
           },
           _count: { select: { sets: true } },
         },

@@ -216,7 +216,7 @@ const MOCK_POSTS: BlogPost[] = [
 <ul>
 <li>Ajuste a altura da tela do computador na linha dos olhos</li>
 <li>Levante a cada 45 minutos para se movimentar</li>
-<li>Use o app Ironberg para corrigir postura com câmera IA</li>
+<li>Use o app Victor Personal para corrigir postura com câmera IA</li>
 </ul>`,
     coverImage: null,
     category: "Saúde",

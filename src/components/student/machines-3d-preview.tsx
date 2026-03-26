@@ -28,8 +28,8 @@ interface ModelEntry {
   addedAt: string
 }
 
-// ─── Todas as 52 máquinas Ironberg agrupadas por setor ───
-const IRONBERG_MACHINES = [
+// ─── Todas as 52 máquinas Victor Personal agrupadas por setor ───
+const VICTOR_PERSONAL_MACHINES = [
   { group: "ABDOMEN / CORE", machines: [
     { slug: "matrix-abdominal-crunch", name: "Matrix Abdominal Crunch (cabo)" },
     { slug: "hammer-seated-ab-crunch", name: "Hammer Strength Seated Ab Crunch" },
@@ -94,7 +94,7 @@ const IRONBERG_MACHINES = [
   ]},
 ]
 
-const ALL_MACHINES = IRONBERG_MACHINES.flatMap(g => g.machines)
+const ALL_MACHINES = VICTOR_PERSONAL_MACHINES.flatMap(g => g.machines)
 
 function Model({ url }: { url: string }) {
   const { scene } = useGLTF(url)
@@ -127,7 +127,7 @@ export default function MachinesPreview() {
 
     // Load saved mappings from localStorage
     try {
-      const saved = localStorage.getItem("ironberg-3d-mappings")
+      const saved = localStorage.getItem("victor-personal-3d-mappings")
       if (saved) setMappings(JSON.parse(saved))
     } catch { /* ignore */ }
   }, [])
@@ -135,7 +135,7 @@ export default function MachinesPreview() {
   // Save mappings to localStorage
   const saveMappings = useCallback((newMappings: Record<string, { slug: string; name: string }>) => {
     setMappings(newMappings)
-    localStorage.setItem("ironberg-3d-mappings", JSON.stringify(newMappings))
+    localStorage.setItem("victor-personal-3d-mappings", JSON.stringify(newMappings))
   }, [])
 
   const identifyMachine = useCallback((fileSlug: string, machine: { slug: string; name: string }) => {
@@ -176,7 +176,7 @@ export default function MachinesPreview() {
   const usedSlugs = new Set(Object.values(mappings).map(m => m.slug))
 
   // Filter machines by search
-  const filteredGroups = IRONBERG_MACHINES.map(g => ({
+  const filteredGroups = VICTOR_PERSONAL_MACHINES.map(g => ({
     ...g,
     machines: g.machines.filter(m =>
       !usedSlugs.has(m.slug) &&
@@ -191,7 +191,7 @@ export default function MachinesPreview() {
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
             <Dumbbell className="w-4 h-4 text-red-500" />
-            <h1 className="text-sm font-bold">Identificador 3D — Ironberg</h1>
+            <h1 className="text-sm font-bold">Identificador 3D — Victor Personal</h1>
           </div>
           <span className="text-[10px] font-mono text-neutral-500">
             {currentIndex + 1}/{models.length}

@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     // Verify student belongs to this trainer
     const student = await prisma.student.findUnique({
       where: { id: studentId },
-      include: { user: { select: { id: true, email: true, name: true } } },
+      include: { user: { select: { id: true, email: true, name: true, sessionVersion: true } } },
     })
 
     if (!student || student.trainerId !== trainer.id) {
@@ -28,6 +28,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Generate short-lived token (15 minutes) for impersonation
+    // SECURITY: Include sv (session version) so token is invalidated when student logs in.
     const secret = process.env.JWT_SECRET
     if (!secret) {
       return NextResponse.json({ error: "JWT not configured" }, { status: 500 })
@@ -38,6 +39,7 @@ export async function POST(req: NextRequest) {
         userId: student.user.id,
         email: student.user.email,
         role: "STUDENT" as const,
+        sv: student.user.sessionVersion,
         impersonatedBy: session.userId,
       },
       secret,

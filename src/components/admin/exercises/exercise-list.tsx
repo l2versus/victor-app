@@ -425,7 +425,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                   <p className="text-[9px] text-neutral-600 mt-1">Nome do arquivo em /models/machines/ (sem .glb)</p>
                 </div>
 
-                {/* Marca da máquina — dropdown com marcas da Ironberg */}
+                {/* Marca da máquina — dropdown com marcas da Victor Personal */}
                 <div>
                   <label className="text-xs text-neutral-500 mb-1 block">Marca da máquina</label>
                   <select

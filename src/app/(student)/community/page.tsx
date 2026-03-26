@@ -10,9 +10,10 @@ import {
   Calendar, TrendingUp, Award, Lock,
   Heart, MessageCircle, Send, Camera, Play, Share2, Bookmark,
   Image as ImageIcon, X, Plus, Loader2,
-  UserPlus, User, Mail, Search, RefreshCw, Check, ChevronUp,
+  UserPlus, User, Mail, Search, RefreshCw, Check, ChevronUp, Compass,
 } from "lucide-react"
 import { NotificationBell } from "@/components/student/notification-bell"
+import { LiveTrainingCard } from "@/components/community/live-training"
 import { SafeImage, SafeAvatar } from "@/components/ui/safe-image"
 import { FadeIn, StaggerContainer, StaggerItem } from "@/components/ui/motion"
 import { EmptyState } from "@/components/ui/empty-state"
@@ -440,8 +441,15 @@ export default function CommunityPage() {
     <div className="space-y-5">
       {/* Header — Instagram style */}
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-white tracking-tight">Ironberg Family</h1>
+        <h1 className="text-xl font-bold text-white tracking-tight">Victor Personal Family</h1>
         <div className="flex items-center gap-2">
+          {/* Explore / Discover */}
+          <button
+            onClick={() => router.push("/community/discover")}
+            className="p-2 rounded-full hover:bg-white/[0.06] transition-colors"
+          >
+            <Compass className="w-5 h-5 text-neutral-300" />
+          </button>
           {/* Notifications — reuses existing bell component with dropdown */}
           <NotificationBell />
           {/* DM inbox */}
@@ -523,6 +531,9 @@ export default function CommunityPage() {
           </div>
         )}
       </div>
+
+      {/* ═══ Live Training — who's training now ═══ */}
+      <LiveTrainingCard />
 
       {/* ═══ Stories Ring — Instagram style ═══ */}
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none -mx-4 px-4">
@@ -800,7 +811,7 @@ export default function CommunityPage() {
                   {followingIds.size === 0 ? "Comece seguindo" : "Sugestões para você"}
                 </p>
                 <p className="text-xs text-neutral-500 mb-3">
-                  {followingIds.size === 0 ? "Siga membros para personalizar seu feed" : "Descubra mais membros da Ironberg"}
+                  {followingIds.size === 0 ? "Siga membros para personalizar seu feed" : "Descubra mais membros da Victor Personal"}
                 </p>
                 <div className="flex gap-3 overflow-x-auto scrollbar-none pb-1">
                   {suggestedUsers.filter(u => u.studentId !== myStudentId && !followingIds.has(u.studentId)).map((u) => (
@@ -828,7 +839,7 @@ export default function CommunityPage() {
             {!feedHasFollows && feed.length > 0 && (
               <div className="flex items-center gap-2 px-1">
                 <span className="text-[11px] text-neutral-500">
-                  Mostrando posts da Ironberg · Siga pessoas para personalizar
+                  Mostrando posts da Victor Personal · Siga pessoas para personalizar
                 </span>
                 <div className="flex-1 h-px bg-white/[0.04]" />
               </div>
@@ -1296,7 +1307,7 @@ function FeedCard({
               if (navigator.share) {
                 try {
                   await navigator.share({
-                    title: `${post.studentName} na Ironberg Family`,
+                    title: `${post.studentName} na Victor Personal Family`,
                     text: post.content?.slice(0, 100) || "Confira este post!",
                     url: window.location.href,
                   })
@@ -1678,7 +1689,7 @@ function StoryViewer({
     if ("mediaSession" in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
         title: `Story de ${viewingStory.group.name.split(" ")[0]}`,
-        artist: "Ironberg App",
+        artist: "Victor Personal",
         album: "Stories",
         artwork: [
           { src: "/icon-192x192.png", sizes: "192x192", type: "image/png" },

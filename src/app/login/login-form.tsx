@@ -40,8 +40,12 @@ export function LoginForm() {
         return
       }
 
-      if (data.user.role === "ADMIN") {
+      if (data.user.role === "MASTER") {
+        router.push("/master/dashboard")
+      } else if (data.user.role === "ADMIN") {
         router.push("/admin/dashboard")
+      } else if (data.user.role === "NUTRITIONIST") {
+        router.push("/nutri/dashboard")
       } else {
         router.push("/today")
       }

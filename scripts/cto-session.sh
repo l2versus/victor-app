@@ -25,7 +25,7 @@ REGRAS:
 
 CONTEXTO:
 - Next.js 16.2, React 19, Prisma 7.5, Tailwind 4
-- Dark mode Ironberg (#dc2626 + #0a0a0a)
+- Dark mode Victor Personal (#dc2626 + #0a0a0a)
 - Componentes em src/components/ui/ (toast, skeleton, motion, safe-image, etc.)
 - Branding centralizado em src/lib/branding.ts
 - 285 exercícios, 194 com postura, 52 máquinas 3D

@@ -231,7 +231,7 @@ export default function KnowledgePage() {
             <input
               value={form.tags}
               onChange={e => setForm(f => ({ ...f, tags: e.target.value }))}
-              placeholder="supino, peitoral, ironberg, hipertrofia"
+              placeholder="supino, peitoral, victor-personal, hipertrofia"
               className="w-full rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-emerald-500/30"
             />
           </div>

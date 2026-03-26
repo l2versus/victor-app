@@ -38,40 +38,65 @@ export async function GET(req: NextRequest) {
     const completedFilter = { completedAt: { not: null } }
 
     // Get only students from the same trainer (data isolation)
+    // Optimized: separate queries to avoid loading all sets into memory
     const students = await prisma.student.findMany({
       where: { status: "ACTIVE", ...(trainerId ? { trainerId } : {}) },
-      include: {
+      select: {
+        id: true,
         user: { select: { name: true, avatar: true } },
-        sessions: {
-          where: { ...completedFilter, ...dateFilter },
-          include: {
-            sets: true,
-          },
-        },
       },
     })
 
+    const studentIds = students.map(s => s.id)
+
+    // Batch: session counts + dates per student (for streak calc)
+    const [sessionsByStudent, volumeByStudent] = await Promise.all([
+      prisma.workoutSession.findMany({
+        where: {
+          studentId: { in: studentIds },
+          ...completedFilter,
+          ...dateFilter,
+        },
+        select: { studentId: true, startedAt: true },
+      }),
+      // Volume aggregation: sum(reps * loadKg) per student via raw sets query
+      prisma.sessionSet.findMany({
+        where: {
+          completed: true,
+          session: {
+            studentId: { in: studentIds },
+            ...completedFilter,
+            ...dateFilter,
+          },
+        },
+        select: { reps: true, loadKg: true, session: { select: { studentId: true } } },
+      }),
+    ])
+
+    // Build maps
+    const sessionMap = new Map<string, Date[]>()
+    for (const s of sessionsByStudent) {
+      if (!sessionMap.has(s.studentId)) sessionMap.set(s.studentId, [])
+      sessionMap.get(s.studentId)!.push(s.startedAt)
+    }
+
+    const volumeMap = new Map<string, number>()
+    for (const set of volumeByStudent) {
+      const sid = set.session.studentId
+      volumeMap.set(sid, (volumeMap.get(sid) || 0) + set.reps * set.loadKg)
+    }
+
     // Calculate ranking metrics for each student
     const ranked = students.map((student) => {
-      const sessions = student.sessions
-      const totalSessions = sessions.length
-
-      // Volume total (reps × loadKg across all sets)
-      let totalVolume = 0
-      for (const session of sessions) {
-        for (const set of session.sets) {
-          if (set.completed) {
-            totalVolume += set.reps * set.loadKg
-          }
-        }
-      }
+      const sessionDates = sessionMap.get(student.id) || []
+      const totalSessions = sessionDates.length
+      const totalVolume = volumeMap.get(student.id) || 0
 
       // Weekly streak — count consecutive weeks with at least 1 session
       let streakWeeks = 0
-      if (sessions.length > 0) {
+      if (sessionDates.length > 0) {
         const weekSet = new Set<string>()
-        for (const s of sessions) {
-          const d = s.startedAt
+        for (const d of sessionDates) {
           const yearWeek = `${d.getFullYear()}-W${Math.ceil(((d.getTime() - new Date(d.getFullYear(), 0, 1).getTime()) / 86400000 + new Date(d.getFullYear(), 0, 1).getDay() + 1) / 7)}`
           weekSet.add(yearWeek)
         }
@@ -115,7 +140,10 @@ export async function GET(req: NextRequest) {
     // Add position
     const ranking = ranked.map((r, i) => ({ ...r, position: i + 1 }))
 
-    return NextResponse.json({ ranking, period })
+    const response = NextResponse.json({ ranking, period })
+    // Rankings change slowly — cache for 2 minutes, stale-while-revalidate for 10 minutes
+    response.headers.set("Cache-Control", "public, s-maxage=120, stale-while-revalidate=600")
+    return response
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Erro interno"
     if (msg === "Unauthorized" || msg === "SessionExpired") {

@@ -8,6 +8,7 @@ import { WorkoutPlayer } from "./workout-player"
 import { Moon, Dumbbell, Droplets, Heart, BedDouble, ChevronRight } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { getBrazilDayOfWeek, getBrazilTodayRange } from "@/lib/timezone"
+import { LiveTrainingBanner } from "@/components/community/live-training"
 
 export const metadata: Metadata = {
   title: "Treino de Hoje",
@@ -86,6 +87,7 @@ export default async function TodayPage({
     return (
       <div className="space-y-4">
         <WeekDaySelector weekSchedule={weekSchedule} selectedDay={dayOfWeek} today={today} />
+        <LiveTrainingBanner />
         <EmptyDay
           dayOfWeek={dayOfWeek}
           isToday={isScheduledToday}
@@ -165,6 +167,7 @@ export default async function TodayPage({
   return (
     <div className="space-y-4">
       <WeekDaySelector weekSchedule={weekSchedule} selectedDay={dayOfWeek} today={today} />
+      <LiveTrainingBanner />
       <WorkoutPlayer
         studentId={student.id}
         templateId={plan.templateId}

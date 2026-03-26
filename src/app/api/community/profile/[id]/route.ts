@@ -46,11 +46,16 @@ export async function GET(
       isFollowing = !!follow
     }
 
-    // Get posts by this student
+    // Get posts by this student — profile only shows photo posts (USER_POST with image)
+    // Text-only feed posts stay on the timeline, not on the profile grid (Instagram flow)
     const posts = await prisma.communityPost.findMany({
-      where: { studentId },
+      where: {
+        studentId,
+        type: "USER_POST",
+        imageUrl: { not: null },
+      },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      take: 30,
       include: {
         likes: { select: { studentId: true } },
         _count: { select: { likes: true, comments: true } },

@@ -14,6 +14,8 @@ datasource db {
 enum Role {
   ADMIN
   STUDENT
+  NUTRITIONIST
+  MASTER
 }
 
 enum Gender {
@@ -48,6 +50,7 @@ model User {
 
   student        Student?        @relation("UserStudent")
   trainerProfile TrainerProfile? @relation("UserTrainer")
+  nutritionistProfile NutritionistProfile? @relation("UserNutritionist")
   notifications  Notification[]
   sentMessages     DirectMessage[] @relation("MessageSender")
   receivedMessages DirectMessage[] @relation("MessageReceiver")
@@ -62,8 +65,10 @@ model TrainerProfile {
   brandColor         String  @default("#dc2626")
   gymName            String?
   onboardingComplete Boolean @default(false)
+  organizationId     String?
 
   user      User              @relation("UserTrainer", fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
   students  Student[]
   templates WorkoutTemplate[]
   plans     Plan[]
@@ -82,6 +87,72 @@ model TrainerProfile {
 }
 
 // ═══════════════════════════════════════
+// ORGANIZATIONS — Multi-tenant
+// ═══════════════════════════════════════
+
+enum OrgStatus {
+  ACTIVE
+  TRIAL
+  SUSPENDED
+  CANCELLED
+}
+
+model Organization {
+  id          String    @id @default(cuid())
+  name        String
+  slug        String    @unique
+  logo        String?
+  domain      String?   @unique
+  status      OrgStatus @default(TRIAL)
+
+  // Brand config (overrides branding.ts per org)
+  brandConfig Json?
+
+  // Contact
+  ownerEmail  String?
+  phone       String?
+  cnpj        String?
+
+  // SaaS plan limits
+  maxProfessionals Int @default(1)
+  maxStudents      Int @default(10)
+
+  trainers         TrainerProfile[]
+  nutritionists    NutritionistProfile[]
+  students         Student[]
+  subscriptions    SaasSubscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@index([status])
+}
+
+model NutritionistProfile {
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  organizationId     String?
+  bio                String?
+  crn                String?
+  specialty          String?
+  logo               String?
+  brandColor         String  @default("#10b981")
+  onboardingComplete Boolean @default(false)
+
+  user         User          @relation("UserNutritionist", fields: [userId], references: [id])
+  organization Organization? @relation(fields: [organizationId], references: [id])
+  mealPlans    MealPlan[]
+  students     Student[]     @relation("StudentNutritionist")
+  knowledge    KnowledgeDocument[] @relation("NutriKnowledge")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+}
+
+// ═══════════════════════════════════════
 // STUDENTS
 // ═══════════════════════════════════════
 
@@ -95,6 +166,8 @@ model Student {
   id           String        @id @default(cuid())
   userId       String        @unique
   trainerId    String
+  organizationId String?
+  nutritionistId String?
   birthDate    DateTime?
   gender       Gender?
   weight       Float?
@@ -112,6 +185,9 @@ model Student {
 
   user         User                @relation("UserStudent", fields: [userId], references: [id])
   trainer      TrainerProfile      @relation(fields: [trainerId], references: [id])
+  organization   Organization?        @relation(fields: [organizationId], references: [id])
+  nutritionist   NutritionistProfile? @relation("StudentNutritionist", fields: [nutritionistId], references: [id])
+  mealPlanAssignments StudentMealPlan[]
   sessions     WorkoutSession[]
   assessments  Assessment[]
   payments     Payment[]
@@ -148,6 +224,10 @@ model Student {
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
+  @@index([organizationId])
+  @@index([nutritionistId])
+  @@index([status])
+  @@index([userId])
 }
 
 // ═══════════════════════════════════════
@@ -276,6 +356,8 @@ model WorkoutSession {
   @@index([studentId])
   @@index([templateId])
   @@index([startedAt])
+  @@index([studentId, completedAt])
+  @@index([completedAt])
 }
 
 model SessionSet {
@@ -296,6 +378,7 @@ model SessionSet {
 
   @@index([sessionId])
   @@index([exerciseId])
+  @@index([sessionId, exerciseId])
 }
 
 // ═══════════════════════════════════════
@@ -848,6 +931,79 @@ model NutritionLog {
 }
 
 // ═══════════════════════════════════════
+// MEAL PLANS — Nutritionist prescriptions
+// ═══════════════════════════════════════
+
+enum MealType {
+  BREAKFAST
+  MORNING_SNACK
+  LUNCH
+  AFTERNOON_SNACK
+  DINNER
+  SUPPER
+  PRE_WORKOUT
+  POST_WORKOUT
+}
+
+model MealPlan {
+  id              String  @id @default(cuid())
+  nutritionistId  String
+  name            String
+  description     String?
+  targetCalories  Int?
+  targetProtein   Float?
+  targetCarbs     Float?
+  targetFat       Float?
+  meals           Json
+  active          Boolean @default(true)
+
+  nutritionist NutritionistProfile @relation(fields: [nutritionistId], references: [id])
+  assignments  StudentMealPlan[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([nutritionistId])
+}
+
+model StudentMealPlan {
+  id         String   @id @default(cuid())
+  studentId  String
+  planId     String
+  active     Boolean  @default(true)
+  startDate  DateTime @default(now())
+  endDate    DateTime?
+
+  student Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  plan    MealPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([studentId])
+  @@index([planId])
+}
+
+model Food {
+  id          String  @id @default(cuid())
+  name        String
+  brand       String?
+  servingSize Float   @default(100)
+  servingUnit String  @default("g")
+  calories    Int
+  protein     Float
+  carbs       Float
+  fat         Float
+  fiber       Float?
+  isCustom    Boolean @default(false)
+  createdById String?
+
+  createdAt DateTime @default(now())
+
+  @@index([name])
+}
+
+// ═══════════════════════════════════════
 // PUSH NOTIFICATIONS — Web Push subscriptions
 // ═══════════════════════════════════════
 
@@ -1390,16 +1546,158 @@ model KnowledgeDocument {
   title       String
   content     String            // texto do documento
   category    KnowledgeCategory @default(GENERAL)
-  tags        String[]          // tags de busca (ex: ["supino", "peitoral", "ironberg"])
+  tags        String[]          // tags de busca (ex: ["supino", "peitoral", "victor-personal"])
   imageUrl    String?           // foto/infográfico associado
   sourceUrl   String?           // link do artigo original
   embedding   Float[]           // Google text-embedding-004 = 768 dims, stored as JSON array
 
   trainer     TrainerProfile @relation(fields: [trainerId], references: [id])
+  nutritionistId String?
+  nutritionist   NutritionistProfile? @relation("NutriKnowledge", fields: [nutritionistId], references: [id])
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   @@index([trainerId])
   @@index([category])
+}
+
+// ═══════════════════════════════════════
+// SAAS CRM — Platform sales pipeline
+// ═══════════════════════════════════════
+
+enum SaasLeadStatus {
+  NEW
+  CONTACTED
+  DEMO_SCHEDULED
+  DEMO_DONE
+  NEGOTIATING
+  CONVERTED
+  LOST
+}
+
+enum SaasLeadType {
+  ACADEMY
+  PERSONAL_TRAINER
+  NUTRITIONIST
+  CLINIC
+}
+
+model SaasLead {
+  id                String         @id @default(cuid())
+  name              String
+  email             String?
+  phone             String?
+  company           String?
+  type              SaasLeadType   @default(ACADEMY)
+  status            SaasLeadStatus @default(NEW)
+  notes             String?
+  city              String?
+  state             String?
+  estimatedStudents Int?
+  estimatedMrr      Float?
+  source            String?
+  score             Int?
+  temperature       String   @default("COLD") // HOT, WARM, COLD
+  lostReason        String?
+  convertedAt       DateTime?
+  convertedOrgId    String?
+
+  followUps SaasLeadFollowUp[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([type])
+  @@index([createdAt])
+  @@index([temperature])
+}
+
+model SaasLeadFollowUp {
+  id      String    @id @default(cuid())
+  leadId  String
+  type    String
+  content String
+  dueDate DateTime?
+
+  lead SaasLead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId])
+}
+
+// ═══════════════════════════════════════
+// SAAS BILLING — Platform subscription management
+// ═══════════════════════════════════════
+
+enum SaasPlanInterval {
+  MONTHLY
+  QUARTERLY
+  SEMIANNUAL
+  ANNUAL
+}
+
+model SaasPlan {
+  id               String           @id @default(cuid())
+  name             String
+  price            Float
+  interval         SaasPlanInterval @default(MONTHLY)
+  maxProfessionals Int              @default(1)
+  maxStudents      Int              @default(10)
+  features         Json?
+  active           Boolean          @default(true)
+
+  subscriptions SaasSubscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum SaasSubscriptionStatus {
+  ACTIVE
+  TRIAL
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model SaasSubscription {
+  id             String                 @id @default(cuid())
+  organizationId String
+  planId         String
+  status         SaasSubscriptionStatus @default(TRIAL)
+  startDate      DateTime               @default(now())
+  endDate        DateTime?
+  trialEndsAt    DateTime?
+  cancelledAt    DateTime?
+
+  organization Organization @relation(fields: [organizationId], references: [id])
+  plan         SaasPlan     @relation(fields: [planId], references: [id])
+  invoices     SaasInvoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([organizationId])
+  @@index([status])
+}
+
+model SaasInvoice {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  amount         Float
+  status         String   @default("pending")
+  dueDate        DateTime
+  paidAt         DateTime?
+  referenceMonth String
+
+  subscription SaasSubscription @relation(fields: [subscriptionId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([dueDate])
 }

@@ -9,7 +9,7 @@
 - [x] Anatomia 3D Sketchfab (Écorché rotável na /evolution)
 - [x] Header social Instagram-style (avatar, greeting, streak, progresso semanal)
 - [x] MediaPipe expandido: 50 → 194 exercícios, 29 padrões biomecânicos
-- [x] 32 máquinas Ironberg no banco (Hammer, Hoist, Nautilus, Life Fitness, Cybex)
+- [x] 32 máquinas Victor Personal no banco (Hammer, Hoist, Nautilus, Life Fitness, Cybex)
 - [x] 30 modelos 3D Sketchfab mapeados nos exercícios
 - [x] Campo "Máquina sugerida" no schema (suggestedMachine)
 - [x] Postura: texto GRANDE (28-44px), replay pós-exercício
@@ -72,7 +72,7 @@ Fluxo:
 - Celebration modal com share button
 
 ### 2.3 Tradução pendente
-- Verificar se algum exercício novo (Ironberg) aparece em inglês no app
+- Verificar se algum exercício novo (Victor Personal) aparece em inglês no app
 - "Elevação Pélvica" como alias pro "Hip Thrust com Barra" (busca)
 
 ---

@@ -41,9 +41,9 @@ async function main() {
       console.log(`  ${p.slug}: R$ ${p.price} → R$ ${correctPrice}`)
     }
 
-    // Fix description: "Grupo VIP" → "Rede Social Ironberg"
+    // Fix description: "Grupo VIP" → "Rede Social Victor Personal"
     if (p.description?.includes("VIP")) {
-      updates.description = p.description.replace(/[Gg]rupo VIP/g, "Rede Social Ironberg")
+      updates.description = p.description.replace(/[Gg]rupo VIP/g, "Rede Social Victor Personal")
     }
 
     if (Object.keys(updates).length > 0) {

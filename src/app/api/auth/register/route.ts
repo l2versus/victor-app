@@ -1,9 +1,20 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { hashPassword, generateToken } from "@/lib/auth"
+import { checkRateLimit } from "@/lib/rate-limit"
 
 export async function POST(req: NextRequest) {
   try {
+    // SECURITY: Rate limit registration to prevent mass account creation
+    const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown"
+    const { success } = checkRateLimit(`register:${ip}`, 5, 15 * 60 * 1000) // 5 per 15min
+    if (!success) {
+      return NextResponse.json(
+        { error: "Muitas tentativas de cadastro. Tente novamente em 15 minutos." },
+        { status: 429 }
+      )
+    }
+
     const { name, email, password, phone } = await req.json()
 
     if (!name || !email || !password) {

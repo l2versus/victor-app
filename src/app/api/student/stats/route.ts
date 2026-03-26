@@ -91,15 +91,16 @@ export async function GET() {
       }
     }
 
-    // PRs: fetch all sets for this student (not just last 12 weeks)
+    // PRs: fetch top sets per exercise (limited to exercises with highest loads)
     const allPrSets = await prisma.sessionSet.findMany({
-      where: { session: { studentId: student.id } },
+      where: { session: { studentId: student.id }, loadKg: { gt: 0 } },
       select: {
         exerciseId: true,
         loadKg: true,
         session: { select: { startedAt: true } },
       },
       orderBy: { loadKg: "desc" },
+      take: 200,
     })
 
     const exerciseIds = [...new Set(allPrSets.map((s) => s.exerciseId))]

@@ -25,9 +25,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* Redirect to onboarding if not completed (skips if already on /admin/onboarding) */}
       {needsOnboarding && <OnboardingRedirector />}
 
-      {/* ═══ PREMIUM BACKGROUND — Ironberg gym photo, clearly visible ═══ */}
+      {/* ═══ PREMIUM BACKGROUND — Victor Personal gym photo, clearly visible ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0">
-        {/* Ironberg gym photo — high visibility */}
+        {/* Victor Personal gym photo — high visibility */}
         <img
           src="/img/ironberg.webp"
           alt=""

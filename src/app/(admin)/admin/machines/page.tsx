@@ -62,7 +62,7 @@ export default function MachinesPage() {
           <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center shadow-lg shadow-red-600/20 text-white font-bold text-sm">
             3D
           </div>
-          Equipamentos Ironberg
+          Equipamentos Victor Personal
         </h1>
         <p className="text-xs text-neutral-500 mt-1">
           {machines.length} modelos 3D interativos · Clique para expandir · Edite o nome clicando no lápis
@@ -102,9 +102,9 @@ export default function MachinesPage() {
                     <Maximize2 className="w-4 h-4" />
                   </button>
 
-                  {/* Ironberg badge */}
+                  {/* Victor Personal badge */}
                   <div className="absolute bottom-3 left-3 px-2.5 py-1 rounded-lg bg-black/60 backdrop-blur-sm">
-                    <span className="text-[9px] font-bold text-red-400 uppercase tracking-wider">Ironberg</span>
+                    <span className="text-[9px] font-bold text-red-400 uppercase tracking-wider">Victor Personal</span>
                   </div>
 
                   {needsRename && (
@@ -216,7 +216,7 @@ function MachineShowcase({
             <div>
               <h2 className="text-xl font-bold text-white tracking-tight">{machine.name}</h2>
               <p className="text-xs text-neutral-500 flex items-center gap-2">
-                <span className="text-red-400 font-semibold uppercase tracking-wider text-[10px]">Ironberg</span>
+                <span className="text-red-400 font-semibold uppercase tracking-wider text-[10px]">Victor Personal</span>
                 <span>·</span>
                 <span>Modelo interativo</span>
               </p>
@@ -295,7 +295,7 @@ function MachineShowcase({
               <div className="text-center">
                 <Video className="w-16 h-16 text-neutral-700 mx-auto mb-4" />
                 <p className="text-neutral-400 text-sm mb-1">Nenhum vídeo adicionado</p>
-                <p className="text-neutral-600 text-xs mb-6">Grave um vídeo demonstrativo na Ironberg</p>
+                <p className="text-neutral-600 text-xs mb-6">Grave um vídeo demonstrativo na Victor Personal</p>
               </div>
             )}
 

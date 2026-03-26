@@ -31,7 +31,7 @@ const tiers = [
       { key: "sessoes", label: "3 treinos por semana", included: true },
       { key: "hasAI", label: "Assistente virtual pós-treino", included: false },
       { key: "hasPostureCamera", label: "Correção de postura por IA", included: false },
-      { key: "hasVipGroup", label: "Rede Social Ironberg", included: false },
+      { key: "hasVipGroup", label: "Rede Social Victor Personal", included: false },
       { key: "hasNutrition", label: "Orientação nutricional", included: false },
     ],
   },
@@ -57,7 +57,7 @@ const tiers = [
     features: [
       { key: "tudo_pro", label: "Tudo do Pro", included: true },
       { key: "hasPostureCamera", label: "Correção postura por câmera IA", included: true },
-      { key: "hasVipGroup", label: "Rede Social Ironberg", included: true },
+      { key: "hasVipGroup", label: "Rede Social Victor Personal", included: true },
       { key: "hasNutrition", label: "Orientação nutricional", included: true },
       { key: "whatsapp", label: `WhatsApp direto com ${BRAND.trainerFirstName}`, included: true },
       { key: "prioridade", label: "Prioridade total", included: true },

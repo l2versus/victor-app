@@ -4,10 +4,15 @@ import { prisma } from "@/lib/prisma"
 // GET /api/cron/subscription-alerts — Daily check for expiring/overdue subscriptions
 // Called by Vercel Cron or external scheduler
 export async function GET(req: NextRequest) {
-  // Verify cron secret
+  // SECURITY: Always verify cron secret. Without it, anyone can trigger
+  // subscription state changes and generate notifications.
   const authHeader = req.headers.get("authorization")
   const cronSecret = process.env.CRON_SECRET
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
+  if (!cronSecret) {
+    console.error("[Cron] CRON_SECRET not set — rejecting request")
+    return NextResponse.json({ error: "CRON_SECRET not configured" }, { status: 503 })
+  }
+  if (authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 

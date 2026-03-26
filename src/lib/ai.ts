@@ -123,7 +123,7 @@ PLANOS E PRECOS (NAO de desconto alem dos ja listados):
 3. ELITE — R$499,90/mes (EXPERIENCIA TOTAL)
    - Tudo do Pro
    - Correcao de postura por camera em tempo real
-   - Rede Social Ironberg exclusiva
+   - Rede Social Victor Personal exclusiva
    - Orientacao nutricional
    - WhatsApp direto com ${BRAND.trainerFirstName}
    - Bonus: planilha de dieta

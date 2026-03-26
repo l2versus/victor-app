@@ -7,8 +7,8 @@ import { ArrowLeft, X, RotateCcw, Box, ChevronRight } from "lucide-react"
 import Link from "next/link"
 
 // ═══════════════════════════════════════════════════════════════════
-// IRONBERG MACHINES 3D GALLERY
-// Galeria de todas as máquinas 3D do Ironberg
+// VICTOR PERSONAL MACHINES 3D GALLERY
+// Galeria de todas as máquinas 3D do Victor Personal
 // Clica no card → abre viewer fullscreen com rotação
 // ═══════════════════════════════════════════════════════════════════
 
@@ -82,7 +82,7 @@ function FullscreenViewer({ model, onClose }: { model: ModelEntry; onClose: () =
       <div className="px-4 py-3 border-t border-white/[0.06] flex items-center justify-between safe-bottom">
         <p className="text-[9px] text-neutral-600 font-mono">{model.slug}.glb</p>
         <span className="text-[8px] px-2 py-1 rounded-full bg-red-600/15 text-red-400 border border-red-500/20 font-bold">
-          IRONBERG
+          VICTOR PERSONAL
         </span>
       </div>
     </div>
@@ -128,7 +128,7 @@ export default function MachinesGallery() {
             <Box className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold tracking-tight">Maquinas Ironberg</h1>
+            <h1 className="text-lg font-bold tracking-tight">Maquinas Victor Personal</h1>
             <p className="text-[11px] text-neutral-500">{models.length} modelos 3D · Toque para visualizar</p>
           </div>
         </div>

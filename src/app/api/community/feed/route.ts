@@ -109,13 +109,13 @@ export async function GET(req: NextRequest) {
     // Resolve primary trainer for admin posts (the one with students)
     const primaryTrainer = await prisma.trainerProfile.findFirst({
       orderBy: { students: { _count: "desc" } },
-      select: { userId: true },
+      select: {
+        userId: true,
+        user: { select: { id: true, name: true, avatar: true } },
+      },
     })
     const trainerUser = primaryTrainer
-      ? await prisma.user.findUnique({
-          where: { id: primaryTrainer.userId },
-          select: { id: true, name: true, avatar: true },
-        })
+      ? primaryTrainer.user
       : await prisma.user.findFirst({
           where: { role: "ADMIN" },
           orderBy: { createdAt: "asc" },

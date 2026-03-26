@@ -45,7 +45,7 @@ run_task() {
 # ═══ CONTEXT shared by all tasks ═══
 CTX="Você é o CTO do Victor App (c:\/Users\/admin\/Desktop\/victor-app).
 Stack: Next.js 16.2, React 19, Prisma 7.5, Tailwind 4, Framer Motion 12.
-Dark mode Ironberg (#dc2626 + #0a0a0a). 285 exercícios, 194 com postura.
+Dark mode Victor Personal (#dc2626 + #0a0a0a). 285 exercícios, 194 com postura.
 Componentes: src/components/ui/ (toast, skeleton, motion, safe-image, error-state, stat-card, empty-state, modal, button, card, input).
 Brand config: src/lib/branding.ts (BRAND.trainerName, BRAND.appName, etc).
 REGRAS: Leia antes de editar. npx tsc --noEmit antes de commitar. git commit ao final. NUNCA pergunte — EXECUTE."

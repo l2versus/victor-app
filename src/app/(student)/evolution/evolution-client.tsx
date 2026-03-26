@@ -20,6 +20,7 @@ import { MuscleBadge } from "@/components/student/muscle-info-card"
 import { format, subDays, startOfWeek, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { FadeIn } from "@/components/ui/motion"
+import { ActivityHeatmap } from "@/components/ui/activity-heatmap"
 
 /* ═══ Types ═══ */
 type EvolutionData = {
@@ -184,6 +185,8 @@ export function EvolutionClient() {
   const [showExPicker, setShowExPicker] = useState(false)
   const [exportingPdf, setExportingPdf] = useState(false)
   const [volumeDetail, setVolumeDetail] = useState<number | null>(null) // index into volumeTrend
+  const [heatmapData, setHeatmapData] = useState<{ date: string; count: number }[]>([])
+  const [heatmapLoading, setHeatmapLoading] = useState(true)
 
   useEffect(() => {
     async function load() {
@@ -222,6 +225,15 @@ export function EvolutionClient() {
       finally { setLoading(false) }
     }
     load()
+  }, [])
+
+  // Fetch heatmap data separately (non-blocking)
+  useEffect(() => {
+    fetch("/api/student/activity-heatmap")
+      .then((r) => r.ok ? r.json() : null)
+      .then((d) => { if (d?.data) setHeatmapData(d.data) })
+      .catch(() => {})
+      .finally(() => setHeatmapLoading(false))
   }, [])
 
   function handleExportPdf() {
@@ -854,6 +866,19 @@ export function EvolutionClient() {
               </div>
             </Section>
           )}
+
+          {/* ═══ ACTIVITY HEATMAP ═══ */}
+          <Section title="Frequencia de Treino" subtitle="Atividade dos ultimos meses">
+            <div className="px-4 pb-3.5 pt-1">
+              {heatmapLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-4 h-4 text-neutral-600 animate-spin" />
+                </div>
+              ) : (
+                <ActivityHeatmap data={heatmapData} />
+              )}
+            </div>
+          </Section>
         </div>
       )}
 

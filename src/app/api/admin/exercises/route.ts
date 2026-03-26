@@ -53,13 +53,16 @@ export async function GET(req: NextRequest) {
       orderBy: { muscle: "asc" },
     })
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       exercises,
       total,
       page,
       pages: Math.ceil(total / limit),
       muscles: muscleGroups.map((m) => m.muscle),
     })
+    // Exercise library rarely changes — cache for 5 minutes, stale-while-revalidate for 1 hour
+    response.headers.set("Cache-Control", "public, s-maxage=300, stale-while-revalidate=3600")
+    return response
   } catch (error) {
     console.error("GET /api/admin/exercises error:", error)
     return NextResponse.json(

@@ -3738,7 +3738,7 @@ export const EXTENDED_EXERCISE_RULES: ExerciseRule[] = [
   },
 
   // ══════════════════════════════════════════════════════════════════════════
-  // MÁQUINAS IRONBERG — Hammer Strength, Hoist ROC-IT, Nautilus, Life Fitness, Cybex
+  // MÁQUINAS VICTOR PERSONAL — Hammer Strength, Hoist ROC-IT, Nautilus, Life Fitness, Cybex
   // ══════════════════════════════════════════════════════════════════════════
 
   // ─── HAMMER STRENGTH (plate-loaded, vermelho) ─────────────────────────
@@ -4042,7 +4042,7 @@ export const EXTENDED_EXERCISE_RULES: ExerciseRule[] = [
   },
 
   // ══════════════════════════════════════════════════════════════════════════════
-  // IRONBERG — 52 MÁQUINAS MAPEADAS (março 2026)
+  // VICTOR PERSONAL — 52 MÁQUINAS MAPEADAS (março 2026)
   // Marcas: Matrix, Hammer Strength MTS, Panatta, Panatta Monolith,
   //         Panatta Inspiration, Nautilus Impact, Nautilus Inspiration,
   //         Stark Strong, Hoist, Life Fitness

@@ -83,7 +83,7 @@ export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }
 
         {/* 3D badge */}
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
-          <span className="px-2 py-1 rounded-lg bg-red-600/20 text-[10px] text-red-400 font-bold border border-red-500/20 backdrop-blur-sm">3D IRONBERG</span>
+          <span className="px-2 py-1 rounded-lg bg-red-600/20 text-[10px] text-red-400 font-bold border border-red-500/20 backdrop-blur-sm">3D VICTOR PERSONAL</span>
         </div>
 
         {/* Instructions */}
@@ -120,7 +120,7 @@ export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }
             <X className="w-5 h-5" />
           </button>
           <div className="absolute bottom-6 left-0 right-0 text-center">
-            <span className="px-3 py-1.5 rounded-xl bg-red-600/20 text-xs text-red-400 font-bold border border-red-500/20 backdrop-blur-sm">3D IRONBERG</span>
+            <span className="px-3 py-1.5 rounded-xl bg-red-600/20 text-xs text-red-400 font-bold border border-red-500/20 backdrop-blur-sm">3D VICTOR PERSONAL</span>
             {resolvedName && <p className="text-neutral-500 text-xs mt-2">{resolvedName}</p>}
           </div>
         </div>

@@ -1,7 +1,7 @@
 const pg = require("pg")
 
 // ══════════════════════════════════════════════════════════════════════════════
-// IRONBERG — 52 MÁQUINAS MAPEADAS (março 2026)
+// VICTOR PERSONAL — 52 MÁQUINAS MAPEADAS (março 2026)
 // Marcas: Matrix, Hammer Strength, Hammer Strength MTS, Panatta, Panatta Monolith,
 //         Panatta Inspiration, Hoist, Hoist ROC-IT, Nautilus, Nautilus Impact,
 //         Life Fitness, Stark Strong, Bosu

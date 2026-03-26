@@ -9,6 +9,20 @@ import { sendTextMessage, INSTANCE_NAME } from "@/lib/evolution-api"
 // POST /api/webhooks/evolution — receive Evolution API webhooks
 export async function POST(req: NextRequest) {
   try {
+    // SECURITY: Verify webhook secret to prevent unauthorized requests.
+    // Evolution API sends the apikey header when configured with a webhook secret.
+    const webhookSecret = process.env.EVOLUTION_WEBHOOK_SECRET
+    if (webhookSecret) {
+      const apiKey = req.headers.get("apikey") || req.headers.get("authorization")?.replace("Bearer ", "")
+      if (apiKey !== webhookSecret) {
+        console.warn("[Evolution Webhook] Invalid or missing secret — rejecting")
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+    } else if (process.env.NODE_ENV === "production") {
+      console.error("[Evolution Webhook] EVOLUTION_WEBHOOK_SECRET not set in production — rejecting all requests")
+      return NextResponse.json({ error: "Webhook not configured" }, { status: 503 })
+    }
+
     const body = await req.json()
 
     // Normalizar evento (Evolution v2 usa formatos diferentes)

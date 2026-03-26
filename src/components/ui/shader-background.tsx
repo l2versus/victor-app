@@ -12,7 +12,7 @@ const ShaderBackground = () => {
     }
   `
 
-  // Fragment shader — Ironberg red/black palette
+  // Fragment shader — Victor Personal red/black palette
   const fsSource = `
     precision highp float;
     uniform vec2 iResolution;
