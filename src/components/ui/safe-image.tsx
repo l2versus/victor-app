@@ -17,11 +17,11 @@ export function SafeImage({
   src,
   ...props
 }: SafeImageProps) {
-  const [error, setError] = useState(false)
-  const [loaded, setLoaded] = useState(false)
+  const [status, setStatus] = useState<"loading" | "loaded" | "error">(
+    src ? "loading" : "error"
+  )
 
-  // If no src at all, show fallback immediately
-  if (!src || error) {
+  if (!src || status === "error") {
     return (
       <div
         className={cn(
@@ -38,22 +38,14 @@ export function SafeImage({
   }
 
   return (
-    <div className={cn("relative bg-neutral-900", className, fallbackClassName)}>
-      {/* Placeholder while loading */}
-      {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
-          <div className="w-4 h-4 rounded-full border-2 border-neutral-700 border-t-neutral-500 animate-spin" />
-        </div>
-      )}
-      <img
-        src={src}
-        className={cn("w-full h-full object-cover", !loaded && "opacity-0")}
-        alt={alt}
-        onError={() => setError(true)}
-        onLoad={() => setLoaded(true)}
-        {...props}
-      />
-    </div>
+    <img
+      src={src}
+      className={cn(className, status === "loading" && "invisible")}
+      alt={alt}
+      onError={() => setStatus("error")}
+      onLoad={() => setStatus("loaded")}
+      {...props}
+    />
   )
 }
 
