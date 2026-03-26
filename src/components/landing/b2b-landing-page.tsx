@@ -91,6 +91,25 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
   return <span ref={ref as React.RefObject<HTMLSpanElement>}>{count}{suffix}</span>
 }
 
+function AnimatedDecimal({ value }: { value: number }) {
+  const [count, setCount] = useState(0)
+  const { ref, visible } = useReveal()
+  useEffect(() => {
+    if (!visible) return
+    const start = Date.now()
+    let rafId: number
+    const tick = () => {
+      const p = Math.min((Date.now() - start) / 2000, 1)
+      const eased = 1 - Math.pow(1 - p, 3)
+      setCount(Math.round(eased * value * 10) / 10)
+      if (p < 1) rafId = requestAnimationFrame(tick)
+    }
+    rafId = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(rafId)
+  }, [visible, value])
+  return <span ref={ref as React.RefObject<HTMLSpanElement>}>{count.toFixed(1)}</span>
+}
+
 /* ===================================================================
    PRICING
    =================================================================== */
@@ -452,9 +471,13 @@ export function B2BLandingPage() {
   const [annual, setAnnual] = useState(false)
   const [mobileMenu, setMobileMenu] = useState(false)
   const [scrolled, setScrolled] = useState(false)
+  const [scrollY, setScrollY] = useState(0)
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50)
+      setScrollY(window.scrollY)
+    }
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
@@ -464,9 +487,9 @@ export function B2BLandingPage() {
 
       {/* ---- NAV ---- */}
       <nav className={cn(
-        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
+        "fixed top-0 inset-x-0 z-50 transition-all duration-500",
         scrolled
-          ? "bg-white/95 backdrop-blur-xl shadow-sm border-b border-slate-100"
+          ? "bg-white/95 backdrop-blur-xl shadow-lg shadow-black/10 border-b border-slate-100"
           : "bg-transparent",
       )}>
         <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16 md:h-20">
@@ -529,8 +552,8 @@ export function B2BLandingPage() {
            HERO — Full-width gradient with photo overlay + phone mockup
          ================================================================ */}
       <section className="relative min-h-[100vh] flex items-center overflow-hidden">
-        {/* Background image */}
-        <div className="absolute inset-0">
+        {/* Background image with parallax */}
+        <div className="absolute inset-0" style={{ transform: `translateY(${scrollY * 0.3}px)` }}>
           <Image
             src={IMAGES.heroGym}
             alt="Academia moderna"
@@ -606,22 +629,22 @@ export function B2BLandingPage() {
       {/* ================================================================
            STATS BAR — Trust numbers
          ================================================================ */}
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white" id="stats">
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
             {[
               { value: 50, suffix: "+", label: "Profissionais ativos", icon: Users },
               { value: 1000, suffix: "+", label: "Alunos na plataforma", icon: Smartphone },
               { value: 256, suffix: "", label: "Exercicios com IA", icon: Dumbbell },
-              { value: 4.9, suffix: "", label: "Avaliacao media", icon: Star, isDecimal: true },
+              { value: 49, suffix: "", label: "Avaliacao media", icon: Star, isDecimal: true },
             ].map((stat, i) => (
-              <Reveal key={i} delay={i * 100}>
+              <Reveal key={i} delay={i * 100} direction="scale">
                 <div className="text-center">
                   <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 mb-4">
                     <stat.icon className="w-6 h-6" />
                   </div>
                   <p className="text-4xl md:text-5xl font-extrabold text-slate-900 tabular-nums">
-                    {stat.isDecimal ? "4.9" : <AnimatedNumber value={stat.value} suffix={stat.suffix} />}
+                    {stat.isDecimal ? <AnimatedDecimal value={4.9} /> : <AnimatedNumber value={stat.value} suffix={stat.suffix} />}
                   </p>
                   <p className="text-sm text-slate-500 font-medium mt-2">{stat.label}</p>
                 </div>
@@ -630,6 +653,9 @@ export function B2BLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Section transition */}
+      <div className="h-24 bg-gradient-to-b from-white to-slate-50" />
 
       {/* ================================================================
            "O PROBLEMA" — Pain points with image cards
@@ -686,6 +712,9 @@ export function B2BLandingPage() {
         </div>
       </section>
 
+      {/* Section transition */}
+      <div className="h-24 bg-gradient-to-b from-slate-50 to-white" />
+
       {/* ================================================================
            FEATURES — Alternating image + text rows
          ================================================================ */}
@@ -723,7 +752,7 @@ export function B2BLandingPage() {
                       <div className="absolute inset-0 bg-gradient-to-t from-blue-900/30 to-transparent" />
                     </div>
                   </Reveal>
-                  <Reveal delay={200} className="lg:[direction:ltr]">
+                  <Reveal delay={200} direction={isEven ? "right" : "left"} className="lg:[direction:ltr]">
                     <div>
                       <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 mb-6">
                         <Icon className="w-7 h-7" />
@@ -761,6 +790,9 @@ export function B2BLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Section transition */}
+      <div className="h-24 bg-gradient-to-b from-white to-[#0f172a]" />
 
       {/* ================================================================
            HOW IT WORKS — 3 steps with connector lines
@@ -820,6 +852,9 @@ export function B2BLandingPage() {
         </div>
       </section>
 
+      {/* Section transition */}
+      <div className="h-24 bg-gradient-to-b from-[#0f172a] to-white" />
+
       {/* ================================================================
            COMPARISON — Clean horizontal table
          ================================================================ */}
@@ -864,6 +899,9 @@ export function B2BLandingPage() {
           </Reveal>
         </div>
       </section>
+
+      {/* Section transition */}
+      <div className="h-24 bg-gradient-to-b from-white to-slate-50" />
 
       {/* ================================================================
            PRICING — Clean cards with feature lists
@@ -910,7 +948,7 @@ export function B2BLandingPage() {
               const isPro = tier.name === "Pro"
               const price = annual ? tier.annual : tier.monthly
               return (
-                <Reveal key={tier.name} delay={i * 100}>
+                <Reveal key={tier.name} delay={isPro ? 350 : i * 150} direction="scale">
                   <div className={cn(
                     "relative rounded-2xl p-8 lg:p-10 h-full flex flex-col transition-all duration-300",
                     isPro
@@ -977,6 +1015,9 @@ export function B2BLandingPage() {
         </div>
       </section>
 
+      {/* Section transition */}
+      <div className="h-24 bg-gradient-to-b from-slate-50 to-white" />
+
       {/* ================================================================
            TESTIMONIALS — Cards with real photos
          ================================================================ */}
@@ -1027,6 +1068,9 @@ export function B2BLandingPage() {
         </div>
       </section>
 
+      {/* Section transition */}
+      <div className="h-24 bg-gradient-to-b from-white to-slate-50" />
+
       {/* ================================================================
            FAQ — Accordion
          ================================================================ */}
@@ -1052,6 +1096,9 @@ export function B2BLandingPage() {
           </div>
         </div>
       </section>
+
+      {/* Section transition */}
+      <div className="h-24 bg-gradient-to-b from-slate-50 to-[#0f172a]" />
 
       {/* ================================================================
            CTA BANNER — Full-width gradient with demo form
