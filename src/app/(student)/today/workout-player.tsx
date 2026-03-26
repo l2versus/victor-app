@@ -1122,7 +1122,8 @@ function SetRow({
   const defaultTechnique = exerciseTechnique !== "NORMAL" ? exerciseTechnique : (lastSetTechnique || "NORMAL")
 
   const [reps, setReps] = useState(completed?.reps ?? prescribedReps)
-  const [loadStr, setLoadStr] = useState(String(completed?.loadKg ?? suggestedLoad ?? 0))
+  const [loadStr, setLoadStr] = useState(completed?.loadKg ? String(completed.loadKg) : suggestedLoad ? String(suggestedLoad) : "")
+  const [loadError, setLoadError] = useState(false)
   const [technique, setTechnique] = useState<Technique>(completed?.technique ?? defaultTechnique)
   const [editing, setEditing] = useState(false)
   const [showTechPicker, setShowTechPicker] = useState(false)
@@ -1204,10 +1205,12 @@ function SetRow({
           value={loadStr}
           onChange={(e) => {
             const v = e.target.value.replace(",", ".")
-            if (v === "" || /^\d{0,3}\.?\d{0,1}$/.test(v)) setLoadStr(v)
+            if (v === "" || /^\d{0,3}\.?\d{0,1}$/.test(v)) { setLoadStr(v); setLoadError(false) }
           }}
-          placeholder="0"
-          className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
+          placeholder="kg"
+          className={`w-full text-center text-sm font-medium text-white bg-transparent border-b outline-none py-1 transition-colors ${
+            loadError ? "border-red-500 placeholder:text-red-400/60" : "border-white/10 focus:border-red-500/50"
+          }`}
         />
         <button
           onClick={() => setShowTechPicker(!showTechPicker)}
@@ -1220,6 +1223,8 @@ function SetRow({
           {editing ? (
             <button
               onClick={() => {
+                if (!loadStr.trim()) { setLoadError(true); try { navigator.vibrate?.(30) } catch {} return }
+                setLoadError(false)
                 if (onEdit) onEdit(reps, parseFloat(loadStr) || 0, technique)
                 setEditing(false)
               }}
@@ -1229,7 +1234,11 @@ function SetRow({
             </button>
           ) : (
             <button
-              onClick={() => onComplete(reps, parseFloat(loadStr) || 0, technique)}
+              onClick={() => {
+                if (!loadStr.trim()) { setLoadError(true); try { navigator.vibrate?.(30) } catch {} return }
+                setLoadError(false)
+                onComplete(reps, parseFloat(loadStr) || 0, technique)
+              }}
               className="w-11 h-11 rounded-lg bg-red-600/20 border border-red-500/30 text-red-400 flex items-center justify-center transition-all duration-200 active:scale-90 hover:bg-red-600/30"
             >
               <Check className="w-4 h-4" />
@@ -1287,15 +1296,16 @@ function AddExtraSetButton({
 }) {
   const [expanded, setExpanded] = useState(false)
   const [reps, setReps] = useState(suggestedReps)
-  const [loadStr, setLoadStr] = useState(String(suggestedLoad ?? 0))
+  const [loadStr, setLoadStr] = useState(suggestedLoad ? String(suggestedLoad) : "")
   const [technique, setTechnique] = useState<Technique>(exerciseTechnique)
+  const [loadError, setLoadError] = useState(false)
 
   if (!expanded) {
     return (
       <button
         onClick={() => {
           setReps(suggestedReps)
-          setLoadStr(String(suggestedLoad ?? 0))
+          setLoadStr(suggestedLoad ? String(suggestedLoad) : "")
           setExpanded(true)
         }}
         className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-white/[0.08] text-neutral-500 text-xs font-medium hover:border-white/[0.15] hover:text-neutral-300 transition-all"
@@ -1326,10 +1336,12 @@ function AddExtraSetButton({
         value={loadStr}
         onChange={(e) => {
           const v = e.target.value.replace(",", ".")
-          if (v === "" || /^\d{0,3}\.?\d{0,1}$/.test(v)) setLoadStr(v)
+          if (v === "" || /^\d{0,3}\.?\d{0,1}$/.test(v)) { setLoadStr(v); setLoadError(false) }
         }}
-        placeholder="0"
-        className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-blue-500/50 outline-none py-1"
+        placeholder="kg"
+        className={`w-full text-center text-sm font-medium text-white bg-transparent border-b outline-none py-1 ${
+          loadError ? "border-red-500 placeholder:text-red-400/60" : "border-white/10 focus:border-blue-500/50"
+        }`}
       />
       <select
         value={technique}
@@ -1345,6 +1357,8 @@ function AddExtraSetButton({
       <div className="flex justify-center gap-1">
         <button
           onClick={() => {
+            if (!loadStr.trim()) { setLoadError(true); try { navigator.vibrate?.(30) } catch {} return }
+            setLoadError(false)
             onAdd(reps, parseFloat(loadStr) || 0, technique)
             setExpanded(false)
           }}
