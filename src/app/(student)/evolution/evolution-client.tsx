@@ -18,6 +18,7 @@ import { EnergyBalanceCard } from "@/components/student/energy-balance-card"
 import { MuscleBadge } from "@/components/student/muscle-info-card"
 import { format, subDays, startOfWeek, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import { FadeIn } from "@/components/ui/motion"
 
 /* ═══ Types ═══ */
 type EvolutionData = {
@@ -912,6 +913,9 @@ export function EvolutionClient() {
                   </div>
                 </div>
               )}
+
+              {/* ═══ Progressao por Exercicio (endpoint dedicado) ═══ */}
+              <ExerciseProgressionSection />
             </>
           )}
         </div>
@@ -1357,5 +1361,236 @@ function CalendarHeatmap({ heatmap }: { heatmap: { date: string; count: number }
         <span className="text-[7px] text-neutral-600">Mais</span>
       </div>
     </div>
+  )
+}
+
+/* ═══ Exercise Progression Section (dedicated endpoint) ═══ */
+
+type ExProgressData = {
+  date: string
+  maxLoad: number
+  totalVolume: number
+  sets: number
+}
+
+type ExOption = { id: string; name: string; muscle: string }
+
+function ExerciseProgressionTooltip({
+  active,
+  payload,
+  label,
+}: {
+  active?: boolean
+  payload?: Array<{ value: number; dataKey: string; payload: ExProgressData }>
+  label?: string
+}) {
+  if (!active || !payload?.length) return null
+  const d = payload[0].payload
+
+  return (
+    <div className="rounded-xl bg-[#111]/95 backdrop-blur-xl border border-white/[0.08] px-3 py-2.5 shadow-2xl">
+      <p className="text-[9px] text-neutral-500 mb-1">{label}</p>
+      <div className="space-y-1">
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[10px] text-neutral-400">Carga max</span>
+          <span className="text-xs font-bold text-red-400">{d.maxLoad} kg</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[10px] text-neutral-400">Volume</span>
+          <span className="text-xs font-bold text-white">{d.totalVolume.toLocaleString("pt-BR")} kg</span>
+        </div>
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-[10px] text-neutral-400">Series</span>
+          <span className="text-xs font-bold text-neutral-300">{d.sets}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ExerciseProgressionSection() {
+  const [exercises, setExercises] = useState<ExOption[]>([])
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [progress, setProgress] = useState<ExProgressData[]>([])
+  const [loading, setLoading] = useState(false)
+  const [open, setOpen] = useState(false)
+  const [initialLoad, setInitialLoad] = useState(true)
+
+  // Load exercise list on mount
+  useEffect(() => {
+    async function loadList() {
+      try {
+        const res = await fetch("/api/student/exercise-progress?exerciseId=__list__")
+        if (!res.ok) return
+        const data = await res.json()
+        setExercises(data.exercises || [])
+        if (data.exercises?.length > 0) {
+          setSelectedId(data.exercises[0].id)
+        }
+      } catch { /* ignore */ }
+      finally { setInitialLoad(false) }
+    }
+    loadList()
+  }, [])
+
+  // Load progress data when exercise changes
+  useEffect(() => {
+    if (!selectedId) return
+    setLoading(true)
+    async function loadProgress() {
+      try {
+        const res = await fetch(`/api/student/exercise-progress?exerciseId=${selectedId}`)
+        if (!res.ok) return
+        const data = await res.json()
+        setProgress(data.progress || [])
+      } catch { /* ignore */ }
+      finally { setLoading(false) }
+    }
+    loadProgress()
+  }, [selectedId])
+
+  const selected = exercises.find((e) => e.id === selectedId)
+
+  if (initialLoad) {
+    return (
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 flex items-center justify-center">
+        <Loader2 className="w-5 h-5 text-neutral-600 animate-spin" />
+      </div>
+    )
+  }
+
+  if (exercises.length === 0) return null
+
+  // Stats
+  const maxLoad = progress.length > 0 ? Math.max(...progress.map((d) => d.maxLoad)) : 0
+  const firstLoad = progress[0]?.maxLoad || 0
+  const lastLoad = progress[progress.length - 1]?.maxLoad || 0
+  const progressPct = firstLoad > 0 ? Math.round(((lastLoad - firstLoad) / firstLoad) * 100) : 0
+
+  return (
+    <FadeIn direction="up" delay={0.1}>
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden">
+        {/* Header */}
+        <div className="px-4 pt-3.5 pb-1.5">
+          <h3 className="text-xs font-semibold text-white/90 flex items-center gap-2">
+            <TrendingUp className="w-3.5 h-3.5 text-red-400" />
+            Progressao por Exercicio
+          </h3>
+          <p className="text-[9px] text-neutral-600 mt-0.5">Evolucao detalhada de carga e volume</p>
+        </div>
+
+        {/* Exercise selector */}
+        <div className="px-4 py-2">
+          <button
+            onClick={() => setOpen(!open)}
+            className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06] text-sm text-white hover:bg-white/[0.05] transition-all"
+          >
+            <div className="flex items-center gap-2 min-w-0">
+              <Dumbbell className="w-3.5 h-3.5 text-red-400 shrink-0" />
+              <span className="truncate font-medium text-xs">{selected?.name || "Selecionar exercicio"}</span>
+              {selected && (
+                <span className="text-[8px] px-1.5 py-0.5 rounded-full bg-white/[0.06] text-neutral-500 shrink-0">
+                  {selected.muscle}
+                </span>
+              )}
+            </div>
+            <ChevronDown className={cn("w-3.5 h-3.5 text-neutral-500 shrink-0 transition-transform", open && "rotate-180")} />
+          </button>
+
+          {open && (
+            <div className="mt-1.5 rounded-xl bg-[#0c0c0c] border border-white/[0.08] overflow-hidden max-h-48 overflow-y-auto">
+              {exercises.map((ex) => (
+                <button
+                  key={ex.id}
+                  onClick={() => { setSelectedId(ex.id); setOpen(false) }}
+                  className={cn(
+                    "w-full text-left px-3.5 py-2 text-xs hover:bg-white/[0.04] transition-colors flex items-center justify-between border-b border-white/[0.03] last:border-0",
+                    selectedId === ex.id ? "text-red-400 bg-red-600/[0.06]" : "text-neutral-300",
+                  )}
+                >
+                  <span className="truncate font-medium">{ex.name}</span>
+                  <span className="text-[9px] text-neutral-600 shrink-0 ml-2">{ex.muscle}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Loading */}
+        {loading && (
+          <div className="px-4 py-8 flex items-center justify-center">
+            <Loader2 className="w-5 h-5 text-neutral-600 animate-spin" />
+          </div>
+        )}
+
+        {/* Chart + stats */}
+        {!loading && progress.length >= 2 && (
+          <>
+            {/* Stats row */}
+            <div className="grid grid-cols-3 divide-x divide-white/[0.04] border-t border-white/[0.04]">
+              <ExStat label="Max" value={`${maxLoad} kg`} highlight />
+              <ExStat label="Sessoes" value={progress.length.toString()} />
+              <ExStat
+                label="Progresso"
+                value={`${progressPct >= 0 ? "+" : ""}${progressPct}%`}
+                trend={lastLoad > firstLoad ? "up" : lastLoad < firstLoad ? "down" : "flat"}
+              />
+            </div>
+
+            {/* Line chart */}
+            <div className="px-1 py-2 h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={progress} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="progLoadG" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#dc2626" stopOpacity={0.2} />
+                      <stop offset="100%" stopColor="#dc2626" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.03)" />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 8, fill: "#404040" }}
+                    tickFormatter={(v: string) => v.slice(5)}
+                    interval="preserveStartEnd"
+                  />
+                  <YAxis tick={{ fontSize: 8, fill: "#404040" }} unit=" kg" />
+                  <Tooltip content={<ExerciseProgressionTooltip />} />
+                  <Area type="monotone" dataKey="maxLoad" stroke="transparent" fill="url(#progLoadG)" />
+                  <Line
+                    type="monotone"
+                    dataKey="maxLoad"
+                    stroke="#dc2626"
+                    strokeWidth={2.5}
+                    dot={{ fill: "#dc2626", r: 3.5, stroke: "#0a0a0a", strokeWidth: 2 }}
+                    activeDot={{ r: 5, fill: "#dc2626", stroke: "#0a0a0a", strokeWidth: 2 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Label */}
+            <div className="px-4 pb-3">
+              <p className="text-[10px] text-neutral-600 text-center">
+                Carga maxima (kg) por sessao ao longo do tempo
+              </p>
+            </div>
+          </>
+        )}
+
+        {/* Not enough data */}
+        {!loading && progress.length < 2 && progress.length > 0 && (
+          <div className="px-4 py-6 text-center">
+            <p className="text-neutral-500 text-xs">Precisa de pelo menos 2 sessoes para mostrar o grafico</p>
+          </div>
+        )}
+
+        {!loading && progress.length === 0 && selectedId && (
+          <div className="px-4 py-6 text-center">
+            <p className="text-neutral-500 text-xs">Nenhum dado encontrado para este exercicio</p>
+          </div>
+        )}
+      </div>
+    </FadeIn>
   )
 }

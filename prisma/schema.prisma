@@ -54,12 +54,14 @@ model User {
 }
 
 model TrainerProfile {
-  id         String  @id @default(cuid())
-  userId     String  @unique
-  bio        String?
-  cref       String?
-  logo       String?
-  brandColor String  @default("#dc2626")
+  id                 String  @id @default(cuid())
+  userId             String  @unique
+  bio                String?
+  cref               String?
+  logo               String?
+  brandColor         String  @default("#dc2626")
+  gymName            String?
+  onboardingComplete Boolean @default(false)
 
   user      User              @relation("UserTrainer", fields: [userId], references: [id])
   students  Student[]

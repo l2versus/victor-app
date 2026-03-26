@@ -21,6 +21,8 @@ export async function GET() {
         cref: trainer.cref,
         logo: trainer.logo,
         brandColor: trainer.brandColor,
+        gymName: trainer.gymName,
+        onboardingComplete: trainer.onboardingComplete,
       },
       user,
     })
@@ -37,7 +39,7 @@ export async function PATCH(req: NextRequest) {
     const trainer = await getTrainerProfile(session.userId)
     const body = await req.json()
 
-    const { bio, cref, logo, brandColor, name, phone } = body
+    const { bio, cref, logo, brandColor, name, phone, gymName, onboardingComplete } = body
 
     // Update trainer profile
     const profileData: Record<string, unknown> = {}
@@ -45,6 +47,8 @@ export async function PATCH(req: NextRequest) {
     if (cref !== undefined) profileData.cref = cref || null
     if (logo !== undefined) profileData.logo = logo || null
     if (brandColor !== undefined) profileData.brandColor = brandColor
+    if (gymName !== undefined) profileData.gymName = gymName || null
+    if (onboardingComplete !== undefined) profileData.onboardingComplete = onboardingComplete
 
     if (Object.keys(profileData).length > 0) {
       await prisma.trainerProfile.update({

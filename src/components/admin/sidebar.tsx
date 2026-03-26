@@ -115,8 +115,8 @@ export function AdminSidebar({ userName }: { userName: string }) {
       {/* Nav — scrollable so footer is always visible */}
       <nav className="flex-1 overflow-y-auto px-4 py-5">
         {navGroups.map((group) => (
-          <div key={group.label} className="mb-2">
-            <p className="px-3.5 py-1.5 text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-600">
+          <div key={group.label} className="mb-3">
+            <p className="px-3.5 py-1 text-[9px] font-medium uppercase tracking-[0.15em] text-neutral-600">
               {group.label}
             </p>
             {group.items.map((item) => {

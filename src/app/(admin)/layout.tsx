@@ -2,6 +2,8 @@ import { getSession, validateSession } from "@/lib/auth"
 import { redirect } from "next/navigation"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { AdminMobileNav } from "@/components/admin/mobile-nav"
+import { OnboardingRedirector } from "@/components/admin/onboarding-redirector"
+import { prisma } from "@/lib/prisma"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -11,8 +13,18 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const valid = await validateSession(session)
   if (!valid) redirect("/login?expired=1")
 
+  // Check onboarding status
+  const trainer = await prisma.trainerProfile.findUnique({
+    where: { userId: session.userId },
+    select: { onboardingComplete: true },
+  })
+  const needsOnboarding = trainer ? !trainer.onboardingComplete : false
+
   return (
     <div className="flex h-[100dvh] bg-[#060606] relative overflow-hidden">
+      {/* Redirect to onboarding if not completed (skips if already on /admin/onboarding) */}
+      {needsOnboarding && <OnboardingRedirector />}
+
       {/* ═══ PREMIUM BACKGROUND — Ironberg gym photo, clearly visible ═══ */}
       <div className="fixed inset-0 pointer-events-none z-0">
         {/* Ironberg gym photo — high visibility */}
