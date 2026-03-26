@@ -208,8 +208,8 @@ export default function SocialProfilePage() {
     )
   }
 
-  const postsWithImage = posts.filter(p => p.imageUrl)
-  const postsTextOnly = posts.filter(p => !p.imageUrl)
+  const postsWithImage = posts.filter(p => p.imageUrl && p.type !== "WORKOUT")
+  const postsTextOnly = posts.filter(p => !p.imageUrl && p.type !== "WORKOUT")
 
   return (
     <div className="space-y-0 -mx-4">
@@ -221,54 +221,41 @@ export default function SocialProfilePage() {
         <h1 className="text-base font-semibold text-white truncate flex-1">{profile.name}</h1>
       </div>
 
-      {/* Profile header — Instagram style */}
+      {/* Profile header — Stitch-style centered */}
       <FadeIn direction="up" distance={16} duration={0.5}>
       <div className="px-4 pb-4">
-        <div className="flex items-center gap-5">
-          {/* Avatar — story ring if has active stories */}
+        {/* Centered avatar */}
+        <div className="flex flex-col items-center">
           <button
             onClick={() => profileStories.length > 0 && setViewingStoryIndex(0)}
-            className={`w-20 h-20 rounded-full shrink-0 ${
+            className={`w-24 h-24 rounded-full shrink-0 ${
               profileStories.length > 0
-                ? "p-[2.5px] bg-gradient-to-tr from-red-600 via-orange-500 to-yellow-400 cursor-pointer"
-                : ""
+                ? "p-[3px] bg-gradient-to-tr from-red-600 via-orange-500 to-yellow-400 cursor-pointer"
+                : "p-[3px] bg-gradient-to-br from-red-500/40 via-red-600/20 to-orange-500/30"
             }`}
           >
-            <div className={`w-full h-full rounded-full ${profileStories.length > 0 ? "bg-[#030303] p-[2px]" : ""}`}>
-              <div className={`w-full h-full rounded-full ${profileStories.length > 0 ? "" : "bg-gradient-to-br from-red-600/30 to-red-900/30 border-2 border-red-500/30"} flex items-center justify-center text-red-300 text-xl font-bold overflow-hidden`}>
-                {profile.avatar ? (
-                  <SafeImage src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
-                ) : (
-                  getInitials(profile.name)
-                )}
-              </div>
+            <div className="w-full h-full rounded-full bg-[#030303] p-[2px]">
+              <SafeAvatar src={profile.avatar} name={profile.name} size="lg" className="w-full h-full text-2xl" />
             </div>
           </button>
 
-          {/* Stats row — tappable like Instagram */}
-          <div className="flex-1 flex items-center justify-around">
-            <StatColumn value={profile.stats.posts} label="Posts" />
-            <button onClick={() => openFollowList("followers")} className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95">
-              <StatColumn value={profile.stats.followers} label="Seguidores" />
-            </button>
-            <button onClick={() => openFollowList("following")} className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95">
-              <StatColumn value={profile.stats.following} label="Seguindo" />
-            </button>
-          </div>
-        </div>
+          {/* Name centered */}
+          <p className="text-lg font-bold text-white mt-3">{profile.name}</p>
 
-        {/* Name + bio + profession */}
-        <div className="mt-3">
-          <p className="text-sm font-semibold text-white">{profile.name}</p>
+          {/* Profession centered */}
           {profile.profession && (
             <p className="text-xs text-neutral-400 mt-0.5 flex items-center gap-1">
               <Briefcase className="w-3 h-3 text-neutral-500" />
               {profile.profession}
             </p>
           )}
+
+          {/* Bio centered */}
           {profile.bio && (
-            <p className="text-xs text-neutral-300 mt-1 leading-relaxed whitespace-pre-wrap">{profile.bio}</p>
+            <p className="text-xs text-neutral-300 mt-1.5 leading-relaxed whitespace-pre-wrap text-center max-w-[280px]">{profile.bio}</p>
           )}
+
+          {/* Link centered */}
           {profile.bioLink && (
             <a
               href={profile.bioLink.startsWith("http") ? profile.bioLink : `https://${profile.bioLink}`}
@@ -281,28 +268,43 @@ export default function SocialProfilePage() {
               <ExternalLink className="w-2.5 h-2.5" />
             </a>
           )}
+
+          {/* Goals fallback centered */}
           {!profile.bio && !profile.profession && profile.goals && (
-            <p className="text-xs text-neutral-400 mt-0.5 flex items-center gap-1">
+            <p className="text-xs text-neutral-400 mt-1 flex items-center gap-1">
               <Target className="w-3 h-3" />
               {profile.goals}
             </p>
           )}
+
+          {/* Member since centered */}
           <p className="text-[10px] text-neutral-600 mt-1 flex items-center gap-1">
             <Calendar className="w-3 h-3" />
             Membro desde {new Date(profile.memberSince).toLocaleDateString("pt-BR", { month: "short", year: "numeric" })}
           </p>
-        </div>
 
-        {/* Training badges */}
-        <div className="flex gap-2 mt-3">
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] text-neutral-400">
-            <Dumbbell className="w-3 h-3 text-red-400" />
-            {profile.stats.sessions} sessões
-          </span>
-          <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] text-neutral-400">
-            <Flame className="w-3 h-3 text-orange-400" />
-            {profile.stats.streak} sem streak
-          </span>
+          {/* Stats row — centered below avatar */}
+          <div className="flex items-center justify-center gap-8 mt-4 w-full">
+            <StatColumn value={profile.stats.posts} label="Posts" />
+            <button onClick={() => openFollowList("followers")} className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95">
+              <StatColumn value={profile.stats.followers} label="Seguidores" />
+            </button>
+            <button onClick={() => openFollowList("following")} className="cursor-pointer hover:opacity-70 transition-opacity active:scale-95">
+              <StatColumn value={profile.stats.following} label="Seguindo" />
+            </button>
+          </div>
+
+          {/* Training badges — centered */}
+          <div className="flex gap-2 mt-3 justify-center">
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] text-neutral-400">
+              <Dumbbell className="w-3 h-3 text-red-400" />
+              {profile.stats.sessions} sessões
+            </span>
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.08] text-[10px] text-neutral-400">
+              <Flame className="w-3 h-3 text-orange-400" />
+              {profile.stats.streak} sem streak
+            </span>
+          </div>
         </div>
 
         {/* Action buttons */}
@@ -589,21 +591,21 @@ export default function SocialProfilePage() {
 
       {/* Tab divider */}
       <div className="flex border-t border-white/[0.06]">
-        <div className="flex-1 flex items-center justify-center py-2.5 border-b-2 border-white text-white">
-          <Grid3X3 className="w-4 h-4" />
+        <div className="flex-1 flex items-center justify-center py-2.5 border-b-2 border-red-500 text-white">
+          <Grid3X3 className="w-5 h-5" />
         </div>
         <div className="flex-1 flex items-center justify-center py-2.5 text-neutral-600">
-          <Trophy className="w-4 h-4" />
+          <Trophy className="w-5 h-5" />
         </div>
       </div>
 
       {/* Posts grid — Instagram 3-column */}
-      {posts.length === 0 ? (
+      {postsWithImage.length === 0 && postsTextOnly.length === 0 ? (
         <FadeIn direction="up" delay={0.2}>
           <EmptyState
             icon={Grid3X3}
-            title="Nenhum post ainda"
-            description={profile.isMe ? "Compartilhe seu primeiro treino ou conquista!" : `${profile.name.split(" ")[0]} ainda não publicou nada.`}
+            title="Nenhuma foto publicada"
+            description={profile.isMe ? "Compartilhe sua primeira foto ou conquista!" : `${profile.name.split(" ")[0]} ainda não publicou fotos.`}
             className="mx-4 my-8"
           />
         </FadeIn>
@@ -611,7 +613,7 @@ export default function SocialProfilePage() {
         <>
           {/* Image grid */}
           {postsWithImage.length > 0 && (
-            <StaggerContainer className="grid grid-cols-3 gap-0.5" stagger={0.04}>
+            <StaggerContainer className="grid grid-cols-3 gap-px" stagger={0.04}>
               {postsWithImage.map((post) => (
                 <StaggerItem key={post.id}>
                   <button
