@@ -1,21 +1,20 @@
 "use client"
 
-import { useEffect, useRef, useState, useCallback } from "react"
+import { useEffect, useRef, useState } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import {
   ChevronDown, MessageCircle, ArrowRight,
   Menu, X as XIcon,
   Dumbbell, Utensils, Camera, Users,
   BarChart3, Palette, Smartphone, BotMessageSquare,
-  CheckCircle2,
+  CheckCircle2, Star, Play, Zap, Shield, Clock,
 } from "lucide-react"
-import { motion, AnimatePresence } from "framer-motion"
 import { cn } from "@/lib/utils"
-import { ParticleTextEffect } from "@/components/ui/particle-text-effect"
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
    CONSTANTS
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 const EMMANUEL_WHATSAPP = "5585996985823"
 const EMMANUEL_EMAIL = "contato@emmanuelbezerra.dev"
 
@@ -23,9 +22,23 @@ function waLink(msg: string) {
   return `https://wa.me/${EMMANUEL_WHATSAPP}?text=${encodeURIComponent(msg)}`
 }
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
+   UNSPLASH IMAGES
+   =================================================================== */
+const IMAGES = {
+  heroGym: "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=1920&q=80",
+  trainerClient: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&q=80",
+  womanTraining: "https://images.unsplash.com/photo-1518611012118-696072aa579a?w=800&q=80",
+  groupFitness: "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?w=800&q=80",
+  nutrition: "https://images.unsplash.com/photo-1490645935967-10de6ba17061?w=800&q=80",
+  testimonial1: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200&q=80",
+  testimonial2: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=200&q=80",
+  testimonial3: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=200&q=80",
+}
+
+/* ===================================================================
    HOOKS
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 function useReveal(threshold = 0.12) {
   const ref = useRef<HTMLDivElement>(null)
   const [visible, setVisible] = useState(false)
@@ -78,9 +91,9 @@ function AnimatedNumber({ value, suffix = "" }: { value: number; suffix?: string
   return <span ref={ref as React.RefObject<HTMLSpanElement>}>{count}{suffix}</span>
 }
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
    PRICING
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 const b2bTiers = [
   {
     name: "Starter",
@@ -136,9 +149,9 @@ const b2bTiers = [
   },
 ]
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
    FAQ
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 const faqs = [
   {
     q: "Preciso saber programar?",
@@ -166,9 +179,9 @@ const faqs = [
   },
 ]
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
    COMPARISON TABLE
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 const comparisonRows = [
   { feature: "Preco mensal", ours: "A partir de R$97", mfit: "R$149+", treineme: "R$99+", personalapp: "R$129+" },
   { feature: "IA integrada", ours: true, mfit: false, treineme: false, personalapp: false },
@@ -180,128 +193,102 @@ const comparisonRows = [
   { feature: "PWA (sem app store)", ours: true, mfit: false, treineme: true, personalapp: false },
 ]
 
-/* ═══════════════════════════════════════════
-   FEATURES DATA (for radar + detail cards)
-   ═══════════════════════════════════════════ */
+/* ===================================================================
+   FEATURES DATA
+   =================================================================== */
 const features = [
   {
-    num: "01",
-    title: "Treinos & Nutricao",
-    desc: "Templates personalizados, carga progressiva, planos alimentares, macros e lista de compras. Tudo integrado.",
+    title: "Treinos Personalizados",
+    desc: "Templates prontos, carga progressiva, periodizacao inteligente. Crie treinos profissionais em minutos.",
     icon: Dumbbell,
-    shortLabel: "Treinos",
+    image: IMAGES.trainerClient,
   },
   {
-    num: "02",
     title: "Inteligencia Artificial",
     desc: "Chat com IA, analise de anamnese, sugestoes automaticas e bot pos-treino. Seu assistente virtual 24/7.",
     icon: BotMessageSquare,
-    shortLabel: "IA",
+    image: IMAGES.groupFitness,
   },
   {
-    num: "03",
     title: "Correcao Postural",
     desc: "Camera em tempo real com MediaPipe. Feedback visual instantaneo durante a execucao dos exercicios.",
     icon: Camera,
-    shortLabel: "Postura",
+    image: IMAGES.womanTraining,
   },
   {
-    num: "04",
-    title: "Comunidade & Ranking",
-    desc: "Feed social, desafios, leaderboard gamificado. Engajamento real entre seus alunos.",
-    icon: Users,
-    shortLabel: "Social",
-  },
-  {
-    num: "05",
-    title: "CRM de Vendas",
-    desc: "Pipeline visual, lead scoring, automacoes. Transforme curiosos em alunos pagantes.",
-    icon: BarChart3,
-    shortLabel: "CRM",
-  },
-  {
-    num: "06",
     title: "Nutricao Completa",
-    desc: "Planos alimentares personalizados, macros automaticos, lista de compras inteligente.",
+    desc: "Planos alimentares personalizados, macros automaticos, lista de compras inteligente. Tudo integrado.",
     icon: Utensils,
-    shortLabel: "Nutri",
-  },
-  {
-    num: "07",
-    title: "White-label Completo",
-    desc: "Sua marca, suas cores, seu dominio. Seus alunos nunca sabem que nao foi voce quem construiu o app.",
-    icon: Palette,
-    shortLabel: "Marca",
-  },
-  {
-    num: "08",
-    title: "PWA Nativo",
-    desc: "Funciona como app nativo sem App Store. Instalavel, offline-ready, notificacoes push.",
-    icon: Smartphone,
-    shortLabel: "PWA",
+    image: IMAGES.nutrition,
   },
 ]
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
    TESTIMONIALS DATA
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 const testimonials = [
   {
     name: "Rafael Santos",
     role: "Personal Trainer — SP",
     text: "Migrei do MFIT e economizo R$150/mes. Meus alunos amam o app e o engajamento triplicou. A IA e um diferencial absurdo.",
+    avatar: IMAGES.testimonial1,
+    stars: 5,
   },
   {
     name: "Ana Martins",
     role: "Nutricionista — RJ",
     text: "Finalmente consigo entregar planos de treino e nutricao no mesmo app. Meus pacientes se sentem num programa premium.",
+    avatar: IMAGES.testimonial2,
+    stars: 5,
   },
   {
     name: "Carlos Torres",
     role: "Dono de academia — MG",
     text: "O white-label mudou o jogo. Meus alunos usam o app com a marca da academia. Profissionalismo de outro nivel.",
+    avatar: IMAGES.testimonial3,
+    stars: 5,
   },
 ]
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
    FAQ ITEM
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 function FAQItem({ q, a }: { q: string; a: string }) {
   const [open, setOpen] = useState(false)
   return (
-    <div className="border-b border-white/[0.06]">
+    <div className="border-b border-slate-200/60">
       <button
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between py-7 text-left group"
+        className="w-full flex items-center justify-between py-6 text-left group"
       >
-        <span className="text-white font-medium text-[15px] pr-8 group-hover:text-blue-500 transition-colors duration-200">{q}</span>
-        <span className={cn(
-          "text-neutral-600 text-xl font-light shrink-0 transition-transform duration-300 select-none",
-          open && "rotate-45",
-        )}>+</span>
+        <span className="text-slate-800 font-semibold text-[15px] pr-8 group-hover:text-blue-600 transition-colors duration-200">{q}</span>
+        <ChevronDown className={cn(
+          "w-5 h-5 text-slate-400 shrink-0 transition-transform duration-300",
+          open && "rotate-180",
+        )} />
       </button>
-      <div className={cn("overflow-hidden transition-all duration-500", open ? "max-h-48 pb-7" : "max-h-0")}>
-        <p className="text-neutral-400 text-[15px] leading-relaxed max-w-lg">{a}</p>
+      <div className={cn("overflow-hidden transition-all duration-500", open ? "max-h-48 pb-6" : "max-h-0")}>
+        <p className="text-slate-500 text-[15px] leading-relaxed">{a}</p>
       </div>
     </div>
   )
 }
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
    COMPARISON CELL
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 function ComparisonCell({ value, isOurs = false }: { value: boolean | string; isOurs?: boolean }) {
   if (typeof value === "boolean") {
     return value
-      ? <span className={cn("text-sm", isOurs ? "text-blue-500" : "text-neutral-400")}>&#10003;</span>
-      : <span className="text-neutral-700">&mdash;</span>
+      ? <CheckCircle2 className={cn("w-5 h-5 mx-auto", isOurs ? "text-emerald-500" : "text-slate-400")} />
+      : <span className="text-slate-300 text-lg">&mdash;</span>
   }
-  return <span className={cn("text-sm", isOurs ? "text-white" : "text-neutral-500")}>{value}</span>
+  return <span className={cn("text-sm font-medium", isOurs ? "text-blue-600" : "text-slate-500")}>{value}</span>
 }
 
-/* ═══════════════════════════════════════════
-   PHONE MOCKUP — CSS-only real app UI
-   ═══════════════════════════════════════════ */
+/* ===================================================================
+   PHONE MOCKUP -- CSS-only real app UI
+   =================================================================== */
 function PhoneMockup({ className }: { className?: string }) {
   const days = ["DOM", "SEG", "TER", "QUA", "QUI", "SEX"]
   const exercises = [
@@ -315,7 +302,7 @@ function PhoneMockup({ className }: { className?: string }) {
   return (
     <div className={cn("relative", className)}>
       {/* Phone frame */}
-      <div className="w-[280px] md:w-[300px] h-[560px] md:h-[600px] rounded-[2.5rem] border-[2px] border-[#1a1a1a] bg-[#0a0a0a] p-[3px] shadow-[0_25px_80px_-15px_rgba(0,0,0,0.6)]">
+      <div className="w-[280px] md:w-[300px] h-[560px] md:h-[600px] rounded-[2.5rem] border-[3px] border-slate-700/60 bg-[#0a0a0a] p-[3px] shadow-[0_25px_80px_-15px_rgba(0,0,0,0.8),0_0_60px_-10px_rgba(37,99,235,0.15)]">
         {/* Notch */}
         <div className="absolute top-[3px] left-1/2 -translate-x-1/2 w-[120px] h-[28px] bg-[#0a0a0a] rounded-b-2xl z-20 flex items-center justify-center">
           <div className="w-[60px] h-[4px] rounded-full bg-[#1a1a1a]" />
@@ -409,15 +396,15 @@ function PhoneMockup({ className }: { className?: string }) {
         </div>
       </div>
 
-      {/* Subtle glow behind phone */}
-      <div className="absolute inset-0 -z-10 bg-blue-500/[0.07] blur-[100px] rounded-full scale-125" />
+      {/* Glow behind phone */}
+      <div className="absolute inset-0 -z-10 bg-blue-500/[0.12] blur-[100px] rounded-full scale-150" />
     </div>
   )
 }
 
-/* ═══════════════════════════════════════════
+/* ===================================================================
    DEMO FORM
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 function DemoForm() {
   const [form, setForm] = useState({ name: "", email: "", phone: "" })
   const [sent, setSent] = useState(false)
@@ -435,518 +422,435 @@ function DemoForm() {
   if (sent) {
     return (
       <div className="py-8 text-center">
-        <div className="w-12 h-12 rounded-full border border-emerald-500/30 flex items-center justify-center mx-auto mb-4">
+        <div className="w-12 h-12 rounded-full border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 className="w-6 h-6 text-emerald-400" />
         </div>
-        <p className="text-white font-medium text-[15px]">Solicitacao enviada!</p>
-        <p className="text-neutral-500 text-sm mt-2">Entraremos em contato em ate 24h.</p>
+        <p className="text-white font-semibold text-lg">Solicitacao enviada!</p>
+        <p className="text-slate-400 text-sm mt-2">Entraremos em contato em ate 24h.</p>
       </div>
     )
   }
 
-  const inputCls = "w-full px-4 py-3 bg-transparent border border-white/[0.08] rounded-lg text-white text-sm placeholder:text-neutral-600 focus:outline-none focus:border-blue-500/40 transition-colors duration-200"
+  const inputCls = "w-full px-4 py-3.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all duration-200"
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-3">
+    <form onSubmit={handleSubmit} className="space-y-4">
       <input type="text" placeholder="Seu nome" required value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} className={inputCls} />
       <input type="email" placeholder="Seu email profissional" required value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} className={inputCls} />
       <input type="tel" placeholder="WhatsApp (opcional)" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} className={inputCls} />
-      <button type="submit" disabled={loading} className="w-full py-3 rounded-lg bg-blue-500 text-white font-semibold text-sm hover:brightness-110 transition-all duration-200 disabled:opacity-50">
-        {loading ? "Enviando..." : "Solicitar demonstracao"}
+      <button type="submit" disabled={loading} className="w-full py-3.5 rounded-xl bg-emerald-500 text-white font-bold text-sm hover:bg-emerald-400 transition-all duration-200 disabled:opacity-50 shadow-lg shadow-emerald-500/20">
+        {loading ? "Enviando..." : "Solicitar demonstracao gratuita"}
       </button>
     </form>
   )
 }
 
-/* ═══════════════════════════════════════════
-   RADAR FEATURE DISPLAY — Dark theme, blue sweep
-   Customized radar with fitness feature icons
-   ═══════════════════════════════════════════ */
-function FeatureRadar({ onSelectFeature }: { onSelectFeature: (idx: number) => void }) {
-  /* Icon positions around radar in clock positions */
-  const positions: React.CSSProperties[] = [
-    { top: "4%",  left: "44%"  },
-    { top: "12%", right: "14%" },
-    { top: "38%", right: "2%"  },
-    { bottom: "22%", right: "12%" },
-    { bottom: "6%", left: "44%" },
-    { bottom: "22%", left: "12%" },
-    { top: "38%", left: "2%"  },
-    { top: "12%", left: "14%" },
-  ]
-
-  return (
-    <div className="relative w-[360px] h-[360px] md:w-[440px] md:h-[440px]">
-      {/* Concentric rings */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="absolute rounded-full border border-slate-700/40"
-            style={{
-              width: `${i * 25}%`,
-              height: `${i * 25}%`,
-            }}
-          />
-        ))}
-      </div>
-
-      {/* Cross-hair lines */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="absolute w-full h-[1px] bg-slate-700/20" />
-        <div className="absolute h-full w-[1px] bg-slate-700/20" />
-      </div>
-
-      {/* Sweep line — blue themed */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <motion.div
-          className="absolute w-1/2 h-0.5 origin-left"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent 0%, rgba(59,130,246,0.7) 50%, rgba(59,130,246,0) 100%)",
-          }}
-          animate={{ rotate: 360 }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
-        {/* Sweep trail / cone */}
-        <motion.div
-          className="absolute w-1/2 origin-left"
-          style={{
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, rgba(59,130,246,0.08) 25deg, transparent 50deg)",
-            height: "50%",
-            clipPath: "polygon(0 50%, 100% 0, 100% 100%)",
-          }}
-          animate={{ rotate: 360 }}
-          transition={{
-            duration: 5,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        />
-      </div>
-
-      {/* Center pulse */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-3 h-3 rounded-full bg-blue-500 shadow-[0_0_12px_rgba(59,130,246,0.8)]" />
-        <div className="absolute w-6 h-6 rounded-full border border-blue-500/30 animate-ping" />
-      </div>
-
-      {/* Feature icons */}
-      {features.map((f, i) => {
-        const Icon = f.icon
-        return (
-          <RadarIcon
-            key={f.num}
-            icon={Icon}
-            label={f.shortLabel}
-            delay={i * 0.6}
-            style={positions[i]}
-            onClick={() => onSelectFeature(i)}
-          />
-        )
-      })}
-    </div>
-  )
-}
-
-/* ── Radar icon container with blip animation ── */
-function RadarIcon({
-  icon: Icon,
-  label,
-  delay,
-  style,
-  onClick,
-}: {
-  icon: typeof Dumbbell
-  label: string
-  delay: number
-  style: React.CSSProperties
-  onClick: () => void
-}) {
-  const [visible, setVisible] = useState(false)
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      setVisible(true)
-      intervalRef.current = setInterval(() => {
-        setVisible(false)
-        setTimeout(() => setVisible(true), 400)
-      }, 5000)
-    }, delay * 1000)
-
-    return () => {
-      clearTimeout(timeout)
-      if (intervalRef.current) clearInterval(intervalRef.current)
-    }
-  }, [delay])
-
-  return (
-    <div className="absolute z-10 cursor-pointer" style={style} onClick={onClick}>
-      <AnimatePresence>
-        {visible && (
-          <motion.div
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0 }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            className="flex flex-col items-center gap-1.5 group"
-          >
-            <div className="relative p-2.5 rounded-xl bg-slate-900/80 border border-slate-700/50 backdrop-blur-sm shadow-[0_0_15px_rgba(59,130,246,0.12)] group-hover:border-blue-500/40 group-hover:shadow-[0_0_20px_rgba(59,130,246,0.25)] transition-all duration-300">
-              <Icon className="w-5 h-5 text-blue-400" />
-              <div className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
-            </div>
-            <span className="text-[10px] text-neutral-500 font-medium whitespace-nowrap group-hover:text-blue-400 transition-colors duration-200">
-              {label}
-            </span>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════
-   ELECTRIC BACKGROUND — CSS-only shader effect
-   Used as decorative background in CTA section
-   ═══════════════════════════════════════════ */
-function ElectricBackground() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      {/* Animated gradient orbs that create an electric feel */}
-      <div
-        className="absolute w-[600px] h-[600px] rounded-full opacity-[0.04] blur-[120px]"
-        style={{
-          background: "radial-gradient(circle, #3b82f6 0%, transparent 70%)",
-          top: "-20%",
-          right: "-10%",
-          animation: "electricFloat1 8s ease-in-out infinite",
-        }}
-      />
-      <div
-        className="absolute w-[400px] h-[400px] rounded-full opacity-[0.03] blur-[100px]"
-        style={{
-          background: "radial-gradient(circle, #60a5fa 0%, transparent 70%)",
-          bottom: "-10%",
-          left: "-5%",
-          animation: "electricFloat2 10s ease-in-out infinite",
-        }}
-      />
-      {/* Horizontal electric lines */}
-      <div
-        className="absolute top-1/3 left-0 right-0 h-[1px] opacity-[0.06]"
-        style={{
-          background: "linear-gradient(90deg, transparent 0%, #3b82f6 20%, transparent 40%, #3b82f6 60%, transparent 80%, #3b82f6 100%)",
-          animation: "electricSlide 3s linear infinite",
-        }}
-      />
-      <div
-        className="absolute top-2/3 left-0 right-0 h-[1px] opacity-[0.04]"
-        style={{
-          background: "linear-gradient(90deg, #3b82f6 0%, transparent 20%, #3b82f6 40%, transparent 60%, #3b82f6 80%, transparent 100%)",
-          animation: "electricSlide 4s linear infinite reverse",
-        }}
-      />
-      {/* Vertical pulse lines */}
-      <div
-        className="absolute top-0 bottom-0 left-1/4 w-[1px] opacity-[0.04]"
-        style={{
-          background: "linear-gradient(180deg, transparent 0%, #3b82f6 30%, transparent 50%, #3b82f6 70%, transparent 100%)",
-          animation: "electricPulse 5s ease-in-out infinite",
-        }}
-      />
-      <div
-        className="absolute top-0 bottom-0 right-1/3 w-[1px] opacity-[0.03]"
-        style={{
-          background: "linear-gradient(180deg, #3b82f6 0%, transparent 30%, #3b82f6 50%, transparent 70%, #3b82f6 100%)",
-          animation: "electricPulse 6s ease-in-out infinite reverse",
-        }}
-      />
-      {/* Inject keyframes */}
-      <style>{`
-        @keyframes electricFloat1 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          33% { transform: translate(-30px, 20px) scale(1.1); }
-          66% { transform: translate(20px, -15px) scale(0.95); }
-        }
-        @keyframes electricFloat2 {
-          0%, 100% { transform: translate(0, 0) scale(1); }
-          50% { transform: translate(25px, -25px) scale(1.15); }
-        }
-        @keyframes electricSlide {
-          0% { transform: translateX(-100%); }
-          100% { transform: translateX(100%); }
-        }
-        @keyframes electricPulse {
-          0%, 100% { opacity: 0.02; }
-          50% { opacity: 0.08; }
-        }
-      `}</style>
-    </div>
-  )
-}
-
-/* ═══════════════════════════════════════════
+/* ===================================================================
    MAIN COMPONENT
-   ═══════════════════════════════════════════ */
+   =================================================================== */
 export function B2BLandingPage() {
   const [annual, setAnnual] = useState(false)
   const [mobileMenu, setMobileMenu] = useState(false)
-  const [activeTestimonial, setActiveTestimonial] = useState(0)
-  const [selectedFeature, setSelectedFeature] = useState<number | null>(null)
+  const [scrolled, setScrolled] = useState(false)
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 50)
+    window.addEventListener("scroll", handleScroll, { passive: true })
+    return () => window.removeEventListener("scroll", handleScroll)
+  }, [])
 
   return (
-    <div className="min-h-screen bg-[#08080a] text-white overflow-x-hidden scroll-smooth antialiased">
+    <div className="min-h-screen bg-white text-slate-900 overflow-x-hidden scroll-smooth antialiased">
 
-      {/* ──── NAV ──── */}
-      <nav className="fixed top-0 inset-x-0 z-50 bg-[#08080a]/80 backdrop-blur-xl border-b border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto flex items-center justify-between px-6 h-14">
-          <Link href="/b2b" className="flex items-center gap-2.5">
-            <span className="text-[15px] font-bold tracking-tight text-white">CB</span>
+      {/* ---- NAV ---- */}
+      <nav className={cn(
+        "fixed top-0 inset-x-0 z-50 transition-all duration-300",
+        scrolled
+          ? "bg-white/95 backdrop-blur-xl shadow-sm border-b border-slate-100"
+          : "bg-transparent",
+      )}>
+        <div className="max-w-7xl mx-auto flex items-center justify-between px-6 h-16 md:h-20">
+          <Link href="/b2b" className="flex items-center gap-2">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
+              <Dumbbell className="w-5 h-5 text-white" />
+            </div>
+            <span className={cn(
+              "text-lg font-extrabold tracking-tight transition-colors duration-300",
+              scrolled ? "text-slate-900" : "text-white",
+            )}>CB Platform</span>
           </Link>
 
-          <div className="hidden md:flex items-center gap-8 text-[13px] text-neutral-500 font-medium">
-            <a href="#features" className="hover:text-white transition-colors duration-200">Recursos</a>
-            <a href="#pricing" className="hover:text-white transition-colors duration-200">Planos</a>
-            <a href="#comparison" className="hover:text-white transition-colors duration-200">Comparativo</a>
-            <a href="#faq" className="hover:text-white transition-colors duration-200">FAQ</a>
+          <div className={cn(
+            "hidden md:flex items-center gap-8 text-sm font-medium transition-colors duration-300",
+            scrolled ? "text-slate-600" : "text-white/80",
+          )}>
+            <a href="#features" className="hover:text-blue-600 transition-colors duration-200">Recursos</a>
+            <a href="#how-it-works" className="hover:text-blue-600 transition-colors duration-200">Como funciona</a>
+            <a href="#pricing" className="hover:text-blue-600 transition-colors duration-200">Planos</a>
+            <a href="#comparison" className="hover:text-blue-600 transition-colors duration-200">Comparativo</a>
+            <a href="#faq" className="hover:text-blue-600 transition-colors duration-200">FAQ</a>
           </div>
 
-          <div className="hidden md:block">
-            <a href="#pricing" className="text-[13px] font-semibold px-5 py-2 rounded-lg bg-blue-500 text-white hover:brightness-110 transition-all duration-200">
-              Comecar
+          <div className="hidden md:flex items-center gap-3">
+            <a href="#demo" className={cn(
+              "text-sm font-medium px-4 py-2 rounded-lg transition-colors duration-200",
+              scrolled ? "text-slate-600 hover:text-blue-600" : "text-white/80 hover:text-white",
+            )}>
+              Login
+            </a>
+            <a href="#pricing" className="text-sm font-bold px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-lg shadow-blue-600/20">
+              Comecar gratis
             </a>
           </div>
 
-          <button className="md:hidden text-neutral-400" onClick={() => setMobileMenu(!mobileMenu)}>
-            {mobileMenu ? <XIcon className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          <button className={cn(
+            "md:hidden transition-colors",
+            scrolled ? "text-slate-600" : "text-white",
+          )} onClick={() => setMobileMenu(!mobileMenu)}>
+            {mobileMenu ? <XIcon className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
 
         {mobileMenu && (
-          <div className="md:hidden bg-[#08080a]/95 backdrop-blur-xl border-b border-white/[0.06] px-6 pb-6 space-y-4">
-            <a href="#features" onClick={() => setMobileMenu(false)} className="block text-sm text-neutral-300 py-2">Recursos</a>
-            <a href="#pricing" onClick={() => setMobileMenu(false)} className="block text-sm text-neutral-300 py-2">Planos</a>
-            <a href="#comparison" onClick={() => setMobileMenu(false)} className="block text-sm text-neutral-300 py-2">Comparativo</a>
-            <a href="#faq" onClick={() => setMobileMenu(false)} className="block text-sm text-neutral-300 py-2">FAQ</a>
-            <a href="#pricing" onClick={() => setMobileMenu(false)} className="block text-center text-sm font-semibold px-5 py-2.5 rounded-lg bg-blue-500 text-white">
-              Comecar
+          <div className="md:hidden bg-white/98 backdrop-blur-xl border-b border-slate-100 px-6 pb-6 space-y-3">
+            <a href="#features" onClick={() => setMobileMenu(false)} className="block text-sm text-slate-700 py-2.5 font-medium">Recursos</a>
+            <a href="#how-it-works" onClick={() => setMobileMenu(false)} className="block text-sm text-slate-700 py-2.5 font-medium">Como funciona</a>
+            <a href="#pricing" onClick={() => setMobileMenu(false)} className="block text-sm text-slate-700 py-2.5 font-medium">Planos</a>
+            <a href="#comparison" onClick={() => setMobileMenu(false)} className="block text-sm text-slate-700 py-2.5 font-medium">Comparativo</a>
+            <a href="#faq" onClick={() => setMobileMenu(false)} className="block text-sm text-slate-700 py-2.5 font-medium">FAQ</a>
+            <a href="#pricing" onClick={() => setMobileMenu(false)} className="block text-center text-sm font-bold px-5 py-3 rounded-xl bg-blue-600 text-white mt-2">
+              Comecar gratis
             </a>
           </div>
         )}
       </nav>
 
-      {/* ══════════════════════════════════════
-           HERO
-         ══════════════════════════════════════ */}
-      <section className="relative min-h-screen flex items-center pt-14">
-        <div className="max-w-[1200px] mx-auto px-6 w-full">
-          <div className="grid lg:grid-cols-[1.5fr_1fr] gap-16 lg:gap-8 items-center">
+      {/* ================================================================
+           HERO — Full-width gradient with photo overlay + phone mockup
+         ================================================================ */}
+      <section className="relative min-h-[100vh] flex items-center overflow-hidden">
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <Image
+            src={IMAGES.heroGym}
+            alt="Academia moderna"
+            fill
+            className="object-cover"
+            priority
+          />
+          {/* Gradient overlay */}
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0f172a]/95 via-[#1e293b]/85 to-[#0f172a]/70" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#0f172a] via-transparent to-transparent" />
+        </div>
+
+        <div className="relative z-10 max-w-7xl mx-auto px-6 w-full pt-24 pb-20">
+          <div className="grid lg:grid-cols-[1.2fr_1fr] gap-12 lg:gap-8 items-center">
             {/* Left — Copy */}
             <div>
               <Reveal>
-                <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mb-6">
-                  PLATAFORMA FITNESS WHITE-LABEL
-                </p>
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 mb-8">
+                  <Zap className="w-4 h-4 text-emerald-400" />
+                  <span className="text-sm font-medium text-white/90">Plataforma #1 para profissionais fitness</span>
+                </div>
               </Reveal>
 
               <Reveal delay={80}>
-                <h1 className="text-[clamp(2.5rem,6vw,5.5rem)] font-extrabold tracking-[-0.04em] leading-[0.95] mb-6">
-                  Sua marca,<br />
-                  nossa <span className="text-blue-500">tecnologia.</span>
+                <h1 className="text-5xl md:text-7xl font-extrabold tracking-[-0.03em] leading-[0.95] mb-8 text-white">
+                  Sua marca.<br />
+                  <span className="italic text-blue-400">Nossa tecnologia.</span>
                 </h1>
               </Reveal>
 
               <Reveal delay={160}>
-                <p className="text-[15px] text-neutral-400 leading-relaxed max-w-lg mb-8">
-                  A plataforma definitiva para personal trainers, nutricionistas e academias.
-                  Treinos, nutricao, IA e comunidade — tudo white-label com sua identidade.
+                <p className="text-lg md:text-xl text-slate-300 leading-relaxed max-w-xl mb-10">
+                  A plataforma completa para personal trainers, nutricionistas e academias.
+                  Treinos, nutricao, IA, comunidade e CRM — tudo white-label com a <strong className="text-white">sua identidade visual</strong>.
                 </p>
               </Reveal>
 
               <Reveal delay={240}>
-                <div className="flex flex-wrap items-center gap-4 mb-6">
-                  <a href="#pricing" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-blue-500 text-white text-sm font-semibold hover:brightness-110 transition-all duration-200">
-                    Comecar gratis
+                <div className="flex flex-wrap items-center gap-4 mb-8">
+                  <a href="#pricing" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-blue-600 text-white text-base font-bold hover:bg-blue-500 transition-all duration-200 shadow-xl shadow-blue-600/30">
+                    Comecar gratis <ArrowRight className="w-5 h-5" />
                   </a>
-                  <a href="#features" className="inline-flex items-center gap-1.5 text-sm text-neutral-400 font-medium hover:text-white transition-colors duration-200">
-                    Ver demonstracao <ArrowRight className="w-3.5 h-3.5" />
+                  <a href="#demo" className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white text-base font-semibold hover:bg-white/20 transition-all duration-200">
+                    <Play className="w-5 h-5" /> Ver demo
                   </a>
                 </div>
               </Reveal>
 
               <Reveal delay={320}>
-                <p className="text-[13px] text-neutral-600">
-                  14 dias gratis &middot; Sem cartao &middot; Cancele quando quiser
-                </p>
+                <div className="flex flex-wrap items-center gap-6 text-sm text-slate-400">
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> 14 dias gratis</span>
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Sem cartao</span>
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Cancele quando quiser</span>
+                </div>
               </Reveal>
             </div>
 
             {/* Right — Phone */}
-            <Reveal delay={200} direction="scale" className="hidden lg:flex items-center justify-center">
+            <Reveal delay={300} direction="scale" className="hidden lg:flex items-center justify-center">
               <PhoneMockup />
             </Reveal>
           </div>
         </div>
-      </section>
 
-      {/* ══════════════════════════════════════
-           PARTICLE TEXT — Visual wow-moment
-           Between hero and numbers
-         ══════════════════════════════════════ */}
-      <section className="relative h-[280px] md:h-[340px] overflow-hidden border-y border-white/[0.04]">
-        <div className="absolute inset-0">
-          <ParticleTextEffect
-            words={["SUA MARCA", "NOSSA TECH", "SEU APP", "SEUS ALUNOS"]}
-            particleColor="#3b82f6"
-            fontSize={48}
-            particleDensity={3}
-            className="opacity-60"
-          />
+        {/* Wave decoration bottom */}
+        <div className="absolute bottom-0 left-0 right-0">
+          <svg viewBox="0 0 1440 80" fill="none" className="w-full" preserveAspectRatio="none">
+            <path d="M0 40L48 35C96 30 192 20 288 22C384 24 480 38 576 44C672 50 768 48 864 42C960 36 1056 26 1152 24C1248 22 1344 28 1392 31L1440 34V80H1392C1344 80 1248 80 1152 80C1056 80 960 80 864 80C768 80 672 80 576 80C480 80 384 80 288 80C192 80 96 80 48 80H0V40Z" fill="white"/>
+          </svg>
         </div>
-        {/* Gradient fade edges for seamless blend */}
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-r from-[#08080a] via-transparent to-[#08080a]" />
-        <div className="absolute inset-0 pointer-events-none bg-gradient-to-b from-[#08080a]/60 via-transparent to-[#08080a]/60" />
       </section>
 
-      {/* ──── NUMBERS BAR ──── */}
-      <div className="border-b border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto px-6 py-16">
-          <div className="grid grid-cols-3 gap-8 text-center">
-            <Reveal>
-              <p className="text-4xl md:text-5xl font-black text-white tabular-nums"><AnimatedNumber value={50} suffix="+" /></p>
-              <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mt-3">Profissionais</p>
-            </Reveal>
-            <Reveal delay={100}>
-              <p className="text-4xl md:text-5xl font-black text-white tabular-nums"><AnimatedNumber value={1000} suffix="+" /></p>
-              <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mt-3">Alunos</p>
-            </Reveal>
-            <Reveal delay={200}>
-              <p className="text-4xl md:text-5xl font-black text-white tabular-nums">4.9</p>
-              <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mt-3">Avaliacao</p>
-            </Reveal>
+      {/* ================================================================
+           STATS BAR — Trust numbers
+         ================================================================ */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
+            {[
+              { value: 50, suffix: "+", label: "Profissionais ativos", icon: Users },
+              { value: 1000, suffix: "+", label: "Alunos na plataforma", icon: Smartphone },
+              { value: 256, suffix: "", label: "Exercicios com IA", icon: Dumbbell },
+              { value: 4.9, suffix: "", label: "Avaliacao media", icon: Star, isDecimal: true },
+            ].map((stat, i) => (
+              <Reveal key={i} delay={i * 100}>
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-50 text-blue-600 mb-4">
+                    <stat.icon className="w-6 h-6" />
+                  </div>
+                  <p className="text-4xl md:text-5xl font-extrabold text-slate-900 tabular-nums">
+                    {stat.isDecimal ? "4.9" : <AnimatedNumber value={stat.value} suffix={stat.suffix} />}
+                  </p>
+                  <p className="text-sm text-slate-500 font-medium mt-2">{stat.label}</p>
+                </div>
+              </Reveal>
+            ))}
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* ══════════════════════════════════════
-           FEATURES — Radar + Detail Card
-         ══════════════════════════════════════ */}
-      <section id="features" className="py-28 md:py-36 px-6">
-        <div className="max-w-[1200px] mx-auto">
+      {/* ================================================================
+           "O PROBLEMA" — Pain points with image cards
+         ================================================================ */}
+      <section className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6">
           <Reveal>
-            <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mb-4">RECURSOS</p>
-            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-extrabold tracking-[-0.04em] leading-[1.05] text-white max-w-xl mb-6">
-              Tudo que voce precisa. Numa so plataforma.
-            </h2>
-            <p className="text-[15px] text-neutral-500 leading-relaxed max-w-lg mb-16">
-              Clique nos icones do radar para explorar cada recurso. 8 modulos integrados numa unica solucao.
-            </p>
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="inline-block text-sm font-bold text-blue-600 uppercase tracking-wider mb-4">O problema</span>
+              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">
+                Voce ainda gerencia seus alunos pelo <span className="italic text-blue-600">WhatsApp?</span>
+              </h2>
+              <p className="text-lg text-slate-500 leading-relaxed">
+                Profissionais fitness perdem horas com planilhas, mensagens repetidas e ferramentas desconectadas. Isso acaba agora.
+              </p>
+            </div>
           </Reveal>
 
-          <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            {/* Left — Radar */}
-            <Reveal delay={100} className="flex items-center justify-center">
-              <FeatureRadar onSelectFeature={setSelectedFeature} />
-            </Reveal>
-
-            {/* Right — Feature detail card */}
-            <Reveal delay={200}>
-              <div className="space-y-6">
-                {selectedFeature !== null ? (
-                  <motion.div
-                    key={selectedFeature}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.35 }}
-                    className="p-8 rounded-2xl border border-white/[0.06] bg-white/[0.02]"
-                  >
-                    <div className="flex items-center gap-4 mb-5">
-                      <div className="w-12 h-12 rounded-xl border border-blue-500/20 bg-blue-500/[0.06] flex items-center justify-center">
-                        {(() => {
-                          const Icon = features[selectedFeature].icon
-                          return <Icon className="w-5 h-5 text-blue-400" />
-                        })()}
-                      </div>
-                      <div>
-                        <span className="text-[11px] text-blue-500 font-mono uppercase tracking-wider">{features[selectedFeature].num}</span>
-                        <h3 className="text-white font-bold text-xl tracking-[-0.02em]">{features[selectedFeature].title}</h3>
-                      </div>
-                    </div>
-                    <p className="text-[15px] text-neutral-400 leading-relaxed">{features[selectedFeature].desc}</p>
-                  </motion.div>
-                ) : (
-                  <div className="p-8 rounded-2xl border border-dashed border-white/[0.08] bg-white/[0.01]">
-                    <p className="text-neutral-600 text-[15px] text-center">
-                      Selecione um recurso no radar para ver detalhes
-                    </p>
+          <div className="grid md:grid-cols-3 gap-6">
+            {[
+              {
+                image: IMAGES.trainerClient,
+                title: "Treinos no papel ou planilha",
+                desc: "Sem padronizacao, sem historico, sem carga progressiva. Alunos perdidos e resultados inconsistentes.",
+              },
+              {
+                image: IMAGES.womanTraining,
+                title: "Zero acompanhamento nutricional",
+                desc: "Seus alunos treinam mas comem errado. Sem integracao nutricao + treino, resultados sao limitados.",
+              },
+              {
+                image: IMAGES.groupFitness,
+                title: "Alunos desmotivados",
+                desc: "Sem comunidade, sem ranking, sem gamificacao. Alunos cancelam por falta de engajamento.",
+              },
+            ].map((card, i) => (
+              <Reveal key={i} delay={i * 120}>
+                <div className="group relative rounded-2xl overflow-hidden h-[420px] cursor-pointer">
+                  <Image
+                    src={card.image}
+                    alt={card.title}
+                    fill
+                    className="object-cover transition-transform duration-700 group-hover:scale-110"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-900/95 via-slate-900/40 to-transparent" />
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <h3 className="text-white font-bold text-xl mb-2">{card.title}</h3>
+                    <p className="text-slate-300 text-sm leading-relaxed">{card.desc}</p>
                   </div>
-                )}
-
-                {/* Feature grid summary — always visible */}
-                <div className="grid grid-cols-2 gap-3">
-                  {features.map((f, i) => {
-                    const Icon = f.icon
-                    const isActive = selectedFeature === i
-                    return (
-                      <button
-                        key={f.num}
-                        onClick={() => setSelectedFeature(i)}
-                        className={cn(
-                          "flex items-center gap-3 p-3 rounded-xl border text-left transition-all duration-200",
-                          isActive
-                            ? "border-blue-500/30 bg-blue-500/[0.06]"
-                            : "border-white/[0.06] bg-white/[0.01] hover:border-white/[0.12] hover:bg-white/[0.03]",
-                        )}
-                      >
-                        <Icon className={cn("w-4 h-4 shrink-0", isActive ? "text-blue-400" : "text-neutral-600")} />
-                        <span className={cn("text-[13px] font-medium", isActive ? "text-white" : "text-neutral-500")}>
-                          {f.title}
-                        </span>
-                      </button>
-                    )
-                  })}
                 </div>
-              </div>
-            </Reveal>
+              </Reveal>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-           COMPARISON — Clean horizontal table
-         ══════════════════════════════════════ */}
-      <section id="comparison" className="py-28 md:py-36 px-6">
-        <div className="max-w-[1200px] mx-auto">
+      {/* ================================================================
+           FEATURES — Alternating image + text rows
+         ================================================================ */}
+      <section id="features" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
           <Reveal>
-            <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mb-4">COMPARATIVO</p>
-            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-extrabold tracking-[-0.04em] leading-[1.05] text-white max-w-xl mb-16">
-              Veja por que profissionais estao migrando.
-            </h2>
+            <div className="text-center max-w-3xl mx-auto mb-20">
+              <span className="inline-block text-sm font-bold text-blue-600 uppercase tracking-wider mb-4">Recursos</span>
+              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">
+                Tudo que voce precisa. <span className="italic text-blue-600">Numa so plataforma.</span>
+              </h2>
+              <p className="text-lg text-slate-500">
+                8 modulos integrados para transformar seu negocio fitness.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="space-y-24">
+            {features.map((feat, i) => {
+              const Icon = feat.icon
+              const isEven = i % 2 === 0
+              return (
+                <div key={i} className={cn(
+                  "grid lg:grid-cols-2 gap-12 lg:gap-20 items-center",
+                  !isEven && "lg:[direction:rtl]",
+                )}>
+                  <Reveal delay={100} direction={isEven ? "left" : "right"}>
+                    <div className="relative rounded-2xl overflow-hidden h-[360px] lg:h-[440px] shadow-2xl shadow-slate-200/50 lg:[direction:ltr]">
+                      <Image
+                        src={feat.image}
+                        alt={feat.title}
+                        fill
+                        className="object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-blue-900/30 to-transparent" />
+                    </div>
+                  </Reveal>
+                  <Reveal delay={200} className="lg:[direction:ltr]">
+                    <div>
+                      <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-blue-100 text-blue-600 mb-6">
+                        <Icon className="w-7 h-7" />
+                      </div>
+                      <h3 className="text-3xl font-extrabold text-slate-900 mb-4 tracking-tight">{feat.title}</h3>
+                      <p className="text-lg text-slate-500 leading-relaxed mb-8">{feat.desc}</p>
+                      <a href="#pricing" className="inline-flex items-center gap-2 text-blue-600 font-semibold hover:gap-3 transition-all duration-200">
+                        Saiba mais <ArrowRight className="w-4 h-4" />
+                      </a>
+                    </div>
+                  </Reveal>
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Additional feature grid -- compact */}
+          <div className="mt-24 grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[
+              { icon: Users, title: "Comunidade & Ranking", desc: "Feed social, desafios e leaderboard gamificado." },
+              { icon: BarChart3, title: "CRM de Vendas", desc: "Pipeline visual, lead scoring e automacoes." },
+              { icon: Palette, title: "White-label Completo", desc: "Sua marca, suas cores, seu dominio proprio." },
+              { icon: Smartphone, title: "PWA Nativo", desc: "Funciona como app nativo, sem App Store." },
+            ].map((f, i) => (
+              <Reveal key={i} delay={i * 80}>
+                <div className="group p-6 rounded-2xl bg-slate-50 hover:bg-blue-50 border border-slate-100 hover:border-blue-200 transition-all duration-300">
+                  <div className="w-12 h-12 rounded-xl bg-white shadow-sm flex items-center justify-center mb-4 group-hover:bg-blue-100 transition-colors duration-300">
+                    <f.icon className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h4 className="font-bold text-slate-900 mb-2">{f.title}</h4>
+                  <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================
+           HOW IT WORKS — 3 steps with connector lines
+         ================================================================ */}
+      <section id="how-it-works" className="py-24 bg-gradient-to-br from-[#0f172a] via-[#1e293b] to-[#0f172a] text-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <Reveal>
+            <div className="text-center max-w-3xl mx-auto mb-20">
+              <span className="inline-block text-sm font-bold text-blue-400 uppercase tracking-wider mb-4">Como funciona</span>
+              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-6">
+                3 passos para transformar <span className="italic text-blue-400">seu negocio</span>
+              </h2>
+              <p className="text-lg text-slate-400">
+                Monte seu app fitness profissional em minutos, sem codigo.
+              </p>
+            </div>
+          </Reveal>
+
+          <div className="grid md:grid-cols-3 gap-8 relative">
+            {/* Connector line (desktop only) */}
+            <div className="hidden md:block absolute top-[60px] left-[20%] right-[20%] h-[2px] bg-gradient-to-r from-blue-500/20 via-blue-500/60 to-blue-500/20" />
+
+            {[
+              {
+                step: "01",
+                title: "Crie sua conta",
+                desc: "Cadastre-se em 30 segundos. Configure sua marca, cores e logo no painel admin.",
+                icon: Shield,
+              },
+              {
+                step: "02",
+                title: "Monte seus treinos",
+                desc: "Use templates prontos ou crie do zero. Adicione planos nutricionais, configure a IA.",
+                icon: Dumbbell,
+              },
+              {
+                step: "03",
+                title: "Convide seus alunos",
+                desc: "Compartilhe o link do app. Seus alunos instalam como PWA e comecam a treinar.",
+                icon: Users,
+              },
+            ].map((step, i) => (
+              <Reveal key={i} delay={i * 150}>
+                <div className="relative text-center">
+                  <div className="inline-flex items-center justify-center w-[120px] h-[120px] rounded-full bg-blue-600/10 border-2 border-blue-500/30 mb-8 relative">
+                    <step.icon className="w-10 h-10 text-blue-400" />
+                    <span className="absolute -top-2 -right-2 w-8 h-8 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-lg shadow-blue-600/30">
+                      {step.step}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold mb-3">{step.title}</h3>
+                  <p className="text-slate-400 leading-relaxed max-w-sm mx-auto">{step.desc}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ================================================================
+           COMPARISON — Clean horizontal table
+         ================================================================ */}
+      <section id="comparison" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
+          <Reveal>
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="inline-block text-sm font-bold text-blue-600 uppercase tracking-wider mb-4">Comparativo</span>
+              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">
+                Veja por que profissionais estao <span className="italic text-blue-600">migrando.</span>
+              </h2>
+            </div>
           </Reveal>
 
           <Reveal delay={100}>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto rounded-2xl border border-slate-200 shadow-sm">
               <table className="w-full min-w-[640px]">
                 <thead>
-                  <tr className="border-b border-white/[0.06]">
-                    <th className="text-left text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 py-4 pr-6 w-[200px]">Recurso</th>
-                    <th className="text-center py-4 px-4 text-sm font-bold text-blue-500 border-l border-blue-500/20">CB Platform</th>
-                    <th className="text-center text-[11px] uppercase tracking-[0.15em] text-neutral-600 font-medium py-4 px-4">MFIT</th>
-                    <th className="text-center text-[11px] uppercase tracking-[0.15em] text-neutral-600 font-medium py-4 px-4">Treine.me</th>
-                    <th className="text-center text-[11px] uppercase tracking-[0.15em] text-neutral-600 font-medium py-4 px-4">Personal App</th>
+                  <tr className="bg-slate-50 border-b border-slate-200">
+                    <th className="text-left text-sm font-semibold text-slate-600 py-4 px-6 w-[200px]">Recurso</th>
+                    <th className="text-center py-4 px-4 text-sm font-bold text-blue-600 bg-blue-50">CB Platform</th>
+                    <th className="text-center text-sm text-slate-500 font-medium py-4 px-4">MFIT</th>
+                    <th className="text-center text-sm text-slate-500 font-medium py-4 px-4">Treine.me</th>
+                    <th className="text-center text-sm text-slate-500 font-medium py-4 px-4">Personal App</th>
                   </tr>
                 </thead>
                 <tbody>
                   {comparisonRows.map((row, i) => (
-                    <tr key={i} className="border-b border-white/[0.04]">
-                      <td className="text-[15px] text-neutral-300 py-4 pr-6 font-medium">{row.feature}</td>
-                      <td className="text-center py-4 px-4 border-l border-blue-500/20">
+                    <tr key={i} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
+                      <td className="text-sm text-slate-700 py-4 px-6 font-medium">{row.feature}</td>
+                      <td className="text-center py-4 px-4 bg-blue-50/50">
                         <ComparisonCell value={row.ours} isOurs />
                       </td>
                       <td className="text-center py-4 px-4"><ComparisonCell value={row.mfit} /></td>
@@ -961,86 +865,92 @@ export function B2BLandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-           PRICING — Editorial layout, Pro dominant
-         ══════════════════════════════════════ */}
-      <section id="pricing" className="py-28 md:py-36 px-6 border-y border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto">
+      {/* ================================================================
+           PRICING — Clean cards with feature lists
+         ================================================================ */}
+      <section id="pricing" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6">
           <Reveal>
-            <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mb-4">PLANOS</p>
-            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-extrabold tracking-[-0.04em] leading-[1.05] text-white mb-3">
-              Invista no seu negocio.
-            </h2>
-            <p className="text-[15px] text-neutral-400 leading-relaxed max-w-lg mb-10">
-              Sem fidelidade. Cancele quando quiser. Comece gratis por 14 dias.
-            </p>
+            <div className="text-center max-w-3xl mx-auto mb-12">
+              <span className="inline-block text-sm font-bold text-blue-600 uppercase tracking-wider mb-4">Planos</span>
+              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">
+                Invista no seu <span className="italic text-blue-600">negocio.</span>
+              </h2>
+              <p className="text-lg text-slate-500">
+                Sem fidelidade. Cancele quando quiser. Comece gratis por 14 dias.
+              </p>
+            </div>
           </Reveal>
 
           {/* Toggle */}
           <Reveal delay={80}>
-            <div className="flex items-center gap-4 mb-16">
-              <span className={cn("text-sm transition-colors duration-200", !annual ? "text-white font-semibold" : "text-neutral-600")}>Mensal</span>
+            <div className="flex items-center justify-center gap-4 mb-16">
+              <span className={cn("text-sm font-semibold transition-colors duration-200", !annual ? "text-slate-900" : "text-slate-400")}>Mensal</span>
               <button
                 onClick={() => setAnnual(!annual)}
                 className={cn(
-                  "relative w-12 h-6 rounded-full transition-colors duration-200",
-                  annual ? "bg-blue-500" : "bg-white/10",
+                  "relative w-14 h-7 rounded-full transition-colors duration-200",
+                  annual ? "bg-blue-600" : "bg-slate-200",
                 )}
               >
                 <div className={cn(
-                  "absolute top-[3px] w-[18px] h-[18px] rounded-full bg-white transition-transform duration-200",
-                  annual ? "translate-x-[27px]" : "translate-x-[3px]",
+                  "absolute top-[3px] w-[22px] h-[22px] rounded-full bg-white shadow-sm transition-transform duration-200",
+                  annual ? "translate-x-[29px]" : "translate-x-[3px]",
                 )} />
               </button>
-              <span className={cn("text-sm transition-colors duration-200", annual ? "text-white font-semibold" : "text-neutral-600")}>
-                Anual <span className="text-blue-500 text-xs font-medium ml-1">-30%</span>
+              <span className={cn("text-sm font-semibold transition-colors duration-200", annual ? "text-slate-900" : "text-slate-400")}>
+                Anual <span className="text-emerald-500 text-xs font-bold ml-1 bg-emerald-50 px-2 py-0.5 rounded-full">-30%</span>
               </span>
             </div>
           </Reveal>
 
           {/* Pricing cards */}
-          <div className="grid md:grid-cols-3 gap-px bg-white/[0.06] rounded-2xl overflow-hidden">
+          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
             {b2bTiers.map((tier, i) => {
               const isPro = tier.name === "Pro"
               const price = annual ? tier.annual : tier.monthly
               return (
-                <Reveal key={tier.name} delay={i * 80}>
+                <Reveal key={tier.name} delay={i * 100}>
                   <div className={cn(
-                    "bg-[#08080a] p-8 md:p-10 h-full flex flex-col relative",
-                    isPro && "bg-[#0a0a0e]",
+                    "relative rounded-2xl p-8 lg:p-10 h-full flex flex-col transition-all duration-300",
+                    isPro
+                      ? "bg-blue-600 text-white shadow-2xl shadow-blue-600/20 scale-[1.02] lg:scale-105 z-10"
+                      : "bg-white border border-slate-200 shadow-sm hover:shadow-lg",
                   )}>
-                    {/* Pro left accent */}
-                    {isPro && <div className="absolute left-0 top-8 bottom-8 w-[2px] bg-blue-500" />}
-
                     {tier.tag && (
-                      <span className="text-[11px] uppercase tracking-[0.15em] font-medium text-blue-500 mb-4 block">{tier.tag}</span>
-                    )}
-                    {!tier.tag && <div className="mb-4 h-[17px]" />}
-
-                    <h3 className="text-white font-bold text-lg mb-6">{tier.name}</h3>
-
-                    <div className="flex items-baseline gap-1 mb-8">
-                      <span className="text-neutral-500 text-sm">R$</span>
                       <span className={cn(
-                        "font-black tabular-nums tracking-tight text-white",
-                        isPro ? "text-[4rem] leading-none" : "text-[3rem] leading-none",
+                        "absolute -top-3 left-1/2 -translate-x-1/2 text-xs font-bold uppercase tracking-wider px-4 py-1 rounded-full",
+                        isPro ? "bg-emerald-400 text-emerald-900" : "bg-blue-100 text-blue-600",
+                      )}>{tier.tag}</span>
+                    )}
+
+                    <h3 className={cn(
+                      "font-bold text-xl mb-2",
+                      isPro ? "text-white" : "text-slate-900",
+                    )}>{tier.name}</h3>
+
+                    <div className="flex items-baseline gap-1 mb-8 mt-4">
+                      <span className={cn("text-sm", isPro ? "text-blue-200" : "text-slate-400")}>R$</span>
+                      <span className={cn(
+                        "font-extrabold tabular-nums tracking-tight",
+                        isPro ? "text-6xl text-white" : "text-5xl text-slate-900",
                       )}>
                         {price.toFixed(0)}
                       </span>
-                      <span className="text-neutral-600 text-sm">/mes</span>
+                      <span className={cn("text-sm", isPro ? "text-blue-200" : "text-slate-400")}>/mes</span>
                     </div>
 
                     <div className="space-y-3 mb-10 flex-1">
                       {tier.features.map((f, j) => (
-                        <div key={j} className="flex items-start gap-2.5">
-                          <span className="text-blue-500 text-xs mt-0.5 shrink-0">&#10003;</span>
-                          <span className="text-[14px] text-neutral-300 leading-snug">{f}</span>
+                        <div key={j} className="flex items-start gap-3">
+                          <CheckCircle2 className={cn("w-5 h-5 shrink-0 mt-0.5", isPro ? "text-emerald-300" : "text-emerald-500")} />
+                          <span className={cn("text-[14px] leading-snug", isPro ? "text-blue-100" : "text-slate-600")}>{f}</span>
                         </div>
                       ))}
                       {tier.notIncluded.map((f, j) => (
-                        <div key={j} className="flex items-start gap-2.5 opacity-30">
-                          <span className="text-neutral-600 text-xs mt-0.5 shrink-0">&mdash;</span>
-                          <span className="text-[14px] text-neutral-600 leading-snug">{f}</span>
+                        <div key={j} className="flex items-start gap-3 opacity-40">
+                          <span className={cn("text-xs mt-1 shrink-0 w-5 text-center", isPro ? "text-blue-300" : "text-slate-400")}>&mdash;</span>
+                          <span className={cn("text-[14px] leading-snug", isPro ? "text-blue-200" : "text-slate-400")}>{f}</span>
                         </div>
                       ))}
                     </div>
@@ -1051,10 +961,10 @@ export function B2BLandingPage() {
                         : waLink(`Ola! Quero comecar com o plano ${tier.name} da plataforma fitness.`)}
                       target="_blank" rel="noopener noreferrer"
                       className={cn(
-                        "block text-center py-3.5 rounded-lg font-semibold text-sm transition-all duration-200",
+                        "block text-center py-4 rounded-xl font-bold text-sm transition-all duration-200",
                         isPro
-                          ? "bg-blue-500 text-white hover:brightness-110"
-                          : "border border-white/[0.1] text-white hover:border-white/[0.2] hover:bg-white/[0.03]",
+                          ? "bg-white text-blue-600 hover:bg-blue-50 shadow-lg"
+                          : "bg-blue-600 text-white hover:bg-blue-700 shadow-lg shadow-blue-600/20",
                       )}
                     >
                       {tier.cta}
@@ -1067,71 +977,73 @@ export function B2BLandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-           TESTIMONIALS — Large single quote
-         ══════════════════════════════════════ */}
-      <section className="py-28 md:py-36 px-6">
-        <div className="max-w-[1200px] mx-auto">
+      {/* ================================================================
+           TESTIMONIALS — Cards with real photos
+         ================================================================ */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-6">
           <Reveal>
-            <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mb-4">DEPOIMENTOS</p>
-            <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-extrabold tracking-[-0.04em] leading-[1.05] text-white mb-20">
-              Quem usa, recomenda.
-            </h2>
-          </Reveal>
-
-          <Reveal delay={100}>
-            <div className="relative max-w-3xl">
-              {/* Oversized decorative quote */}
-              <span className="absolute -top-16 -left-4 text-[12rem] leading-none font-serif text-white/[0.04] select-none pointer-events-none">&ldquo;</span>
-
-              <div className="relative">
-                {testimonials.map((t, i) => (
-                  <div key={i} className={cn(
-                    "transition-all duration-500",
-                    activeTestimonial === i ? "opacity-100" : "opacity-0 absolute inset-0 pointer-events-none",
-                  )}>
-                    <blockquote className="text-2xl md:text-3xl lg:text-4xl font-medium text-white leading-snug tracking-[-0.02em] mb-10">
-                      {t.text}
-                    </blockquote>
-                    <div>
-                      <p className="text-white font-semibold text-[15px]">{t.name}</p>
-                      <p className="text-neutral-500 text-sm mt-1">{t.role}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* Dots */}
-              <div className="flex items-center gap-2 mt-12">
-                {testimonials.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setActiveTestimonial(i)}
-                    className={cn(
-                      "w-2 h-2 rounded-full transition-colors duration-200",
-                      activeTestimonial === i ? "bg-blue-500" : "bg-white/[0.15] hover:bg-white/[0.3]",
-                    )}
-                  />
-                ))}
-              </div>
+            <div className="text-center max-w-3xl mx-auto mb-16">
+              <span className="inline-block text-sm font-bold text-blue-600 uppercase tracking-wider mb-4">Depoimentos</span>
+              <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 mb-6">
+                Quem usa, <span className="italic text-blue-600">recomenda.</span>
+              </h2>
             </div>
           </Reveal>
+
+          <div className="grid md:grid-cols-3 gap-8">
+            {testimonials.map((t, i) => (
+              <Reveal key={i} delay={i * 120}>
+                <div className="bg-slate-50 rounded-2xl p-8 border border-slate-100 h-full flex flex-col hover:shadow-lg transition-shadow duration-300">
+                  {/* Stars */}
+                  <div className="flex gap-1 mb-6">
+                    {Array.from({ length: t.stars }).map((_, j) => (
+                      <Star key={j} className="w-5 h-5 text-amber-400 fill-amber-400" />
+                    ))}
+                  </div>
+
+                  <blockquote className="text-slate-700 leading-relaxed flex-1 mb-8 text-[15px]">
+                    &ldquo;{t.text}&rdquo;
+                  </blockquote>
+
+                  <div className="flex items-center gap-4">
+                    <div className="relative w-12 h-12 rounded-full overflow-hidden border-2 border-blue-100">
+                      <Image
+                        src={t.avatar}
+                        alt={t.name}
+                        fill
+                        className="object-cover"
+                      />
+                    </div>
+                    <div>
+                      <p className="font-bold text-slate-900 text-sm">{t.name}</p>
+                      <p className="text-slate-500 text-sm">{t.role}</p>
+                    </div>
+                  </div>
+                </div>
+              </Reveal>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* ──── FAQ ──── */}
-      <section id="faq" className="py-28 md:py-36 px-6 border-t border-white/[0.06]">
-        <div className="max-w-[1200px] mx-auto">
-          <div className="max-w-2xl">
+      {/* ================================================================
+           FAQ — Accordion
+         ================================================================ */}
+      <section id="faq" className="py-24 bg-slate-50">
+        <div className="max-w-7xl mx-auto px-6">
+          <div className="max-w-3xl mx-auto">
             <Reveal>
-              <p className="text-[11px] uppercase tracking-[0.2em] font-medium text-neutral-500 mb-4">FAQ</p>
-              <h2 className="text-[clamp(2rem,4vw,3.5rem)] font-extrabold tracking-[-0.04em] leading-[1.05] text-white mb-12">
-                Perguntas frequentes
-              </h2>
+              <div className="text-center mb-16">
+                <span className="inline-block text-sm font-bold text-blue-600 uppercase tracking-wider mb-4">FAQ</span>
+                <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900">
+                  Perguntas <span className="italic text-blue-600">frequentes</span>
+                </h2>
+              </div>
             </Reveal>
 
             <Reveal delay={100}>
-              <div>
+              <div className="bg-white rounded-2xl p-8 border border-slate-200 shadow-sm">
                 {faqs.map((faq, i) => (
                   <FAQItem key={i} q={faq.q} a={faq.a} />
                 ))}
@@ -1141,40 +1053,49 @@ export function B2BLandingPage() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════
-           CTA FOOTER — with electric background
-         ══════════════════════════════════════ */}
-      <section className="relative py-28 md:py-36 px-6 border-t border-white/[0.06] overflow-hidden">
-        {/* Electric shader background */}
-        <ElectricBackground />
+      {/* ================================================================
+           CTA BANNER — Full-width gradient with demo form
+         ================================================================ */}
+      <section id="demo" className="relative py-24 overflow-hidden">
+        {/* Background */}
+        <div className="absolute inset-0">
+          <Image
+            src={IMAGES.groupFitness}
+            alt="Fitness background"
+            fill
+            className="object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#0f172a]/95 via-[#1e293b]/90 to-[#0f172a]/95" />
+        </div>
 
-        <div className="relative z-10 max-w-[1200px] mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-start">
+        <div className="relative z-10 max-w-7xl mx-auto px-6">
+          <div className="grid lg:grid-cols-2 gap-16 lg:gap-20 items-center">
             {/* Left */}
             <div>
               <Reveal>
-                <h2 className="text-[clamp(2.5rem,5vw,4.5rem)] font-extrabold tracking-[-0.04em] leading-[0.95] text-white mb-6">
-                  Pronto para<br />comecar?
+                <h2 className="text-4xl md:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.05] mb-6">
+                  Pronto para<br />
+                  <span className="italic text-blue-400">comecar?</span>
                 </h2>
               </Reveal>
 
               <Reveal delay={80}>
-                <p className="text-[15px] text-neutral-400 leading-relaxed max-w-md mb-8">
-                  Monte seu app fitness em minutos. Sem codigo, sem complicacao. 14 dias gratis.
+                <p className="text-lg text-slate-300 leading-relaxed max-w-md mb-8">
+                  Monte seu app fitness em minutos. Sem codigo, sem complicacao. 14 dias gratis para testar tudo.
                 </p>
               </Reveal>
 
               <Reveal delay={160}>
                 <div className="flex flex-col sm:flex-row items-start gap-4">
-                  <a href="#pricing" className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-blue-500 text-white text-sm font-semibold hover:brightness-110 transition-all duration-200">
-                    Comecar gratis
+                  <a href="#pricing" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-all duration-200 shadow-xl shadow-blue-600/30">
+                    Comecar gratis <ArrowRight className="w-5 h-5" />
                   </a>
                   <a
                     href={waLink("Ola! Quero saber mais sobre a plataforma fitness white-label.")}
                     target="_blank" rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-sm text-neutral-400 font-medium hover:text-white transition-colors duration-200"
+                    className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white font-semibold hover:bg-white/20 transition-all duration-200"
                   >
-                    <MessageCircle className="w-4 h-4" /> Falar no WhatsApp
+                    <MessageCircle className="w-5 h-5" /> Falar no WhatsApp
                   </a>
                 </div>
               </Reveal>
@@ -1182,9 +1103,9 @@ export function B2BLandingPage() {
 
             {/* Right — Demo form */}
             <Reveal delay={200}>
-              <div>
-                <p className="text-white font-bold text-lg mb-1">Solicitar demonstracao</p>
-                <p className="text-neutral-500 text-sm mb-6">Preencha e entraremos em contato em ate 24h</p>
+              <div className="bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 p-8">
+                <p className="text-white font-bold text-xl mb-2">Solicitar demonstracao</p>
+                <p className="text-slate-400 text-sm mb-6">Preencha e entraremos em contato em ate 24h</p>
                 <DemoForm />
               </div>
             </Reveal>
@@ -1192,16 +1113,69 @@ export function B2BLandingPage() {
         </div>
       </section>
 
-      {/* ──── FOOTER ──── */}
-      <footer className="border-t border-white/[0.06] py-10 px-6">
-        <div className="max-w-[1200px] mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-neutral-600 text-xs">
-            &copy; 2026 Desenvolvido por Emmanuel Bezerra
-          </p>
-          <div className="flex items-center gap-6 text-neutral-600 text-xs">
-            <span className="hover:text-neutral-400 transition-colors cursor-pointer">Termos</span>
-            <span className="hover:text-neutral-400 transition-colors cursor-pointer">Privacidade</span>
-            <a href={`mailto:${EMMANUEL_EMAIL}`} className="hover:text-neutral-400 transition-colors">{EMMANUEL_EMAIL}</a>
+      {/* ================================================================
+           FOOTER — Dark with organized links
+         ================================================================ */}
+      <footer className="bg-[#0f172a] text-white py-16 px-6">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid md:grid-cols-4 gap-12 mb-12">
+            {/* Brand */}
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
+                  <Dumbbell className="w-5 h-5 text-white" />
+                </div>
+                <span className="text-lg font-extrabold tracking-tight">CB Platform</span>
+              </div>
+              <p className="text-slate-400 text-sm leading-relaxed max-w-sm mb-6">
+                A plataforma completa para profissionais fitness. Treinos, nutricao, IA, comunidade e CRM — tudo white-label.
+              </p>
+              <div className="flex items-center gap-4">
+                <a
+                  href={waLink("Ola! Quero saber mais sobre a plataforma.")}
+                  target="_blank" rel="noopener noreferrer"
+                  className="w-10 h-10 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center hover:bg-white/10 transition-colors"
+                >
+                  <MessageCircle className="w-4 h-4 text-slate-400" />
+                </a>
+              </div>
+            </div>
+
+            {/* Links */}
+            <div>
+              <h4 className="font-bold text-sm mb-4 text-white">Produto</h4>
+              <div className="space-y-3">
+                <a href="#features" className="block text-sm text-slate-400 hover:text-white transition-colors">Recursos</a>
+                <a href="#pricing" className="block text-sm text-slate-400 hover:text-white transition-colors">Planos</a>
+                <a href="#comparison" className="block text-sm text-slate-400 hover:text-white transition-colors">Comparativo</a>
+                <a href="#faq" className="block text-sm text-slate-400 hover:text-white transition-colors">FAQ</a>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-bold text-sm mb-4 text-white">Contato</h4>
+              <div className="space-y-3">
+                <a href={`mailto:${EMMANUEL_EMAIL}`} className="block text-sm text-slate-400 hover:text-white transition-colors">{EMMANUEL_EMAIL}</a>
+                <a
+                  href={waLink("Ola!")}
+                  target="_blank" rel="noopener noreferrer"
+                  className="block text-sm text-slate-400 hover:text-white transition-colors"
+                >
+                  WhatsApp
+                </a>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom bar */}
+          <div className="border-t border-white/10 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-slate-500 text-xs">
+              &copy; 2026 Desenvolvido por Emmanuel Bezerra. Todos os direitos reservados.
+            </p>
+            <div className="flex items-center gap-6 text-slate-500 text-xs">
+              <span className="hover:text-slate-300 transition-colors cursor-pointer">Termos de uso</span>
+              <span className="hover:text-slate-300 transition-colors cursor-pointer">Politica de privacidade</span>
+            </div>
           </div>
         </div>
       </footer>

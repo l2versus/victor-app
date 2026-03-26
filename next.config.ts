@@ -17,6 +17,9 @@ const nextConfig: NextConfig = {
     formats: ["image/avif", "image/webp"],
     deviceSizes: [390, 430, 640, 750, 828, 1080],
     imageSizes: [16, 32, 48, 64, 96, 128, 192, 256],
+    remotePatterns: [
+      { protocol: "https" as const, hostname: "images.unsplash.com" },
+    ],
   },
 
   // Compress responses
