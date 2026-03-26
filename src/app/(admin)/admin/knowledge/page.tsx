@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
+import { createPortal } from "react-dom"
 import {
   BookOpen, Plus, Search, Trash2, X, Loader2,
   Dumbbell, Cpu, Camera, Salad, FlaskConical, ListChecks,
@@ -42,6 +43,7 @@ export default function KnowledgePage() {
   const [showForm, setShowForm] = useState(false)
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [viewingDoc, setViewingDoc] = useState<KnowledgeDoc | null>(null)
 
   const [form, setForm] = useState({
     title: "",
@@ -292,7 +294,8 @@ export default function KnowledgePage() {
             return (
               <div
                 key={doc.id}
-                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 hover:border-white/[0.1] transition-all group"
+                onClick={() => setViewingDoc(doc)}
+                className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 hover:border-white/[0.1] transition-all group cursor-pointer"
               >
                 <div className="flex items-start gap-3">
                   <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0", cat.color)}>
@@ -316,7 +319,7 @@ export default function KnowledgePage() {
                     )}
                   </div>
                   <button
-                    onClick={() => handleDelete(doc.id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(doc.id) }}
                     disabled={deleting === doc.id}
                     className="opacity-0 group-hover:opacity-100 w-8 h-8 rounded-lg flex items-center justify-center text-neutral-600 hover:text-red-400 hover:bg-red-500/10 transition-all shrink-0"
                   >
@@ -327,6 +330,98 @@ export default function KnowledgePage() {
             )
           })}
         </div>
+      )}
+
+      {/* Article Viewer Modal */}
+      {viewingDoc && typeof document !== "undefined" && createPortal(
+        <div className="fixed inset-0 z-[100] bg-black/80" onClick={() => setViewingDoc(null)}>
+          <div
+            className="absolute inset-x-0 bottom-0 top-8 max-w-2xl mx-auto bg-[#0a0a0a] border border-white/[0.08] rounded-t-2xl flex flex-col overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06] shrink-0">
+              <div className="flex items-center gap-3">
+                {(() => {
+                  const cat = getCat(viewingDoc.category)
+                  const Icon = cat.icon
+                  return (
+                    <div className={cn("w-9 h-9 rounded-lg flex items-center justify-center", cat.color)}>
+                      <Icon className="w-4 h-4" />
+                    </div>
+                  )
+                })()}
+                <div>
+                  <h3 className="text-sm font-bold text-white">{viewingDoc.title}</h3>
+                  <p className="text-[10px] text-neutral-500">
+                    {getCat(viewingDoc.category).label} · {new Date(viewingDoc.createdAt).toLocaleDateString("pt-BR")}
+                  </p>
+                </div>
+              </div>
+              <button onClick={() => setViewingDoc(null)} className="text-neutral-400 hover:text-white p-1.5 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4 space-y-4">
+              {/* Image */}
+              {viewingDoc.imageUrl && (
+                <img src={viewingDoc.imageUrl} alt={viewingDoc.title} className="w-full rounded-xl border border-white/[0.06] max-h-[300px] object-cover" />
+              )}
+
+              {/* Article content */}
+              <div className="text-sm text-neutral-300 leading-relaxed whitespace-pre-wrap break-words">
+                {viewingDoc.content}
+              </div>
+
+              {/* Tags */}
+              {viewingDoc.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-white/[0.04]">
+                  {viewingDoc.tags.map(tag => (
+                    <span key={tag} className="px-2.5 py-1 rounded-full bg-white/[0.04] border border-white/[0.06] text-[10px] text-neutral-400">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Source link */}
+              {viewingDoc.sourceUrl && (
+                <a
+                  href={viewingDoc.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-xs text-blue-400 hover:underline"
+                >
+                  <Link2 className="w-3.5 h-3.5" />
+                  {viewingDoc.sourceUrl.replace(/^https?:\/\//, "").slice(0, 50)}
+                </a>
+              )}
+            </div>
+
+            {/* Footer actions */}
+            <div className="shrink-0 px-5 py-3 border-t border-white/[0.06] flex items-center justify-between">
+              <button
+                onClick={() => {
+                  handleDelete(viewingDoc.id)
+                  setViewingDoc(null)
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-red-400 hover:bg-red-500/10 transition-colors"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                Excluir
+              </button>
+              <button
+                onClick={() => setViewingDoc(null)}
+                className="px-4 py-2 rounded-lg bg-white/[0.06] border border-white/[0.08] text-sm text-neutral-300 hover:bg-white/[0.08] transition-colors"
+              >
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.getElementById("modal-portal") || document.body
       )}
     </div>
   )

@@ -98,7 +98,7 @@ export default async function StudentDetailPage({
           </div>
 
           {/* Actions */}
-          <StudentDetailActions studentId={student.id} status={student.status} />
+          <StudentDetailActions studentId={student.id} studentName={student.user.name} status={student.status} />
         </div>
       </div>
 

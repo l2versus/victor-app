@@ -109,6 +109,35 @@ export async function PUT(req: NextRequest, context: RouteContext) {
   }
 }
 
+// DELETE /api/admin/students/[id] — permanently delete student and user
+export async function DELETE(_req: NextRequest, context: RouteContext) {
+  try {
+    const session = await requireAdmin()
+    const trainer = await getTrainerProfile(session.userId)
+    const { id } = await context.params
+
+    const existing = await prisma.student.findFirst({
+      where: { id, trainerId: trainer.id },
+      select: { id: true, userId: true, user: { select: { name: true } } },
+    })
+    if (!existing) {
+      return NextResponse.json({ error: "Student not found" }, { status: 404 })
+    }
+
+    // Delete student (cascade) and then user
+    await prisma.$transaction(async (tx) => {
+      await tx.student.delete({ where: { id } })
+      await tx.user.delete({ where: { id: existing.userId } })
+    })
+
+    return NextResponse.json({ success: true, deletedName: existing.user.name })
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "Internal error"
+    const status = message === "Unauthorized" || message === "Forbidden" ? 401 : 500
+    return NextResponse.json({ error: message }, { status })
+  }
+}
+
 // PATCH /api/admin/students/[id] — toggle active/inactive
 export async function PATCH(_req: NextRequest, context: RouteContext) {
   try {
