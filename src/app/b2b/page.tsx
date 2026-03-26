@@ -1,9 +1,9 @@
 import { B2BLandingPage } from "@/components/landing/b2b-landing-page"
 
 export const metadata = {
-  title: "Plataforma Fitness White-Label | Seu App, Sua Marca",
+  title: "ONEFIT | Sua marca, nossa tecnologia",
   description:
-    "Plataforma completa para personal trainers, nutricionistas e academias. Treinos, nutrição, IA, comunidade — tudo white-label com sua identidade.",
+    "ONEFIT: Plataforma completa para personal trainers, nutricionistas e academias. Treinos, nutrição, IA, comunidade — tudo white-label com sua identidade.",
 }
 
 export default function B2BPage() {

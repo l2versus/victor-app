@@ -127,7 +127,7 @@ const b2bTiers = [
       "Suporte prioritario",
     ],
     notIncluded: ["White-label completo", "Correcao postural IA"],
-    cta: "Comecar trial gratis",
+    cta: "Comecar agora",
   },
   {
     name: "Business",
@@ -211,7 +211,7 @@ const features = [
   },
   {
     title: "Correcao Postural",
-    desc: "Camera em tempo real com MediaPipe. Feedback visual instantaneo durante a execucao dos exercicios.",
+    desc: "Camera em tempo real com inteligencia artificial. Feedback visual instantaneo durante a execucao dos exercicios.",
     icon: Camera,
     image: IMAGES.womanTraining,
   },
@@ -477,7 +477,7 @@ export function B2BLandingPage() {
             <span className={cn(
               "text-lg font-extrabold tracking-tight transition-colors duration-300",
               scrolled ? "text-slate-900" : "text-white",
-            )}>CB Platform</span>
+            )}>ONEFIT</span>
           </Link>
 
           <div className={cn(
@@ -499,7 +499,7 @@ export function B2BLandingPage() {
               Login
             </a>
             <a href="#pricing" className="text-sm font-bold px-5 py-2.5 rounded-xl bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 shadow-lg shadow-blue-600/20">
-              Comecar gratis
+              Comecar agora
             </a>
           </div>
 
@@ -519,7 +519,7 @@ export function B2BLandingPage() {
             <a href="#comparison" onClick={() => setMobileMenu(false)} className="block text-sm text-slate-700 py-2.5 font-medium">Comparativo</a>
             <a href="#faq" onClick={() => setMobileMenu(false)} className="block text-sm text-slate-700 py-2.5 font-medium">FAQ</a>
             <a href="#pricing" onClick={() => setMobileMenu(false)} className="block text-center text-sm font-bold px-5 py-3 rounded-xl bg-blue-600 text-white mt-2">
-              Comecar gratis
+              Comecar agora
             </a>
           </div>
         )}
@@ -571,7 +571,7 @@ export function B2BLandingPage() {
               <Reveal delay={240}>
                 <div className="flex flex-wrap items-center gap-4 mb-8">
                   <a href="#pricing" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-blue-600 text-white text-base font-bold hover:bg-blue-500 transition-all duration-200 shadow-xl shadow-blue-600/30">
-                    Comecar gratis <ArrowRight className="w-5 h-5" />
+                    Comecar agora <ArrowRight className="w-5 h-5" />
                   </a>
                   <a href="#demo" className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-white/10 backdrop-blur-sm border border-white/20 text-white text-base font-semibold hover:bg-white/20 transition-all duration-200">
                     <Play className="w-5 h-5" /> Ver demo
@@ -581,7 +581,7 @@ export function B2BLandingPage() {
 
               <Reveal delay={320}>
                 <div className="flex flex-wrap items-center gap-6 text-sm text-slate-400">
-                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> 14 dias gratis</span>
+                  <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Sem fidelidade</span>
                   <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Sem cartao</span>
                   <span className="flex items-center gap-1.5"><CheckCircle2 className="w-4 h-4 text-emerald-400" /> Cancele quando quiser</span>
                 </div>
@@ -840,7 +840,7 @@ export function B2BLandingPage() {
                 <thead>
                   <tr className="bg-slate-50 border-b border-slate-200">
                     <th className="text-left text-sm font-semibold text-slate-600 py-4 px-6 w-[200px]">Recurso</th>
-                    <th className="text-center py-4 px-4 text-sm font-bold text-blue-600 bg-blue-50">CB Platform</th>
+                    <th className="text-center py-4 px-4 text-sm font-bold text-blue-600 bg-blue-50">ONEFIT</th>
                     <th className="text-center text-sm text-slate-500 font-medium py-4 px-4">MFIT</th>
                     <th className="text-center text-sm text-slate-500 font-medium py-4 px-4">Treine.me</th>
                     <th className="text-center text-sm text-slate-500 font-medium py-4 px-4">Personal App</th>
@@ -957,8 +957,8 @@ export function B2BLandingPage() {
 
                     <a
                       href={tier.name === "Business"
-                        ? waLink("Ola! Tenho interesse no plano Business da plataforma fitness.")
-                        : waLink(`Ola! Quero comecar com o plano ${tier.name} da plataforma fitness.`)}
+                        ? waLink("Ola! Tenho interesse no plano Business da ONEFIT.")
+                        : waLink(`Ola! Quero comecar com o plano ${tier.name} da ONEFIT.`)}
                       target="_blank" rel="noopener noreferrer"
                       className={cn(
                         "block text-center py-4 rounded-xl font-bold text-sm transition-all duration-200",
@@ -1081,17 +1081,17 @@ export function B2BLandingPage() {
 
               <Reveal delay={80}>
                 <p className="text-lg text-slate-300 leading-relaxed max-w-md mb-8">
-                  Monte seu app fitness em minutos. Sem codigo, sem complicacao. 14 dias gratis para testar tudo.
+                  Monte seu app fitness em minutos. Sem codigo, sem complicacao. Sem fidelidade para testar tudo.
                 </p>
               </Reveal>
 
               <Reveal delay={160}>
                 <div className="flex flex-col sm:flex-row items-start gap-4">
                   <a href="#pricing" className="inline-flex items-center gap-2 px-8 py-4 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-500 transition-all duration-200 shadow-xl shadow-blue-600/30">
-                    Comecar gratis <ArrowRight className="w-5 h-5" />
+                    Comecar agora <ArrowRight className="w-5 h-5" />
                   </a>
                   <a
-                    href={waLink("Ola! Quero saber mais sobre a plataforma fitness white-label.")}
+                    href={waLink("Ola! Quero saber mais sobre a ONEFIT white-label.")}
                     target="_blank" rel="noopener noreferrer"
                     className="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-white/10 border border-white/20 text-white font-semibold hover:bg-white/20 transition-all duration-200"
                   >
@@ -1125,7 +1125,7 @@ export function B2BLandingPage() {
                 <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center">
                   <Dumbbell className="w-5 h-5 text-white" />
                 </div>
-                <span className="text-lg font-extrabold tracking-tight">CB Platform</span>
+                <span className="text-lg font-extrabold tracking-tight">ONEFIT</span>
               </div>
               <p className="text-slate-400 text-sm leading-relaxed max-w-sm mb-6">
                 A plataforma completa para profissionais fitness. Treinos, nutricao, IA, comunidade e CRM — tudo white-label.
