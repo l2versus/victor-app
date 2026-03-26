@@ -9,21 +9,19 @@ interface SafeImageProps extends React.ImgHTMLAttributes<HTMLImageElement> {
   showIcon?: boolean
 }
 
-/**
- * Image with automatic error fallback.
- * When src fails to load, shows a neutral placeholder instead of broken icon.
- * Use this instead of raw <img> everywhere in the app.
- */
 export function SafeImage({
   className,
   fallbackClassName,
   showIcon = true,
   alt = "",
+  src,
   ...props
 }: SafeImageProps) {
   const [error, setError] = useState(false)
+  const [loaded, setLoaded] = useState(false)
 
-  if (error) {
+  // If no src at all, show fallback immediately
+  if (!src || error) {
     return (
       <div
         className={cn(
@@ -40,19 +38,25 @@ export function SafeImage({
   }
 
   return (
-    <img
-      className={className}
-      alt={alt}
-      onError={() => setError(true)}
-      {...props}
-    />
+    <div className={cn("relative bg-neutral-900", className, fallbackClassName)}>
+      {/* Placeholder while loading */}
+      {!loaded && (
+        <div className="absolute inset-0 flex items-center justify-center bg-neutral-900">
+          <div className="w-4 h-4 rounded-full border-2 border-neutral-700 border-t-neutral-500 animate-spin" />
+        </div>
+      )}
+      <img
+        src={src}
+        className={cn("w-full h-full object-cover", !loaded && "opacity-0")}
+        alt={alt}
+        onError={() => setError(true)}
+        onLoad={() => setLoaded(true)}
+        {...props}
+      />
+    </div>
   )
 }
 
-/**
- * Avatar with initial letter fallback.
- * Shows first letter of name when image fails.
- */
 export function SafeAvatar({
   src,
   name,
