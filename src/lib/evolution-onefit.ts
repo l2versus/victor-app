@@ -44,7 +44,7 @@ export async function sendOnefitMessage(phone: string, text: string) {
     headers: headers(),
     body: JSON.stringify({
       number: formattedNumber,
-      text,
+      textMessage: { text },
     }),
   })
 

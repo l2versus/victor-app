@@ -52,20 +52,25 @@ export async function POST(req: NextRequest) {
     }
 
     const messageContent =
+      data.message?.conversation ||
+      data.message?.extendedTextMessage?.text ||
+      data.message?.imageMessage?.caption ||
       msg.message?.conversation ||
       msg.message?.extendedTextMessage?.text ||
-      msg.message?.imageMessage?.caption ||
+      msg.conversation ||
+      msg.extendedTextMessage?.text ||
       ""
 
     if (!messageContent || !phone) {
+      console.log("[ONEFIT Evolution] No content or phone, raw data:", JSON.stringify(body).slice(0, 500))
       return NextResponse.json({ received: true })
     }
 
     const pushName =
-      msg.pushName || data.pushName || `WhatsApp ${phone.slice(-4)}`
+      data.pushName || msg.pushName || body.pushName || `WhatsApp ${phone.slice(-4)}`
 
     console.log(
-      `[ONEFIT Evolution] Message from ${phone} (${pushName}): ${messageContent.slice(0, 50)}...`
+      `[ONEFIT Evolution] Message from ${phone} (${pushName}): ${messageContent.slice(0, 50)}`
     )
 
     // ─── Handle message with ONEFIT sales bot ───
