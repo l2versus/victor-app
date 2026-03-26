@@ -142,6 +142,26 @@ export async function GET(req: NextRequest) {
       for (const l of likers) likerInfo.set(l.id, { name: l.user.name.split(" ")[0], avatar: l.user.avatar })
     }
 
+    // Sanitize imageUrl: treat expired Vercel Blob URLs and invalid values as null
+    const sanitizeImageUrl = (url: string | null): string | null => {
+      if (!url) return null
+      if (!url.startsWith("http")) return null
+      try {
+        const parsed = new URL(url)
+        const token = parsed.searchParams.get("token")
+        if (token) {
+          const parts = token.split(".")
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]))
+            if (payload.exp && payload.exp * 1000 < Date.now()) return null
+          }
+        }
+      } catch {
+        // URL parse failed — still return it, browser will handle 404
+      }
+      return url
+    }
+
     const feed = items.map((post) => {
       const reactionCounts = { CLAP: 0, FIRE: 0, MUSCLE: 0 }
       const userReactions: string[] = []
@@ -162,7 +182,7 @@ export async function GET(req: NextRequest) {
         id: post.id,
         type: post.type,
         content: post.content,
-        imageUrl: post.imageUrl,
+        imageUrl: sanitizeImageUrl(post.imageUrl),
         metadata: post.metadata,
         studentId: isAdminPost ? (adminStudent?.id ?? null) : post.studentId,
         studentName: post.student?.user.name ?? trainerUser?.name ?? "Personal",

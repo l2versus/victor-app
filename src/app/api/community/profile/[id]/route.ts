@@ -57,6 +57,26 @@ export async function GET(
       },
     })
 
+    // Sanitize imageUrl: treat expired Vercel Blob URLs (contain token= with expiry) and invalid values as null
+    const sanitizeImageUrl = (url: string | null): string | null => {
+      if (!url) return null
+      if (!url.startsWith("http")) return null
+      try {
+        const parsed = new URL(url)
+        const token = parsed.searchParams.get("token")
+        if (token) {
+          const parts = token.split(".")
+          if (parts.length === 3) {
+            const payload = JSON.parse(atob(parts[1]))
+            if (payload.exp && payload.exp * 1000 < Date.now()) return null
+          }
+        }
+      } catch {
+        // URL parse failed — still return it, browser will handle 404
+      }
+      return url
+    }
+
     // Training stats (public)
     const [totalSessions, streak] = await Promise.all([
       prisma.workoutSession.count({
@@ -107,7 +127,7 @@ export async function GET(
         id: p.id,
         type: p.type,
         content: p.content,
-        imageUrl: p.imageUrl,
+        imageUrl: sanitizeImageUrl(p.imageUrl),
         likesCount: p._count.likes,
         commentsCount: p._count.comments,
         isLiked: myStudentId ? p.likes.some((l) => l.studentId === myStudentId) : false,

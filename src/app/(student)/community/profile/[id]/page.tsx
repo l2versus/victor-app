@@ -10,6 +10,9 @@ import {
   Loader2, Target, Send, Pencil, X, Check, Link2, Briefcase,
   ExternalLink, Plus, Camera, ChevronLeft, ChevronRight,
 } from "lucide-react"
+import { SafeImage, SafeAvatar } from "@/components/ui/safe-image"
+import { FadeIn, StaggerContainer, StaggerItem, CountUp } from "@/components/ui/motion"
+import { EmptyState } from "@/components/ui/empty-state"
 
 type ProfileData = {
   studentId: string
@@ -219,6 +222,7 @@ export default function SocialProfilePage() {
       </div>
 
       {/* Profile header — Instagram style */}
+      <FadeIn direction="up" distance={16} duration={0.5}>
       <div className="px-4 pb-4">
         <div className="flex items-center gap-5">
           {/* Avatar — story ring if has active stories */}
@@ -233,7 +237,7 @@ export default function SocialProfilePage() {
             <div className={`w-full h-full rounded-full ${profileStories.length > 0 ? "bg-[#030303] p-[2px]" : ""}`}>
               <div className={`w-full h-full rounded-full ${profileStories.length > 0 ? "" : "bg-gradient-to-br from-red-600/30 to-red-900/30 border-2 border-red-500/30"} flex items-center justify-center text-red-300 text-xl font-bold overflow-hidden`}>
                 {profile.avatar ? (
-                  <img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
+                  <SafeImage src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />
                 ) : (
                   getInitials(profile.name)
                 )}
@@ -394,6 +398,7 @@ export default function SocialProfilePage() {
           </motion.div>
         )}
       </div>
+      </FadeIn>
 
       {/* Story Highlights — permanent circles */}
       {(highlights.length > 0 || profile.isMe) && (
@@ -421,7 +426,7 @@ export default function SocialProfilePage() {
               >
                 <div className="w-16 h-16 rounded-full p-[2px] border-2 border-neutral-600">
                   <div className="w-full h-full rounded-full overflow-hidden bg-neutral-800">
-                    <img src={h.coverUrl} alt={h.title} className="w-full h-full object-cover" />
+                    <SafeImage src={h.coverUrl} alt={h.title} className="w-full h-full object-cover" />
                   </div>
                 </div>
                 <span className="text-[10px] text-neutral-400 w-16 text-center truncate">{h.title}</span>
@@ -473,7 +478,7 @@ export default function SocialProfilePage() {
               </label>
             ) : (
               <div className="relative rounded-xl overflow-hidden border border-white/[0.08]">
-                <img src={newHighlightPreview} alt="Preview" className="w-full max-h-[30dvh] object-cover" />
+                <SafeImage src={newHighlightPreview} alt="Preview" className="w-full max-h-[30dvh] object-cover" />
                 <button
                   onClick={() => { setNewHighlightFile(null); setNewHighlightPreview(null) }}
                   className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center"
@@ -540,7 +545,7 @@ export default function SocialProfilePage() {
             {/* Header */}
             <div className="absolute top-6 left-3 right-3 flex items-center gap-2 z-10">
               <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 border border-neutral-600">
-                <img src={viewingHighlight.highlight.coverUrl} alt="" className="w-full h-full object-cover" />
+                <SafeImage src={viewingHighlight.highlight.coverUrl} alt="" className="w-full h-full object-cover" />
               </div>
               <div>
                 <span className="text-white text-sm font-semibold block">{viewingHighlight.highlight.title}</span>
@@ -553,7 +558,7 @@ export default function SocialProfilePage() {
 
             {/* Media */}
             <div className="flex-1 relative">
-              <img
+              <SafeImage
                 src={viewingHighlight.highlight.items[viewingHighlight.index].imageUrl}
                 alt=""
                 className="w-full h-full object-contain"
@@ -594,34 +599,39 @@ export default function SocialProfilePage() {
 
       {/* Posts grid — Instagram 3-column */}
       {posts.length === 0 ? (
-        <div className="text-center py-16 px-4">
-          <Grid3X3 className="w-10 h-10 text-neutral-700 mx-auto mb-2" />
-          <p className="text-neutral-500 text-sm">Nenhum post ainda</p>
-        </div>
+        <FadeIn direction="up" delay={0.2}>
+          <EmptyState
+            icon={Grid3X3}
+            title="Nenhum post ainda"
+            description={profile.isMe ? "Compartilhe seu primeiro treino ou conquista!" : `${profile.name.split(" ")[0]} ainda não publicou nada.`}
+            className="mx-4 my-8"
+          />
+        </FadeIn>
       ) : (
         <>
           {/* Image grid */}
           {postsWithImage.length > 0 && (
-            <div className="grid grid-cols-3 gap-0.5">
+            <StaggerContainer className="grid grid-cols-3 gap-0.5" stagger={0.04}>
               {postsWithImage.map((post) => (
-                <button
-                  key={post.id}
-                  onClick={() => setSelectedPost(post)}
-                  className="relative aspect-square bg-neutral-900 overflow-hidden group"
-                >
-                  <img src={post.imageUrl!} alt="" className="w-full h-full object-cover" />
-                  {/* Hover overlay */}
-                  <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center gap-4">
-                    <span className="flex items-center gap-1 text-white text-xs font-semibold">
-                      <Heart className="w-4 h-4 fill-white" /> {post.likesCount}
-                    </span>
-                    <span className="flex items-center gap-1 text-white text-xs font-semibold">
-                      <MessageCircle className="w-4 h-4 fill-white" /> {post.commentsCount}
-                    </span>
-                  </div>
-                </button>
+                <StaggerItem key={post.id}>
+                  <button
+                    onClick={() => setSelectedPost(post)}
+                    className="relative aspect-square bg-neutral-900 overflow-hidden group w-full"
+                  >
+                    <SafeImage src={post.imageUrl!} alt="" className="w-full h-full object-cover" />
+                    {/* Hover overlay */}
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 group-active:opacity-100 transition-opacity flex items-center justify-center gap-4">
+                      <span className="flex items-center gap-1 text-white text-xs font-semibold">
+                        <Heart className="w-4 h-4 fill-white" /> {post.likesCount}
+                      </span>
+                      <span className="flex items-center gap-1 text-white text-xs font-semibold">
+                        <MessageCircle className="w-4 h-4 fill-white" /> {post.commentsCount}
+                      </span>
+                    </div>
+                  </button>
+                </StaggerItem>
               ))}
-            </div>
+            </StaggerContainer>
           )}
 
           {/* Text-only posts below grid */}
@@ -666,7 +676,7 @@ export default function SocialProfilePage() {
             <div className="absolute top-6 left-3 right-3 flex items-center gap-2 z-10">
               <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center text-neutral-300 text-xs font-bold">
                 {profile.avatar ? (
-                  <img src={profile.avatar} alt="" className="w-full h-full object-cover" />
+                  <SafeImage src={profile.avatar} alt="" className="w-full h-full object-cover" />
                 ) : (
                   getInitials(profile.name)
                 )}
@@ -689,7 +699,7 @@ export default function SocialProfilePage() {
                 return isVid ? (
                   <video key={url} src={url} className="w-full h-full object-contain" autoPlay playsInline loop />
                 ) : (
-                  <img src={url} alt="" className="w-full h-full object-contain" />
+                  <SafeImage src={url} alt="" className="w-full h-full object-contain" />
                 )
               })()}
 
@@ -761,9 +771,7 @@ export default function SocialProfilePage() {
                       onClick={() => { setShowFollowList(null); router.push(`/community/profile/${u.studentId}`) }}
                       className="flex items-center gap-3 flex-1 min-w-0 text-left cursor-pointer"
                     >
-                      <div className="w-11 h-11 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold shrink-0 overflow-hidden">
-                        {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
-                      </div>
+                      <SafeAvatar src={u.avatar} name={u.name} size="md" className="w-11 h-11 text-xs shrink-0" />
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-semibold text-white truncate">{u.name}</p>
                         {u.followsMe && !u.iFollow && (
@@ -819,7 +827,7 @@ export default function SocialProfilePage() {
             onClick={(e) => e.stopPropagation()}
           >
             {selectedPost.imageUrl && (
-              <img src={selectedPost.imageUrl} alt="" className="w-full max-h-[60dvh] object-cover" />
+              <SafeImage src={selectedPost.imageUrl} alt="" className="w-full max-h-[60dvh] object-cover" />
             )}
             <div className="p-4">
               <div className="flex items-center gap-3 mb-2">
@@ -847,7 +855,7 @@ export default function SocialProfilePage() {
 function StatColumn({ value, label }: { value: number; label: string }) {
   return (
     <div className="text-center">
-      <p className="text-lg font-bold text-white">{value}</p>
+      <p className="text-lg font-bold text-white"><CountUp to={value} duration={0.8} /></p>
       <p className="text-[10px] text-neutral-500">{label}</p>
     </div>
   )

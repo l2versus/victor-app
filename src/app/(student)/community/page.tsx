@@ -13,6 +13,9 @@ import {
   UserPlus, User, Mail, Search, RefreshCw, Check, ChevronUp,
 } from "lucide-react"
 import { NotificationBell } from "@/components/student/notification-bell"
+import { SafeImage, SafeAvatar } from "@/components/ui/safe-image"
+import { FadeIn } from "@/components/ui/motion"
+import { EmptyState } from "@/components/ui/empty-state"
 
 // ═══════════════════════════════════════
 // TYPES
@@ -454,7 +457,7 @@ export default function CommunityPage() {
             className="w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center"
           >
             {myAvatar ? (
-              <img src={myAvatar} alt="Meu perfil" className="w-full h-full object-cover" />
+              <SafeImage src={myAvatar} alt="Meu perfil" className="w-full h-full object-cover" />
             ) : (
               <User className="w-4 h-4 text-red-300" />
             )}
@@ -505,7 +508,7 @@ export default function CommunityPage() {
                   className="w-full flex items-center gap-3 px-4 py-3 hover:bg-white/[0.04] transition-colors"
                 >
                   <div className="w-10 h-10 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-xs font-bold shrink-0 overflow-hidden">
-                    {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
+                    {u.avatar ? <SafeImage src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
                   </div>
                   <div className="flex-1 min-w-0 text-left">
                     <p className="text-sm font-semibold text-white truncate">{u.name}</p>
@@ -557,7 +560,7 @@ export default function CommunityPage() {
               <div className="w-full h-full rounded-full bg-[#030303] p-[2px]">
                 <div className="w-full h-full rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center text-neutral-400 text-xs font-bold">
                   {group.avatar ? (
-                    <img src={group.avatar} alt="" className="w-full h-full object-cover" />
+                    <SafeImage src={group.avatar} alt="" className="w-full h-full object-cover" />
                   ) : (
                     group.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
                   )}
@@ -635,7 +638,7 @@ export default function CommunityPage() {
                   {storyFile?.type.startsWith("video/") ? (
                     <video src={storyPreview} className="w-full max-h-[40dvh] object-cover" autoPlay muted loop playsInline />
                   ) : (
-                    <img src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-cover" />
+                    <SafeImage src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-cover" />
                   )}
                   <button
                     onClick={() => { setStoryPreview(null); setStoryFile(null); setStoryProgress("") }}
@@ -806,7 +809,7 @@ export default function CommunityPage() {
                         onClick={() => router.push(`/community/profile/${u.studentId}`)}
                         className="w-14 h-14 rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 text-sm font-bold overflow-hidden"
                       >
-                        {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
+                        {u.avatar ? <SafeImage src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
                       </button>
                       <p className="text-[10px] text-neutral-300 text-center truncate w-full">{u.name.split(" ")[0]}</p>
                       <button
@@ -867,24 +870,28 @@ export default function CommunityPage() {
                 ))}
               </div>
             ) : feed.length === 0 ? (
-              <div className="text-center py-16">
-                <Camera className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
-                <p className="text-neutral-400 text-sm font-medium">Nenhum post ainda</p>
-                <p className="text-neutral-600 text-xs mt-1">Seja o primeiro a compartilhar!</p>
-              </div>
+              <FadeIn direction="up" delay={0.15}>
+                <EmptyState
+                  icon={Camera}
+                  title="Nenhum post ainda"
+                  description="Seja o primeiro a compartilhar!"
+                  className="mx-4 my-8"
+                />
+              </FadeIn>
             ) : (
               <>
-                {feed.map((post) => (
-                  <FeedCard
-                    key={post.id}
-                    post={post}
-                    onLike={() => toggleLike(post.id)}
-                    onReaction={(type) => toggleReaction(post.id, type)}
-                    onCommentAdded={() => fetchFeed()}
-                    isFollowing={!!post.studentId && followingIds.has(post.studentId)}
-                    isMe={post.studentId === myStudentId}
-                    onFollow={() => post.studentId && handleFollow(post.studentId)}
-                  />
+                {feed.map((post, i) => (
+                  <FadeIn key={post.id} direction="up" distance={12} delay={Math.min(i * 0.06, 0.3)}>
+                    <FeedCard
+                      post={post}
+                      onLike={() => toggleLike(post.id)}
+                      onReaction={(type) => toggleReaction(post.id, type)}
+                      onCommentAdded={() => fetchFeed()}
+                      isFollowing={!!post.studentId && followingIds.has(post.studentId)}
+                      isMe={post.studentId === myStudentId}
+                      onFollow={() => post.studentId && handleFollow(post.studentId)}
+                    />
+                  </FadeIn>
                 ))}
                 {/* Infinite scroll sentinel */}
                 {feedCursor && (
@@ -1226,7 +1233,7 @@ function FeedCard({
                 preload="metadata"
               />
             ) : (
-              <img src={url} alt="Post" className="w-full object-contain bg-black" />
+              <SafeImage src={url} alt="Post" className="w-full object-contain bg-black" />
             )}
             <AnimatePresence>
               {showHeartAnim && (
@@ -1321,7 +1328,7 @@ function FeedCard({
                 {post.likedBy.slice(0, 3).map((liker, i) => (
                   <div key={i} className="w-5 h-5 rounded-full border-2 border-black bg-gradient-to-br from-red-600/40 to-red-900/40 flex items-center justify-center overflow-hidden">
                     {liker.avatar ? (
-                      <img src={liker.avatar} alt="" className="w-full h-full object-cover" />
+                      <SafeImage src={liker.avatar} alt="" className="w-full h-full object-cover" />
                     ) : (
                       <span className="text-[7px] text-red-300 font-bold">{liker.name[0]}</span>
                     )}
@@ -1567,7 +1574,7 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
               {isVideo ? (
                 <video src={mediaPreview} className="w-full max-h-[300px] object-cover" autoPlay muted loop playsInline />
               ) : (
-                <img src={mediaPreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
+                <SafeImage src={mediaPreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
               )}
               <button
                 onClick={() => { setMediaPreview(null); setMediaFile(null) }}
@@ -1802,7 +1809,7 @@ function StoryViewer({
           >
             <div className="w-8 h-8 rounded-full overflow-hidden bg-neutral-800 flex items-center justify-center text-neutral-300 text-xs font-bold">
               {viewingStory.group.avatar ? (
-                <img src={viewingStory.group.avatar} alt="" className="w-full h-full object-cover" />
+                <SafeImage src={viewingStory.group.avatar} alt="" className="w-full h-full object-cover" />
               ) : (
                 viewingStory.group.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
               )}
@@ -1828,7 +1835,7 @@ function StoryViewer({
           {isVideo ? (
             <video ref={videoRef} key={currentStory.imageUrl} src={currentStory.imageUrl} className="w-full h-full object-contain" autoPlay playsInline loop />
           ) : (
-            <img src={currentStory.imageUrl} alt="" className="w-full h-full object-contain" />
+            <SafeImage src={currentStory.imageUrl} alt="" className="w-full h-full object-contain" />
           )}
 
           {/* Caption */}
@@ -2006,7 +2013,7 @@ function Avatar({ name, avatar, size = "sm", isOnline }: { name: string; avatar:
     <div className="relative shrink-0">
       <div className={`${sizeClasses[size]} rounded-full bg-gradient-to-br from-red-600/30 to-red-900/30 border border-red-500/20 flex items-center justify-center text-red-300 font-semibold overflow-hidden`}>
         {avatar ? (
-          <img src={avatar} alt={name} className="w-full h-full object-cover" />
+          <SafeImage src={avatar} alt={name} className="w-full h-full object-cover" />
         ) : (
           getInitials(name)
         )}
