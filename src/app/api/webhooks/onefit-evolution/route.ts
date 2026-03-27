@@ -1,3 +1,4 @@
+import { after } from "next/server"
 import { NextRequest, NextResponse } from "next/server"
 import { handleOnefitMessage } from "@/lib/onefit-sales-bot"
 import { sendOnefitMessage } from "@/lib/evolution-onefit"
@@ -5,69 +6,32 @@ import { sendOnefitMessage } from "@/lib/evolution-onefit"
 // POST /api/webhooks/onefit-evolution — receive Evolution API webhooks for ONEFIT B2B
 export async function POST(req: NextRequest) {
   try {
-    // ─── Webhook secret validation ───
-    const webhookSecret = process.env.ONEFIT_EVOLUTION_WEBHOOK_SECRET
-    if (webhookSecret) {
-      const apiKey = req.headers.get("apikey") || req.headers.get("authorization")?.replace("Bearer ", "")
-      if (apiKey !== webhookSecret) {
-        console.warn("[ONEFIT Evolution] Invalid webhook secret — rejecting")
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-      }
-    }
-
     const body = await req.json()
-    console.log("[ONEFIT Evolution] Webhook received:", JSON.stringify(body).slice(0, 300))
 
-    // Normalizar evento (Evolution v2 usa formatos diferentes)
+    // Normalizar evento — Evolution v2 pode enviar "messages.upsert" ou "MESSAGES_UPSERT"
     const event = (body.event || "").replace(/\./g, "_").toUpperCase()
-    console.log(`[ONEFIT Evolution] Event: ${event}`)
 
-    // ─── CONNECTION UPDATE ───
+    // Ignorar eventos que não são mensagens novas
     if (event === "CONNECTION_UPDATE") {
       const state = body.data?.state || body.state
       console.log(`[ONEFIT Evolution] Connection: ${state}`)
       return NextResponse.json({ received: true })
     }
-
-    // ─── MESSAGES UPDATE (status: delivered, read) ───
-    if (event === "MESSAGES_UPDATE") {
-      return NextResponse.json({ received: true })
-    }
-
-    // ─── MESSAGES UPSERT (new incoming message) ───
     if (event !== "MESSAGES_UPSERT") {
-      console.log(`[ONEFIT Evolution] Ignoring event: ${event}`)
       return NextResponse.json({ received: true })
     }
 
-    // Extract message data
     const data = Array.isArray(body.data) ? body.data[0] : body.data
-    if (!data) {
-      console.log("[ONEFIT Evolution] No data in webhook body")
-      return NextResponse.json({ received: true })
-    }
+    if (!data) return NextResponse.json({ received: true })
 
     const key = data.key || {}
-    const fromMe = key.fromMe === true
+    if (key.fromMe === true) return NextResponse.json({ received: true })
 
-    // Ignorar mensagens enviadas por nos
-    if (fromMe) {
-      console.log("[ONEFIT Evolution] Ignoring own message")
-      return NextResponse.json({ received: true })
-    }
-
-    // Extract phone and content
     const remoteJid = key.remoteJid || ""
-    const phone = remoteJid
-      .replace("@s.whatsapp.net", "")
-      .replace("@g.us", "")
+    if (remoteJid.includes("@g.us")) return NextResponse.json({ received: true })
 
-    // Ignorar grupos
-    if (remoteJid.includes("@g.us")) {
-      return NextResponse.json({ received: true })
-    }
+    const phone = remoteJid.replace("@s.whatsapp.net", "").replace("@g.us", "")
 
-    // Evolution API v2 (Baileys): data.message contém { conversation, extendedTextMessage, etc }
     const msgObj = data.message || {}
     const messageContent =
       msgObj.conversation ||
@@ -76,35 +40,30 @@ export async function POST(req: NextRequest) {
       ""
 
     if (!messageContent || !phone) {
-      console.log("[ONEFIT Evolution] No content or phone, raw keys:", JSON.stringify({ key, dataKeys: Object.keys(data), msgKeys: Object.keys(msgObj) }))
+      console.log("[ONEFIT Evolution] No content or phone — keys:", Object.keys(msgObj).join(","))
       return NextResponse.json({ received: true })
     }
 
-    const pushName = data.pushName || body.pushName || `WhatsApp ${phone.slice(-4)}`
+    const pushName = data.pushName || body.pushName || `WA ${phone.slice(-4)}`
+    console.log(`[ONEFIT Evolution] 📩 ${phone} (${pushName}): "${messageContent.slice(0, 80)}"`)
 
-    console.log(
-      `[ONEFIT Evolution] 📩 Message from ${phone} (${pushName}): "${messageContent.slice(0, 80)}"`
-    )
+    // ─── Responde 200 IMEDIATAMENTE para o webhook ───
+    // O processamento pesado (IA + Evolution send) acontece DEPOIS da resposta
+    after(async () => {
+      try {
+        const reply = await handleOnefitMessage(phone, messageContent, pushName)
+        console.log(`[ONEFIT Evolution] 🤖 Reply: "${reply.slice(0, 80)}"`)
+        const sent = await sendOnefitMessage(phone, reply)
+        console.log(`[ONEFIT Evolution] ${sent ? "✅ Sent" : "❌ Send failed"} → ${phone}`)
+      } catch (err) {
+        console.error("[ONEFIT Evolution] after() error:", err)
+      }
+    })
 
-    // ─── Handle message with ONEFIT sales bot ───
-    const reply = await handleOnefitMessage(phone, messageContent, pushName)
-    console.log(`[ONEFIT Evolution] 🤖 Bot reply: "${reply.slice(0, 80)}..."`)
-
-    // ─── Send reply via ONEFIT Evolution instance ───
-    const sent = await sendOnefitMessage(phone, reply)
-    if (!sent) {
-      console.error(`[ONEFIT Evolution] ❌ Failed to send reply to ${phone}`)
-    } else {
-      console.log(`[ONEFIT Evolution] ✅ Reply sent to ${phone}`)
-    }
-
-    return NextResponse.json({ received: true, processed: true, sent })
+    return NextResponse.json({ received: true })
   } catch (error) {
     console.error("[ONEFIT Evolution Webhook] ❌ Error:", error)
-    return NextResponse.json(
-      { error: "Processing failed", details: String(error) },
-      { status: 500 }
-    )
+    return NextResponse.json({ error: "Processing failed" }, { status: 500 })
   }
 }
 

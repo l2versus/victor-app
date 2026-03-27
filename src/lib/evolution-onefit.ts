@@ -47,14 +47,24 @@ export async function sendOnefitMessage(phone: string, text: string) {
   const url = `${baseUrl}/message/sendText/${ONEFIT_INSTANCE}`
   console.log(`[ONEFIT Evolution] Sending to ${formattedNumber}: ${text.slice(0, 80)}...`)
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: headers(),
-    body: JSON.stringify({
-      number: formattedNumber,
-      text,
-    }),
-  })
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 8000)
+
+  let res: Response
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: headers(),
+      body: JSON.stringify({ number: formattedNumber, text }),
+      signal: controller.signal,
+    })
+  } catch (err: unknown) {
+    const isAbort = err instanceof Error && err.name === "AbortError"
+    console.error(`[ONEFIT Evolution] Send ${isAbort ? "timed out (8s)" : "fetch error"}:`, isAbort ? "" : err)
+    return false
+  } finally {
+    clearTimeout(timeout)
+  }
 
   if (!res.ok) {
     const error = await res.text()
