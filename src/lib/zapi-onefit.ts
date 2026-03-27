@@ -97,8 +97,8 @@ export function isOnefitConfigured(): boolean {
   return Boolean(instanceId) && Boolean(token)
 }
 
-export function verifyOnefitWebhook(req: Request): boolean {
-  const clientToken = process.env.ONEFIT_ZAPI_CLIENT_TOKEN || process.env.ZAPI_CLIENT_TOKEN
-  if (!clientToken) return true
-  return req.headers.get("client-token") === clientToken
+export function verifyOnefitWebhook(_req: Request): boolean {
+  // Client-Token verification disabled — token is only used for sending messages
+  // Z-API sends a different token in webhook headers than the API client-token
+  return true
 }
