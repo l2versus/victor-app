@@ -41,7 +41,11 @@ export async function POST(req: NextRequest) {
     // Non-text: acknowledge but don't process
     if (messageType !== "text" || !messageText) {
       after(async () => {
-        await sendWhatsAppMessage(from, "Recebi! Por enquanto só consigo ler mensagens de texto pelo app. Me manda por escrito?")
+        try {
+          await sendWhatsAppMessage(from, "Recebi! Por enquanto só consigo ler mensagens de texto pelo app. Me manda por escrito?")
+        } catch (err) {
+          console.error("[WhatsApp Meta] Failed to send non-text reply:", err)
+        }
       })
       return NextResponse.json({ received: true })
     }

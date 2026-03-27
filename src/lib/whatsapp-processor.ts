@@ -45,66 +45,83 @@ export interface ProcessResult {
 // ENVIAR MENSAGEM — tenta provedor ativo, com fallback
 // ═══════════════════════════════════════════════════════════════
 
-async function sendReply(phone: string, message: string, preferredProvider: WhatsAppProvider): Promise<boolean> {
-  // Tentar Z-API primeiro (se configurada)
-  if (process.env.ZAPI_INSTANCE_ID && process.env.ZAPI_TOKEN) {
-    try {
-      const { sendTextMessage } = await import("./zapi")
-      const sent = await sendTextMessage(phone, message)
-      if (sent) {
-        console.log(`[WA Processor] Reply sent via Z-API to ${phone}`)
-        return true
-      }
-      console.warn("[WA Processor] Z-API send failed, trying fallbacks...")
-    } catch (err) {
-      console.warn("[WA Processor] Z-API error:", err)
-    }
+async function trySendZapi(phone: string, message: string): Promise<boolean> {
+  if (!process.env.ZAPI_INSTANCE_ID || !process.env.ZAPI_TOKEN) return false
+  try {
+    const { sendTextMessage } = await import("./zapi")
+    const sent = await sendTextMessage(phone, message)
+    if (sent) console.log(`[WA Processor] Reply sent via Z-API to ${phone}`)
+    return sent
+  } catch (err) {
+    console.warn("[WA Processor] Z-API error:", err)
+    return false
   }
+}
 
-  // Fallback: Evolution API
-  if (process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY) {
-    try {
-      const { sendTextMessage, INSTANCE_NAME } = await import("./evolution-api")
-      const sent = await sendTextMessage(INSTANCE_NAME, phone, message)
-      if (sent) {
-        console.log(`[WA Processor] Reply sent via Evolution to ${phone}`)
-        return true
-      }
-    } catch (err) {
-      console.warn("[WA Processor] Evolution error:", err)
-    }
+async function trySendEvolution(phone: string, message: string): Promise<boolean> {
+  if (!process.env.EVOLUTION_API_URL || !process.env.EVOLUTION_API_KEY) return false
+  try {
+    const { sendTextMessage, INSTANCE_NAME } = await import("./evolution-api")
+    const sent = await sendTextMessage(INSTANCE_NAME, phone, message)
+    if (sent) console.log(`[WA Processor] Reply sent via Evolution to ${phone}`)
+    return sent
+  } catch (err) {
+    console.warn("[WA Processor] Evolution error:", err)
+    return false
   }
+}
 
-  // Fallback: Meta Cloud API
+async function trySendMeta(phone: string, message: string): Promise<boolean> {
   const token = process.env.WHATSAPP_ACCESS_TOKEN
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
-  if (token && phoneNumberId) {
-    try {
-      const res = await fetch(
-        `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-        {
-          method: "POST",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            messaging_product: "whatsapp",
-            recipient_type: "individual",
-            to: phone,
-            type: "text",
-            text: { body: message },
-          }),
-        }
-      )
-      if (res.ok) {
-        console.log(`[WA Processor] Reply sent via Meta Cloud API to ${phone}`)
-        return true
+  if (!token || !phoneNumberId) return false
+  try {
+    const res = await fetch(
+      `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          messaging_product: "whatsapp",
+          recipient_type: "individual",
+          to: phone,
+          type: "text",
+          text: { body: message },
+        }),
       }
-      console.error("[WA Processor] Meta send failed:", await res.text())
-    } catch (err) {
-      console.error("[WA Processor] Meta error:", err)
+    )
+    if (res.ok) {
+      console.log(`[WA Processor] Reply sent via Meta Cloud API to ${phone}`)
+      return true
     }
+    console.error("[WA Processor] Meta send failed:", await res.text())
+    return false
+  } catch (err) {
+    console.error("[WA Processor] Meta error:", err)
+    return false
+  }
+}
+
+const PROVIDER_SENDERS: Record<WhatsAppProvider, (phone: string, msg: string) => Promise<boolean>> = {
+  zapi: trySendZapi,
+  evolution: trySendEvolution,
+  meta: trySendMeta,
+}
+
+async function sendReply(phone: string, message: string, preferredProvider: WhatsAppProvider): Promise<boolean> {
+  // Tenta o provedor que recebeu a mensagem primeiro, depois os outros como fallback
+  const order: WhatsAppProvider[] = [
+    preferredProvider,
+    ...( ["zapi", "evolution", "meta"] as const ).filter(p => p !== preferredProvider),
+  ]
+
+  for (const provider of order) {
+    const sent = await PROVIDER_SENDERS[provider](phone, message)
+    if (sent) return true
+    console.warn(`[WA Processor] ${provider} failed, trying next...`)
   }
 
   console.error(`[WA Processor] ALL providers failed for ${phone}`)
@@ -193,12 +210,12 @@ async function processStudentMessage(
         type: "NEW_MESSAGE",
         title: `${studentData.context.name} (WhatsApp)`,
         body: content.slice(0, 100),
-        sentVia: JSON.stringify(["app"]),
-        metadata: JSON.stringify({
+        sentVia: ["app"],
+        metadata: {
           studentId: studentData.studentId,
           channel: `whatsapp_${provider}`,
           botResponse: botResponse.slice(0, 200),
-        }),
+        },
       },
     })
   }
@@ -323,7 +340,7 @@ async function processLeadMessage(
   // ─── Lead scoring (fire-and-forget) ────────────────────────
   import("./lead-scoring")
     .then((m) => m.scoreAndNotify(leadId))
-    .catch(() => {})
+    .catch((err) => console.error("[WA Processor] Lead scoring failed:", err))
 
   return {
     success: true,

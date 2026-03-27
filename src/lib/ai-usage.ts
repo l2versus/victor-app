@@ -65,19 +65,36 @@ export async function callGroqWithTracking(opts: {
   const start = Date.now()
 
   try {
-    const res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model,
-        max_tokens: opts.maxTokens || 300,
-        temperature: opts.temperature || 0.7,
-        messages: opts.messages,
-      }),
-    })
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 12000)
+
+    let res: Response
+    try {
+      res = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: opts.maxTokens || 300,
+          temperature: opts.temperature || 0.7,
+          messages: opts.messages,
+        }),
+        signal: controller.signal,
+      })
+    } catch (fetchErr: unknown) {
+      clearTimeout(timeout)
+      const isAbort = fetchErr instanceof Error && fetchErr.name === "AbortError"
+      const latency = Date.now() - start
+      const errMsg = isAbort ? "Groq API timed out (12s)" : String(fetchErr)
+      console.error(`[AI Usage] ${errMsg} for feature=${opts.feature}`)
+      logTokenUsage(opts.feature, model, null, latency, false, errMsg)
+      return { content: "", usage: null }
+    } finally {
+      clearTimeout(timeout)
+    }
 
     const latency = Date.now() - start
 
