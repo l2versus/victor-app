@@ -1,16 +1,9 @@
+import { after } from "next/server"
 import { NextRequest, NextResponse } from "next/server"
-import { prisma } from "@/lib/prisma"
-import { BRAND } from "@/lib/branding"
-import {
-  getStudentContextByPhone,
-  generateBotResponse,
-  sendWhatsAppMessage,
-} from "@/lib/whatsapp-bot"
+import { processIncomingMessage } from "@/lib/whatsapp-processor"
+import { sendWhatsAppMessage } from "@/lib/whatsapp-bot"
 
-// ═══════════════════════════════════════════════════════════════
 // GET — WhatsApp webhook verification (Meta requires this)
-// ═══════════════════════════════════════════════════════════════
-
 export async function GET(req: NextRequest) {
   const searchParams = req.nextUrl.searchParams
   const mode = searchParams.get("hub.mode")
@@ -27,156 +20,54 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 })
 }
 
-// ═══════════════════════════════════════════════════════════════
-// POST — Receive incoming WhatsApp messages
-// ═══════════════════════════════════════════════════════════════
-
+// POST — Receive incoming WhatsApp messages (Meta Cloud API)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
 
-    // Extract message data from WhatsApp Cloud API format
     const entry = body?.entry?.[0]
     const changes = entry?.changes?.[0]
     const value = changes?.value
 
-    // Only process incoming messages (not status updates)
     if (!value?.messages?.[0]) {
       return NextResponse.json({ received: true })
     }
 
     const message = value.messages[0]
-    const from = message.from // phone number (e.g., "5585996985823")
+    const from = message.from
     const messageText = message.text?.body || ""
-    const messageType = message.type // text, image, audio, etc.
-    const messageId = message.id
-    const timestamp = message.timestamp
+    const messageType = message.type
 
-    // Only handle text messages for now
+    // Non-text: acknowledge but don't process
     if (messageType !== "text" || !messageText) {
-      // For non-text: acknowledge but don't process
-      await sendWhatsAppMessage(from, "Recebi! Por enquanto só consigo ler mensagens de texto pelo app. Me manda por escrito? 📝")
+      after(async () => {
+        await sendWhatsAppMessage(from, "Recebi! Por enquanto só consigo ler mensagens de texto pelo app. Me manda por escrito?")
+      })
       return NextResponse.json({ received: true })
     }
 
-    console.log(`[WhatsApp] Message from ${from}: ${messageText.slice(0, 50)}...`)
+    const contactName = value?.contacts?.[0]?.profile?.name || `WhatsApp ${from.slice(-4)}`
 
-    // ─── Find student by phone ───────────────────────────────
-    const studentData = await getStudentContextByPhone(from)
+    console.log(`[WhatsApp Meta] ${from} (${contactName}): ${messageText.slice(0, 80)}`)
 
-    if (!studentData) {
-      // Unknown number → auto-capture as Lead in CRM
-      const trainer = await prisma.trainerProfile.findFirst({
-          select: { id: true, userId: true },
-          orderBy: { createdAt: "asc" },
+    // Processar em background
+    after(async () => {
+      try {
+        const result = await processIncomingMessage({
+          phone: from,
+          senderName: contactName,
+          content: messageText,
+          provider: "meta",
         })
-      if (trainer) {
-        // Check if lead already exists with this phone
-        const { phoneSearchSuffix } = await import("@/lib/phone")
-        const existingLead = await prisma.lead.findFirst({
-          where: { trainerId: trainer.id, phone: { contains: phoneSearchSuffix(from) } },
-        })
-
-        if (!existingLead) {
-          // Extract name from WhatsApp profile if available
-          const contactName = value?.contacts?.[0]?.profile?.name || `WhatsApp ${from.slice(-4)}`
-
-          await prisma.lead.create({
-            data: {
-              trainerId: trainer.id,
-              name: contactName,
-              phone: from,
-              source: "WHATSAPP",
-              status: "NEW",
-              notes: `Primeira mensagem: "${messageText.slice(0, 200)}"`,
-            },
-          })
-
-          // Notify admin about new lead
-          await prisma.notification.create({
-            data: {
-              userId: trainer.userId,
-              type: "new_lead",
-              title: "Novo lead via WhatsApp!",
-              body: `${contactName} (${from}) mandou mensagem. Adicionado ao CRM automaticamente.`,
-              metadata: { phone: from, message: messageText.slice(0, 100) },
-            },
-          })
-        }
+        console.log(`[WhatsApp Meta] Result:`, JSON.stringify(result))
+      } catch (err) {
+        console.error("[WhatsApp Meta] Processing error:", err)
       }
-
-      // ─── Bot de vendas Groq (IA) pra leads ───
-      const contactName = value?.contacts?.[0]?.profile?.name || `WhatsApp ${from.slice(-4)}`
-      const { generateLeadResponse } = await import("@/lib/whatsapp-bot")
-      let reply = await generateLeadResponse(messageText, contactName, [])
-
-      // Fallback se Groq falhar
-      if (!reply) {
-        const firstName = contactName.split(" ")[0] || "amigo"
-        reply = `Oi ${firstName}! Sou o ${BRAND.trainerName}, personal trainer 💪\n\n` +
-          `Me conta: o que tu tá procurando?\n\n` +
-          `1️⃣ Emagrecer\n2️⃣ Ganhar massa\n3️⃣ Condicionamento\n4️⃣ Preços\n5️⃣ Aula experimental grátis`
-      }
-
-      await sendWhatsAppMessage(from, reply)
-      return NextResponse.json({ received: true, leadCaptured: true })
-    }
-
-    // ─── Get trainer user ID ─────────────────────────────────
-    const trainer = await prisma.trainerProfile.findFirst({
-      select: { userId: true },
-      orderBy: { createdAt: "asc" },
     })
 
-    // ─── Save incoming message to DirectMessage ──────────────
-    await prisma.directMessage.create({
-      data: {
-        senderId: studentData.userId,
-        receiverId: trainer?.userId || studentData.userId,
-        content: messageText,
-        channel: "WHATSAPP",
-      },
-    })
-
-    // ─── Generate Claude response ────────────────────────────
-    const botResponse = await generateBotResponse(messageText, studentData.context)
-
-    // ─── Send response via WhatsApp ──────────────────────────
-    await sendWhatsAppMessage(from, botResponse)
-
-    // ─── Save bot response to DirectMessage ──────────────────
-    if (trainer) {
-      await prisma.directMessage.create({
-        data: {
-          senderId: trainer.userId,
-          receiverId: studentData.userId,
-          content: botResponse,
-          channel: "WHATSAPP_BOT",
-        },
-      })
-    }
-
-    // ─── Notify trainer (BRAND.trainerFirstName) in-app ─────
-    if (trainer) {
-      await prisma.notification.create({
-        data: {
-          userId: trainer.userId,
-          type: "NEW_MESSAGE",
-          title: `💬 ${studentData.context.name} (WhatsApp)`,
-          body: messageText.slice(0, 100),
-          sentVia: JSON.stringify(["app"]),
-          metadata: JSON.stringify({
-            studentId: studentData.studentId,
-            channel: "whatsapp",
-            botResponse: botResponse.slice(0, 200),
-          }),
-        },
-      })
-    }
-
-    return NextResponse.json({ received: true, processed: true })
+    return NextResponse.json({ received: true })
   } catch (error) {
-    console.error("[WhatsApp Webhook] Error:", error)
+    console.error("[WhatsApp Meta Webhook] Error:", error)
     return NextResponse.json({ error: "Processing failed" }, { status: 500 })
   }
 }

@@ -52,7 +52,7 @@ export async function sendTextMessage(to: string, text: string): Promise<boolean
   console.log(`[Z-API] Payload: ${JSON.stringify(payload).slice(0, 200)}`)
 
   const controller = new AbortController()
-  const timeout = setTimeout(() => controller.abort(), 8000)
+  const timeout = setTimeout(() => controller.abort(), 15000)
 
   let res: Response
   try {
@@ -64,7 +64,7 @@ export async function sendTextMessage(to: string, text: string): Promise<boolean
     })
   } catch (err: unknown) {
     const isAbort = err instanceof Error && err.name === "AbortError"
-    console.error(`[Z-API] Send ${isAbort ? "timed out (8s)" : "fetch error"}:`, isAbort ? "" : err)
+    console.error(`[Z-API] Send ${isAbort ? "timed out (15s)" : "fetch error"}:`, isAbort ? "" : err)
     return false
   } finally {
     clearTimeout(timeout)

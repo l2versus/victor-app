@@ -56,7 +56,10 @@ export async function callGroqWithTracking(opts: {
   model?: string
 }): Promise<{ content: string; usage: GroqUsage | null }> {
   const apiKey = process.env.GROQ_API_KEY
-  if (!apiKey) return { content: "", usage: null }
+  if (!apiKey) {
+    console.error(`[AI Usage] GROQ_API_KEY not configured — feature=${opts.feature} will return empty`)
+    return { content: "", usage: null }
+  }
 
   const model = opts.model || process.env.GROQ_MODEL || "llama-3.3-70b-versatile"
   const start = Date.now()
@@ -80,6 +83,7 @@ export async function callGroqWithTracking(opts: {
 
     if (!res.ok) {
       const errText = await res.text()
+      console.error(`[AI Usage] Groq API failed (${res.status}) for feature=${opts.feature}:`, errText.slice(0, 200))
       logTokenUsage(opts.feature, model, null, latency, false, errText)
       return { content: "", usage: null }
     }
