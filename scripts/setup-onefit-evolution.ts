@@ -20,6 +20,8 @@ const EVOLUTION_KEY =
   process.env.ONEFIT_EVOLUTION_KEY || process.env.EVOLUTION_API_KEY
 const APP_URL =
   process.env.APP_URL || "https://victor-app-seven.vercel.app"
+const WEBHOOK_SECRET =
+  process.env.ONEFIT_EVOLUTION_WEBHOOK_SECRET || ""
 const INSTANCE_NAME = "onefit-b2b"
 
 async function setup() {
@@ -90,7 +92,9 @@ async function setup() {
           enabled: true,
           url: webhookUrl,
           webhookByEvents: false,
+          webhookBase64: false,
           events: ["MESSAGES_UPSERT", "CONNECTION_UPDATE"],
+          ...(WEBHOOK_SECRET ? { headers: { apikey: WEBHOOK_SECRET } } : {}),
         }),
       }
     )

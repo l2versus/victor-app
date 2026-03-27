@@ -1,6 +1,6 @@
 {
-  "name": "Ironberg App — Personal Trainer",
-  "short_name": "Ironberg App",
+  "name": "Victor App — Personal Trainer",
+  "short_name": "Victor App",
   "description": "Plataforma de treinos personalizados com máquinas 3D, IA e correção postural",
   "start_url": "/",
   "display": "standalone",

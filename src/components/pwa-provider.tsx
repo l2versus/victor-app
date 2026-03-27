@@ -42,6 +42,9 @@ export default function PWAProvider() {
     // Already installed as PWA
     if (isStandaloneMode()) return
 
+    // Don't show PWA install on B2B/landing pages (those are for potential ONEFIT clients, not app users)
+    if (window.location.pathname.startsWith("/b2b")) return
+
     const plat = detectPlatform()
     setPlatform(plat)
 

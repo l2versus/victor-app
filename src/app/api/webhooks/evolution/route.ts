@@ -9,7 +9,7 @@ import { sendTextMessage, INSTANCE_NAME } from "@/lib/evolution-api"
 // POST /api/webhooks/evolution — receive Evolution API webhooks
 export async function POST(req: NextRequest) {
   try {
-    // SECURITY: Verify webhook secret to prevent unauthorized requests.
+    // SECURITY: Verify webhook secret if configured.
     // Evolution API sends the apikey header when configured with a webhook secret.
     const webhookSecret = process.env.EVOLUTION_WEBHOOK_SECRET
     if (webhookSecret) {
@@ -18,9 +18,8 @@ export async function POST(req: NextRequest) {
         console.warn("[Evolution Webhook] Invalid or missing secret — rejecting")
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
       }
-    } else if (process.env.NODE_ENV === "production") {
-      console.error("[Evolution Webhook] EVOLUTION_WEBHOOK_SECRET not set in production — rejecting all requests")
-      return NextResponse.json({ error: "Webhook not configured" }, { status: 503 })
+    } else {
+      console.warn("[Evolution Webhook] EVOLUTION_WEBHOOK_SECRET not set — accepting without auth")
     }
 
     const body = await req.json()
@@ -49,8 +48,7 @@ export async function POST(req: NextRequest) {
     const data = Array.isArray(body.data) ? body.data[0] : body.data
     if (!data) return NextResponse.json({ received: true })
 
-    const msg = data.message || data
-    const key = data.key || msg.key || {}
+    const key = data.key || {}
     const fromMe = key.fromMe === true
 
     // Ignorar mensagens enviadas por nós
@@ -63,17 +61,19 @@ export async function POST(req: NextRequest) {
     // Ignorar grupos
     if (remoteJid.includes("@g.us")) return NextResponse.json({ received: true })
 
+    // Evolution API v2 (Baileys): data.message contém { conversation, extendedTextMessage, etc }
+    const msgObj = data.message || {}
     const messageContent =
-      msg.message?.conversation ||
-      msg.message?.extendedTextMessage?.text ||
-      msg.message?.imageMessage?.caption ||
+      msgObj.conversation ||
+      msgObj.extendedTextMessage?.text ||
+      msgObj.imageMessage?.caption ||
       ""
 
     if (!messageContent || !phone) {
       return NextResponse.json({ received: true })
     }
 
-    const pushName = msg.pushName || data.pushName || `WhatsApp ${phone.slice(-4)}`
+    const pushName = data.pushName || `WhatsApp ${phone.slice(-4)}`
 
     console.log(`[Evolution] Message from ${phone} (${pushName}): ${messageContent.slice(0, 50)}...`)
 

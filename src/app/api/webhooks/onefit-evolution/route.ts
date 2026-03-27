@@ -47,8 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true })
     }
 
-    const msg = data.message || data
-    const key = data.key || msg.key || {}
+    const key = data.key || {}
     const fromMe = key.fromMe === true
 
     // Ignorar mensagens enviadas por nos
@@ -68,23 +67,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ received: true })
     }
 
+    // Evolution API v2 (Baileys): data.message contém { conversation, extendedTextMessage, etc }
+    const msgObj = data.message || {}
     const messageContent =
-      data.message?.conversation ||
-      data.message?.extendedTextMessage?.text ||
-      data.message?.imageMessage?.caption ||
-      msg.message?.conversation ||
-      msg.message?.extendedTextMessage?.text ||
-      msg.conversation ||
-      msg.extendedTextMessage?.text ||
+      msgObj.conversation ||
+      msgObj.extendedTextMessage?.text ||
+      msgObj.imageMessage?.caption ||
       ""
 
     if (!messageContent || !phone) {
-      console.log("[ONEFIT Evolution] No content or phone, raw keys:", JSON.stringify({ key, hasMsg: !!msg, dataKeys: Object.keys(data) }))
+      console.log("[ONEFIT Evolution] No content or phone, raw keys:", JSON.stringify({ key, dataKeys: Object.keys(data), msgKeys: Object.keys(msgObj) }))
       return NextResponse.json({ received: true })
     }
 
-    const pushName =
-      data.pushName || msg.pushName || body.pushName || `WhatsApp ${phone.slice(-4)}`
+    const pushName = data.pushName || body.pushName || `WhatsApp ${phone.slice(-4)}`
 
     console.log(
       `[ONEFIT Evolution] 📩 Message from ${phone} (${pushName}): "${messageContent.slice(0, 80)}"`
