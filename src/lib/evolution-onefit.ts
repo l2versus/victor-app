@@ -38,22 +38,31 @@ export async function sendOnefitMessage(phone: string, text: string) {
   const { normalizePhone } = await import("./phone")
   const formattedNumber = normalizePhone(phone)
 
-  const url = `${getBaseUrl()}/message/sendText/${ONEFIT_INSTANCE}`
+  const baseUrl = getBaseUrl()
+  if (!baseUrl) {
+    console.error("[ONEFIT Evolution] ONEFIT_EVOLUTION_URL not configured")
+    return false
+  }
+
+  const url = `${baseUrl}/message/sendText/${ONEFIT_INSTANCE}`
+  console.log(`[ONEFIT Evolution] Sending to ${formattedNumber}: ${text.slice(0, 80)}...`)
+
   const res = await fetch(url, {
     method: "POST",
     headers: headers(),
     body: JSON.stringify({
       number: formattedNumber,
-      textMessage: { text },
+      text,
     }),
   })
 
   if (!res.ok) {
     const error = await res.text()
-    console.error("[ONEFIT Evolution] Send failed:", error)
+    console.error(`[ONEFIT Evolution] Send failed (${res.status}):`, error)
     return false
   }
 
+  console.log(`[ONEFIT Evolution] Message sent successfully to ${formattedNumber}`)
   return true
 }
 

@@ -5,12 +5,22 @@ import { sendOnefitMessage } from "@/lib/evolution-onefit"
 // POST /api/webhooks/onefit-evolution — receive Evolution API webhooks for ONEFIT B2B
 export async function POST(req: NextRequest) {
   try {
-    // TODO: Add webhook secret validation after initial setup is confirmed working
+    // ─── Webhook secret validation ───
+    const webhookSecret = process.env.ONEFIT_EVOLUTION_WEBHOOK_SECRET
+    if (webhookSecret) {
+      const apiKey = req.headers.get("apikey") || req.headers.get("authorization")?.replace("Bearer ", "")
+      if (apiKey !== webhookSecret) {
+        console.warn("[ONEFIT Evolution] Invalid webhook secret — rejecting")
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+      }
+    }
 
     const body = await req.json()
+    console.log("[ONEFIT Evolution] Webhook received:", JSON.stringify(body).slice(0, 300))
 
     // Normalizar evento (Evolution v2 usa formatos diferentes)
     const event = (body.event || "").replace(/\./g, "_").toUpperCase()
+    console.log(`[ONEFIT Evolution] Event: ${event}`)
 
     // ─── CONNECTION UPDATE ───
     if (event === "CONNECTION_UPDATE") {
@@ -26,19 +36,26 @@ export async function POST(req: NextRequest) {
 
     // ─── MESSAGES UPSERT (new incoming message) ───
     if (event !== "MESSAGES_UPSERT") {
+      console.log(`[ONEFIT Evolution] Ignoring event: ${event}`)
       return NextResponse.json({ received: true })
     }
 
     // Extract message data
     const data = Array.isArray(body.data) ? body.data[0] : body.data
-    if (!data) return NextResponse.json({ received: true })
+    if (!data) {
+      console.log("[ONEFIT Evolution] No data in webhook body")
+      return NextResponse.json({ received: true })
+    }
 
     const msg = data.message || data
     const key = data.key || msg.key || {}
     const fromMe = key.fromMe === true
 
     // Ignorar mensagens enviadas por nos
-    if (fromMe) return NextResponse.json({ received: true })
+    if (fromMe) {
+      console.log("[ONEFIT Evolution] Ignoring own message")
+      return NextResponse.json({ received: true })
+    }
 
     // Extract phone and content
     const remoteJid = key.remoteJid || ""
@@ -62,7 +79,7 @@ export async function POST(req: NextRequest) {
       ""
 
     if (!messageContent || !phone) {
-      console.log("[ONEFIT Evolution] No content or phone, raw data:", JSON.stringify(body).slice(0, 500))
+      console.log("[ONEFIT Evolution] No content or phone, raw keys:", JSON.stringify({ key, hasMsg: !!msg, dataKeys: Object.keys(data) }))
       return NextResponse.json({ received: true })
     }
 
@@ -70,21 +87,36 @@ export async function POST(req: NextRequest) {
       data.pushName || msg.pushName || body.pushName || `WhatsApp ${phone.slice(-4)}`
 
     console.log(
-      `[ONEFIT Evolution] Message from ${phone} (${pushName}): ${messageContent.slice(0, 50)}`
+      `[ONEFIT Evolution] 📩 Message from ${phone} (${pushName}): "${messageContent.slice(0, 80)}"`
     )
 
     // ─── Handle message with ONEFIT sales bot ───
     const reply = await handleOnefitMessage(phone, messageContent, pushName)
+    console.log(`[ONEFIT Evolution] 🤖 Bot reply: "${reply.slice(0, 80)}..."`)
 
     // ─── Send reply via ONEFIT Evolution instance ───
-    await sendOnefitMessage(phone, reply)
+    const sent = await sendOnefitMessage(phone, reply)
+    if (!sent) {
+      console.error(`[ONEFIT Evolution] ❌ Failed to send reply to ${phone}`)
+    } else {
+      console.log(`[ONEFIT Evolution] ✅ Reply sent to ${phone}`)
+    }
 
-    return NextResponse.json({ received: true, processed: true })
+    return NextResponse.json({ received: true, processed: true, sent })
   } catch (error) {
-    console.error("[ONEFIT Evolution Webhook] Error:", error)
+    console.error("[ONEFIT Evolution Webhook] ❌ Error:", error)
     return NextResponse.json(
-      { error: "Processing failed" },
+      { error: "Processing failed", details: String(error) },
       { status: 500 }
     )
   }
+}
+
+// GET — health check for testing webhook URL
+export async function GET() {
+  return NextResponse.json({
+    status: "ok",
+    handler: "onefit-evolution",
+    timestamp: new Date().toISOString(),
+  })
 }
