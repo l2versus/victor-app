@@ -1,10 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
-import {
-  createInstance, fetchInstances, getInstanceStatus,
-  getQrCode, deleteInstance, logoutInstance,
-  INSTANCE_NAME, isConfigured,
-} from "@/lib/evolution-api"
+import { getInstanceStatus, getQrCode, disconnectInstance, isConfigured } from "@/lib/zapi"
 
 // GET /api/admin/crm/integrations/whatsapp — status + QR code
 export async function GET(req: NextRequest) {
@@ -14,7 +10,7 @@ export async function GET(req: NextRequest) {
 
     if (!isConfigured()) {
       return NextResponse.json({
-        error: "Evolution API não configurada. Defina EVOLUTION_API_URL e EVOLUTION_API_KEY no .env",
+        error: "Z-API não configurada. Defina ZAPI_INSTANCE_ID e ZAPI_TOKEN no .env",
         configured: false,
       }, { status: 400 })
     }
@@ -22,56 +18,54 @@ export async function GET(req: NextRequest) {
     // ─── STATUS ───
     if (action === "status") {
       try {
-        const status = await Promise.race([
-          getInstanceStatus(INSTANCE_NAME),
+        const result = await Promise.race([
+          getInstanceStatus(),
           new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
         ])
-        return NextResponse.json({ status: status.state || "unknown", instanceName: INSTANCE_NAME })
+        const connected = result.value?.toLowerCase().includes("connect")
+        return NextResponse.json({ status: connected ? "open" : "close", raw: result.value })
       } catch {
-        return NextResponse.json({ status: "disconnected", instanceName: INSTANCE_NAME })
+        return NextResponse.json({ status: "disconnected" })
       }
     }
 
     // ─── QR CODE ───
     if (action === "qrcode") {
       try {
-        const qr = await getQrCode(INSTANCE_NAME)
-        return NextResponse.json({ qrcode: qr.base64, code: qr.code })
+        const qr = await getQrCode()
+        return NextResponse.json({ qrcode: qr.value })
       } catch {
-        return NextResponse.json({ error: "Não foi possível gerar QR code. Instância pode já estar conectada." }, { status: 400 })
+        return NextResponse.json(
+          { error: "Não foi possível gerar QR code. Instância pode já estar conectada." },
+          { status: 400 }
+        )
       }
     }
 
     // ─── DEFAULT: full info ───
-    const instances = await fetchInstances()
-    const exists = instances.find((i: { instanceName: string }) => i.instanceName === INSTANCE_NAME)
-
-    let status = "not_created"
-    if (exists) {
-      try {
-        const state = await Promise.race([
-          getInstanceStatus(INSTANCE_NAME),
-          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
-        ])
-        status = state.state || "unknown"
-      } catch {
-        status = "timeout"
-      }
+    try {
+      const result = await Promise.race([
+        getInstanceStatus(),
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+      ])
+      const connected = result.value?.toLowerCase().includes("connect")
+      return NextResponse.json({
+        configured: true,
+        provider: "zapi",
+        status: connected ? "open" : "close",
+        raw: result.value,
+        webhookUrl: `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/webhooks/zapi`,
+      })
+    } catch {
+      return NextResponse.json({ configured: true, provider: "zapi", status: "timeout" })
     }
-
-    return NextResponse.json({
-      configured: true,
-      instanceName: INSTANCE_NAME,
-      exists: Boolean(exists),
-      status,
-    })
   } catch (error) {
     console.error("GET /api/admin/crm/integrations/whatsapp error:", error)
     return NextResponse.json({ error: "Failed" }, { status: 500 })
   }
 }
 
-// POST /api/admin/crm/integrations/whatsapp — connect (create instance + get QR)
+// POST /api/admin/crm/integrations/whatsapp
 export async function POST(req: NextRequest) {
   try {
     await requireAdmin()
@@ -79,51 +73,30 @@ export async function POST(req: NextRequest) {
     const action = body.action || "connect"
 
     if (!isConfigured()) {
-      return NextResponse.json({ error: "Evolution API não configurada" }, { status: 400 })
+      return NextResponse.json({ error: "Z-API não configurada" }, { status: 400 })
     }
 
-    // ─── CONNECT (create instance + QR) ───
+    // ─── CONNECT → retorna QR code ───
     if (action === "connect") {
-      const webhookUrl = `${process.env.NEXT_PUBLIC_APP_URL || ""}/api/webhooks/evolution`
-
-      // Check if instance already exists
-      const instances = await fetchInstances()
-      const exists = instances.find((i: { instanceName: string }) => i.instanceName === INSTANCE_NAME)
-
-      if (!exists) {
-        await createInstance(INSTANCE_NAME, webhookUrl)
-      }
-
-      // Get QR code
       try {
-        const qr = await getQrCode(INSTANCE_NAME)
-        return NextResponse.json({
-          success: true,
-          qrcode: qr.base64,
-          code: qr.code,
-          instanceName: INSTANCE_NAME,
-        })
+        const status = await getInstanceStatus()
+        const connected = status.value?.toLowerCase().includes("connect")
+        if (connected) {
+          return NextResponse.json({ success: true, status: "open", message: "Instância já conectada" })
+        }
+      } catch { /* não conectado, continua para QR */ }
+
+      try {
+        const qr = await getQrCode()
+        return NextResponse.json({ success: true, qrcode: qr.value })
       } catch {
-        // Instance might already be connected
-        const status = await getInstanceStatus(INSTANCE_NAME)
-        return NextResponse.json({
-          success: true,
-          status: status.state,
-          instanceName: INSTANCE_NAME,
-          message: "Instância já conectada",
-        })
+        return NextResponse.json({ error: "Erro ao obter QR code" }, { status: 500 })
       }
     }
 
     // ─── DISCONNECT ───
     if (action === "disconnect") {
-      await logoutInstance(INSTANCE_NAME)
-      return NextResponse.json({ success: true })
-    }
-
-    // ─── DELETE ───
-    if (action === "delete") {
-      await deleteInstance(INSTANCE_NAME)
+      await disconnectInstance()
       return NextResponse.json({ success: true })
     }
 

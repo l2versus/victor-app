@@ -222,19 +222,19 @@ export async function getStudentContextByPhone(phone: string): Promise<{
 
 // ═══════════════════════════════════════════════════════════════
 // ENVIAR MENSAGEM VIA WHATSAPP
-// Tenta Evolution API primeiro, fallback pra Meta Cloud API
+// Tenta Z-API primeiro, fallback pra Meta Cloud API
 // ═══════════════════════════════════════════════════════════════
 
 export async function sendWhatsAppMessage(to: string, message: string): Promise<boolean> {
-  // Tentar Evolution API primeiro (se configurada)
-  if (process.env.EVOLUTION_API_URL && process.env.EVOLUTION_API_KEY) {
+  // Tentar Z-API primeiro (se configurada)
+  if (process.env.ZAPI_INSTANCE_ID && process.env.ZAPI_TOKEN) {
     try {
-      const { sendTextMessage, INSTANCE_NAME } = await import("./evolution-api")
-      const sent = await sendTextMessage(INSTANCE_NAME, to, message)
+      const { sendTextMessage } = await import("./zapi")
+      const sent = await sendTextMessage(to, message)
       if (sent) return true
-      console.warn("[WhatsApp] Evolution API failed, trying Meta Cloud API...")
+      console.warn("[WhatsApp] Z-API failed, trying Meta Cloud API...")
     } catch (err) {
-      console.warn("[WhatsApp] Evolution API error, fallback:", err)
+      console.warn("[WhatsApp] Z-API error, fallback:", err)
     }
   }
 
@@ -243,7 +243,7 @@ export async function sendWhatsAppMessage(to: string, message: string): Promise<
   const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
 
   if (!token || !phoneNumberId) {
-    console.warn("[WhatsApp] No provider configured (neither Evolution nor Meta Cloud API)")
+    console.warn("[WhatsApp] No provider configured (neither Z-API nor Meta Cloud API)")
     return false
   }
 

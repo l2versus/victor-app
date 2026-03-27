@@ -2161,13 +2161,13 @@ function WhatsAppConnection() {
           <div className="flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div>
-              <p className="text-sm text-amber-400 font-medium">Evolution API não configurada</p>
+              <p className="text-sm text-amber-400 font-medium">Z-API não configurada</p>
               <p className="text-xs text-neutral-400 mt-1">
                 Adicione as variáveis de ambiente no <code className="text-amber-400/60">.env</code>:
               </p>
               <pre className="mt-2 text-[10px] text-neutral-500 bg-black/30 rounded-lg p-3 font-mono">
-{`EVOLUTION_API_URL=https://seu-servidor.com
-EVOLUTION_API_KEY=sua-api-key-aqui`}
+{`ZAPI_INSTANCE_ID=seu-instance-id
+ZAPI_TOKEN=seu-token-aqui`}
               </pre>
             </div>
           </div>
