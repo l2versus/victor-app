@@ -124,9 +124,15 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: "Student not found" }, { status: 404 })
     }
 
-    // Delete student (cascade) and then user
+    // Delete student (cascade) and then user.
+    // Notification and DirectMessage reference User without onDelete: Cascade,
+    // so delete them manually before deleting the user.
     await prisma.$transaction(async (tx) => {
       await tx.student.delete({ where: { id } })
+      await tx.notification.deleteMany({ where: { userId: existing.userId } })
+      await tx.directMessage.deleteMany({
+        where: { OR: [{ senderId: existing.userId }, { receiverId: existing.userId }] },
+      })
       await tx.user.delete({ where: { id: existing.userId } })
     })
 
