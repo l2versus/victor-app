@@ -102,12 +102,13 @@ export function isConfigured(): boolean {
 }
 
 /**
- * Verifica se o webhook veio do Z-API comparando o Client-Token.
- * Configure ZAPI_CLIENT_TOKEN com o mesmo valor do painel Z-API → Security Token.
+ * Verifica se o webhook veio do Z-API.
+ * ZAPI_WEBHOOK_SECRET é opcional — se não configurado, aceita tudo.
+ * (ZAPI_CLIENT_TOKEN é usado apenas pra chamadas de API, não pra verificar webhooks)
  */
 export function verifyWebhook(req: Request): boolean {
-  const clientToken = process.env.ZAPI_CLIENT_TOKEN
-  if (!clientToken) return true // sem token configurado → aceita tudo (não recomendado em prod)
-  const incoming = req.headers.get("client-token")
-  return incoming === clientToken
+  const secret = process.env.ZAPI_WEBHOOK_SECRET
+  if (!secret) return true // sem secret → aceita tudo
+  const incoming = req.headers.get("client-token") || req.headers.get("x-webhook-secret") || ""
+  return incoming === secret
 }
