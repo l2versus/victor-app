@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server"
-import { requireMaster } from "@/lib/auth"
+import { requireAuth } from "@/lib/auth"
 import { isBotPaused, setBotPaused, getSetting, setSetting } from "@/lib/platform-settings"
 import { BOT_CONFIGS, getBotZapiCredentials } from "@/lib/bot-config"
 import { getInstanceStatus } from "@/lib/zapi"
 
 // GET /api/master/crm/whatsapp — status de todos os bots
+// Accessible by MASTER, ADMIN, NUTRITIONIST
 export async function GET() {
   try {
-    await requireMaster()
+    const session = await requireAuth()
+    if (!["MASTER", "ADMIN", "NUTRITIONIST"].includes(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
 
     // Status de cada bot
     const bots = await Promise.all(
@@ -60,9 +64,13 @@ export async function GET() {
 }
 
 // POST /api/master/crm/whatsapp — pause/resume bot
+// Accessible by MASTER, ADMIN, NUTRITIONIST
 export async function POST(req: NextRequest) {
   try {
-    await requireMaster()
+    const session = await requireAuth()
+    if (!["MASTER", "ADMIN", "NUTRITIONIST"].includes(session.role)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+    }
     const body = await req.json()
     const { botType, action } = body as { botType: string; action: "pause" | "resume" }
 

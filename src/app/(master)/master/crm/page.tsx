@@ -320,6 +320,9 @@ export default function MasterCrmPage() {
         <AutomationSection stats={stats} copied={copied} setCopied={setCopied} />
       ) : (
       <>
+      {/* ═══ BOT STATUS BANNER ═══ */}
+      <BotStatusBanner />
+
       {/* ═══ SEARCH ═══ */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }}>
         <div className="relative">
@@ -1679,6 +1682,63 @@ function InfoRow({ icon: Icon, label, value }: { icon: typeof User; label: strin
         <p className="text-[10px] text-neutral-600 uppercase tracking-wider">{label}</p>
         <p className="text-sm text-neutral-300">{value}</p>
       </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════
+// Bot Status Banner (inline in pipeline)
+// ═══════════════════════════════════════
+
+function BotStatusBanner() {
+  const [bots, setBots] = useState<{ type: string; name: string; paused: boolean }[]>([])
+  const [loading, setLoading] = useState<string | null>(null)
+
+  useEffect(() => {
+    fetch("/api/master/crm/whatsapp")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.bots) setBots(data.bots.map((b: { type: string; name: string; paused: boolean }) => ({ type: b.type, name: b.name, paused: b.paused })))
+      })
+      .catch(() => {})
+  }, [])
+
+  async function togglePause(botType: string) {
+    const bot = bots.find(b => b.type === botType)
+    if (!bot) return
+    setLoading(botType)
+    try {
+      const res = await fetch("/api/master/crm/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ botType, action: bot.paused ? "resume" : "pause" }),
+      })
+      if (res.ok) setBots(prev => prev.map(b => b.type === botType ? { ...b, paused: !b.paused } : b))
+    } catch {}
+    setLoading(null)
+  }
+
+  if (bots.length === 0) return null
+
+  return (
+    <div className="flex items-center gap-2 flex-wrap">
+      {bots.map(bot => (
+        <button
+          key={bot.type}
+          onClick={() => togglePause(bot.type)}
+          disabled={loading === bot.type}
+          className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-40 ${
+            bot.paused
+              ? "bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
+              : "bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20"
+          }`}
+        >
+          <Bot className="w-3.5 h-3.5" />
+          {bot.name}
+          {bot.paused ? <Pause className="w-3 h-3" /> : <Play className="w-3 h-3" />}
+          <span className="text-[10px] opacity-70">{bot.paused ? "Pausado" : "Ativo"}</span>
+        </button>
+      ))}
     </div>
   )
 }

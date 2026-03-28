@@ -426,6 +426,9 @@ export function CrmClient() {
       </div>
 
       {/* ═══ TEMPERATURE PILLS ═══ */}
+      {/* Bot status inline */}
+      {tab === "pipeline" && <BotPauseControl botType="victor" botName="Victor Bot" botDescription="Personal Trainer — atende leads de treino" />}
+
       {tab === "pipeline" && temperatures && (
         <div className="flex items-center gap-2">
           {/* Search */}
@@ -655,7 +658,12 @@ export function CrmClient() {
       {tab === "bots" && <CrmBots />}
 
       {/* ═══ WHATSAPP TAB ═══ */}
-      {tab === "whatsapp" && <WhatsAppConnection />}
+      {tab === "whatsapp" && (
+        <div className="space-y-6">
+          <BotPauseControl botType="victor" botName="Victor Bot" botDescription="Personal Trainer — atende leads de treino" />
+          <WhatsAppConnection />
+        </div>
+      )}
 
       {/* ═══ LEAD DETAIL MODAL ═══ */}
       {selectedLead && (
@@ -2263,6 +2271,84 @@ ZAPI_TOKEN=seu-token-aqui`}
           )}
         </div>
       )}
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════
+// Bot Pause/Resume Control
+// ═══════════════════════════════════════
+
+function BotPauseControl({ botType, botName, botDescription }: { botType: string; botName: string; botDescription: string }) {
+  const [paused, setPaused] = useState<boolean | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/master/crm/whatsapp")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.bots) {
+          const bot = data.bots.find((b: { type: string }) => b.type === botType)
+          if (bot) setPaused(bot.paused)
+        }
+      })
+      .catch(() => {})
+  }, [botType])
+
+  async function togglePause() {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/master/crm/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ botType, action: paused ? "resume" : "pause" }),
+      })
+      if (res.ok) setPaused(!paused)
+    } catch {}
+    setLoading(false)
+  }
+
+  return (
+    <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5 animate-slide-up">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className={cn(
+            "w-10 h-10 rounded-xl flex items-center justify-center",
+            paused === false ? "bg-green-500/10" : paused === true ? "bg-amber-500/10" : "bg-neutral-500/10"
+          )}>
+            <Bot className={cn("w-5 h-5", paused === false ? "text-green-400" : paused === true ? "text-amber-400" : "text-neutral-500")} />
+          </div>
+          <div>
+            <p className="text-sm font-medium text-white">{botName}</p>
+            <p className="text-[10px] text-neutral-600">{botDescription}</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {paused !== null && (
+            <>
+              <span className={cn("text-[10px] font-medium", paused ? "text-amber-400" : "text-green-400")}>
+                {paused ? "Pausado" : "Ativo"}
+              </span>
+              <button
+                onClick={togglePause}
+                disabled={loading}
+                className={cn(
+                  "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-40",
+                  paused
+                    ? "bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20"
+                    : "bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
+                )}
+              >
+                {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                {paused ? "Retomar" : "Pausar"}
+              </button>
+            </>
+          )}
+          {paused === null && (
+            <span className="text-[10px] text-neutral-600">Carregando...</span>
+          )}
+        </div>
+      </div>
     </div>
   )
 }

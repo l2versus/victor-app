@@ -9,6 +9,7 @@ import {
   Loader2, ExternalLink, Flame, Snowflake,
   Thermometer, BarChart3, TrendingUp, Target,
   Zap, RefreshCw, Tag, Search,
+  Bot, Smartphone, Pause, Play,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -128,7 +129,7 @@ const ACTION_LABELS: Record<string, string> = {
 // ===================================
 
 export function CrmClient() {
-  type CrmTab = "pipeline" | "dashboard"
+  type CrmTab = "pipeline" | "dashboard" | "whatsapp"
   const searchParams = useSearchParams()
   const router = useRouter()
   const initialTab = (searchParams.get("tab") as CrmTab) || "pipeline"
@@ -396,13 +397,15 @@ export function CrmClient() {
           {[
             { key: "pipeline" as const, label: "Pipeline", icon: Target },
             { key: "dashboard" as const, label: "Dashboard", icon: BarChart3 },
+            { key: "whatsapp" as const, label: "WhatsApp", icon: Smartphone, highlight: true },
           ].map(t => (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-medium transition-all whitespace-nowrap shrink-0",
-                tab === t.key ? "bg-white/[0.08] text-white" : "text-neutral-500 hover:text-neutral-300"
+                tab === t.key ? "bg-white/[0.08] text-white" : "text-neutral-500 hover:text-neutral-300",
+                "highlight" in t && t.highlight && tab !== t.key && "text-green-500/70 hover:text-green-400"
               )}
             >
               <t.icon className="w-3.5 h-3.5" />
@@ -413,6 +416,9 @@ export function CrmClient() {
       </div>
 
       {/* === TEMPERATURE PILLS === */}
+      {/* Bot status inline */}
+      {tab === "pipeline" && <NutriBotControl />}
+
       {tab === "pipeline" && temperatures && (
         <div className="flex items-center gap-2">
           <div className="relative flex-1 max-w-xs">
@@ -623,6 +629,11 @@ export function CrmClient() {
       {/* === DASHBOARD TAB === */}
       {tab === "dashboard" && (
         <NutriCrmDashboard data={dashboard} onRefresh={fetchDashboard} />
+      )}
+
+      {/* === WHATSAPP TAB === */}
+      {tab === "whatsapp" && (
+        <NutriBotControl />
       )}
 
       {/* === LEAD DETAIL MODAL === */}
@@ -1085,6 +1096,102 @@ function LeadDetailModal({
           >
             <Trash2 className="w-3 h-3" /> Excluir
           </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ===================================
+// Bot Pause/Resume Control — Nutri
+// ===================================
+
+function NutriBotControl() {
+  const [paused, setPaused] = useState<boolean | null>(null)
+  const [loading, setLoading] = useState(false)
+
+  useEffect(() => {
+    fetch("/api/master/crm/whatsapp")
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.bots) {
+          const bot = data.bots.find((b: { type: string }) => b.type === "nutri")
+          if (bot) setPaused(bot.paused)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  async function togglePause() {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/master/crm/whatsapp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ botType: "nutri", action: paused ? "resume" : "pause" }),
+      })
+      if (res.ok) setPaused(!paused)
+    } catch {}
+    setLoading(false)
+  }
+
+  return (
+    <div className="space-y-4 animate-slide-up">
+      <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-5">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={cn(
+              "w-10 h-10 rounded-xl flex items-center justify-center",
+              paused === false ? "bg-green-500/10" : paused === true ? "bg-amber-500/10" : "bg-neutral-500/10"
+            )}>
+              <Bot className={cn("w-5 h-5", paused === false ? "text-green-400" : paused === true ? "text-amber-400" : "text-neutral-500")} />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-white">Nutri Bot</p>
+              <p className="text-[10px] text-neutral-600">Nutricionista — atende leads de nutrição via WhatsApp</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            {paused !== null && (
+              <>
+                <span className={cn("text-[10px] font-medium", paused ? "text-amber-400" : "text-green-400")}>
+                  {paused ? "Pausado" : "Ativo"}
+                </span>
+                <button
+                  onClick={togglePause}
+                  disabled={loading}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all disabled:opacity-40",
+                    paused
+                      ? "bg-green-500/10 border border-green-500/20 text-green-400 hover:bg-green-500/20"
+                      : "bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20"
+                  )}
+                >
+                  {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                  {paused ? "Retomar" : "Pausar"}
+                </button>
+              </>
+            )}
+            {paused === null && (
+              <span className="text-[10px] text-neutral-600">Carregando...</span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-emerald-500/5 border border-emerald-500/10 p-4">
+        <p className="text-[10px] text-emerald-400/80 uppercase tracking-wider mb-2 font-semibold">Como funciona</p>
+        <div className="space-y-1.5">
+          {[
+            "Bot responde automaticamente leads novos via WhatsApp",
+            "Após 3 mensagens, transfere para atendimento humano",
+            "Quando pausado, mensagens são salvas mas sem resposta automática",
+          ].map(item => (
+            <div key={item} className="flex items-start gap-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1 shrink-0" />
+              <span className="text-[10px] text-neutral-400">{item}</span>
+            </div>
+          ))}
         </div>
       </div>
     </div>
