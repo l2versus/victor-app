@@ -54,6 +54,7 @@ export async function POST(req: NextRequest) {
           senderName,
           content: messageContent,
           provider: "zapi",
+          botType: "b2b", // instância ativa é a do Emmanuel (B2B)
         })
         console.log(`[Z-API] Result:`, JSON.stringify(result))
       } catch (err) {

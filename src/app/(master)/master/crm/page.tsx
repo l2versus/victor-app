@@ -32,6 +32,15 @@ import {
   Snowflake,
   Globe,
   Bot,
+  Smartphone,
+  Pause,
+  Play,
+  Wifi,
+  WifiOff,
+  Settings2,
+  Save,
+  RotateCcw,
+  AlertCircle,
 } from "lucide-react"
 import { formatDistanceToNow } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -157,7 +166,7 @@ export default function MasterCrmPage() {
   const [selectedLead, setSelectedLead] = useState<SaasLead | null>(null)
   const [showLostModal, setShowLostModal] = useState<string | null>(null)
   const [lostReason, setLostReason] = useState("")
-  const [activeTab, setActiveTab] = useState<"pipeline" | "automacoes">("pipeline")
+  const [activeTab, setActiveTab] = useState<"pipeline" | "automacoes" | "whatsapp">("pipeline")
   const [copied, setCopied] = useState(false)
 
   const fetchLeads = useCallback(async () => {
@@ -292,9 +301,22 @@ export default function MasterCrmPage() {
           <Zap className="w-4 h-4" />
           Automacoes
         </button>
+        <button
+          onClick={() => setActiveTab("whatsapp")}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+            activeTab === "whatsapp"
+              ? "bg-green-600/10 text-green-400 border-green-500/20"
+              : "bg-white/[0.02] text-neutral-500 border-white/[0.06] hover:border-white/[0.1]"
+          }`}
+        >
+          <Smartphone className="w-4 h-4" />
+          WhatsApp
+        </button>
       </div>
 
-      {activeTab === "automacoes" ? (
+      {activeTab === "whatsapp" ? (
+        <WhatsAppSection />
+      ) : activeTab === "automacoes" ? (
         <AutomationSection stats={stats} copied={copied} setCopied={setCopied} />
       ) : (
       <>
@@ -1091,6 +1113,326 @@ function LostReasonModal({
         </div>
       </motion.div>
     </ModalOverlay>
+  )
+}
+
+// ═══ AUTOMATION SECTION ═══
+
+// ═══ WHATSAPP SECTION ═══
+
+interface BotStatus {
+  type: string
+  name: string
+  displayName: string
+  role: string
+  configured: boolean
+  paused: boolean
+  connectionStatus: string
+  phone: string | null
+  maxBotReplies: number
+  crmTarget: string
+}
+
+function WhatsAppSection() {
+  const [bots, setBots] = useState<BotStatus[]>([])
+  const [loading, setLoading] = useState(true)
+  const [toggling, setToggling] = useState<string | null>(null)
+  const [instructions, setInstructions] = useState("")
+  const [instructionsLoading, setInstructionsLoading] = useState(true)
+  const [savingInstructions, setSavingInstructions] = useState(false)
+  const [instructionsSaved, setInstructionsSaved] = useState(false)
+
+  const fetchBots = useCallback(async () => {
+    const res = await fetch("/api/master/crm/whatsapp")
+    if (res.ok) {
+      const data = await res.json()
+      setBots(data.bots || [])
+    }
+    setLoading(false)
+  }, [])
+
+  const fetchInstructions = useCallback(async () => {
+    const res = await fetch("/api/master/crm/whatsapp/instructions?botType=b2b")
+    if (res.ok) {
+      const data = await res.json()
+      setInstructions(data.instructions || "")
+    }
+    setInstructionsLoading(false)
+  }, [])
+
+  useEffect(() => {
+    fetchBots()
+    fetchInstructions()
+  }, [fetchBots, fetchInstructions])
+
+  async function toggleBot(botType: string, currentPaused: boolean) {
+    setToggling(botType)
+    const res = await fetch("/api/master/crm/whatsapp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ botType, action: currentPaused ? "resume" : "pause" }),
+    })
+    if (res.ok) await fetchBots()
+    setToggling(null)
+  }
+
+  async function saveInstructions() {
+    setSavingInstructions(true)
+    const res = await fetch("/api/master/crm/whatsapp/instructions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ botType: "b2b", instructions }),
+    })
+    if (res.ok) {
+      setInstructionsSaved(true)
+      setTimeout(() => setInstructionsSaved(false), 3000)
+    }
+    setSavingInstructions(false)
+  }
+
+  const connectionColor: Record<string, string> = {
+    connected: "text-green-400",
+    Connected: "text-green-400",
+    disconnected: "text-red-400",
+    Disconnected: "text-red-400",
+    not_configured: "text-neutral-600",
+    error: "text-amber-400",
+  }
+
+  const connectionLabel: Record<string, string> = {
+    connected: "Conectado",
+    Connected: "Conectado",
+    disconnected: "Desconectado",
+    Disconnected: "Desconectado",
+    not_configured: "Nao Configurado",
+    error: "Erro de Conexao",
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4 }}
+      className="space-y-5"
+    >
+      {/* Header */}
+      <div className="rounded-2xl border border-green-500/10 bg-green-500/[0.02] p-6">
+        <div className="flex items-center gap-3 mb-1">
+          <div className="w-10 h-10 rounded-xl bg-green-600/10 flex items-center justify-center">
+            <Smartphone className="w-5 h-5 text-green-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Controle WhatsApp</h3>
+            <p className="text-[11px] text-neutral-500">
+              Gerencie seus bots — pause, retome, e configure instruções
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Bot Cards */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="h-48 rounded-2xl bg-white/[0.02] border border-white/[0.06] animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {bots.map((bot) => {
+            const isConnected = bot.connectionStatus === "connected" || bot.connectionStatus === "Connected"
+            const isTogglingThis = toggling === bot.type
+
+            return (
+              <motion.div
+                key={bot.type}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={`rounded-2xl border p-5 transition-all ${
+                  bot.paused
+                    ? "border-amber-500/20 bg-amber-500/[0.02]"
+                    : isConnected
+                      ? "border-green-500/20 bg-green-500/[0.02]"
+                      : "border-white/[0.06] bg-white/[0.02]"
+                }`}
+              >
+                {/* Bot Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2.5">
+                    <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                      bot.type === "b2b" ? "bg-violet-600/10" : bot.type === "nutri" ? "bg-emerald-600/10" : "bg-blue-600/10"
+                    }`}>
+                      <Bot className={`w-4 h-4 ${
+                        bot.type === "b2b" ? "text-violet-500" : bot.type === "nutri" ? "text-emerald-500" : "text-blue-500"
+                      }`} />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-white">{bot.displayName}</p>
+                      <p className="text-[10px] text-neutral-500">{bot.name}</p>
+                    </div>
+                  </div>
+                  {bot.paused && (
+                    <span className="text-[9px] font-bold text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20 uppercase tracking-wider">
+                      Pausado
+                    </span>
+                  )}
+                </div>
+
+                {/* Connection Status */}
+                <div className="flex items-center gap-2 mb-3">
+                  {isConnected ? (
+                    <Wifi className="w-3.5 h-3.5 text-green-400" />
+                  ) : (
+                    <WifiOff className="w-3.5 h-3.5 text-neutral-600" />
+                  )}
+                  <span className={`text-[11px] font-medium ${connectionColor[bot.connectionStatus] ?? "text-neutral-500"}`}>
+                    {connectionLabel[bot.connectionStatus] ?? bot.connectionStatus}
+                  </span>
+                  {bot.phone && (
+                    <span className="text-[10px] text-neutral-600 ml-auto font-mono">{bot.phone}</span>
+                  )}
+                </div>
+
+                {/* Info Row */}
+                <div className="flex items-center gap-3 text-[10px] text-neutral-500 mb-4">
+                  <span>CRM: <span className="text-neutral-400">{bot.crmTarget}</span></span>
+                  <span>Max: <span className="text-neutral-400">{bot.maxBotReplies} msgs</span></span>
+                  <span className={`${bot.configured ? "text-green-500" : "text-red-400"}`}>
+                    {bot.configured ? "Configurado" : "Sem credenciais"}
+                  </span>
+                </div>
+
+                {/* Toggle Button */}
+                {bot.configured && (
+                  <button
+                    onClick={() => toggleBot(bot.type, bot.paused)}
+                    disabled={isTogglingThis}
+                    className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all border ${
+                      bot.paused
+                        ? "bg-green-600/10 border-green-500/20 text-green-400 hover:bg-green-600/20"
+                        : "bg-amber-600/10 border-amber-500/20 text-amber-400 hover:bg-amber-600/20"
+                    } ${isTogglingThis ? "opacity-50 cursor-wait" : ""}`}
+                  >
+                    {isTogglingThis ? (
+                      <RotateCcw className="w-4 h-4 animate-spin" />
+                    ) : bot.paused ? (
+                      <Play className="w-4 h-4" />
+                    ) : (
+                      <Pause className="w-4 h-4" />
+                    )}
+                    {isTogglingThis ? "Aplicando..." : bot.paused ? "Retomar Bot" : "Pausar Bot"}
+                  </button>
+                )}
+
+                {!bot.configured && (
+                  <div className="flex items-center gap-2 text-[11px] text-neutral-600 p-2.5 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+                    <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+                    <span>Configure as env vars <code className="text-violet-400/70">{bot.type === "b2b" ? "ZAPI_B2B_*" : `ZAPI_${bot.type.toUpperCase()}_*`}</code></span>
+                  </div>
+                )}
+              </motion.div>
+            )
+          })}
+        </div>
+      )}
+
+      {/* Custom Instructions (B2B) */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-violet-600/10 flex items-center justify-center">
+            <Settings2 className="w-5 h-5 text-violet-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Instruções do Bot B2B</h3>
+            <p className="text-[11px] text-neutral-500">
+              Adicione instruções extras pro bot — ele vai seguir além do prompt padrão
+            </p>
+          </div>
+        </div>
+
+        {instructionsLoading ? (
+          <div className="h-32 rounded-xl bg-white/[0.02] animate-pulse" />
+        ) : (
+          <>
+            <textarea
+              value={instructions}
+              onChange={(e) => {
+                setInstructions(e.target.value)
+                setInstructionsSaved(false)
+              }}
+              placeholder="Ex: Não mencione preço por enquanto, apenas agende demos. Foque em academias de Fortaleza. Pergunte quantos alunos têm antes de oferecer plano..."
+              rows={6}
+              className="w-full px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-white text-sm placeholder:text-neutral-600 focus:outline-none focus:border-violet-500/30 transition-all resize-y"
+            />
+            <div className="flex items-center justify-between">
+              <p className="text-[10px] text-neutral-600">
+                Essas instruções são adicionadas ao prompt do bot Emmanuel.
+                Deixe vazio pra usar só o padrão.
+              </p>
+              <div className="flex items-center gap-2">
+                {instructionsSaved && (
+                  <span className="text-[11px] text-green-400 flex items-center gap-1">
+                    <Check className="w-3 h-3" /> Salvo
+                  </span>
+                )}
+                <button
+                  onClick={saveInstructions}
+                  disabled={savingInstructions}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 hover:bg-violet-500 text-white text-sm font-medium transition-all shadow-lg shadow-violet-600/20 disabled:opacity-50"
+                >
+                  {savingInstructions ? (
+                    <RotateCcw className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Save className="w-3.5 h-3.5" />
+                  )}
+                  Salvar
+                </button>
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* How it works */}
+      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-blue-600/10 flex items-center justify-center">
+            <MessageSquare className="w-5 h-5 text-blue-500" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Como Funciona</h3>
+            <p className="text-[11px] text-neutral-500">Fluxo de cada bot WhatsApp</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            <p className="text-[11px] text-white/80 font-medium mb-1">Quando o bot está ATIVO</p>
+            <p className="text-[10px] text-neutral-500">
+              Lead manda msg → Bot responde com IA (até {bots.find(b => b.type === "b2b")?.maxBotReplies ?? 3} msgs) → Handoff pra você → Mensagens continuam salvas no CRM
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            <p className="text-[11px] text-white/80 font-medium mb-1">Quando o bot está PAUSADO</p>
+            <p className="text-[10px] text-neutral-500">
+              Lead manda msg → Mensagem salva no CRM → Sem resposta automática → Você responde manualmente pelo WhatsApp
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            <p className="text-[11px] text-white/80 font-medium mb-1">Instruções Customizadas</p>
+            <p className="text-[10px] text-neutral-500">
+              Texto extra adicionado ao prompt do bot. Ex: focar em academias, não mencionar preço, priorizar demos, etc.
+            </p>
+          </div>
+          <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.04]">
+            <p className="text-[11px] text-white/80 font-medium mb-1">Instância Z-API</p>
+            <p className="text-[10px] text-neutral-500">
+              O bot B2B usa sua instância Z-API (85998500344). Victor e Nutri precisam de instâncias próprias pra funcionar.
+            </p>
+          </div>
+        </div>
+      </div>
+    </motion.div>
   )
 }
 

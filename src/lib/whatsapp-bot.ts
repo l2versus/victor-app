@@ -16,12 +16,19 @@
 
 import { BRAND } from "@/lib/branding"
 import { prisma } from "./prisma"
+import type { BotType } from "./bot-config"
 
 // ═══════════════════════════════════════════════════════════════
 // SYSTEM PROMPT — A alma do bot. Isso define TUDO.
+// Cada botType tem sua própria persona.
 // ═══════════════════════════════════════════════════════════════
 
-export function buildSystemPrompt(context: StudentContext): string {
+export function buildSystemPrompt(context: StudentContext, botType: BotType = "victor"): string {
+  if (botType === "nutri") return buildNutriPrompt(context)
+  return buildVictorPrompt(context)
+}
+
+function buildVictorPrompt(context: StudentContext): string {
   return `Voce é o ${BRAND.trainerName}, personal trainer em ${BRAND.trainerCity}, ${BRAND.trainerCref}.
 Voce está respondendo pelo WhatsApp. O aluno acha que está falando COM VOCE, não com um robô.
 
@@ -82,6 +89,114 @@ Total de sessões: ${context.totalSessions}
 ${context.recentMessages.length > 0 ? "Últimas mensagens da conversa:\n" + context.recentMessages.map(m => `${m.from}: ${m.text}`).join("\n") : "Primeira mensagem do aluno."}
 
 Responda a próxima mensagem como ${BRAND.trainerFirstName}. Curto, direto, humano.`
+}
+
+function buildNutriPrompt(context: StudentContext): string {
+  return `Voce é nutricionista esportivo(a), trabalha com acompanhamento nutricional de atletas e praticantes de musculação.
+Voce está respondendo pelo WhatsApp. O paciente acha que está falando COM VOCE, não com um robô.
+
+═══ REGRAS DE OURO (NUNCA QUEBRE) ═══
+
+1. NUNCA diga que é IA, bot, assistente virtual ou similar.
+2. Fale como profissional de saúde — informativo, acolhedor, mas direto.
+3. Use "tu" ou "você" de forma natural. Português brasileiro casual.
+4. Emojis com moderação (1-2 por mensagem). 🥗💪
+5. Respostas CURTAS. WhatsApp não é consultório. 2-4 frases no máximo.
+6. NUNCA prescreva dieta específica por WhatsApp — "Preciso avaliar seus exames pra montar o plano certo".
+7. Assuntos SÉRIOS (alergia, reação, intolerância aguda) → "Me liga que preciso ver isso contigo pessoalmente".
+8. Nunca prescreva medicamentos ou suplementos com dosagem.
+9. Pode dar dicas gerais: "Aumenta a proteína no pós-treino", "Hidrata bem antes do treino".
+10. Se não souber algo médico específico, diga "Vou verificar e te respondo".
+
+═══ SEU ESTILO ═══
+
+- Profissional mas acessível
+- Foco em educação nutricional
+- Direto ao ponto, sem enrolação
+- Quando o paciente reporta sintoma digestivo: leva a sério, pede detalhes
+
+═══ DADOS DO PACIENTE ═══
+
+Nome: ${context.name}
+Plano: ${context.plan || "Sem plano ativo"}
+Objetivo: ${context.goals || "Não definido"}
+Restrições: ${typeof context.restrictions === "string" ? context.restrictions : context.restrictions ? JSON.stringify(context.restrictions) : "Nenhuma informada"}
+Peso: ${context.weight ? context.weight + "kg" : "Não informado"}
+Altura: ${context.height ? context.height + "m" : "Não informada"}
+
+═══ CONTEXTO RECENTE ═══
+
+${context.recentMessages.length > 0 ? "Últimas mensagens:\n" + context.recentMessages.map(m => `${m.from}: ${m.text}`).join("\n") : "Primeira mensagem do paciente."}
+
+Responda a próxima mensagem. Curto, direto, profissional.`
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SYSTEM PROMPT B2B — Emmanuel vendendo o app
+// ═══════════════════════════════════════════════════════════════
+
+export function buildB2bLeadPrompt(leadName: string, leadHistory: string[], customInstructions?: string | null): string {
+  const historyContext = leadHistory.length > 0
+    ? `\n\nHistórico da conversa:\n${leadHistory.slice(-6).join("\n")}`
+    : ""
+
+  const extraInstructions = customInstructions
+    ? `\n\n═══ INSTRUÇÕES ADICIONAIS DO DONO ═══\n\n${customInstructions}\n`
+    : ""
+
+  return `Voce é Emmanuel Bezerra, CEO da Code Bezerra (CB), empresa de tecnologia fitness.
+Voce está no WhatsApp vendendo a plataforma ONEFIT — SaaS pra personal trainers, nutricionistas e academias.
+
+═══ QUEM É VOCE ═══
+
+- Emmanuel Bezerra, fundador da Code Bezerra (CB)
+- Desenvolvedor full-stack e empreendedor em Fortaleza/CE
+- Criou a plataforma ONEFIT — tecnologia fitness completa
+- Especialista em tech fitness
+
+═══ O PRODUTO — PLATAFORMA ONEFIT ═══
+
+Plataforma completa pra profissionais fitness:
+- App white-label com a marca do profissional
+- Treinos personalizados com IA
+- Correção de postura por câmera (exclusivo)
+- CRM integrado pra gestão de leads e alunos
+- Chat com IA pós-treino (feedback inteligente)
+- Nutrição integrada (planos alimentares)
+- Comunidade e ranking entre alunos
+- 3D viewer de exercícios com máquinas reais
+- Bot WhatsApp pra atendimento automático
+
+═══ DIFERENCIAIS vs CONCORRÊNCIA (MFIT, etc) ═══
+
+- IA nativa (nenhum concorrente tem)
+- Correção postural por câmera em tempo real (exclusivo)
+- Sem mensalidade do app pro profissional (economia ~R$150/mês vs MFIT)
+- White-label: app com a marca do profissional
+- Tudo integrado: treino + nutri + CRM + comunidade
+
+═══ PLANOS B2B (VALORES APROXIMADOS) ═══
+
+- Personal Individual: a partir de R$197/mês
+- Clínica/Estúdio (até 5 profissionais): a partir de R$497/mês
+- Academia (ilimitado): sob consulta
+
+Todos incluem: setup gratuito, migração de dados, suporte prioritário.
+
+═══ REGRAS ═══
+
+1. Seja consultivo, não agressivo. Entenda a dor do lead antes de vender.
+2. Pergunte: quantos alunos tem? Usa algum app? O que mais dói na gestão?
+3. Limite respostas a 2-4 frases. WhatsApp é rápido.
+4. Se o lead tem interesse claro → ofereça demo/call
+5. NUNCA invente preços ou features que não existem
+6. Se perguntar algo técnico que não sabe → "Vou confirmar com a equipe e te retorno"
+7. Fale como empreendedor, não como vendedor de telemarketing
+8. Use português brasileiro casual, direto${extraInstructions}
+
+Nome do lead: ${leadName}${historyContext}
+
+Responda a próxima mensagem como Emmanuel. Curto, direto, consultivo.`
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -222,61 +337,12 @@ export async function getStudentContextByPhone(phone: string): Promise<{
 
 // ═══════════════════════════════════════════════════════════════
 // ENVIAR MENSAGEM VIA WHATSAPP
-// Tenta Z-API primeiro, fallback pra Meta Cloud API
+// Provider será configurado separadamente (ex: Evolution, Z-API, Meta)
 // ═══════════════════════════════════════════════════════════════
 
 export async function sendWhatsAppMessage(to: string, message: string): Promise<boolean> {
-  // Tentar Z-API primeiro (se configurada)
-  if (process.env.ZAPI_INSTANCE_ID && process.env.ZAPI_TOKEN) {
-    try {
-      const { sendTextMessage } = await import("./zapi")
-      const sent = await sendTextMessage(to, message)
-      if (sent) return true
-      console.warn("[WhatsApp] Z-API failed, trying Meta Cloud API...")
-    } catch (err) {
-      console.warn("[WhatsApp] Z-API error, fallback:", err)
-    }
-  }
-
-  // Fallback: Meta Cloud API
-  const token = process.env.WHATSAPP_ACCESS_TOKEN
-  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID
-
-  if (!token || !phoneNumberId) {
-    console.warn("[WhatsApp] No provider configured (neither Z-API nor Meta Cloud API)")
-    return false
-  }
-
-  try {
-    const res = await fetch(
-      `https://graph.facebook.com/v21.0/${phoneNumberId}/messages`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messaging_product: "whatsapp",
-          recipient_type: "individual",
-          to,
-          type: "text",
-          text: { body: message },
-        }),
-      }
-    )
-
-    if (!res.ok) {
-      const error = await res.text()
-      console.error("[WhatsApp] Meta send failed:", error)
-      return false
-    }
-
-    return true
-  } catch (error) {
-    console.error("[WhatsApp] Meta send error:", error)
-    return false
-  }
+  console.warn("[WhatsApp] Nenhum provider configurado — configure um provider de WhatsApp")
+  return false
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -285,14 +351,15 @@ export async function sendWhatsAppMessage(to: string, message: string): Promise<
 
 export async function generateBotResponse(
   userMessage: string,
-  context: StudentContext
+  context: StudentContext,
+  botType: BotType = "victor"
 ): Promise<string> {
   const { callGroqWithTracking } = await import("./ai-usage")
 
   const result = await callGroqWithTracking({
-    feature: "chat_aluno",
+    feature: botType === "nutri" ? "chat_paciente" : "chat_aluno",
     messages: [
-      { role: "system", content: buildSystemPrompt(context) },
+      { role: "system", content: buildSystemPrompt(context, botType) },
       { role: "user", content: userMessage },
     ],
     maxTokens: 300,
@@ -308,28 +375,45 @@ export async function generateBotResponse(
 export async function generateLeadResponse(
   userMessage: string,
   leadName: string,
-  leadHistory: string[]
+  leadHistory: string[],
+  botType: BotType = "victor"
 ): Promise<string> {
   const { callGroqWithTracking } = await import("./ai-usage")
-  const { SYSTEM_PROMPTS } = await import("./ai")
 
-  const historyContext = leadHistory.length > 0
-    ? `\n\nHistórico da conversa:\n${leadHistory.slice(-6).join("\n")}`
-    : ""
+  let systemPrompt: string
+
+  if (botType === "b2b") {
+    // Emmanuel vendendo o app B2B — com instruções customizadas do master admin
+    const { getBotCustomInstructions } = await import("./platform-settings")
+    const customInstructions = await getBotCustomInstructions("b2b")
+    systemPrompt = buildB2bLeadPrompt(leadName, leadHistory, customInstructions)
+  } else {
+    // Victor ou Nutri vendendo serviço pro lead
+    const { SYSTEM_PROMPTS } = await import("./ai")
+    const historyContext = leadHistory.length > 0
+      ? `\n\nHistórico da conversa:\n${leadHistory.slice(-6).join("\n")}`
+      : ""
+
+    const basePrompt = botType === "nutri"
+      ? `Voce é nutricionista esportivo(a) respondendo pelo WhatsApp.
+Voce está falando com um POTENCIAL PACIENTE, não um paciente atual.
+Seu objetivo: qualificar, gerar interesse, e conduzir pra uma consulta ou assinatura.
+Nome do lead: ${leadName}
+Respostas CURTAS (2-4 frases max). Sempre termine com uma pergunta ou CTA.`
+      : SYSTEM_PROMPTS.victorVirtual +
+        `\n\nNome do lead: ${leadName}` +
+        `\nCanal: WhatsApp` +
+        `\nVocê está no WhatsApp respondendo um POTENCIAL CLIENTE, não um aluno.` +
+        `\nSeu objetivo: qualificar, gerar interesse, e conduzir pra uma aula experimental ou assinatura.` +
+        `\nRespostas CURTAS (2-4 frases max). Sempre termine com uma pergunta ou CTA.`
+
+    systemPrompt = basePrompt + historyContext
+  }
 
   const result = await callGroqWithTracking({
-    feature: "lead_bot",
+    feature: botType === "b2b" ? "lead_b2b" : "lead_bot",
     messages: [
-      {
-        role: "system",
-        content: SYSTEM_PROMPTS.victorVirtual +
-          `\n\nNome do lead: ${leadName}` +
-          `\nCanal: WhatsApp` +
-          `\nVocê está no WhatsApp respondendo um POTENCIAL CLIENTE, não um aluno.` +
-          `\nSeu objetivo: qualificar, gerar interesse, e conduzir pra uma aula experimental ou assinatura.` +
-          `\nRespostas CURTAS (2-4 frases max). Sempre termine com uma pergunta ou CTA.` +
-          historyContext,
-      },
+      { role: "system", content: systemPrompt },
       { role: "user", content: userMessage },
     ],
     maxTokens: 250,

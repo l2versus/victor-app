@@ -8,7 +8,7 @@ export function ActiveSessionBanner({ role }: { role: string }) {
   const router = useRouter()
   const [loggingOut, setLoggingOut] = useState(false)
 
-  const dashboardUrl = role === "ADMIN" ? "/admin/dashboard" : "/today"
+  const dashboardUrl = role === "MASTER" ? "/master/dashboard" : role === "ADMIN" ? "/admin/dashboard" : role === "NUTRITIONIST" ? "/nutri/dashboard" : "/today"
 
   async function handleLogout() {
     setLoggingOut(true)

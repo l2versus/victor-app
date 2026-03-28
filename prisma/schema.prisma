@@ -1725,3 +1725,16 @@ model SaasInvoice {
   @@index([status])
   @@index([dueDate])
 }
+
+// ═══════════════════════════════════════════════════════════════
+// PLATFORM SETTINGS — key/value pra configs do painel master
+// ═══════════════════════════════════════════════════════════════
+
+model PlatformSetting {
+  id    String @id @default(cuid())
+  key   String @unique
+  value String @db.Text
+
+  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now())
+}
