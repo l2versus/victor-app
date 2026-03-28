@@ -68,7 +68,7 @@ export const BOT_CONFIGS: Record<BotType, BotConfig> = {
     name: "Emmanuel Bot (B2B)",
     displayName: "Emmanuel",
     role: "MASTER",
-    envPrefix: "ZAPI_B2B",
+    envPrefix: "ZAPI",
     crmTarget: "saas",
     maxBotReplies: 3,
     handoffMessage: "Vou te passar pra nossa equipe pra continuar esse atendimento! 💪",
