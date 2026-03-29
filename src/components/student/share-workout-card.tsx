@@ -23,7 +23,25 @@ export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, dur
   async function captureCard(): Promise<Blob> {
     if (!cardRef.current) throw new Error("Card ref not available")
     const { default: html2canvas } = await import("html2canvas")
-    const canvas = await html2canvas(cardRef.current, { backgroundColor: "#0a0a0a", scale: 2 })
+    const canvas = await html2canvas(cardRef.current, {
+      backgroundColor: "#0a0a0a",
+      scale: 2,
+      useCORS: true,
+      // Ignore oklch/modern CSS colors that html2canvas can't parse
+      ignoreElements: (el) => el.tagName === "STYLE" && el.textContent?.includes("oklch") || false,
+      onclone: (doc) => {
+        // Force all elements to use rgb colors (html2canvas doesn't support oklch)
+        doc.querySelectorAll("*").forEach((el) => {
+          const htmlEl = el as HTMLElement
+          const computed = window.getComputedStyle(htmlEl)
+          if (computed.color) htmlEl.style.color = computed.color
+          if (computed.backgroundColor && computed.backgroundColor !== "rgba(0, 0, 0, 0)") {
+            htmlEl.style.backgroundColor = computed.backgroundColor
+          }
+          if (computed.borderColor) htmlEl.style.borderColor = computed.borderColor
+        })
+      },
+    })
     const blob = await new Promise<Blob | null>((resolve) =>
       canvas.toBlob((b) => resolve(b), "image/png")
     )

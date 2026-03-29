@@ -55,14 +55,34 @@ export async function GET() {
 
     const now = Date.now()
 
-    const live = activeSessions.map((s) => ({
-      studentId: s.studentId,
-      name: s.student.user.name,
-      avatar: s.student.user.avatar,
-      workoutName: s.template.name,
-      durationMin: Math.floor((now - s.startedAt.getTime()) / 60000),
-      startedAt: s.startedAt.toISOString(),
-    }))
+    // Auto-complete stale sessions (> 4 hours without finishing)
+    const fourHoursAgo = new Date(now - 4 * 60 * 60 * 1000)
+    const staleSessions = activeSessions.filter(s => s.startedAt < fourHoursAgo)
+    if (staleSessions.length > 0) {
+      await prisma.workoutSession.updateMany({
+        where: { id: { in: staleSessions.map(s => s.id) } },
+        data: {
+          completedAt: new Date(),
+          notes: "Finalizado automaticamente — sessão expirada (4h sem atividade)",
+        },
+      })
+    }
+
+    // Return only non-stale sessions
+    const activeLive = activeSessions.filter(s => s.startedAt >= fourHoursAgo)
+
+    const live = activeLive.map((s) => {
+      const durationMin = Math.floor((now - s.startedAt.getTime()) / 60000)
+      return {
+        studentId: s.studentId,
+        name: s.student.user.name,
+        avatar: s.student.user.avatar,
+        workoutName: s.template.name,
+        durationMin,
+        startedAt: s.startedAt.toISOString(),
+        isStale: durationMin > 120, // Flag sessions > 2h as potentially forgotten
+      }
+    })
 
     return NextResponse.json({ live })
   } catch (err) {

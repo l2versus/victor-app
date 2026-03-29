@@ -137,15 +137,15 @@ export function detectCameraView(landmarks: Point[]): ViewDetectionResult {
   const shoulderXSpread = bothShouldersVisible ? Math.abs(lShoulder.x - rShoulder.x) : 0
 
   // ── FLOOR detection: body is horizontal (push-up, plank, etc.) ──
+  // More conservative: requires both hips visible + very flat body
   if (bothShouldersVisible && isVisible(lHip) && isVisible(rHip)) {
     const midShoulder = midpoint(lShoulder, rShoulder)
     const midHip = midpoint(lHip, rHip)
     const yDiff = Math.abs(midShoulder.y - midHip.y)
-    // If shoulders and hips are at nearly the same vertical level → horizontal body
-    if (yDiff < 0.08) {
+    if (yDiff < 0.06) { // Tighter threshold (was 0.08)
       return {
         view: "floor",
-        confidence: Math.min(1, 1 - yDiff / 0.08),
+        confidence: Math.min(1, 1 - yDiff / 0.06),
         label: "Nível do Chão",
         icon: "⬇️",
         tip: "Camera no chão detectada — ideal para flexões e pranchas",
@@ -153,13 +153,25 @@ export function detectCameraView(landmarks: Point[]): ViewDetectionResult {
     }
   }
 
-  // ── SIDE detection: one shoulder much more visible ──
+  // ── SIDE detection: use Z-depth + visibility + shoulder spread ──
+  // In side view: one shoulder is much closer (different Z), OR much more visible,
+  // OR shoulders overlap on X axis (small spread)
   const visibilityDiff = Math.abs(lShoulderVis - rShoulderVis)
-  if (visibilityDiff > 0.25 || (!bothShouldersVisible && (lShoulderVis > 0.3 || rShoulderVis > 0.3))) {
+  const lShoulderZ = lShoulder?.z ?? 0
+  const rShoulderZ = rShoulder?.z ?? 0
+  const zDepthDiff = Math.abs(lShoulderZ - rShoulderZ)
+
+  // Side if: big visibility diff, OR only one shoulder visible, OR shoulders close on X + Z depth difference
+  const isSideByVisibility = visibilityDiff > 0.2
+  const isSideByOneVisible = !bothShouldersVisible && (lShoulderVis > 0.3 || rShoulderVis > 0.3)
+  const isSideByDepth = bothShouldersVisible && zDepthDiff > 0.15
+  const isSideByNarrowSpread = bothShouldersVisible && shoulderXSpread < 0.15
+
+  if (isSideByVisibility || isSideByOneVisible || isSideByDepth || isSideByNarrowSpread) {
     const dominantSide = lShoulderVis > rShoulderVis ? "esquerdo" : "direito"
     return {
       view: "side",
-      confidence: Math.min(1, visibilityDiff / 0.5 + 0.5),
+      confidence: Math.min(1, Math.max(visibilityDiff, zDepthDiff) + 0.4),
       label: "Lateral",
       icon: "👤",
       tip: `Vista lateral detectada (lado ${dominantSide})`,
@@ -168,22 +180,22 @@ export function detectCameraView(landmarks: Point[]): ViewDetectionResult {
 
   // Both shoulders visible — distinguish FRONT vs BACK
   if (bothShouldersVisible) {
-    // ── FRONT: nose visible + shoulders spread apart ──
-    if (noseVis > 0.3 && shoulderXSpread > 0.1) {
+    // ── FRONT: nose clearly visible + wide shoulder spread ──
+    if (noseVis > 0.5 && shoulderXSpread > 0.18) {
       return {
         view: "front",
-        confidence: Math.min(1, noseVis * 0.5 + shoulderXSpread * 2),
+        confidence: Math.min(1, noseVis * 0.4 + shoulderXSpread * 1.5),
         label: "Frontal",
         icon: "🧍",
         tip: "Vista frontal detectada — ideal para simetria e alinhamento",
       }
     }
 
-    // ── BACK: both shoulders visible but no face ──
-    if (noseVis < 0.2 && shoulderXSpread > 0.1) {
+    // ── BACK: both shoulders visible but face clearly NOT visible ──
+    if (noseVis < 0.15 && shoulderXSpread > 0.18) {
       return {
         view: "back",
-        confidence: Math.min(1, (1 - noseVis) * 0.5 + shoulderXSpread * 2),
+        confidence: Math.min(1, (1 - noseVis) * 0.4 + shoulderXSpread * 1.5),
         label: "Posterior",
         icon: "🔙",
         tip: "Vista posterior detectada — ideal para costas e glúteos",
@@ -191,12 +203,13 @@ export function detectCameraView(landmarks: Point[]): ViewDetectionResult {
     }
   }
 
+  // Default: assume side view (most common in gym context) rather than unknown
   return {
-    view: "unknown",
-    confidence: 0,
-    label: "Detectando...",
-    icon: "📷",
-    tip: "Posicione-se para a câmera detectar o ângulo",
+    view: "side",
+    confidence: 0.3,
+    label: "Lateral",
+    icon: "👤",
+    tip: "Posicione-se para a câmera",
   }
 }
 

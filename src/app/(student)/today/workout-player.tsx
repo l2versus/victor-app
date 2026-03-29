@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react"
 import {
   Play, ChevronLeft, ChevronRight, Check, Dumbbell, Clock,
-  Flame, Trophy, X, Zap, Plus, Pencil, Trash2, ChevronDown, Box,
+  Flame, Trophy, X, Zap, Plus, Pencil, Trash2, ChevronDown, Box, AlertTriangle,
 } from "lucide-react"
 import { useRestTimer } from "@/hooks/use-rest-timer"
 import { useSwipe } from "@/hooks/use-swipe"
@@ -1200,16 +1200,58 @@ export function WorkoutPlayer({
         </div>{/* close p-5 */}
       </div>
 
-      {/* All done button */}
-      {totalCompleted >= totalSets && (
-        <button
-          onClick={() => setPhase("summary")}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold shadow-xl shadow-emerald-600/25 active:scale-[0.98] transition-all animate-slide-up"
-        >
-          <Trophy className="w-5 h-5" />
-          Finalizar Treino
-        </button>
-      )}
+      {/* All done button — check ALL exercises individually, not just total count */}
+      {(() => {
+        const allExercisesDone = exercises.every(ex => {
+          const exSets = completedSets.get(ex.id) || []
+          return exSets.filter(s => !s.isExtra).length >= ex.sets
+        })
+        const skippedExercises = exercises.filter(ex => {
+          const exSets = completedSets.get(ex.id) || []
+          return exSets.filter(s => !s.isExtra).length < ex.sets
+        })
+
+        if (allExercisesDone) {
+          return (
+            <button
+              onClick={() => setPhase("summary")}
+              className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-emerald-600 to-emerald-700 text-white font-bold shadow-xl shadow-emerald-600/25 active:scale-[0.98] transition-all animate-slide-up"
+            >
+              <Trophy className="w-5 h-5" />
+              Finalizar Treino
+            </button>
+          )
+        }
+
+        // Show finish anyway option after some exercises are done (at least 50% of sets)
+        if (totalCompleted >= Math.ceil(totalSets * 0.5)) {
+          return (
+            <button
+              onClick={() => {
+                const names = skippedExercises.map(e => e.name).join(", ")
+                if (confirm(`Exercícios incompletos:\n\n${names}\n\nFinalizar mesmo assim? O personal será notificado.`)) {
+                  // Notify trainer about incomplete exercises
+                  fetch("/api/student/sessions/incomplete-alert", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      sessionId,
+                      skippedExercises: skippedExercises.map(e => ({ id: e.id, name: e.name, setsCompleted: (completedSets.get(e.id) || []).filter(s => !s.isExtra).length, setsPrescribed: e.sets })),
+                    }),
+                  }).catch(() => {})
+                  setPhase("summary")
+                }
+              }}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-2xl bg-amber-600/15 border border-amber-500/20 text-amber-400 text-sm font-medium active:scale-[0.98] transition-all"
+            >
+              <AlertTriangle className="w-4 h-4" />
+              Finalizar com {skippedExercises.length} exercício{skippedExercises.length > 1 ? "s" : ""} incompleto{skippedExercises.length > 1 ? "s" : ""}
+            </button>
+          )
+        }
+
+        return null
+      })()}
     </div>
   )
 }
