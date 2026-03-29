@@ -1,6 +1,6 @@
 import { generateText } from "ai"
 import { premiumModel, visionModel, SYSTEM_PROMPTS } from "@/lib/ai"
-import { requireAdmin } from "@/lib/auth"
+import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
 import { YoutubeTranscript } from "youtube-transcript"
@@ -58,9 +58,12 @@ async function analyzeImageWithVision(imageBase64: string): Promise<string> {
 }
 
 export async function POST(req: NextRequest) {
-  const session = await requireAdmin()
+  const session = await requireAuth()
+  if (session.role !== "ADMIN" && session.role !== "MASTER") {
+    return Response.json({ error: "Forbidden" }, { status: 403 })
+  }
+
   const trainer = await prisma.trainerProfile.findUnique({ where: { userId: session.userId } })
-  if (!trainer) return Response.json({ error: "Trainer not found" }, { status: 404 })
 
   const {
     studentId, objective, level, restrictions, equipment, days, focus,
@@ -107,7 +110,7 @@ export async function POST(req: NextRequest) {
 
   // Get student context if provided
   let studentContext = ""
-  if (studentId) {
+  if (studentId && trainer) {
     const student = await prisma.student.findUnique({
       where: { id: studentId, trainerId: trainer.id },
       include: {
