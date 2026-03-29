@@ -37,24 +37,27 @@ async function extractYouTubeTranscript(url: string): Promise<string | null> {
   }
 }
 
-async function analyzeImageWithVision(imageBase64: string): Promise<string> {
-  const result = await generateText({
-    model: visionModel,
-    messages: [{
-      role: "user",
-      content: [
-        {
-          type: "image",
-          image: imageBase64.startsWith("data:") ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`,
-        },
-        {
-          type: "text",
-          text: "Analise esta imagem de treino/exercicio. Extraia TODOS os detalhes: nomes dos exercicios, series, repeticoes, carga, tempo de descanso, observacoes. Se for uma tabela, extraia tudo. Se for um exercicio sendo executado, identifique qual e. Responda em portugues brasileiro, de forma objetiva.",
-        },
-      ],
-    }],
-  })
-  return result.text
+async function analyzeImageWithVision(imageBase64: string): Promise<string | null> {
+  try {
+    const imageUrl = imageBase64.startsWith("data:") ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`
+    const result = await generateText({
+      model: visionModel,
+      messages: [{
+        role: "user",
+        content: [
+          { type: "image", image: imageUrl },
+          {
+            type: "text",
+            text: "Analise esta imagem de treino/exercicio. Extraia TODOS os detalhes: nomes dos exercicios, series, repeticoes, carga, tempo de descanso, observacoes. Se for uma tabela, extraia tudo. Se for um exercicio sendo executado, identifique qual e. Responda em portugues brasileiro, de forma objetiva.",
+          },
+        ],
+      }],
+    })
+    return result.text
+  } catch (err) {
+    console.error("[generate-workout] Vision model failed:", err instanceof Error ? err.message : err)
+    return null
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -82,6 +85,7 @@ export async function POST(req: NextRequest) {
       attachments.map(async (att) => {
         if (att.type === "image") {
           const analysis = await analyzeImageWithVision(att.data)
+          if (!analysis) return null
           return `[IMAGEM ANALISADA]:\n${analysis}`
         }
         if (att.type === "youtube") {
@@ -176,19 +180,36 @@ ${exerciseNames}
 IMPORTANTE: Use APENAS exercicios da lista acima. Se nao encontrar exatamente, use o mais proximo.
 Se o contexto adicional contem um treino especifico (print, video, texto), ADAPTE-O usando os exercicios da biblioteca.`
 
-  const result = await generateText({
-    model: premiumModel,
-    system: SYSTEM_PROMPTS.workoutGenerator,
-    messages: [{ role: "user", content: prompt }],
-  })
+  let result
+  try {
+    result = await generateText({
+      model: premiumModel,
+      system: SYSTEM_PROMPTS.workoutGenerator,
+      messages: [{ role: "user", content: prompt }],
+    })
+  } catch (err) {
+    console.error("[generate-workout] AI generation failed:", err instanceof Error ? err.message : err)
+    return Response.json(
+      { error: "Servico de IA temporariamente indisponivel. Tente novamente em alguns segundos." },
+      { status: 503 }
+    )
+  }
 
   let workout
   try {
     const jsonMatch = result.text.match(/\{[\s\S]*\}/)
-    workout = jsonMatch ? JSON.parse(jsonMatch[0]) : null
+    if (!jsonMatch) {
+      console.error("[generate-workout] No JSON found in AI response:", result.text.substring(0, 300))
+      return Response.json(
+        { error: "A IA nao conseguiu gerar o treino. Tente descrever melhor o objetivo ou adicionar mais detalhes." },
+        { status: 422 }
+      )
+    }
+    workout = JSON.parse(jsonMatch[0])
   } catch {
+    console.error("[generate-workout] JSON parse failed:", result.text.substring(0, 300))
     return Response.json(
-      { error: "Failed to parse AI response", raw: result.text },
+      { error: "Erro ao processar resposta da IA. Tente novamente." },
       { status: 422 }
     )
   }
