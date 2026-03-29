@@ -595,6 +595,8 @@ function analyzeHingeFrontal(landmarks: Point[]): PostureFeedback[] {
       const ankleW = Math.abs(lKneeAnkle.x - rKneeAnkle.x)
       if (kneeW < ankleW * 0.7) {
         feedback.push({ status: "error", message: "Joelhos colapsando para dentro! Empurre para fora" })
+      } else {
+        feedback.push({ status: "correct", message: "Joelhos alinhados!" })
       }
     }
   }
@@ -708,7 +710,12 @@ function analyzeHingePattern(landmarks: Point[], opts?: {
 
 function analyzePushUpPattern(landmarks: Point[], opts?: {
   narrow?: boolean
+  forcedView?: DetectedView
 }): PostureFeedback[] {
+  // If user explicitly selected frontal view, go directly to frontal analysis
+  if (opts?.forcedView === "front" || opts?.forcedView === "back") {
+    return analyzePushUpFrontal(landmarks, opts)
+  }
   const feedback: PostureFeedback[] = []
 
   const L = LANDMARKS
@@ -1790,7 +1797,7 @@ const exerciseRules: ExerciseRule[] = [
     cameraPosition: "side",
     allowedPositions: ["side", "front"],
     positioningTip: "Camera no chao: de LADO (ve alinhamento) ou de FRENTE (ve cotovelos)",
-    analyze: (lm, fv) => analyzePushUpPattern(lm),
+    analyze: (lm, fv) => analyzePushUpPattern(lm, { forcedView: fv }),
   },
   {
     id: "incline_push_up",
@@ -1800,7 +1807,7 @@ const exerciseRules: ExerciseRule[] = [
     cameraPosition: "side",
     allowedPositions: ["side", "front"],
     positioningTip: "Camera no chao: de lado ou de frente",
-    analyze: (lm, fv) => analyzePushUpPattern(lm),
+    analyze: (lm, fv) => analyzePushUpPattern(lm, { forcedView: fv }),
   },
   {
     id: "deficit_push_up",
@@ -1810,7 +1817,7 @@ const exerciseRules: ExerciseRule[] = [
     cameraPosition: "side",
     allowedPositions: ["side", "front"],
     positioningTip: "Camera no chao: de lado ou de frente",
-    analyze: (lm, fv) => analyzePushUpPattern(lm),
+    analyze: (lm, fv) => analyzePushUpPattern(lm, { forcedView: fv }),
   },
   {
     id: "dip_chest",
@@ -2025,7 +2032,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "triceps",
     cameraPosition: "side-or-front",
     positioningTip: "Camera no chao: de frente (melhor — ve cotovelos grudados) ou de lado",
-    analyze: (lm, fv) => analyzePushUpPattern(lm, { narrow: true }),
+    analyze: (lm, fv) => analyzePushUpPattern(lm, { narrow: true, forcedView: fv }),
   },
   {
     id: "dip_tricep",
@@ -2063,7 +2070,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "core",
     cameraPosition: "side",
     positioningTip: "Camera no chao, de lado",
-    analyze: (lm, fv) => analyzePushUpPattern(lm),
+    analyze: (lm, fv) => analyzePushUpPattern(lm, { forcedView: fv }),
   },
 
   // ── FULL BODY ─────────────────────────────────────────────────────────────
@@ -2092,8 +2099,8 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "full_body",
     cameraPosition: "side",
     positioningTip: "De lado, espaco para agachar e pressionar",
-    analyze(landmarks: Point[]): PostureFeedback[] {
-      // Combo: squat + overhead press — analisar a fase atual
+    analyze(landmarks: Point[], fv?: DetectedView): PostureFeedback[] {
+      if (fv === "front" || fv === "back") return analyzeGenericFrontal(landmarks, "thruster")
       const side = bestSide(landmarks, LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP)
       const { shoulder, elbow, wrist, hip, knee, ankle } = getSideLandmarks(landmarks, side)
 
@@ -2103,13 +2110,11 @@ const exerciseRules: ExerciseRule[] = [
 
       const kneeAngle = calculateAngle(hip, knee, ankle)
 
-      // Se joelho < 130 = fase de agachamento
       if (kneeAngle < 130) {
-        return analyzeSquatPattern(landmarks)
+        return analyzeSquatPattern(landmarks, { forcedView: fv })
       }
-      // Se joelho > 130 = fase de press (ou transicao)
       if (isVisible(elbow) && isVisible(wrist)) {
-        return analyzeOverheadPressPattern(landmarks)
+        return analyzeOverheadPressPattern(landmarks, fv)
       }
       return [{ status: "correct", message: "Transicao — exploda do agachamento para o press!" }]
     },
@@ -2121,7 +2126,8 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "full_body",
     cameraPosition: "side",
     positioningTip: "De lado, espaco amplo",
-    analyze(landmarks: Point[]): PostureFeedback[] {
+    analyze(landmarks: Point[], fv?: DetectedView): PostureFeedback[] {
+      if (fv === "front" || fv === "back") return analyzeGenericFrontal(landmarks, "burpee")
       const side = bestSide(landmarks, LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP)
       const { shoulder, hip, ankle } = getSideLandmarks(landmarks, side)
 

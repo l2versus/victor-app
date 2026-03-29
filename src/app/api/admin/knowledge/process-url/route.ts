@@ -54,8 +54,6 @@ async function scrapeWebsite(url: string): Promise<string | null> {
       .replace(/<[^>]+>/g, " ")
       .replace(/&nbsp;/g, " ")
       .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
       .replace(/\s+/g, " ")
       .trim()
 
@@ -72,10 +70,13 @@ async function analyzeVideoThumbnail(videoId: string): Promise<string | null> {
   const thumbnailUrl = `https://img.youtube.com/vi/${videoId}/maxresdefault.jpg`
 
   try {
-    // Download thumbnail
+    // Download thumbnail (max 2MB)
     const imgRes = await fetch(thumbnailUrl, { signal: AbortSignal.timeout(5000) })
     if (!imgRes.ok) return null
+    const contentLength = Number(imgRes.headers.get("content-length") || 0)
+    if (contentLength > 2 * 1024 * 1024) return null
     const buffer = await imgRes.arrayBuffer()
+    if (buffer.byteLength > 2 * 1024 * 1024) return null
     const base64 = Buffer.from(buffer).toString("base64")
 
     const { text } = await generateText({
@@ -125,6 +126,21 @@ export async function POST(req: NextRequest) {
 
     if (!url?.trim()) {
       return NextResponse.json({ error: "URL é obrigatória" }, { status: 400 })
+    }
+
+    // Validate URL format and block SSRF
+    try {
+      const parsed = new URL(url)
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        return NextResponse.json({ error: "URL deve ser http:// ou https://" }, { status: 400 })
+      }
+      // Block private/internal IPs
+      const blocked = /^(localhost|127\.|10\.|192\.168\.|172\.(1[6-9]|2\d|3[01])\.|169\.254\.|0\.0\.0\.0)/i
+      if (blocked.test(parsed.hostname)) {
+        return NextResponse.json({ error: "URL inválida" }, { status: 400 })
+      }
+    } catch {
+      return NextResponse.json({ error: "URL inválida — use https://..." }, { status: 400 })
     }
 
     const videoId = extractVideoId(url)

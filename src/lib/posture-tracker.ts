@@ -212,53 +212,76 @@ export function updateTracker(
 ): TrackerState {
   const now = performance.now()
 
-  // Calculate the tracked angle
+  // Calculate the tracked angle — use best visible side
   const [i1, i2, i3] = config.anglePoints
-  const p1 = landmarks[i1]
-  const p2 = landmarks[i2]
-  const p3 = landmarks[i3]
+  // Try left side first, then right side if left not visible enough
+  let p1 = landmarks[i1], p2 = landmarks[i2], p3 = landmarks[i3]
+  const leftVis = Math.min(p1?.visibility ?? 0, p2?.visibility ?? 0, p3?.visibility ?? 0)
 
-  if (!p1 || !p2 || !p3 || (p1.visibility ?? 0) < 0.3 || (p2.visibility ?? 0) < 0.3) {
+  // Right-side equivalents (offset by 1 for paired landmarks: 11→12, 13→14, etc.)
+  const r1 = landmarks[i1 + 1], r2 = landmarks[i2 + 1], r3 = landmarks[i3 + 1]
+  const rightVis = r1 && r2 && r3 ? Math.min(r1.visibility ?? 0, r2.visibility ?? 0, r3.visibility ?? 0) : 0
+
+  // Use whichever side has better visibility
+  if (rightVis > leftVis && rightVis > 0.3) {
+    p1 = r1; p2 = r2; p3 = r3
+  }
+
+  // All 3 points must be visible
+  if (!p1 || !p2 || !p3 || (p1.visibility ?? 0) < 0.3 || (p2.visibility ?? 0) < 0.3 || (p3.visibility ?? 0) < 0.3) {
     return state
   }
 
   const angle = calculateAngle(p1, p2, p3)
+
+  // Guard against NaN from degenerate landmarks
+  if (!Number.isFinite(angle)) return state
+
   state.currentAngle = angle
 
   // Track min/max angle in current rep
   state.minAngleInRep = Math.min(state.minAngleInRep, angle)
   state.maxAngleInRep = Math.max(state.maxAngleInRep, angle)
 
-  // Phase detection
-  const prevPhase = state.phase
+  // Phase detection with minimum dwell time to prevent ghost reps
+  const MIN_PHASE_MS = 200
 
   if (angle <= config.downThreshold && state.phase !== "eccentric") {
     // Entered "down" position
     if (state.phase === "concentric" || state.phase === "idle") {
-      // Was going up or idle → now going down = eccentric started
-      if (state.phase === "concentric") {
-        state.lastConcentricMs = now - state.phaseStartTime
+      // Require minimum concentric time before accepting new eccentric
+      if (state.phase === "idle" || (now - state.phaseStartTime) >= MIN_PHASE_MS) {
+        if (state.phase === "concentric") {
+          state.lastConcentricMs = now - state.phaseStartTime
+        }
+        state.phase = "eccentric"
+        state.phaseStartTime = now
+        // Reset min/max at start of each new eccentric phase
+        state.minAngleInRep = 999
+        state.maxAngleInRep = 0
+        // Reset per-rep feedback counters
+        state.totalFeedbacks = 0
+        state.correctFeedbacks = 0
+        state.warningFeedbacks = 0
+        state.errorFeedbacks = 0
       }
-      state.phase = "eccentric"
-      state.phaseStartTime = now
     }
   } else if (angle >= config.upThreshold && state.phase === "eccentric") {
-    // Came back up from "down" position = completed a rep!
-    state.lastEccentricMs = now - state.phaseStartTime
-    state.phase = "concentric"
-    state.phaseStartTime = now
-    state.reps++
+    // Require minimum eccentric time to prevent instant ghost reps
+    if ((now - state.phaseStartTime) >= MIN_PHASE_MS) {
+      // Came back up from "down" position = completed a rep!
+      state.lastEccentricMs = now - state.phaseStartTime
+      state.phase = "concentric"
+      state.phaseStartTime = now
+      state.reps++
 
-    // Calculate score for this rep based on feedbacks collected
-    const repScore = calculateRepScore(state)
-    state.repScores.push(repScore)
-
-    // Reset min/max for next rep
-    state.minAngleInRep = 999
-    state.maxAngleInRep = 0
+      // Calculate score for this rep based on PER-REP feedbacks (reset above)
+      const repScore = calculateRepScore(state)
+      state.repScores.push(repScore)
+    }
   }
 
-  // Accumulate feedback stats
+  // Accumulate per-rep feedback stats (reset at start of each eccentric)
   for (const fb of feedbacks) {
     state.totalFeedbacks++
     if (fb.status === "correct") state.correctFeedbacks++

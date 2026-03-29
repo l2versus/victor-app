@@ -70,6 +70,7 @@ export default function KnowledgePage() {
       const data = await res.json()
       if (!res.ok) {
         alert(data.error || "Erro ao processar URL")
+        setProcessing(false)
         return
       }
       setForm({

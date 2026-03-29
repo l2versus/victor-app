@@ -149,6 +149,7 @@ export function PostureAnalyzer() {
     // Stop video recording and generate replay URL
     if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.onstop = () => {
+        if (!mountedRef.current) return // Guard against unmounted state update
         if (recordedChunksRef.current.length > 0) {
           const mime = recordedMimeRef.current
           const blob = new Blob(recordedChunksRef.current, { type: mime })
@@ -306,8 +307,9 @@ export function PostureAnalyzer() {
         if (!video || !canvas || !ctx || !poseLandmarkerRef.current) return
         const landmarker = poseLandmarkerRef.current as typeof poseLandmarker
 
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
+        // Only update dimensions when changed (avoids resetting canvas state + breaking captureStream)
+        if (canvas.width !== video.videoWidth) canvas.width = video.videoWidth
+        if (canvas.height !== video.videoHeight) canvas.height = video.videoHeight
 
         // Start recording from canvas on first frame (dimensions now set)
         if (!recorderStarted) startCanvasRecording()
@@ -459,6 +461,10 @@ export function PostureAnalyzer() {
     repConfig?: ReturnType<typeof getRepConfig>,
     landmarks?: Point[],
   ) {
+    // Reset canvas state at entry to prevent leaks between frames
+    ctx.textAlign = "left"
+    ctx.setLineDash([])
+
     // ═══ LARGE TEXT MODE — readable from 2-3 meters away ═══
     // Only show warnings and errors on canvas (correct = no distraction)
     const importantFb = fb.filter(f => f.status !== "correct")
@@ -520,8 +526,8 @@ export function PostureAnalyzer() {
     ctx.fillStyle = grad
     ctx.fillRect(0, panelHeight - 10, w, 10)
 
-    // ═══ REP COUNTER — large number at bottom-right ═══
-    if (tracker && tracker.reps >= 0) {
+    // ═══ REP COUNTER — large number at bottom-right (only after first rep) ═══
+    if (tracker && tracker.reps > 0) {
       const repFontSize = Math.max(48, w * 0.08)
       const repX = w - 16
       const repY = h - 16
@@ -586,6 +592,8 @@ export function PostureAnalyzer() {
         ctx.fillText("ROM alvo", 8, lineY - 4)
       }
     }
+    // Always reset lineDash after ROM zone block
+    ctx.setLineDash([])
 
     // Draw detected view badge at bottom-left of canvas (appears in recorded video)
     if (viewResult && viewResult.view !== "unknown") {
@@ -1215,6 +1223,7 @@ function PositioningGuide({ muscleGroup, exerciseId }: { muscleGroup: string; ex
       // Interpolate points
       const currentPts = startPts.map((sp, i) => {
         const ep = endPts[i]
+        if (!ep) return sp // Guard against mismatched array lengths
         return [
           sp[0] + (ep[0] - sp[0]) * progress,
           sp[1] + (ep[1] - sp[1]) * progress,
