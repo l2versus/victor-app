@@ -86,7 +86,9 @@ export interface ExerciseRule {
   allowedPositions?: CameraPosition[]
   /** Short positioning tip shown before starting */
   positioningTip: string
-  analyze: (landmarks: Point[]) => PostureFeedback[]
+  /** Active view selected by the user — passed to analyze() internally */
+  activeView?: DetectedView
+  analyze: (landmarks: Point[], forcedView?: DetectedView) => PostureFeedback[]
 }
 
 export interface ExerciseGroup {
@@ -94,6 +96,108 @@ export interface ExerciseGroup {
   label: string
   icon: string
   exercises: ExerciseRule[]
+}
+
+// ─── Detected camera view ───────────────────────────────────────────────────
+
+/** Result of auto-detecting the camera angle from landmark patterns */
+export type DetectedView = "side" | "front" | "back" | "floor" | "unknown"
+
+export interface ViewDetectionResult {
+  view: DetectedView
+  confidence: number // 0-1
+  label: string      // Human-readable label in PT-BR
+  icon: string       // Emoji for UI
+  tip: string        // Positioning tip
+}
+
+/**
+ * Auto-detect camera angle based on MediaPipe landmark visibility patterns.
+ *
+ * Logic:
+ * - SIDE:  One shoulder much more visible than the other (perspective depth)
+ * - FRONT: Both shoulders visible + face (nose) visible + shoulders spread wide
+ * - BACK:  Both shoulders visible + face (nose) NOT visible
+ * - FLOOR: Body nearly horizontal (shoulder-hip-ankle all at similar Y)
+ */
+export function detectCameraView(landmarks: Point[]): ViewDetectionResult {
+  const L = LANDMARKS
+  const nose = landmarks[L.NOSE]
+  const lShoulder = landmarks[L.LEFT_SHOULDER]
+  const rShoulder = landmarks[L.RIGHT_SHOULDER]
+  const lHip = landmarks[L.LEFT_HIP]
+  const rHip = landmarks[L.RIGHT_HIP]
+  const lAnkle = landmarks[L.LEFT_ANKLE]
+  const rAnkle = landmarks[L.RIGHT_ANKLE]
+
+  const lShoulderVis = lShoulder?.visibility ?? 0
+  const rShoulderVis = rShoulder?.visibility ?? 0
+  const noseVis = nose?.visibility ?? 0
+  const bothShouldersVisible = lShoulderVis > 0.3 && rShoulderVis > 0.3
+  const shoulderXSpread = bothShouldersVisible ? Math.abs(lShoulder.x - rShoulder.x) : 0
+
+  // ── FLOOR detection: body is horizontal (push-up, plank, etc.) ──
+  if (bothShouldersVisible && isVisible(lHip) && isVisible(rHip)) {
+    const midShoulder = midpoint(lShoulder, rShoulder)
+    const midHip = midpoint(lHip, rHip)
+    const yDiff = Math.abs(midShoulder.y - midHip.y)
+    // If shoulders and hips are at nearly the same vertical level → horizontal body
+    if (yDiff < 0.08) {
+      return {
+        view: "floor",
+        confidence: Math.min(1, 1 - yDiff / 0.08),
+        label: "Nível do Chão",
+        icon: "⬇️",
+        tip: "Camera no chão detectada — ideal para flexões e pranchas",
+      }
+    }
+  }
+
+  // ── SIDE detection: one shoulder much more visible ──
+  const visibilityDiff = Math.abs(lShoulderVis - rShoulderVis)
+  if (visibilityDiff > 0.25 || (!bothShouldersVisible && (lShoulderVis > 0.3 || rShoulderVis > 0.3))) {
+    const dominantSide = lShoulderVis > rShoulderVis ? "esquerdo" : "direito"
+    return {
+      view: "side",
+      confidence: Math.min(1, visibilityDiff / 0.5 + 0.5),
+      label: "Lateral",
+      icon: "👤",
+      tip: `Vista lateral detectada (lado ${dominantSide})`,
+    }
+  }
+
+  // Both shoulders visible — distinguish FRONT vs BACK
+  if (bothShouldersVisible) {
+    // ── FRONT: nose visible + shoulders spread apart ──
+    if (noseVis > 0.3 && shoulderXSpread > 0.1) {
+      return {
+        view: "front",
+        confidence: Math.min(1, noseVis * 0.5 + shoulderXSpread * 2),
+        label: "Frontal",
+        icon: "🧍",
+        tip: "Vista frontal detectada — ideal para simetria e alinhamento",
+      }
+    }
+
+    // ── BACK: both shoulders visible but no face ──
+    if (noseVis < 0.2 && shoulderXSpread > 0.1) {
+      return {
+        view: "back",
+        confidence: Math.min(1, (1 - noseVis) * 0.5 + shoulderXSpread * 2),
+        label: "Posterior",
+        icon: "🔙",
+        tip: "Vista posterior detectada — ideal para costas e glúteos",
+      }
+    }
+  }
+
+  return {
+    view: "unknown",
+    confidence: 0,
+    label: "Detectando...",
+    icon: "📷",
+    tip: "Posicione-se para a câmera detectar o ângulo",
+  }
 }
 
 // ─── Utility functions ──────────────────────────────────────────────────────
@@ -167,7 +271,16 @@ function analyzeSquatPattern(landmarks: Point[], opts?: {
   maxDepthAngle?: number
   wideStance?: boolean
   label?: string
+  /** Forced camera view — selected by the user before analysis */
+  forcedView?: DetectedView
 }): PostureFeedback[] {
+  const activeView = opts?.forcedView ?? "side"
+
+  if (activeView === "front" || activeView === "back") {
+    return analyzeSquatFrontal(landmarks, { wideStance: opts?.wideStance })
+  }
+
+  // Side view (default) — original analysis
   const feedback: PostureFeedback[] = []
   const minDepth = opts?.minDepthAngle ?? 70
   const idealMax = opts?.maxDepthAngle ?? 100
@@ -227,6 +340,87 @@ function analyzeSquatPattern(landmarks: Point[], opts?: {
   // 3. Knee tracking — joelho nao deve ultrapassar excessivamente a ponta do pe
   if (!opts?.wideStance && knee.x > ankle.x + 0.08) {
     feedback.push({ status: "warning", message: "Joelho passando da ponta do pe — empurre o quadril para tras" })
+  }
+
+  return feedback
+}
+
+/** Squat analysis from FRONTAL camera — valgus, symmetry, weight distribution */
+function analyzeSquatFrontal(landmarks: Point[], opts?: {
+  wideStance?: boolean
+}): PostureFeedback[] {
+  const feedback: PostureFeedback[] = []
+  const L = LANDMARKS
+
+  const lKnee = landmarks[L.LEFT_KNEE]
+  const rKnee = landmarks[L.RIGHT_KNEE]
+  const lAnkle = landmarks[L.LEFT_ANKLE]
+  const rAnkle = landmarks[L.RIGHT_ANKLE]
+  const lHip = landmarks[L.LEFT_HIP]
+  const rHip = landmarks[L.RIGHT_HIP]
+  const lShoulder = landmarks[L.LEFT_SHOULDER]
+  const rShoulder = landmarks[L.RIGHT_SHOULDER]
+
+  // 1. Valgo de joelho — joelhos colapsando para dentro
+  if (isVisible(lKnee) && isVisible(rKnee) && isVisible(lAnkle) && isVisible(rAnkle)) {
+    const kneeWidth = Math.abs(lKnee.x - rKnee.x)
+    const ankleWidth = Math.abs(lAnkle.x - rAnkle.x)
+    const ratio = kneeWidth / (ankleWidth || 0.01)
+
+    if (ratio < 0.7) {
+      feedback.push({
+        status: "error",
+        message: "Valgo de joelho! Empurre os joelhos para FORA",
+      })
+    } else if (ratio < 0.85) {
+      feedback.push({
+        status: "warning",
+        message: "Joelhos tendem a fechar — force para fora",
+      })
+    } else {
+      feedback.push({
+        status: "correct",
+        message: "Joelhos alinhados com os pés — perfeito!",
+      })
+    }
+  }
+
+  // 2. Simetria dos ombros — um lado não deve cair
+  if (isVisible(lShoulder) && isVisible(rShoulder)) {
+    const shoulderTilt = Math.abs(lShoulder.y - rShoulder.y)
+    if (shoulderTilt > 0.05) {
+      const ladoBaixo = lShoulder.y > rShoulder.y ? "esquerdo" : "direito"
+      feedback.push({
+        status: "warning",
+        message: `Ombro ${ladoBaixo} caindo — equilibre o peso`,
+      })
+    } else {
+      feedback.push({
+        status: "correct",
+        message: "Ombros nivelados — simetria!",
+      })
+    }
+  }
+
+  // 3. Distribuição de peso — quadril não deve deslocar para um lado
+  if (isVisible(lHip) && isVisible(rHip)) {
+    const hipTilt = Math.abs(lHip.y - rHip.y)
+    if (hipTilt > 0.04) {
+      feedback.push({
+        status: "warning",
+        message: "Quadril desnivelado — distribua o peso igualmente",
+      })
+    }
+  }
+
+  // 4. Stance width (sumo vs regular)
+  if (isVisible(lAnkle) && isVisible(rAnkle)) {
+    const ankleSpread = Math.abs(lAnkle.x - rAnkle.x)
+    if (opts?.wideStance && ankleSpread < 0.25) {
+      feedback.push({ status: "warning", message: "Abra mais os pés — sumo stance" })
+    } else if (!opts?.wideStance && ankleSpread > 0.45) {
+      feedback.push({ status: "warning", message: "Pés muito abertos para agachamento regular" })
+    }
   }
 
   return feedback
@@ -1164,8 +1358,9 @@ const exerciseRules: ExerciseRule[] = [
     nameEn: "Barbell Back Squat",
     muscleGroup: "quadriceps",
     cameraPosition: "side",
+    allowedPositions: ["side", "front", "back"],
     positioningTip: "Fique de lado para a camera, a ~2m de distancia",
-    analyze: (lm) => analyzeSquatPattern(lm),
+    analyze: (lm, fv) => analyzeSquatPattern(lm, { forcedView: fv }),
   },
   {
     id: "front_squat",
@@ -1173,8 +1368,9 @@ const exerciseRules: ExerciseRule[] = [
     nameEn: "Front Squat",
     muscleGroup: "quadriceps",
     cameraPosition: "side",
+    allowedPositions: ["side", "front"],
     positioningTip: "De lado, tronco mais ereto que o agachamento normal",
-    analyze: (lm) => analyzeSquatPattern(lm, { minDepthAngle: 75, maxDepthAngle: 100 }),
+    analyze: (lm, fv) => analyzeSquatPattern(lm, { minDepthAngle: 75, maxDepthAngle: 100, forcedView: fv }),
   },
   {
     id: "goblet_squat",
@@ -1182,8 +1378,9 @@ const exerciseRules: ExerciseRule[] = [
     nameEn: "Goblet Squat",
     muscleGroup: "quadriceps",
     cameraPosition: "side",
+    allowedPositions: ["side", "front"],
     positioningTip: "De lado, segure o peso proximo ao peito",
-    analyze: (lm) => analyzeSquatPattern(lm, { minDepthAngle: 70, maxDepthAngle: 100 }),
+    analyze: (lm, fv) => analyzeSquatPattern(lm, { minDepthAngle: 70, maxDepthAngle: 100, forcedView: fv }),
   },
   {
     id: "sumo_squat",
@@ -1191,8 +1388,9 @@ const exerciseRules: ExerciseRule[] = [
     nameEn: "Sumo Squat",
     muscleGroup: "quadriceps",
     cameraPosition: "front",
+    allowedPositions: ["front", "side"],
     positioningTip: "De frente para a camera, pes bem abertos",
-    analyze: (lm) => analyzeSquatPattern(lm, { wideStance: true, minDepthAngle: 75, maxDepthAngle: 105 }),
+    analyze: (lm, fv) => analyzeSquatPattern(lm, { wideStance: true, minDepthAngle: 75, maxDepthAngle: 105, forcedView: fv }),
   },
   {
     id: "smith_squat",
@@ -1200,8 +1398,9 @@ const exerciseRules: ExerciseRule[] = [
     nameEn: "Smith Machine Squat",
     muscleGroup: "quadriceps",
     cameraPosition: "side",
+    allowedPositions: ["side", "front"],
     positioningTip: "De lado para a camera",
-    analyze: (lm) => analyzeSquatPattern(lm),
+    analyze: (lm, fv) => analyzeSquatPattern(lm, { forcedView: fv }),
   },
   {
     id: "walking_lunge",
@@ -1306,8 +1505,9 @@ const exerciseRules: ExerciseRule[] = [
     name: "Flexao de Bracos",
     nameEn: "Push-Up",
     muscleGroup: "chest",
-    cameraPosition: "side-or-front",
-    positioningTip: "Camera no chao: de LADO (ve alinhamento) ou de FRENTE (ve cotovelos). Ambos funcionam!",
+    cameraPosition: "side",
+    allowedPositions: ["side", "front"],
+    positioningTip: "Camera no chao: de LADO (ve alinhamento) ou de FRENTE (ve cotovelos)",
     analyze: (lm) => analyzePushUpPattern(lm),
   },
   {
@@ -1315,8 +1515,9 @@ const exerciseRules: ExerciseRule[] = [
     name: "Flexao Inclinada",
     nameEn: "Incline Push-Up",
     muscleGroup: "chest",
-    cameraPosition: "side-or-front",
-    positioningTip: "Camera no chao: de lado ou de frente — ambos funcionam!",
+    cameraPosition: "side",
+    allowedPositions: ["side", "front"],
+    positioningTip: "Camera no chao: de lado ou de frente",
     analyze: (lm) => analyzePushUpPattern(lm),
   },
   {
@@ -1324,8 +1525,9 @@ const exerciseRules: ExerciseRule[] = [
     name: "Flexao Deficit",
     nameEn: "Deficit Push-Up",
     muscleGroup: "chest",
-    cameraPosition: "side-or-front",
-    positioningTip: "Camera no chao: de lado ou de frente — ambos funcionam!",
+    cameraPosition: "side",
+    allowedPositions: ["side", "front"],
+    positioningTip: "Camera no chao: de lado ou de frente",
     analyze: (lm) => analyzePushUpPattern(lm),
   },
   {

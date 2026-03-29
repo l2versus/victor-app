@@ -23,6 +23,9 @@ import {
   type ExerciseRule,
   type PostureFeedback,
   type Point,
+  type CameraPosition,
+  type ViewDetectionResult,
+  detectCameraView,
 } from "@/lib/posture-rules"
 import {
   ALL_EXERCISE_GROUPS as EXERCISE_GROUPS,
@@ -56,9 +59,13 @@ export function PostureAnalyzer() {
   const [showSelector, setShowSelector] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
-  const [showPositionGuide, setShowPositionGuide] = useState(false)
+  // showPositionGuide removed — replaced by mandatory angle selector
   const [fps, setFps] = useState(0)
   const [facingMode, setFacingMode] = useState<"user" | "environment">("user")
+  const [detectedView, setDetectedView] = useState<ViewDetectionResult | null>(null)
+  /** User-selected camera angle — REQUIRED before starting analysis */
+  const [selectedAngle, setSelectedAngle] = useState<"side" | "front" | "back" | "floor">("side")
+  const selectedAngleRef = useRef<"side" | "front" | "back" | "floor">("side")
   // ═══ Feedback history for post-exercise replay ═══
   const [feedbackHistory, setFeedbackHistory] = useState<{ time: number; items: PostureFeedback[] }[]>([])
   const [showReplay, setShowReplay] = useState(false)
@@ -89,6 +96,10 @@ export function PostureAnalyzer() {
   useEffect(() => {
     facingModeRef.current = facingMode
   }, [facingMode])
+
+  useEffect(() => {
+    selectedAngleRef.current = selectedAngle
+  }, [selectedAngle])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -138,6 +149,7 @@ export function PostureAnalyzer() {
       setState("idle")
       setFeedback([])
       setFps(0)
+      setDetectedView(null)
       // Always show replay when analysis stops — video is always recorded
       setShowReplay(true)
     }
@@ -161,7 +173,7 @@ export function PostureAnalyzer() {
   async function startAnalysis() {
     setState("loading")
     setErrorMsg("")
-    setShowPositionGuide(false)
+    // angle selector is always visible in idle state
     setFeedbackHistory([])
     setShowReplay(false)
     analysisStartRef.current = Date.now()
@@ -309,8 +321,37 @@ export function PostureAnalyzer() {
               radius: 3,
             })
 
-            // Run exercise-specific biomechanical analysis
-            const exerciseFeedback = selectedExerciseRef.current.analyze(landmarks)
+            // Detect camera angle from landmark patterns (validates user's choice)
+            const viewResult = detectCameraView(landmarks)
+            if (mountedRef.current && viewResult.confidence > 0.3) {
+              setDetectedView(viewResult)
+            }
+
+            // Warn if detected angle doesn't match selected angle
+            const userAngle = selectedAngleRef.current
+            const detAngle = viewResult.view
+            const angleMismatch =
+              viewResult.confidence > 0.5 &&
+              detAngle !== "unknown" &&
+              detAngle !== userAngle &&
+              // floor is compatible with side (floor exercises seen from side)
+              !(userAngle === "side" && detAngle === "floor") &&
+              !(userAngle === "floor" && detAngle === "side")
+
+            // Run exercise-specific biomechanical analysis (pass user-selected angle)
+            let exerciseFeedback = selectedExerciseRef.current.analyze(landmarks, selectedAngleRef.current)
+
+            // Prepend mismatch warning if camera doesn't match selection
+            if (angleMismatch) {
+              const viewLabels: Record<string, string> = { side: "Lateral", front: "Frontal", back: "Posterior", floor: "Chão" }
+              exerciseFeedback = [
+                {
+                  status: "warning" as const,
+                  message: `Você selecionou ${viewLabels[userAngle] || userAngle} mas a câmera parece estar em ${viewResult.label}`,
+                },
+                ...exerciseFeedback,
+              ]
+            }
             if (mountedRef.current) {
               setFeedback(exerciseFeedback)
               // Record errors/warnings for post-exercise replay (every 2s to save memory)
@@ -325,8 +366,8 @@ export function PostureAnalyzer() {
               }
             }
 
-            // Draw feedback on canvas overlay
-            drawFeedbackOnCanvas(ctx, exerciseFeedback, canvas.width, canvas.height)
+            // Draw feedback + detected view on canvas overlay
+            drawFeedbackOnCanvas(ctx, exerciseFeedback, canvas.width, canvas.height, viewResult)
           } else {
             if (mountedRef.current) {
               setFeedback([{
@@ -363,6 +404,7 @@ export function PostureAnalyzer() {
     fb: PostureFeedback[],
     w: number,
     h: number,
+    viewResult?: ViewDetectionResult,
   ) {
     // ═══ LARGE TEXT MODE — readable from 2-3 meters away ═══
     // Only show warnings and errors on canvas (correct = no distraction)
@@ -424,6 +466,37 @@ export function PostureAnalyzer() {
     grad.addColorStop(1, "rgba(0, 0, 0, 0)")
     ctx.fillStyle = grad
     ctx.fillRect(0, panelHeight - 10, w, 10)
+
+    // Draw detected view badge at bottom-left of canvas (appears in recorded video)
+    if (viewResult && viewResult.view !== "unknown") {
+      const badgeFontSize = Math.max(16, w * 0.028)
+      const badgeText = `${viewResult.icon} ${viewResult.label}`
+      const badgePadX = 10
+      const badgePadY = 6
+      ctx.font = `bold ${badgeFontSize}px -apple-system, sans-serif`
+      const textWidth = ctx.measureText(badgeText).width
+
+      const bx = 8
+      const by = h - badgeFontSize - badgePadY * 2 - 8
+
+      // Badge background color based on view type
+      const bgColors: Record<string, string> = {
+        side: "rgba(37, 99, 235, 0.75)",
+        front: "rgba(147, 51, 234, 0.75)",
+        back: "rgba(22, 163, 74, 0.75)",
+        floor: "rgba(217, 119, 6, 0.75)",
+      }
+      ctx.fillStyle = bgColors[viewResult.view] || "rgba(0, 0, 0, 0.6)"
+      ctx.beginPath()
+      const bw = textWidth + badgePadX * 2
+      const bh = badgeFontSize + badgePadY * 2
+      const br = 6
+      ctx.roundRect(bx, by, bw, bh, br)
+      ctx.fill()
+
+      ctx.fillStyle = "#ffffff"
+      ctx.fillText(badgeText, bx + badgePadX, by + badgePadY + badgeFontSize * 0.85)
+    }
   }
 
   // ─── Filtered exercise groups for search ────────────────────────────────
@@ -509,8 +582,11 @@ export function PostureAnalyzer() {
                             setShowSelector(false)
                             setSearchQuery("")
                             setExpandedGroup(null)
-                            // Show positioning guide for the selected exercise
-                            setShowPositionGuide(true)
+                            // Set default angle based on exercise's preferred camera position
+                            const defaultAngle = rule.cameraPosition === "side-or-front" ? "side"
+                              : rule.cameraPosition === "any" ? "side"
+                              : rule.cameraPosition as "side" | "front" | "back"
+                            setSelectedAngle(defaultAngle)
                           }}
                           className={cn(
                             "w-full px-4 pl-9 py-2.5 text-left text-sm transition-colors flex items-center justify-between gap-2",
@@ -549,51 +625,59 @@ export function PostureAnalyzer() {
         )}
       </div>
 
-      {/* ─── Positioning guide + Camera angle selector ─── */}
-      {showPositionGuide && state === "idle" && (
-        <div className="rounded-xl bg-blue-600/10 border border-blue-500/20 overflow-hidden">
-          <div className="flex items-start gap-3 px-3 py-2.5 text-sm">
-            <Info className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-blue-300 text-xs font-medium">Como se posicionar:</p>
-              <p className="text-blue-200/70 text-xs mt-0.5">{selectedExercise.positioningTip}</p>
-            </div>
-            <button
-              onClick={() => setShowPositionGuide(false)}
-              className="text-blue-500/50 hover:text-blue-400 shrink-0"
-            >
-              <X className="w-3 h-3" />
-            </button>
+      {/* ─── Camera Angle Selector — user MUST choose before starting ─── */}
+      {state === "idle" && (
+        <div className="rounded-xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+          <div className="px-3 py-2 border-b border-white/[0.06]">
+            <p className="text-[11px] text-neutral-400 font-medium">Ângulo da câmera</p>
           </div>
-          {/* Camera angle selector — when multiple positions allowed */}
-          {(selectedExercise.allowedPositions && selectedExercise.allowedPositions.length > 1) && (
-            <div className="flex items-center gap-1.5 px-3 pb-2.5">
-              <span className="text-[9px] text-blue-400/60 mr-1">Ângulo:</span>
-              {selectedExercise.allowedPositions.map((pos) => (
+          <div className="grid grid-cols-4 gap-1.5 p-2">
+            {([
+              { key: "side" as const, label: "Lateral", icon: "👤", desc: "Profundidade e tronco", color: "blue" },
+              { key: "front" as const, label: "Frontal", icon: "🧍", desc: "Simetria e joelhos", color: "purple" },
+              { key: "back" as const, label: "Costas", icon: "🔙", desc: "Escápulas e glúteos", color: "green" },
+              { key: "floor" as const, label: "Chão", icon: "⬇️", desc: "Flexões e pranchas", color: "amber" },
+            ] as const).map((opt) => {
+              const isActive = selectedAngle === opt.key
+              const isAllowed = !selectedExercise.allowedPositions || selectedExercise.allowedPositions.includes(opt.key as CameraPosition)
+              const colorMap = {
+                blue: { active: "bg-blue-600/20 border-blue-500/40 text-blue-300", dot: "bg-blue-400" },
+                purple: { active: "bg-purple-600/20 border-purple-500/40 text-purple-300", dot: "bg-purple-400" },
+                green: { active: "bg-green-600/20 border-green-500/40 text-green-300", dot: "bg-green-400" },
+                amber: { active: "bg-amber-600/20 border-amber-500/40 text-amber-300", dot: "bg-amber-400" },
+              }
+              const colors = colorMap[opt.color]
+              return (
                 <button
-                  key={pos}
+                  key={opt.key}
+                  disabled={!isAllowed}
+                  onClick={() => setSelectedAngle(opt.key)}
                   className={cn(
-                    "px-2 py-1 rounded-lg text-[10px] font-medium transition-all",
-                    selectedExercise.cameraPosition === pos
-                      ? "bg-blue-500/30 text-blue-300 border border-blue-500/40"
-                      : "bg-white/[0.04] text-neutral-500 border border-white/[0.06] hover:text-neutral-300"
+                    "flex flex-col items-center gap-1 py-2.5 px-1 rounded-xl text-center transition-all",
+                    !isAllowed && "opacity-25 cursor-not-allowed",
+                    isActive
+                      ? `${colors.active} border`
+                      : "bg-white/[0.02] border border-white/[0.06] text-neutral-500 hover:border-white/[0.12]",
                   )}
-                  onClick={() => {
-                    // Update the exercise's active camera position
-                    const updated = { ...selectedExercise, cameraPosition: pos, positioningTip:
-                      pos === "side" ? "Posicione a câmera de LADO" :
-                      pos === "front" ? "Posicione a câmera na FRENTE" :
-                      pos === "back" ? "Posicione a câmera nas COSTAS" :
-                      "Posicione a câmera onde preferir"
-                    }
-                    setSelectedExercise(updated as ExerciseRule)
-                  }}
                 >
-                  {pos === "side" ? "Lateral" : pos === "front" ? "Frente" : pos === "back" ? "Costas" : pos === "any" ? "Qualquer" : "Ambos"}
+                  <span className="text-lg">{opt.icon}</span>
+                  <span className="text-[10px] font-semibold">{opt.label}</span>
+                  <span className="text-[8px] text-neutral-600 leading-tight">{opt.desc}</span>
+                  {isActive && <span className={cn("w-1.5 h-1.5 rounded-full mt-0.5", colors.dot)} />}
                 </button>
-              ))}
-            </div>
-          )}
+              )
+            })}
+          </div>
+          {/* Positioning tip based on selected angle */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-white/[0.01] border-t border-white/[0.04]">
+            <Info className="w-3.5 h-3.5 text-neutral-500 shrink-0" />
+            <p className="text-[10px] text-neutral-500">
+              {selectedAngle === "side" ? "Posicione a câmera de LADO, corpo inteiro visível" :
+               selectedAngle === "front" ? "Posicione a câmera na sua FRENTE, de pé" :
+               selectedAngle === "back" ? "Posicione a câmera nas suas COSTAS" :
+               "Coloque a câmera no CHÃO, na altura do corpo"}
+            </p>
+          </div>
         </div>
       )}
 
@@ -618,22 +702,38 @@ export function PostureAnalyzer() {
           )}
         />
 
-        {/* Camera switch + FPS badge */}
+        {/* Camera switch + FPS + Detected angle badges */}
         {state === "analyzing" && (
-          <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
-            <button
-              onClick={switchCamera}
-              className="p-1.5 rounded-lg bg-black/60 text-neutral-300 hover:text-white hover:bg-black/80 active:scale-90 transition-all"
-              title={facingMode === "user" ? "Trocar para camera traseira" : "Trocar para camera frontal"}
-            >
-              <SwitchCamera className="w-4 h-4" />
-            </button>
-            {fps > 0 && (
-              <span className="px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-neutral-400 font-mono">
-                {fps} FPS
-              </span>
+          <>
+            <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+              <button
+                onClick={switchCamera}
+                className="p-1.5 rounded-lg bg-black/60 text-neutral-300 hover:text-white hover:bg-black/80 active:scale-90 transition-all"
+                title={facingMode === "user" ? "Trocar para camera traseira" : "Trocar para camera frontal"}
+              >
+                <SwitchCamera className="w-4 h-4" />
+              </button>
+              {fps > 0 && (
+                <span className="px-1.5 py-0.5 rounded bg-black/60 text-[9px] text-neutral-400 font-mono">
+                  {fps} FPS
+                </span>
+              )}
+            </div>
+            {/* Detected camera angle badge — bottom left */}
+            {detectedView && detectedView.view !== "unknown" && (
+              <div className={cn(
+                "absolute bottom-2 left-2 z-10 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-semibold backdrop-blur-sm transition-all",
+                detectedView.view === "side"  ? "bg-blue-600/70 text-blue-100" :
+                detectedView.view === "front" ? "bg-purple-600/70 text-purple-100" :
+                detectedView.view === "back"  ? "bg-green-600/70 text-green-100" :
+                detectedView.view === "floor" ? "bg-amber-600/70 text-amber-100" :
+                "bg-black/60 text-neutral-300"
+              )}>
+                <span>{detectedView.icon}</span>
+                <span>{detectedView.label}</span>
+              </div>
             )}
-          </div>
+          </>
         )}
 
         {/* Idle overlay */}
@@ -644,7 +744,14 @@ export function PostureAnalyzer() {
             </div>
             <div className="text-center px-8">
               <p className="text-sm text-neutral-300 font-medium">{selectedExercise.name}</p>
-              <p className="text-xs text-neutral-500 mt-1">{selectedExercise.positioningTip}</p>
+              <p className="text-xs text-neutral-500 mt-1">
+                Ângulo: <span className="text-white font-medium">
+                  {selectedAngle === "side" ? "👤 Lateral" :
+                   selectedAngle === "front" ? "🧍 Frontal" :
+                   selectedAngle === "back" ? "🔙 Costas" :
+                   "⬇️ Chão"}
+                </span>
+              </p>
             </div>
             {/* 3D Machine Guide — hidden until models are properly mapped to exercises */}
             {/* Camera toggle in idle */}
@@ -685,7 +792,7 @@ export function PostureAnalyzer() {
           className="w-full py-3.5 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-600/20"
         >
           <Zap className="w-4 h-4" />
-          Analisar Postura — {selectedExercise.name}
+          Analisar — {selectedAngle === "side" ? "👤 Lateral" : selectedAngle === "front" ? "🧍 Frontal" : selectedAngle === "back" ? "🔙 Costas" : "⬇️ Chão"}
         </button>
       ) : state === "analyzing" ? (
         <button
