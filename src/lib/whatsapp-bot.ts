@@ -23,13 +23,13 @@ import type { BotType } from "./bot-config"
 // Cada botType tem sua própria persona.
 // ═══════════════════════════════════════════════════════════════
 
-export function buildSystemPrompt(context: StudentContext, botType: BotType = "victor"): string {
-  if (botType === "nutri") return buildNutriPrompt(context)
-  return buildVictorPrompt(context)
+export function buildSystemPrompt(context: StudentContext, botType: BotType = "victor", customInstructions?: string | null): string {
+  if (botType === "nutri") return buildNutriPrompt(context, customInstructions)
+  return buildVictorPrompt(context, customInstructions)
 }
 
-function buildVictorPrompt(context: StudentContext): string {
-  return `Voce é o ${BRAND.trainerName}, personal trainer em ${BRAND.trainerCity}, ${BRAND.trainerCref}.
+function buildVictorPrompt(context: StudentContext, customInstructions?: string | null): string {
+  const base = `Voce é o ${BRAND.trainerName}, personal trainer em ${BRAND.trainerCity}, ${BRAND.trainerCref}.
 Voce está respondendo pelo WhatsApp. O aluno acha que está falando COM VOCE, não com um robô.
 
 ═══ REGRAS DE OURO (NUNCA QUEBRE) ═══
@@ -89,10 +89,15 @@ Total de sessões: ${context.totalSessions}
 ${context.recentMessages.length > 0 ? "Últimas mensagens da conversa:\n" + context.recentMessages.map(m => `${m.from}: ${m.text}`).join("\n") : "Primeira mensagem do aluno."}
 
 Responda a próxima mensagem como ${BRAND.trainerFirstName}. Curto, direto, humano.`
+
+  if (customInstructions) {
+    return base + `\n\n═══ INSTRUÇÕES ADICIONAIS DO DONO ═══\n\n${customInstructions}\n`
+  }
+  return base
 }
 
-function buildNutriPrompt(context: StudentContext): string {
-  return `Voce é nutricionista esportivo(a), trabalha com acompanhamento nutricional de atletas e praticantes de musculação.
+function buildNutriPrompt(context: StudentContext, customInstructions?: string | null): string {
+  const base = `Voce é nutricionista esportivo(a), trabalha com acompanhamento nutricional de atletas e praticantes de musculação.
 Voce está respondendo pelo WhatsApp. O paciente acha que está falando COM VOCE, não com um robô.
 
 ═══ REGRAS DE OURO (NUNCA QUEBRE) ═══
@@ -129,6 +134,11 @@ Altura: ${context.height ? context.height + "m" : "Não informada"}
 ${context.recentMessages.length > 0 ? "Últimas mensagens:\n" + context.recentMessages.map(m => `${m.from}: ${m.text}`).join("\n") : "Primeira mensagem do paciente."}
 
 Responda a próxima mensagem. Curto, direto, profissional.`
+
+  if (customInstructions) {
+    return base + `\n\n═══ INSTRUÇÕES ADICIONAIS DO DONO ═══\n\n${customInstructions}\n`
+  }
+  return base
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -387,11 +397,13 @@ export async function generateBotResponse(
   botType: BotType = "victor"
 ): Promise<string> {
   const { callGroqWithTracking } = await import("./ai-usage")
+  const { getBotCustomInstructions } = await import("./platform-settings")
+  const customInstructions = await getBotCustomInstructions(botType)
 
   const result = await callGroqWithTracking({
     feature: botType === "nutri" ? "chat_paciente" : "chat_aluno",
     messages: [
-      { role: "system", content: buildSystemPrompt(context, botType) },
+      { role: "system", content: buildSystemPrompt(context, botType, customInstructions) },
       { role: "user", content: userMessage },
     ],
     maxTokens: 300,
@@ -415,13 +427,12 @@ export async function generateLeadResponse(
 
   let systemPrompt: string
 
+  const { getBotCustomInstructions } = await import("./platform-settings")
+  const customInstructions = await getBotCustomInstructions(botType)
+
   if (botType === "b2b") {
-    // Emmanuel vendendo o app B2B — com instruções customizadas do master admin
-    const { getBotCustomInstructions } = await import("./platform-settings")
-    const customInstructions = await getBotCustomInstructions("b2b")
     systemPrompt = buildB2bLeadPrompt(leadName, leadHistory, customInstructions)
   } else {
-    // Victor ou Nutri vendendo serviço pro lead
     const { SYSTEM_PROMPTS } = await import("./ai")
     const historyContext = leadHistory.length > 0
       ? `\n\nHistórico da conversa:\n${leadHistory.slice(-6).join("\n")}`
@@ -440,7 +451,11 @@ Respostas CURTAS (2-4 frases max). Sempre termine com uma pergunta ou CTA.`
         `\nSeu objetivo: qualificar, gerar interesse, e conduzir pra uma aula experimental ou assinatura.` +
         `\nRespostas CURTAS (2-4 frases max). Sempre termine com uma pergunta ou CTA.`
 
-    systemPrompt = basePrompt + historyContext
+    const extra = customInstructions
+      ? `\n\n═══ INSTRUÇÕES ADICIONAIS DO DONO ═══\n\n${customInstructions}\n`
+      : ""
+
+    systemPrompt = basePrompt + historyContext + extra
   }
 
   const result = await callGroqWithTracking({

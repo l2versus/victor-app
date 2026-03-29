@@ -7,7 +7,23 @@ import { BOT_CONFIGS } from "@/lib/bot-config"
 export async function GET(req: NextRequest) {
   try {
     await requireMaster()
-    const botType = req.nextUrl.searchParams.get("botType") || "b2b"
+    const botType = req.nextUrl.searchParams.get("botType")
+
+    // Return all 3 bots if no botType specified
+    if (!botType) {
+      const [victor, nutri, b2b] = await Promise.all([
+        getBotCustomInstructions("victor"),
+        getBotCustomInstructions("nutri"),
+        getBotCustomInstructions("b2b"),
+      ])
+      return NextResponse.json({
+        bots: {
+          victor: { instructions: victor || "", label: "Victor (Personal Trainer)", description: "Bot do personal trainer que responde alunos e leads de treino" },
+          nutri: { instructions: nutri || "", label: "Nutri (Nutricionista)", description: "Bot da nutricionista que responde pacientes e leads de nutrição" },
+          b2b: { instructions: b2b || "", label: "Emmanuel (B2B Vendas)", description: "Bot de vendas B2B que vende a plataforma ONEFIT para academias e profissionais" },
+        },
+      })
+    }
 
     if (!BOT_CONFIGS[botType as keyof typeof BOT_CONFIGS]) {
       return NextResponse.json({ error: `Bot "${botType}" não encontrado` }, { status: 404 })
