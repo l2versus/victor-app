@@ -26,8 +26,9 @@ export async function GET() {
       return NextResponse.json({ live: [] })
     }
 
-    // Active sessions: startedAt not null, completedAt IS null, within last 3 hours
-    const threeHoursAgo = new Date(Date.now() - 3 * 60 * 60 * 1000)
+    // Active sessions: startedAt not null, completedAt IS null
+    // Query window must cover the auto-complete threshold (4h) to enable stale cleanup
+    const threeHoursAgo = new Date(Date.now() - 4.5 * 60 * 60 * 1000)
 
     const activeSessions = await prisma.workoutSession.findMany({
       where: {

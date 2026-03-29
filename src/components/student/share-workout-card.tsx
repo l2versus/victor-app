@@ -82,8 +82,9 @@ export function ShareWorkoutCard({ templateName, exerciseCount, totalVolume, dur
       const msg = e instanceof Error ? e.message : "Erro ao postar no feed"
       setError(msg)
       console.error("Failed to post to feed:", msg)
+    } finally {
+      setPosting(false)
     }
-    setPosting(false)
   }
 
   async function handleShare() {
