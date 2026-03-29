@@ -1,15 +1,109 @@
 import { generateText } from "ai"
-import { premiumModel, SYSTEM_PROMPTS } from "@/lib/ai"
+import { premiumModel, visionModel, SYSTEM_PROMPTS } from "@/lib/ai"
 import { requireAdmin } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { NextRequest } from "next/server"
+import { YoutubeTranscript } from "youtube-transcript"
+
+type AttachmentInput = { type: "image" | "youtube" | "link" | "text"; data: string }
+
+function extractYouTubeId(url: string): string | null {
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+    /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+    /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+  ]
+  for (const p of patterns) {
+    const match = url.match(p)
+    if (match) return match[1]
+  }
+  return null
+}
+
+async function extractYouTubeTranscript(url: string): Promise<string | null> {
+  const videoId = extractYouTubeId(url)
+  if (!videoId) return null
+  try {
+    let transcripts = await YoutubeTranscript.fetchTranscript(videoId, { lang: "pt" })
+    if (!transcripts || transcripts.length === 0) {
+      transcripts = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" })
+    }
+    if (!transcripts || transcripts.length === 0) return null
+    const full = transcripts.map(t => t.text).join(" ")
+    return full.length > 6000 ? full.substring(0, 6000) + "..." : full
+  } catch {
+    return null
+  }
+}
+
+async function analyzeImageWithVision(imageBase64: string): Promise<string> {
+  const result = await generateText({
+    model: visionModel,
+    messages: [{
+      role: "user",
+      content: [
+        {
+          type: "image",
+          image: imageBase64.startsWith("data:") ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`,
+        },
+        {
+          type: "text",
+          text: "Analise esta imagem de treino/exercicio. Extraia TODOS os detalhes: nomes dos exercicios, series, repeticoes, carga, tempo de descanso, observacoes. Se for uma tabela, extraia tudo. Se for um exercicio sendo executado, identifique qual e. Responda em portugues brasileiro, de forma objetiva.",
+        },
+      ],
+    }],
+  })
+  return result.text
+}
 
 export async function POST(req: NextRequest) {
   const session = await requireAdmin()
   const trainer = await prisma.trainerProfile.findUnique({ where: { userId: session.userId } })
   if (!trainer) return Response.json({ error: "Trainer not found" }, { status: 404 })
 
-  const { studentId, objective, level, restrictions, equipment, days, focus } = await req.json()
+  const {
+    studentId, objective, level, restrictions, equipment, days, focus,
+    freeText, attachments,
+  } = await req.json() as {
+    studentId?: string; objective?: string; level?: string; restrictions?: string
+    equipment?: string; days?: string; focus?: string; freeText?: string
+    attachments?: AttachmentInput[]
+  }
+
+  // Process attachments in parallel
+  const extraContextParts: string[] = []
+
+  if (attachments && attachments.length > 0) {
+    const results = await Promise.allSettled(
+      attachments.map(async (att) => {
+        if (att.type === "image") {
+          const analysis = await analyzeImageWithVision(att.data)
+          return `[IMAGEM ANALISADA]:\n${analysis}`
+        }
+        if (att.type === "youtube") {
+          const transcript = await extractYouTubeTranscript(att.data)
+          return transcript
+            ? `[VIDEO YOUTUBE - ${att.data}]:\n${transcript}`
+            : `[VIDEO YOUTUBE - ${att.data}]: Nao foi possivel extrair transcricao`
+        }
+        if (att.type === "link") {
+          return `[LINK REFERENCIA]: ${att.data}`
+        }
+        if (att.type === "text") {
+          return `[TEXTO ADICIONAL]:\n${att.data}`
+        }
+        return null
+      })
+    )
+    for (const r of results) {
+      if (r.status === "fulfilled" && r.value) extraContextParts.push(r.value)
+    }
+  }
+
+  if (freeText) {
+    extraContextParts.push(`[INSTRUCOES DO TRAINER]:\n${freeText}`)
+  }
 
   // Get student context if provided
   let studentContext = ""
@@ -60,19 +154,24 @@ Feedback recente: ${recentFeedback || "nenhum"}`
     .map((e: { name: string; muscle: string; equipment: string }) => `${e.name} [${e.muscle}/${e.equipment}]`)
     .join("\n")
 
+  const extraContext = extraContextParts.length > 0
+    ? `\n\nCONTEXTO ADICIONAL (imagens, videos, links, texto do trainer):\n${extraContextParts.join("\n\n")}`
+    : ""
+
   const prompt = `Gere um treino com as seguintes especificacoes:
-Objetivo: ${objective}
-Nivel: ${level}
+Objetivo: ${objective || "baseado no contexto adicional abaixo"}
+Nivel: ${level || "intermediario"}
 Restricoes: ${restrictions || "nenhuma"}
 Equipamentos: ${equipment || "academia completa"}
 Foco: ${focus || "geral"}
 Dias por semana: ${days || "3-4"}
-${studentContext}
+${studentContext}${extraContext}
 
 EXERCICIOS DISPONIVEIS NA BIBLIOTECA (USE ESTES NOMES EXATOS):
 ${exerciseNames}
 
-IMPORTANTE: Use APENAS exercicios da lista acima. Se nao encontrar exatamente, use o mais proximo.`
+IMPORTANTE: Use APENAS exercicios da lista acima. Se nao encontrar exatamente, use o mais proximo.
+Se o contexto adicional contem um treino especifico (print, video, texto), ADAPTE-O usando os exercicios da biblioteca.`
 
   const result = await generateText({
     model: premiumModel,
