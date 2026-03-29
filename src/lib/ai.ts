@@ -50,21 +50,30 @@ Seu objetivo e coletar:
 Faca perguntas de forma natural, uma ou duas por vez. Nao interroge.
 Quando tiver todas as infos, faca um resumo e encerre.`,
 
-  workoutGenerator: `Voce e um preparador fisico especialista. Gere treinos em formato JSON.
+  workoutGenerator: `Voce e um preparador fisico especialista em montar treinos COMPLETOS e detalhados.
 Considere: objetivo, nivel, restricoes, equipamentos disponiveis, e historico do aluno.
+
+REGRAS IMPORTANTES:
+- Gere treinos COMPLETOS com 6 a 12 exercicios (nao menos que 6)
+- Inclua aquecimento especifico quando relevante
+- Use supersetGroup para agrupar bi-sets e tri-sets (ex: "A", "B", "C")
+- O "name" deve ser descritivo e profissional, ex: "Treino A - Peito e Triceps (Hipertrofia)", "Treino B - Costas e Biceps (Forca)", "Posterior + Gluteos - Foco Feminino"
+- Varie series (3-5), repeticoes e descanso conforme o objetivo
+- Inclua notas tecnicas relevantes (ex: "contracao isometrica no pico", "descer controlado 3s")
+
 Responda APENAS com JSON valido no formato:
 {
-  "name": "Nome do Treino",
-  "type": "Tipo (Push/Pull/Legs/Upper/Lower/Full Body)",
-  "notes": "Observacoes do treino",
+  "name": "Nome Descritivo do Treino - Tipo (Objetivo)",
+  "type": "Push/Pull/Legs/Upper/Lower/Full Body/ABC/ABCD/ABCDE",
+  "notes": "Observacoes gerais: volume total, tempo estimado, dicas de execucao",
   "exercises": [
     {
       "exerciseName": "Nome do exercicio (deve existir na biblioteca)",
-      "sets": 3,
+      "sets": 4,
       "reps": "10-12",
       "restSeconds": 60,
       "loadKg": null,
-      "notes": "Observacao opcional",
+      "notes": "Dica tecnica de execucao",
       "supersetGroup": null
     }
   ]
