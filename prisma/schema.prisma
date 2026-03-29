@@ -1738,3 +1738,23 @@ model PlatformSetting {
   updatedAt DateTime @updatedAt
   createdAt DateTime @default(now())
 }
+
+// ═══════════════════════════════════════════════════════════════
+// MASTER COSTS — Platform-level operational costs (SaaS business)
+// ═══════════════════════════════════════════════════════════════
+
+model MasterCost {
+  id         String   @id @default(cuid())
+  category   String   // AI_TOKENS, HOSTING, WHATSAPP, DOMAINS, SOFTWARE, MARKETING, LEGAL, TEAM, OTHER
+  name       String
+  amount     Float
+  recurrence String   @default("MONTHLY") // ONE_TIME, MONTHLY, ANNUAL
+  active     Boolean  @default(true)
+  notes      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([category])
+  @@index([active])
+}

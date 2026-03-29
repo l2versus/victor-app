@@ -8,12 +8,14 @@ import {
   Building2,
   DollarSign,
   Settings,
+  BarChart3,
 } from "lucide-react"
 
 const navItems = [
   { href: "/master/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/master/organizations", label: "Orgs", icon: Building2 },
   { href: "/master/billing", label: "Billing", icon: DollarSign },
+  { href: "/master/finance", label: "Finance", icon: BarChart3 },
   { href: "/master/settings", label: "Config", icon: Settings },
 ]
 

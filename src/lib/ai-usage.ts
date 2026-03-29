@@ -54,8 +54,18 @@ export async function callGroqWithTracking(opts: {
   maxTokens?: number
   temperature?: number
   model?: string
+  /** Bot type pra routing de API key (b2b usa GROQ_B2B_API_KEY, nutri usa GROQ_NUTRI_API_KEY) */
+  botType?: "victor" | "nutri" | "b2b"
 }): Promise<{ content: string; usage: GroqUsage | null }> {
-  const apiKey = process.env.GROQ_API_KEY
+  // Routing de API key por bot (fallback pra GROQ_API_KEY)
+  let apiKey: string | undefined
+  if (opts.botType === "b2b") {
+    apiKey = process.env.GROQ_B2B_API_KEY || process.env.GROQ_API_KEY
+  } else if (opts.botType === "nutri") {
+    apiKey = process.env.GROQ_NUTRI_API_KEY || process.env.GROQ_API_KEY
+  } else {
+    apiKey = process.env.GROQ_API_KEY
+  }
   if (!apiKey) {
     console.error(`[AI Usage] GROQ_API_KEY not configured — feature=${opts.feature} will return empty`)
     return { content: "", usage: null }

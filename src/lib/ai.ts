@@ -1,11 +1,21 @@
 import { createGroq } from "@ai-sdk/groq"
+import type { BotType } from "./bot-config"
 
 // ─── AI System (Groq — Llama 3.3 70B, free tier) ────────────────────────────
-// Todas as features usam Groq/Llama (14.400 req/dia grátis)
-// Quando houver crédito Claude/Gemini, trocar premiumModel de volta
+// Cada bot pode ter sua própria API key Groq (separar custos e rate limits)
+// GROQ_API_KEY       → Victor (personal trainer) — NÃO ALTERAR
+// GROQ_B2B_API_KEY   → Emmanuel B2B bot
+// GROQ_NUTRI_API_KEY → Nutri bot (futura)
 
-function getGroqModel() {
-  const groq = createGroq({ apiKey: process.env.GROQ_API_KEY })
+/** Retorna a API key Groq correta pro bot. Fallback pra GROQ_API_KEY */
+function getGroqKeyForBot(botType?: BotType): string | undefined {
+  if (botType === "b2b") return process.env.GROQ_B2B_API_KEY || process.env.GROQ_API_KEY
+  if (botType === "nutri") return process.env.GROQ_NUTRI_API_KEY || process.env.GROQ_API_KEY
+  return process.env.GROQ_API_KEY
+}
+
+function getGroqModel(botType?: BotType) {
+  const groq = createGroq({ apiKey: getGroqKeyForBot(botType) })
   return groq(process.env.GROQ_MODEL || "llama-3.3-70b-versatile")
 }
 

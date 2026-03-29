@@ -341,6 +341,38 @@ export async function getStudentContextByPhone(phone: string): Promise<{
 // ═══════════════════════════════════════════════════════════════
 
 export async function sendWhatsAppMessage(to: string, message: string): Promise<boolean> {
+  // Tenta enviar via bot victor (padrão) ou qualquer bot configurado
+  const { BOT_CONFIGS, sendBotMessage, isBotConfigured } = await import("./bot-config")
+
+  // Tentar na ordem: victor → nutri → b2b
+  for (const botType of ["victor", "nutri", "b2b"] as const) {
+    const bot = BOT_CONFIGS[botType]
+    if (isBotConfigured(bot)) {
+      return sendBotMessage(bot, to, message)
+    }
+  }
+
+  // Fallback: Z-API global (legacy)
+  const instanceId = process.env.ZAPI_INSTANCE_ID
+  const token = process.env.ZAPI_TOKEN
+  if (instanceId && token) {
+    const { normalizePhone } = await import("./phone")
+    const url = `https://api.z-api.io/instances/${instanceId}/token/${token}/send-text`
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(process.env.ZAPI_CLIENT_TOKEN ? { "Client-Token": process.env.ZAPI_CLIENT_TOKEN } : {}),
+        },
+        body: JSON.stringify({ phone: normalizePhone(to), message }),
+      })
+      return res.ok
+    } catch (err) {
+      console.error("[WhatsApp] Z-API legacy send failed:", err)
+    }
+  }
+
   console.warn("[WhatsApp] Nenhum provider configurado — configure um provider de WhatsApp")
   return false
 }
@@ -363,6 +395,7 @@ export async function generateBotResponse(
       { role: "user", content: userMessage },
     ],
     maxTokens: 300,
+    botType,
   })
 
   return result.content || "Deu um bug aqui, me manda de novo? 😅"
@@ -417,6 +450,7 @@ Respostas CURTAS (2-4 frases max). Sempre termine com uma pergunta ou CTA.`
       { role: "user", content: userMessage },
     ],
     maxTokens: 250,
+    botType,
   })
 
   return result.content || ""

@@ -30,6 +30,7 @@ const navGroups = [
     label: "Financeiro",
     items: [
       { href: "/master/billing", label: "Faturamento", icon: DollarSign },
+      { href: "/master/finance", label: "Financeiro", icon: Shield },
     ],
   },
   {

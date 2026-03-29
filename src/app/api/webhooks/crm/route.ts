@@ -52,9 +52,11 @@ export async function POST(req: NextRequest) {
 
         const value = payload.value || payload.valor || payload.expected_value || null
 
-        const notes = payload.notes || payload.message || payload.observacoes
-          || payload.custom_fields
-            ? `Webhook: ${JSON.stringify(payload.custom_fields || payload.notes || "")}`
+        const rawNote = payload.notes || payload.message || payload.observacoes || null
+        const notes = rawNote
+          ? rawNote
+          : payload.custom_fields
+            ? `Webhook: ${JSON.stringify(payload.custom_fields)}`
             : null
 
         // Check for duplicate by phone
@@ -181,5 +183,5 @@ export async function GET(req: NextRequest) {
   const webhook = await prisma.crmWebhook.findUnique({ where: { token } })
   if (!webhook) return NextResponse.json({ error: "Invalid token" }, { status: 404 })
 
-  return NextResponse.json({ status: "ok", name: webhook.name, action: webhook.action, active: webhook.active })
+  return NextResponse.json({ status: webhook.active ? "ok" : "inactive" })
 }

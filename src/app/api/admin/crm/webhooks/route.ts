@@ -13,6 +13,13 @@ export async function GET(req: NextRequest) {
     const webhookId = new URL(req.url).searchParams.get("webhookId")
 
     if (showLogs && webhookId) {
+      // Verify ownership before returning logs
+      const webhook = await prisma.crmWebhook.findFirst({
+        where: { id: webhookId, trainerId: trainer.id },
+      })
+      if (!webhook) {
+        return NextResponse.json({ error: "Webhook not found" }, { status: 404 })
+      }
       const logs = await prisma.crmWebhookLog.findMany({
         where: { webhookId },
         orderBy: { createdAt: "desc" },

@@ -3,6 +3,8 @@ import { redirect } from "next/navigation"
 import { AdminSidebar } from "@/components/admin/sidebar"
 import { AdminMobileNav } from "@/components/admin/mobile-nav"
 import { OnboardingRedirector } from "@/components/admin/onboarding-redirector"
+import { SubscriptionBanner, SubscriptionRestrictionPage } from "@/components/subscription-banner"
+import { checkOrgAccess } from "@/lib/subscription-guard"
 import { prisma } from "@/lib/prisma"
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -12,6 +14,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   // Single-session protection: if another device logged in, kick this one
   const valid = await validateSession(session)
   if (!valid) redirect("/login?expired=1")
+
+  // ── Subscription access check ──
+  const access = await checkOrgAccess(session)
+
+  // If blocked: render restriction page instead of admin panel
+  if (!access.allowed) {
+    return (
+      <SubscriptionRestrictionPage
+        reason={access.reason || "Acesso restrito."}
+        reasonCode={access.reasonCode}
+        orgName={access.org?.name}
+        planName={access.subscription?.planName}
+      />
+    )
+  }
 
   // Check onboarding status
   const trainer = await prisma.trainerProfile.findUnique({
@@ -52,6 +69,20 @@ export default async function AdminLayout({ children }: { children: React.ReactN
       {/* ═══ MAIN CONTENT ═══ */}
       <main className="flex-1 overflow-auto relative z-10 pb-20 lg:pb-0">
         <div className="px-4 py-6 sm:px-6 sm:py-8 lg:px-8 max-w-7xl mx-auto">
+          {/* Subscription warnings banner */}
+          {access.warnings.length > 0 && (
+            <SubscriptionBanner
+              warnings={access.warnings}
+              isTrialEndingSoon={access.isTrialEndingSoon}
+              isPastDue={access.isPastDue}
+              daysRemaining={access.daysRemaining}
+              pastDueGraceDaysLeft={access.pastDueGraceDaysLeft}
+              studentCount={access.studentCount}
+              professionalCount={access.professionalCount}
+              maxStudents={access.org?.maxStudents}
+              maxProfessionals={access.org?.maxProfessionals}
+            />
+          )}
           {children}
         </div>
       </main>

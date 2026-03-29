@@ -205,11 +205,16 @@ async function processStudentMessage(
 ): Promise<ProcessResult> {
   const owner = await findOwnerForBot(bot.type)
 
+  if (!owner) {
+    console.warn(`[${bot.name}] No owner found for student message from ${phone}`)
+    return { success: false, flow: "student", replySent: false, error: "No owner found" }
+  }
+
   // Salvar mensagem recebida
   await prisma.directMessage.create({
     data: {
       senderId: studentData.userId,
-      receiverId: owner?.oderId || studentData.userId,
+      receiverId: owner.oderId,
       content,
       channel: "WHATSAPP",
     },

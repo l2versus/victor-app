@@ -23,7 +23,25 @@ export async function GET(req: NextRequest) {
 // POST — Receive incoming WhatsApp messages (Meta Cloud API)
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
+    const rawBody = await req.text()
+
+    // Verify Meta signature if app secret is configured
+    const appSecret = process.env.WHATSAPP_APP_SECRET
+    if (appSecret) {
+      const sig = req.headers.get("x-hub-signature-256")
+      if (!sig) {
+        return NextResponse.json({ error: "Missing signature" }, { status: 401 })
+      }
+      const crypto = await import("crypto")
+      const expected = "sha256=" + crypto.createHmac("sha256", appSecret).update(rawBody).digest("hex")
+      const sigBuffer = Buffer.from(sig)
+      const expectedBuffer = Buffer.from(expected)
+      if (sigBuffer.length !== expectedBuffer.length || !crypto.timingSafeEqual(sigBuffer, expectedBuffer)) {
+        return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+      }
+    }
+
+    const body = JSON.parse(rawBody)
 
     const entry = body?.entry?.[0]
     const changes = entry?.changes?.[0]
