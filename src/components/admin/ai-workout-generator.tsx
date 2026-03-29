@@ -4,7 +4,7 @@ import { useState, useRef, useCallback } from "react"
 import {
   Sparkles, Loader2, Dumbbell, Save, RotateCcw,
   Brain, Target, AlertTriangle, Wrench, CalendarDays,
-  ImagePlus, Link2, X, Youtube, FileText,
+  ImagePlus, Link2, X, Youtube, FileText, Pencil, UserPlus, LayoutTemplate,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input, Select, Textarea } from "@/components/ui/input"
@@ -50,6 +50,8 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
   const [result, setResult] = useState<GeneratedWorkout | null>(null)
   const [error, setError] = useState("")
   const [saving, setSaving] = useState(false)
+  const [customName, setCustomName] = useState("")
+  const [editingName, setEditingName] = useState(false)
   const [attachments, setAttachments] = useState<Attachment[]>([])
   const [freeText, setFreeText] = useState("")
   const [showAdvanced, setShowAdvanced] = useState(false)
@@ -183,38 +185,46 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
     }
   }
 
-  async function handleSave() {
+  async function handleSave(mode: "template" | "assign") {
     if (!result) return
     setSaving(true)
 
+    const workoutName = customName || result.name
+
     try {
-      if (onSave) {
-        onSave(result)
+      if (onSave && mode === "assign") {
+        onSave({ ...result, name: workoutName })
       } else {
-        // Save directly via API
+        const payload = {
+          name: workoutName,
+          type: result.type,
+          notes: result.notes,
+          ...(mode === "assign" && studentId ? { studentId } : {}),
+          exercises: result.exercises.map((ex, i) => ({
+            exerciseName: ex.exerciseName,
+            sets: ex.sets,
+            reps: ex.reps,
+            restSeconds: ex.restSeconds,
+            loadKg: ex.loadKg,
+            notes: ex.notes,
+            order: i,
+            supersetGroup: ex.supersetGroup,
+          })),
+        }
+
         const res = await fetch("/api/admin/workouts", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            name: result.name,
-            type: result.type,
-            notes: result.notes,
-            exercises: result.exercises.map((ex, i) => ({
-              exerciseName: ex.exerciseName,
-              sets: ex.sets,
-              reps: ex.reps,
-              restSeconds: ex.restSeconds,
-              loadKg: ex.loadKg,
-              notes: ex.notes,
-              order: i,
-              supersetGroup: ex.supersetGroup,
-            })),
-          }),
+          body: JSON.stringify(payload),
         })
 
         if (res.ok) {
           setResult(null)
           setObjective("")
+          setCustomName("")
+          setEditingName(false)
+          setFreeText("")
+          setAttachments([])
         }
       }
     } finally {
@@ -422,26 +432,42 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
       {/* Result */}
       {result && (
         <div className="rounded-2xl border border-violet-500/20 bg-[#111] p-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="text-white font-bold text-lg flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-violet-400" />
-                {result.name}
-              </h3>
+          {/* Editable name */}
+          <div className="flex items-center gap-2">
+            <Sparkles className="w-5 h-5 text-violet-400 shrink-0" />
+            <div className="flex-1 min-w-0">
+              {editingName ? (
+                <Input
+                  value={customName}
+                  onChange={e => setCustomName(e.target.value)}
+                  onBlur={() => setEditingName(false)}
+                  onKeyDown={e => e.key === "Enter" && setEditingName(false)}
+                  autoFocus
+                  className="h-8! text-lg! font-bold"
+                />
+              ) : (
+                <button
+                  onClick={() => { setCustomName(customName || result.name); setEditingName(true) }}
+                  className="flex items-center gap-1.5 text-white font-bold text-lg hover:text-violet-300 transition-colors text-left"
+                >
+                  {customName || result.name}
+                  <Pencil className="w-3.5 h-3.5 text-neutral-500" />
+                </button>
+              )}
               <p className="text-neutral-500 text-xs mt-0.5">
-                {result.type} &middot; {result.exercises.length} exercícios &middot; Gerado por IA
+                {result.type} &middot; {result.exercises.length} exercicios &middot; Gerado por IA
               </p>
             </div>
             <button
-              onClick={() => setResult(null)}
-              className="text-neutral-500 hover:text-white transition-colors"
+              onClick={() => { setResult(null); setCustomName(""); setEditingName(false) }}
+              className="text-neutral-500 hover:text-white transition-colors shrink-0"
             >
               <RotateCcw className="w-4 h-4" />
             </button>
           </div>
 
           {result.notes && (
-            <p className="text-sm text-neutral-400 bg-white/[0.02] rounded-xl p-3 border border-neutral-800">
+            <p className="text-sm text-neutral-400 bg-white/2 rounded-xl p-3 border border-neutral-800">
               {result.notes}
             </p>
           )}
@@ -450,9 +476,9 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
             {result.exercises.map((ex, i) => (
               <div
                 key={i}
-                className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-neutral-800/50 hover:border-neutral-700 transition-all"
+                className="flex items-center gap-3 p-3 rounded-xl bg-white/2 border border-neutral-800/50 hover:border-neutral-700 transition-all"
               >
-                <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-violet-600/20 to-violet-800/20 flex items-center justify-center text-violet-400 text-xs font-bold border border-violet-500/10 shrink-0">
+                <div className="w-7 h-7 rounded-lg bg-linear-to-br from-violet-600/20 to-violet-800/20 flex items-center justify-center text-violet-400 text-xs font-bold border border-violet-500/10 shrink-0">
                   {i + 1}
                 </div>
                 <div className="flex-1 min-w-0">
@@ -468,14 +494,23 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
             ))}
           </div>
 
-          <div className="flex gap-3">
-            <Button variant="ghost" onClick={() => { setResult(null) }} fullWidth>
+          {/* Action buttons */}
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Button onClick={() => handleSave("template")} loading={saving} fullWidth>
+                <LayoutTemplate className="w-4 h-4 mr-1.5" />
+                Salvar como Template
+              </Button>
+              {studentId && (
+                <Button onClick={() => handleSave("assign")} loading={saving} fullWidth variant="ghost">
+                  <UserPlus className="w-4 h-4 mr-1.5" />
+                  Atribuir ao Aluno
+                </Button>
+              )}
+            </div>
+            <Button variant="ghost" onClick={() => { setResult(null); setCustomName(""); setEditingName(false) }} fullWidth>
               <RotateCcw className="w-4 h-4 mr-1.5" />
               Gerar Outro
-            </Button>
-            <Button onClick={handleSave} loading={saving} fullWidth>
-              <Save className="w-4 h-4 mr-1.5" />
-              Salvar Treino
             </Button>
           </div>
         </div>
