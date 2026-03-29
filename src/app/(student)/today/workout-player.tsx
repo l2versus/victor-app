@@ -134,8 +134,11 @@ export function WorkoutPlayer({
   const [phase, setPhase] = useState<Phase>(() => {
     if (completedToday) return "done"
     if (activeSession) {
-      // Check if workout was paused before navigation
       try {
+        // Check if workout was discarded before navigation
+        const discarded = sessionStorage.getItem(`workout_discarded_${activeSession.id}`)
+        if (discarded === "true") return "preview" // Session was discarded, ignore activeSession
+        // Check if workout was paused before navigation
         const paused = sessionStorage.getItem(`workout_paused_${activeSession.id}`)
         if (paused === "true") return "preview" // Stay paused on remount
       } catch {}
@@ -146,7 +149,14 @@ export function WorkoutPlayer({
   const [showShareCard, setShowShareCard] = useState(false)
   const [videoModal, setVideoModal] = useState<{ url: string; name: string } | null>(null)
   const [exerciseDetail, setExerciseDetail] = useState<ExerciseData | null>(null)
-  const [sessionId, setSessionId] = useState<string | null>(activeSession?.id || null)
+  const [sessionId, setSessionId] = useState<string | null>(() => {
+    if (!activeSession) return null
+    // If this session was discarded, don't restore it
+    try {
+      if (typeof window !== "undefined" && sessionStorage.getItem(`workout_discarded_${activeSession.id}`) === "true") return null
+    } catch {}
+    return activeSession.id
+  })
   const [currentExIdx, setCurrentExIdx] = useState(0)
   const [completedSets, setCompletedSets] = useState<Map<string, CompletedSet[]>>(
     () => {
@@ -280,6 +290,10 @@ export function WorkoutPlayer({
       })
       const data = await res.json()
       if (data.session) {
+        // Clean up any previous discard flags
+        if (activeSession?.id) {
+          try { sessionStorage.removeItem(`workout_discarded_${activeSession.id}`) } catch {}
+        }
         setSessionId(data.session.id)
         startTimeRef.current = new Date()
         pausedElapsedRef.current = 0
@@ -571,20 +585,21 @@ export function WorkoutPlayer({
             return (
               <div
                 key={ex.id}
-                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden hover:border-white/[0.1] transition-all duration-300 cursor-pointer active:scale-[0.99]"
+                className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl overflow-hidden hover:border-white/[0.1] transition-all duration-300 cursor-pointer active:scale-[0.99] group/card"
                 onClick={() => setExerciseDetail(ex)}
+                style={{ animationDelay: `${i * 50}ms` }}
               >
-                {/* Main row — info left, thumbnail right (MFIT-style) */}
+                {/* Main row — info left, thumbnail right */}
                 <div className="flex gap-3 p-4">
                   {/* Left: exercise info */}
                   <div className="flex-1 min-w-0 space-y-2">
                     {/* Name + number */}
                     <div className="flex items-start gap-2.5">
-                      <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-red-600/15 to-red-900/5 flex items-center justify-center text-red-400 text-[10px] font-bold border border-red-500/10 shrink-0 mt-0.5">
+                      <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-600/20 to-red-900/10 flex items-center justify-center text-red-400 text-xs font-bold border border-red-500/15 shrink-0 shadow-sm shadow-red-600/10">
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-white leading-tight">{ex.name}</p>
+                        <p className="text-sm font-bold text-white leading-tight group-hover/card:text-red-50 transition-colors">{ex.name}</p>
                         <div className="flex items-center gap-1.5 mt-1 flex-wrap">
                           <TechniqueBadge technique={ex.technique} />
                           <Exercise3DButton exerciseName={ex.name} />
@@ -592,25 +607,23 @@ export function WorkoutPlayer({
                       </div>
                     </div>
 
-                    {/* Sets / Load */}
-                    <div className="flex items-center gap-2 flex-wrap text-[11px]">
-                      <span className="text-neutral-500">Séries:</span>
-                      <span className="text-white font-medium">{ex.sets}×{ex.reps}</span>
+                    {/* Sets / Load — pill style */}
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] text-[11px]">
+                        <span className="text-neutral-500">Séries</span>
+                        <span className="text-white font-bold tabular-nums">{ex.sets}×{ex.reps}</span>
+                      </span>
                       {ex.loadKg != null && ex.loadKg > 0 && (
-                        <>
-                          <span className="text-neutral-600">·</span>
-                          <span className="text-neutral-500">Carga:</span>
-                          <span className="text-white font-medium">{fmtKg(ex.loadKg)}kg</span>
-                        </>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-white/[0.04] text-[11px]">
+                          <span className="text-neutral-500">Carga</span>
+                          <span className="text-white font-bold tabular-nums">{fmtKg(ex.loadKg)}kg</span>
+                        </span>
                       )}
                     </div>
 
                     {/* Instructions */}
                     {ex.instructions && (
-                      <div>
-                        <p className="text-[10px] text-neutral-500 font-medium mb-0.5">Instruções:</p>
-                        <p className="text-[11px] text-neutral-400 leading-relaxed">{ex.instructions}</p>
-                      </div>
+                      <p className="text-[11px] text-neutral-500 leading-relaxed line-clamp-2">{ex.instructions}</p>
                     )}
 
                     {/* Machine location */}
@@ -621,11 +634,11 @@ export function WorkoutPlayer({
 
                   {/* Right: machine thumbnail or exercise image */}
                   <div
-                    className="w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 relative bg-neutral-900 cursor-pointer active:scale-95 transition-transform"
+                    className="w-24 h-24 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 relative bg-neutral-900 cursor-pointer active:scale-95 transition-transform shadow-lg shadow-black/20"
                     onClick={e => { e.stopPropagation(); setExerciseDetail(ex) }}
                   >
                     {thumbnail ? (
-                      <img src={thumbnail} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
+                      <img src={thumbnail} alt={ex.name} className="w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-105" loading="lazy" />
                     ) : ex.machine3dModel ? (
                       <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-red-600/10 to-red-900/5 gap-1">
                         <Box className="w-6 h-6 text-red-400" />
@@ -638,8 +651,8 @@ export function WorkoutPlayer({
                     )}
                     {/* Play overlay when video exists */}
                     {hasVideo && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                        <div className="w-9 h-9 rounded-full bg-red-600/80 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-red-600/30">
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/40 group-hover/card:bg-black/30 transition-colors">
+                        <div className="w-9 h-9 rounded-full bg-red-600/80 backdrop-blur-sm flex items-center justify-center shadow-lg shadow-red-600/30 group-hover/card:scale-110 transition-transform">
                           <Play className="w-4 h-4 text-white ml-0.5" fill="currentColor" />
                         </div>
                       </div>
@@ -766,10 +779,19 @@ export function WorkoutPlayer({
     const offset = circumference * (1 - restTimer.progress)
 
     return (
-      <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[#050505]/97 backdrop-blur-2xl animate-slide-up">
-        <div className="relative w-56 h-56 mb-10 animate-timer-pulse">
+      <div className="fixed inset-0 z-[70] flex flex-col items-center justify-center bg-[#030303]/98 backdrop-blur-3xl animate-slide-up">
+        {/* Ambient glow behind timer */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 rounded-full bg-red-600/[0.06] blur-[100px]" />
+        </div>
+
+        <div className="relative w-60 h-60 mb-10 animate-timer-pulse animate-timer-glow">
           <svg className="w-full h-full timer-circle" viewBox="0 0 160 160">
-            <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="5" />
+            {/* Track */}
+            <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="4" />
+            {/* Background subtle track */}
+            <circle cx="80" cy="80" r="70" fill="none" stroke="rgba(220,38,38,0.08)" strokeWidth="4" />
+            {/* Progress */}
             <circle
               cx="80" cy="80" r="70" fill="none"
               stroke="url(#timerGradient)" strokeWidth="5" strokeLinecap="round"
@@ -777,30 +799,39 @@ export function WorkoutPlayer({
               strokeDashoffset={offset}
               style={{ transition: "stroke-dashoffset 1s linear" }}
             />
+            {/* Glow circle */}
+            <circle
+              cx="80" cy="80" r="70" fill="none"
+              stroke="url(#timerGradient)" strokeWidth="12" strokeLinecap="round"
+              strokeDasharray={circumference}
+              strokeDashoffset={offset}
+              style={{ transition: "stroke-dashoffset 1s linear", opacity: 0.15, filter: "blur(8px)" }}
+            />
             <defs>
               <linearGradient id="timerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#dc2626" />
+                <stop offset="50%" stopColor="#ef4444" />
                 <stop offset="100%" stopColor="#f97316" />
               </linearGradient>
             </defs>
           </svg>
 
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <p className="text-7xl font-bold text-white tabular-nums drop-shadow-[0_0_24px_rgba(239,68,68,0.3)]">{restTimer.remaining}</p>
-            <p className="text-xs text-neutral-400 uppercase tracking-[0.2em] mt-2 font-medium">Descanso</p>
+            <p className="text-8xl font-bold text-white tabular-nums drop-shadow-[0_0_30px_rgba(239,68,68,0.4)]">{restTimer.remaining}</p>
+            <p className="text-[10px] text-neutral-500 uppercase tracking-[0.25em] mt-2 font-semibold">Descanso</p>
           </div>
         </div>
 
         {nextExName && (
-          <div className="text-center mb-10">
-            <p className="text-[10px] text-neutral-600 uppercase tracking-wider mb-1">Próximo</p>
-            <p className="text-sm text-neutral-300 font-medium">{nextExName}</p>
+          <div className="text-center mb-10 px-6 py-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+            <p className="text-[9px] text-neutral-600 uppercase tracking-[0.15em] mb-1 font-semibold">Próximo exercício</p>
+            <p className="text-sm text-white font-bold">{nextExName}</p>
           </div>
         )}
 
         <button
           onClick={() => { restTimer.skip(); setPhase("active") }}
-          className="px-8 py-3 rounded-xl border border-white/10 bg-white/5 text-neutral-300 text-sm font-semibold hover:bg-white/10 hover:text-white transition-all active:scale-95"
+          className="px-10 py-3.5 rounded-xl border border-white/10 bg-white/[0.05] text-neutral-300 text-sm font-bold hover:bg-white/[0.1] hover:text-white hover:border-white/20 transition-all active:scale-95 backdrop-blur-sm"
         >
           Pular Descanso
         </button>
@@ -882,97 +913,142 @@ export function WorkoutPlayer({
         </div>
       )}
 
-      {/* Progress bar + Pausar + Descartar (Strava style) */}
-      <div className="space-y-2">
+      {/* Progress bar + controls — premium status bar */}
+      <div className="space-y-2.5">
+        {/* Full-width progress bar */}
+        <div className="w-full h-2 rounded-full bg-white/[0.06] overflow-hidden">
+          <div
+            className="h-full rounded-full progress-bar-premium transition-all duration-700 ease-out"
+            style={{ width: `${Math.min(progress * 100, 100)}%` }}
+          />
+        </div>
+
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock className="w-3.5 h-3.5 text-neutral-600" />
-            <span className="text-xs text-neutral-500 tabular-nums">{formatTime(elapsed)}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-neutral-500">{totalCompleted}/{totalSets}</span>
-            <div className="w-20 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-500 transition-all duration-500"
-                style={{ width: `${Math.min(progress * 100, 100)}%` }}
-              />
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+              <Clock className="w-3 h-3 text-neutral-500" />
+              <span className="text-xs text-white font-bold tabular-nums">{formatTime(elapsed)}</span>
+            </div>
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/[0.04] border border-white/[0.06]">
+              <Dumbbell className="w-3 h-3 text-neutral-500" />
+              <span className="text-xs font-bold tabular-nums">
+                <span className="text-white">{totalCompleted}</span>
+                <span className="text-neutral-600">/{totalSets}</span>
+              </span>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPhase("preview")}
-            className="flex-1 text-[11px] text-neutral-400 hover:text-white transition-colors py-2 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] font-medium"
-          >
-            ⏸ Pausar
-          </button>
-          <button
-            onClick={async () => {
-              if (!confirm("Descartar treino? O progresso será apagado e você poderá iniciar novamente.")) return
-              if (sessionId) {
-                try {
-                  await fetch(`/api/student/sessions/${sessionId}`, { method: "DELETE" })
-                } catch {}
-                try {
-                  sessionStorage.removeItem(`workout_paused_${sessionId}`)
-                  sessionStorage.removeItem(`workout_elapsed_${sessionId}`)
-                } catch {}
-              }
-              setSessionId(null)
-              setPhase("preview")
-              setElapsed(0)
-              pausedElapsedRef.current = 0
-              startTimeRef.current = null
-              setCompletedSets(new Map())
-              if (timerRef.current) clearInterval(timerRef.current)
-            }}
-            className="text-[11px] text-red-500/60 hover:text-red-400 transition-colors py-2 px-3 rounded-lg hover:bg-red-500/10 font-medium"
-          >
-            Descartar
-          </button>
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => setPhase("preview")}
+              className="text-[11px] text-neutral-400 hover:text-white transition-colors py-1.5 px-3 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] font-medium"
+            >
+              ⏸ Pausar
+            </button>
+            <button
+              onClick={async () => {
+                if (!confirm("Descartar treino? O progresso será apagado e você poderá iniciar novamente.")) return
+                const discardId = sessionId
+                if (discardId) {
+                  // Mark as discarded FIRST so navigation can't restore it
+                  try {
+                    sessionStorage.setItem(`workout_discarded_${discardId}`, "true")
+                    sessionStorage.removeItem(`workout_paused_${discardId}`)
+                    sessionStorage.removeItem(`workout_elapsed_${discardId}`)
+                  } catch {}
+                  // Then delete from DB
+                  try {
+                    const res = await fetch(`/api/student/sessions/${discardId}`, { method: "DELETE" })
+                    if (res.ok) {
+                      // Delete succeeded — clean up the discard flag
+                      try { sessionStorage.removeItem(`workout_discarded_${discardId}`) } catch {}
+                    }
+                    // If delete failed, the discard flag stays to prevent restoration
+                  } catch {}
+                }
+                setSessionId(null)
+                setPhase("preview")
+                setElapsed(0)
+                pausedElapsedRef.current = 0
+                startTimeRef.current = null
+                setCompletedSets(new Map())
+                if (timerRef.current) clearInterval(timerRef.current)
+              }}
+              className="text-[11px] text-red-500/50 hover:text-red-400 transition-colors py-1.5 px-2.5 rounded-lg hover:bg-red-500/10 font-medium"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* Exercise Navigation */}
-      <div className="flex items-center justify-between">
+      {/* Exercise Navigation — pill style */}
+      <div className="flex items-center gap-2">
         <button
           onClick={() => setCurrentExIdx((i) => Math.max(0, i - 1))}
           disabled={currentExIdx === 0}
-          className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-white disabled:opacity-20 transition-all"
+          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.08] disabled:opacity-20 transition-all active:scale-95"
         >
           <ChevronLeft className="w-4 h-4" />
         </button>
-        <span className="text-[10px] text-neutral-500 uppercase tracking-wider">
-          {currentExIdx + 1} / {exercises.length}
-        </span>
+        <div className="flex-1 flex items-center justify-center gap-1">
+          {exercises.map((_, idx) => (
+            <button
+              key={idx}
+              onClick={() => setCurrentExIdx(idx)}
+              className={`h-1.5 rounded-full transition-all duration-300 ${
+                idx === currentExIdx
+                  ? "w-6 bg-red-500"
+                  : (completedSets.get(exercises[idx].id)?.filter(s => !s.isExtra).length ?? 0) >= exercises[idx].sets
+                  ? "w-1.5 bg-emerald-500/60"
+                  : "w-1.5 bg-white/10 hover:bg-white/20"
+              }`}
+            />
+          ))}
+        </div>
         <button
           onClick={() => setCurrentExIdx((i) => Math.min(exercises.length - 1, i + 1))}
           disabled={currentExIdx === exercises.length - 1}
-          className="w-8 h-8 rounded-lg bg-white/[0.03] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-white disabled:opacity-20 transition-all"
+          className="w-9 h-9 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.08] disabled:opacity-20 transition-all active:scale-95"
         >
           <ChevronRight className="w-4 h-4" />
         </button>
       </div>
 
       {/* Exercise Card */}
-      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl p-5 swipe-container">
-        {/* Header with thumbnail */}
-        <div className="flex gap-3 mb-4">
-          <div className="flex-1 min-w-0 flex items-start gap-3">
-            {(() => {
-              const thumb = currentEx.gifUrl || currentEx.imageUrl
-              if (thumb) return (
-                <button
-                  onClick={() => setExerciseDetail(currentEx)}
-                  className="w-14 h-14 rounded-xl overflow-hidden border border-white/[0.08] shrink-0 bg-neutral-900 relative"
-                >
-                  <img src={thumb} alt={currentEx.name} className="w-full h-full object-cover" loading="lazy" />
-                  <div className="absolute bottom-0 right-0 bg-black/70 rounded-tl-lg px-1 py-0.5">
-                    <span className="text-[7px] text-neutral-300 font-bold">VER</span>
-                  </div>
-                </button>
-              )
-              if (currentEx.machine3dModel) return (
+      <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] backdrop-blur-xl overflow-hidden swipe-container shadow-xl shadow-black/20">
+        {/* Exercise header — image banner or compact */}
+        {(() => {
+          const thumb = currentEx.gifUrl || currentEx.imageUrl
+          if (thumb) return (
+            <button
+              onClick={() => setExerciseDetail(currentEx)}
+              className="relative w-full h-28 overflow-hidden group"
+            >
+              <img src={thumb} alt={currentEx.name} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-[#0a0a0a]/40 to-transparent" />
+              <div className="absolute bottom-3 left-4 right-4">
+                <h2 className="text-lg font-bold text-white truncate drop-shadow-lg">{currentEx.name}</h2>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-[11px] text-neutral-300/80">{currentEx.muscle} · {currentEx.equipment}</p>
+                  <TechniqueBadge technique={currentEx.technique} size="md" />
+                </div>
+              </div>
+              {isExerciseDone && (
+                <div className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-emerald-500/20 backdrop-blur-sm border border-emerald-500/30 flex items-center justify-center animate-set-complete">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                </div>
+              )}
+            </button>
+          )
+          return null
+        })()}
+
+        <div className="p-5">
+        {/* Compact header when no image */}
+        {!currentEx.gifUrl && !currentEx.imageUrl && (
+          <div className="flex gap-3 mb-4">
+            <div className="flex-1 min-w-0 flex items-start gap-3">
+              {currentEx.machine3dModel ? (
                 <button
                   onClick={() => setExerciseDetail(currentEx)}
                   className="w-14 h-14 rounded-xl overflow-hidden border border-red-500/20 shrink-0 bg-gradient-to-br from-red-600/15 to-red-900/10 flex flex-col items-center justify-center gap-0.5"
@@ -980,8 +1056,7 @@ export function WorkoutPlayer({
                   <Box className="w-4 h-4 text-red-400" />
                   <span className="text-[8px] text-red-400 font-bold">3D</span>
                 </button>
-              )
-              return (
+              ) : (
                 <button
                   onClick={() => setExerciseDetail(currentEx)}
                   className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600/20 to-red-800/10 flex flex-col items-center justify-center text-red-400 border border-red-500/15 shrink-0 gap-0.5"
@@ -989,23 +1064,31 @@ export function WorkoutPlayer({
                   <Dumbbell className="w-4 h-4" />
                   <span className="text-[7px] text-neutral-400 font-bold">DETALHES</span>
                 </button>
-              )
-            })()}
-            <div className="flex-1 min-w-0">
-              <h2 className="text-lg font-bold text-white truncate">{currentEx.name}</h2>
-              <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-xs text-neutral-500">{currentEx.muscle} · {currentEx.equipment}</p>
-                <TechniqueBadge technique={currentEx.technique} size="md" />
-                <RMCalculatorButton exerciseName={currentEx.name} />
+              )}
+              <div className="flex-1 min-w-0">
+                <h2 className="text-lg font-bold text-white truncate">{currentEx.name}</h2>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-neutral-500">{currentEx.muscle} · {currentEx.equipment}</p>
+                  <TechniqueBadge technique={currentEx.technique} size="md" />
+                  <RMCalculatorButton exerciseName={currentEx.name} />
+                </div>
+              </div>
             </div>
+            {isExerciseDone && (
+              <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center animate-set-complete">
+                <Check className="w-4 h-4 text-emerald-400" />
+              </div>
+            )}
           </div>
+        )}
+
+        {/* RM Calculator — show only when image header is used */}
+        {(currentEx.gifUrl || currentEx.imageUrl) && (
+          <div className="flex items-center gap-2 mb-4">
+            <RMCalculatorButton exerciseName={currentEx.name} />
+            <Exercise3DButton exerciseName={currentEx.name} />
           </div>
-          {isExerciseDone && (
-            <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center animate-set-complete">
-              <Check className="w-4 h-4 text-emerald-400" />
-            </div>
-          )}
-        </div>
+        )}
 
         {/* Technique description */}
         {currentEx.technique !== "NORMAL" && (
@@ -1024,12 +1107,12 @@ export function WorkoutPlayer({
 
         {/* Sets Grid — Header */}
         <div className="space-y-2">
-          <div className="grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 mb-1">
-            <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center">Série</span>
-            <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center">Reps</span>
-            <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center">Kg</span>
-            <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center">Técnica</span>
-            <span className="text-[9px] text-neutral-600 uppercase tracking-wider text-center"></span>
+          <div className="grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 mb-1 px-2">
+            <span className="text-[8px] text-neutral-600 uppercase tracking-[0.15em] text-center font-semibold">Série</span>
+            <span className="text-[8px] text-neutral-600 uppercase tracking-[0.15em] text-center font-semibold">Reps</span>
+            <span className="text-[8px] text-neutral-600 uppercase tracking-[0.15em] text-center font-semibold">Total KG</span>
+            <span className="text-[8px] text-neutral-600 uppercase tracking-[0.15em] text-center font-semibold">Técnica</span>
+            <span className="text-[8px] text-neutral-600 uppercase tracking-[0.15em] text-center font-semibold"></span>
           </div>
 
           {/* Prescribed sets */}
@@ -1114,6 +1197,7 @@ export function WorkoutPlayer({
             <p className="text-xs text-amber-300/80">{currentEx.notes}</p>
           </div>
         )}
+        </div>{/* close p-5 */}
       </div>
 
       {/* All done button */}
@@ -1169,18 +1253,22 @@ function SetRow({
   // Completed + not editing
   if (completed && !editing) {
     return (
-      <div className="grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 items-center py-2 px-2 rounded-xl bg-emerald-500/5 border border-emerald-500/10 group">
-        <span className="text-center text-sm font-bold text-emerald-400">
-          {setNumber}
-          {isExtra && <span className="text-[8px] text-emerald-600 block">extra</span>}
-        </span>
-        <span className="text-center text-sm text-emerald-300">{completed.reps}</span>
-        <span className="text-center text-sm text-emerald-300">{fmtKg(completed.loadKg)}kg</span>
+      <div className="grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 items-center py-2.5 px-2 rounded-xl bg-emerald-500/[0.04] border border-emerald-500/10 group animate-set-complete-row relative overflow-hidden">
+        {/* Left accent bar */}
+        <div className="absolute left-0 top-1 bottom-1 w-[3px] rounded-full bg-emerald-500/60" />
+        <div className="flex flex-col items-center">
+          <div className="w-7 h-7 rounded-lg bg-emerald-500/15 flex items-center justify-center">
+            <Check className="w-3.5 h-3.5 text-emerald-400" />
+          </div>
+          {isExtra && <span className="text-[7px] text-emerald-600 mt-0.5">extra</span>}
+        </div>
+        <span className="text-center text-[15px] font-bold text-white tabular-nums">{completed.reps}</span>
+        <span className="text-center text-[15px] font-bold text-white tabular-nums">{fmtKg(completed.loadKg)}</span>
         <div className="flex justify-center">
           {completed.technique !== "NORMAL" ? (
             <TechniqueBadge technique={completed.technique} />
           ) : (
-            <span className="text-[9px] text-emerald-600">—</span>
+            <span className="text-[9px] text-neutral-700">—</span>
           )}
         </div>
         <div className="flex justify-center gap-1">
@@ -1191,7 +1279,7 @@ function SetRow({
               setTechnique(completed.technique)
               setEditing(true)
             }}
-            className="w-7 h-7 rounded-lg bg-white/[0.05] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+            className="w-7 h-7 rounded-lg bg-white/[0.05] flex items-center justify-center opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity"
             title="Editar série"
           >
             <Pencil className="w-3 h-3 text-neutral-400" />
@@ -1199,7 +1287,7 @@ function SetRow({
           {isExtra && onDelete && (
             <button
               onClick={onDelete}
-              className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+              className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 active:opacity-100 transition-opacity"
               title="Remover série extra"
             >
               <Trash2 className="w-3 h-3 text-red-400" />
@@ -1215,24 +1303,30 @@ function SetRow({
 
   return (
     <div className="space-y-0">
-      <div className={`grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 items-center py-2 px-2 rounded-xl transition-all duration-300 ${
+      <div className={`grid grid-cols-[40px_1fr_1fr_1fr_44px] gap-2 items-center py-2.5 px-2 rounded-xl transition-all duration-300 relative overflow-hidden ${
         isActive && !editing
-          ? "bg-red-500/5 border border-red-500/15 animate-pulse-glow"
+          ? "bg-red-500/[0.06] border border-red-500/20 shadow-[0_0_20px_rgba(220,38,38,0.06)]"
           : editing
-          ? "bg-amber-500/5 border border-amber-500/15"
+          ? "bg-amber-500/[0.06] border border-amber-500/20"
           : "bg-white/[0.02] border border-white/[0.04]"
       }`}>
-        <span className={`text-center text-sm font-bold ${
-          isActive && !editing ? "text-red-400" : editing ? "text-amber-400" : "text-neutral-500"
-        }`}>
-          {setNumber}
-          {isExtra && <span className="text-[8px] text-neutral-600 block">extra</span>}
-        </span>
+        {/* Left accent bar */}
+        <div className={`absolute left-0 top-1 bottom-1 w-[3px] rounded-full ${
+          isActive && !editing ? "bg-red-500/60" : editing ? "bg-amber-500/60" : "bg-white/10"
+        }`} />
+        <div className="flex flex-col items-center">
+          <span className={`text-[15px] font-bold tabular-nums ${
+            isActive && !editing ? "text-red-400" : editing ? "text-amber-400" : "text-neutral-500"
+          }`}>
+            {setNumber}
+          </span>
+          {isExtra && <span className="text-[7px] text-neutral-600">extra</span>}
+        </div>
         <input
           type="number"
           value={reps}
           onChange={(e) => setReps(parseInt(e.target.value) || 0)}
-          className="w-full text-center text-sm font-medium text-white bg-transparent border-b border-white/10 focus:border-red-500/50 outline-none py-1 transition-colors"
+          className="w-full text-center text-[15px] font-bold text-white bg-white/[0.04] rounded-lg border border-white/[0.08] focus:border-red-500/40 focus:bg-red-500/[0.06] outline-none py-1.5 transition-all tabular-nums"
         />
         <input
           type="text"
@@ -1244,13 +1338,13 @@ function SetRow({
             if (v === "" || /^\d{0,3}\.?\d{0,1}$/.test(v)) { setLoadStr(v); setLoadError(false) }
           }}
           placeholder="kg"
-          className={`w-full text-center text-sm font-medium text-white bg-transparent border-b outline-none py-1 transition-colors ${
-            loadError ? "border-red-500 placeholder:text-red-400/60" : "border-white/10 focus:border-red-500/50"
+          className={`w-full text-center text-[15px] font-bold text-white bg-white/[0.04] rounded-lg border outline-none py-1.5 transition-all tabular-nums ${
+            loadError ? "border-red-500 bg-red-500/10 placeholder:text-red-400/60" : "border-white/[0.08] focus:border-red-500/40 focus:bg-red-500/[0.06]"
           }`}
         />
         <button
           onClick={() => setShowTechPicker(!showTechPicker)}
-          className={`flex items-center justify-center gap-0.5 text-[9px] font-medium rounded-lg py-1.5 px-1 transition-all ${techInfo.color} hover:bg-white/[0.05]`}
+          className={`flex items-center justify-center gap-0.5 text-[9px] font-semibold rounded-lg py-1.5 px-1 transition-all ${techInfo.color} bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06]`}
         >
           {technique === "NORMAL" ? "Normal" : TECHNIQUE_INFO[technique].shortLabel}
           <ChevronDown className="w-2.5 h-2.5" />
@@ -1264,7 +1358,7 @@ function SetRow({
                 if (onEdit) onEdit(reps, parseFloat(loadStr) || 0, technique)
                 setEditing(false)
               }}
-              className="w-11 h-11 rounded-lg bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all active:scale-90"
+              className="w-11 h-11 rounded-xl bg-amber-600/20 border border-amber-500/30 text-amber-400 flex items-center justify-center transition-all active:scale-90 shadow-lg shadow-amber-600/10"
             >
               <Check className="w-4 h-4" />
             </button>
@@ -1275,9 +1369,9 @@ function SetRow({
                 setLoadError(false)
                 onComplete(reps, parseFloat(loadStr) || 0, technique)
               }}
-              className="w-11 h-11 rounded-lg bg-red-600/20 border border-red-500/30 text-red-400 flex items-center justify-center transition-all duration-200 active:scale-90 hover:bg-red-600/30"
+              className="w-11 h-11 rounded-xl bg-red-600/20 border border-red-500/30 text-red-400 flex items-center justify-center transition-all duration-200 active:scale-90 hover:bg-red-600/30 shadow-lg shadow-red-600/10"
             >
-              <Check className="w-4 h-4" />
+              <Check className="w-4.5 h-4.5" />
             </button>
           )}
         </div>

@@ -155,8 +155,15 @@ select:focus {
 /* ═══ STUDENT PREMIUM ANIMATIONS ═══ */
 @keyframes set-complete {
   0% { transform: scale(0); opacity: 0; }
-  50% { transform: scale(1.3); }
+  50% { transform: scale(1.2); }
+  70% { transform: scale(0.95); }
   100% { transform: scale(1); opacity: 1; }
+}
+
+@keyframes set-complete-row {
+  0% { background-color: rgba(16, 185, 129, 0.15); }
+  50% { background-color: rgba(16, 185, 129, 0.25); }
+  100% { background-color: rgba(16, 185, 129, 0.05); }
 }
 
 @keyframes ember-ripple {
@@ -169,6 +176,11 @@ select:focus {
   50% { box-shadow: 0 0 20px 5px rgba(220, 38, 38, 0.15); }
 }
 
+@keyframes pulse-glow-emerald {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.3); }
+  50% { box-shadow: 0 0 20px 5px rgba(16, 185, 129, 0.15); }
+}
+
 @keyframes streak-fire {
   0%, 100% { transform: translateY(0) scale(1); }
   50% { transform: translateY(-2px) scale(1.1); }
@@ -179,6 +191,11 @@ select:focus {
   to { transform: translateY(0); opacity: 1; }
 }
 
+@keyframes slide-up-subtle {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
 @keyframes progress-fill {
   from { transform: scaleX(0); }
   to { transform: scaleX(1); }
@@ -186,7 +203,12 @@ select:focus {
 
 @keyframes timer-pulse {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+  50% { transform: scale(1.03); }
+}
+
+@keyframes timer-glow {
+  0%, 100% { filter: drop-shadow(0 0 20px rgba(220, 38, 38, 0.3)); }
+  50% { filter: drop-shadow(0 0 40px rgba(220, 38, 38, 0.5)); }
 }
 
 @keyframes sparkle {
@@ -209,14 +231,38 @@ select:focus {
   0%, 100% { opacity: 0.15; transform: scale(1); }
   50% { opacity: 0.3; transform: scale(1.05); }
 }
+
+@keyframes muscle-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+@keyframes card-highlight {
+  0% { border-color: rgba(220, 38, 38, 0.4); box-shadow: 0 0 15px rgba(220, 38, 38, 0.1); }
+  100% { border-color: rgba(255, 255, 255, 0.06); box-shadow: none; }
+}
+
+@keyframes number-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+
 .animate-ember { animation: ember 3s ease-in-out infinite; }
-.animate-set-complete { animation: set-complete 0.4s ease-out forwards; }
+.animate-set-complete { animation: set-complete 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+.animate-set-complete-row { animation: set-complete-row 0.8s ease-out forwards; }
 .animate-ember-ripple { animation: ember-ripple 0.6s ease-out forwards; }
 .animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-pulse-glow-emerald { animation: pulse-glow-emerald 2s ease-in-out infinite; }
 .animate-streak-fire { animation: streak-fire 1.5s ease-in-out infinite; }
 .animate-slide-up { animation: slide-up 0.3s ease-out forwards; }
+.animate-slide-up-subtle { animation: slide-up-subtle 0.4s ease-out forwards; }
 .animate-sparkle { animation: sparkle 0.8s ease-in-out forwards; }
 .animate-timer-pulse { animation: timer-pulse 1s ease-in-out infinite; }
+.animate-timer-glow { animation: timer-glow 2s ease-in-out infinite; }
+.animate-muscle-pulse { animation: muscle-pulse 2s ease-in-out infinite; }
+.animate-card-highlight { animation: card-highlight 1s ease-out forwards; }
+.animate-number-pop { animation: number-pop 0.3s ease-out; }
 
 /* ═══ LANDING PAGE PREMIUM ═══ */
 @keyframes landing-grain {
@@ -321,10 +367,43 @@ select:focus {
 }
 
 /* ═══ GPU ACCELERATION FOR ANIMATED ELEMENTS ═══ */
-.animate-ember, .animate-pulse-glow, .animate-streak-fire,
-.animate-float-slow, .animate-marquee, .animate-timer-pulse {
+.animate-ember, .animate-pulse-glow, .animate-pulse-glow-emerald,
+.animate-streak-fire, .animate-float-slow, .animate-marquee,
+.animate-timer-pulse, .animate-timer-glow, .animate-muscle-pulse {
   will-change: transform, opacity;
   backface-visibility: hidden;
+}
+
+/* ═══ PREMIUM GLASS CARD ═══ */
+.glass-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 1rem;
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+}
+.glass-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+}
+.glass-card-elevated {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 1rem;
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.03) inset;
+}
+
+/* ═══ PREMIUM PROGRESS BAR ═══ */
+.progress-bar-premium {
+  background: linear-gradient(90deg, #dc2626, #ef4444, #f97316);
+  background-size: 200% 100%;
+  animation: progress-shimmer 2s ease infinite;
+}
+@keyframes progress-shimmer {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
 /* ═══ STUDENT SAFE BOTTOM ═══ */

@@ -210,7 +210,7 @@ function WeekDaySelector({
   today: number
 }) {
   return (
-    <div className="flex gap-1 justify-center pt-3 pb-1">
+    <div className="flex gap-1.5 justify-center pt-3 pb-1 px-1">
       {weekSchedule.map((ws) => {
         const isSelected = ws.day === selectedDay
         const isToday = ws.day === today
@@ -223,37 +223,45 @@ function WeekDaySelector({
             scroll={false}
             prefetch={true}
             className={cn(
-              "flex flex-col items-center gap-1 flex-1 max-w-12 py-2 rounded-xl transition-all relative",
+              "flex flex-col items-center gap-1 flex-1 max-w-[50px] py-2.5 rounded-xl transition-all duration-200 relative",
               isSelected
                 ? ws.hasWorkout
-                  ? "bg-red-600/15 border border-red-500/25"
-                  : "bg-blue-600/10 border border-blue-500/20"
+                  ? "bg-red-600/15 border border-red-500/30 shadow-lg shadow-red-600/10"
+                  : "bg-blue-600/10 border border-blue-500/25 shadow-lg shadow-blue-600/10"
                 : ws.hasWorkout
-                ? "bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12]"
-                : "border border-transparent hover:bg-white/[0.02]"
+                ? "bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.12] hover:bg-white/[0.05]"
+                : "border border-transparent hover:bg-white/[0.03]",
+              "active:scale-95"
             )}
           >
             <span className={cn(
-              "text-[9px] font-medium uppercase tracking-wider",
+              "text-[9px] font-semibold uppercase tracking-[0.12em]",
               isSelected ? "text-white" : isToday ? "text-neutral-300" : "text-neutral-600"
             )}>
               {DAY_NAMES[ws.day]}
             </span>
             {ws.hasWorkout ? (
-              <Dumbbell className={cn(
-                "w-3.5 h-3.5",
-                isSelected ? "text-red-400" : "text-neutral-500"
-              )} />
+              <div className={cn(
+                "w-6 h-6 rounded-lg flex items-center justify-center",
+                isSelected ? "bg-red-500/20" : "bg-transparent"
+              )}>
+                <Dumbbell className={cn(
+                  "w-3.5 h-3.5 transition-colors",
+                  isSelected ? "text-red-400 drop-shadow-[0_0_4px_rgba(220,38,38,0.4)]" : "text-neutral-500"
+                )} />
+              </div>
             ) : (
-              <span className={cn(
-                "text-[10px]",
-                isSelected ? "text-blue-400" : "text-neutral-700"
-              )}>—</span>
+              <div className="w-6 h-6 flex items-center justify-center">
+                <div className={cn(
+                  "w-1.5 h-1.5 rounded-full",
+                  isSelected ? "bg-blue-400" : "bg-neutral-800"
+                )} />
+              </div>
             )}
             {isToday && (
               <div className={cn(
-                "absolute -bottom-0.5 w-1 h-1 rounded-full",
-                isSelected ? "bg-white shadow-[0_0_4px_rgba(255,255,255,0.5)]" : "bg-red-500 shadow-[0_0_4px_rgba(220,38,38,0.6)]"
+                "absolute -bottom-1 w-1 h-1 rounded-full",
+                isSelected ? "bg-white shadow-[0_0_6px_rgba(255,255,255,0.5)]" : "bg-red-500 shadow-[0_0_6px_rgba(220,38,38,0.6)]"
               )} />
             )}
           </Link>

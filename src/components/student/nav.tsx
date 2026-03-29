@@ -56,13 +56,14 @@ export function StudentNav({ hasNutrition = false }: StudentNavProps) {
 
   return (
     <nav className="fixed bottom-0 inset-x-0 z-50 safe-bottom">
-      {/* Glass background — premium frosted */}
-      <div className="absolute inset-0 bg-[#030303]/80 backdrop-blur-3xl border-t border-white/[0.06]" />
+      {/* Glass background — premium frosted, deeper blur */}
+      <div className="absolute inset-0 bg-[#030303]/85 backdrop-blur-[40px] border-t border-white/[0.06]" />
 
-      {/* Top accent */}
-      <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-red-600/20 to-transparent" />
+      {/* Top accent glow */}
+      <div className="absolute top-0 inset-x-0 h-px bg-linear-to-r from-transparent via-red-600/25 to-transparent" />
+      <div className="absolute top-0 inset-x-0 h-8 bg-gradient-to-b from-red-600/[0.03] to-transparent pointer-events-none" />
 
-      <div className="relative max-w-lg mx-auto flex items-center justify-around px-1 py-2.5">
+      <div className="relative max-w-lg mx-auto flex items-center justify-around px-1 py-2">
         {navItems.map((item) => {
           const isActive = pathname.startsWith(item.href)
           const isNutrition = item.href === "/nutrition"
@@ -74,43 +75,45 @@ export function StudentNav({ hasNutrition = false }: StudentNavProps) {
               prefetch={true}
               className={cn(
                 "flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl flex-1",
-                "transition-[color,transform] duration-150 ease-out",
+                "transition-all duration-200 ease-out",
                 isActive
                   ? "text-white"
-                  : "text-neutral-600 active:text-neutral-400 active:scale-95"
+                  : "text-neutral-600 active:text-neutral-400 active:scale-90"
               )}
             >
               <div className={cn(
-                "relative flex items-center justify-center w-8 h-8 rounded-xl",
-                "transition-[background-color,border-color] duration-150",
+                "relative flex items-center justify-center w-9 h-9 rounded-xl",
+                "transition-all duration-200",
                 isActive && (isNutrition
-                  ? "bg-emerald-600/10 border border-emerald-500/20"
-                  : "bg-red-600/10 border border-red-500/20")
+                  ? "bg-emerald-600/15 border border-emerald-500/25 shadow-lg shadow-emerald-600/10"
+                  : "bg-red-600/15 border border-red-500/25 shadow-lg shadow-red-600/10")
               )}>
                 <item.icon className={cn(
-                  "w-4.25 h-4.25 transition-colors duration-150",
-                  isActive && (isNutrition
-                    ? "text-emerald-400 drop-shadow-[0_0_6px_rgba(16,185,129,0.4)]"
-                    : "text-red-400 drop-shadow-[0_0_6px_rgba(220,38,38,0.4)]")
+                  "w-[18px] h-[18px] transition-all duration-200",
+                  isActive
+                    ? isNutrition
+                      ? "text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.5)]"
+                      : "text-red-400 drop-shadow-[0_0_8px_rgba(220,38,38,0.5)]"
+                    : "text-neutral-600"
                 )} />
                 {isActive && (
                   <div className={cn(
-                    "absolute -bottom-1 w-1 h-1 rounded-full",
+                    "absolute -bottom-1.5 w-4 h-0.5 rounded-full",
                     isNutrition
-                      ? "bg-emerald-500 shadow-[0_0_4px_rgba(16,185,129,0.6)]"
-                      : "bg-red-500 shadow-[0_0_4px_rgba(220,38,38,0.6)]"
+                      ? "bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]"
+                      : "bg-red-500 shadow-[0_0_6px_rgba(220,38,38,0.6)]"
                   )} />
                 )}
-                {/* Unread message badge on Profile (messages accessible from profile) */}
+                {/* Unread message badge on Profile */}
                 {isProfile && unreadMessages > 0 && (
-                  <div className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/40">
+                  <div className="absolute -top-1 -right-1 min-w-4 h-4 rounded-full bg-red-600 flex items-center justify-center shadow-lg shadow-red-600/40 animate-pulse-glow">
                     <span className="text-[8px] font-bold text-white px-1">{unreadMessages > 9 ? "9+" : unreadMessages}</span>
                   </div>
                 )}
               </div>
               <span className={cn(
-                "text-[9px] font-medium tracking-wider uppercase transition-colors duration-150",
-                isActive ? "text-neutral-300" : "text-neutral-700"
+                "text-[9px] font-semibold tracking-wider uppercase transition-colors duration-200",
+                isActive ? "text-neutral-200" : "text-neutral-700"
               )}>
                 {item.label}
               </span>

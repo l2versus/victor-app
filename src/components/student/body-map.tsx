@@ -56,20 +56,34 @@ const muscleToRegion: Record<string, string[]> = {
   Calves: ["calf-left", "calf-right"],
 }
 
-// Get intensity color based on percentage (0-100)
+// Thermal heatmap: green (fresh) → yellow → orange → red (maxed out)
 function getIntensityColor(percentage: number, isSelected: boolean): string {
   if (isSelected) return "rgba(239, 68, 68, 0.95)"
-  if (percentage >= 30) return "rgba(239, 68, 68, 0.85)"
-  if (percentage >= 20) return "rgba(239, 68, 68, 0.65)"
-  if (percentage >= 10) return "rgba(239, 68, 68, 0.45)"
-  if (percentage > 0) return "rgba(239, 68, 68, 0.25)"
-  return "rgba(255, 255, 255, 0.04)"
+  if (percentage >= 80) return "rgba(220, 38, 38, 0.90)"   // Deep red — maxed
+  if (percentage >= 60) return "rgba(239, 68, 68, 0.80)"   // Red — intense
+  if (percentage >= 40) return "rgba(249, 115, 22, 0.75)"   // Orange — heavy
+  if (percentage >= 25) return "rgba(245, 158, 11, 0.65)"   // Amber — moderate
+  if (percentage >= 10) return "rgba(234, 179, 8, 0.50)"    // Yellow — light
+  if (percentage > 0) return "rgba(74, 222, 128, 0.40)"     // Green — very light
+  return "rgba(255, 255, 255, 0.03)"
+}
+
+function getStrokeColor(percentage: number): string {
+  if (percentage >= 80) return "rgba(220, 38, 38, 0.5)"
+  if (percentage >= 60) return "rgba(239, 68, 68, 0.4)"
+  if (percentage >= 40) return "rgba(249, 115, 22, 0.35)"
+  if (percentage >= 25) return "rgba(245, 158, 11, 0.3)"
+  if (percentage >= 10) return "rgba(234, 179, 8, 0.25)"
+  if (percentage > 0) return "rgba(74, 222, 128, 0.2)"
+  return "rgba(255,255,255,0.05)"
 }
 
 function getGlowIntensity(percentage: number): string {
-  if (percentage >= 30) return "drop-shadow(0 0 8px rgba(239,68,68,0.5))"
-  if (percentage >= 20) return "drop-shadow(0 0 5px rgba(239,68,68,0.3))"
-  if (percentage >= 10) return "drop-shadow(0 0 3px rgba(239,68,68,0.2))"
+  if (percentage >= 80) return "drop-shadow(0 0 12px rgba(220,38,38,0.6)) drop-shadow(0 0 4px rgba(220,38,38,0.3))"
+  if (percentage >= 60) return "drop-shadow(0 0 10px rgba(239,68,68,0.45))"
+  if (percentage >= 40) return "drop-shadow(0 0 8px rgba(249,115,22,0.35))"
+  if (percentage >= 25) return "drop-shadow(0 0 5px rgba(245,158,11,0.25))"
+  if (percentage >= 10) return "drop-shadow(0 0 3px rgba(234,179,8,0.15))"
   return "none"
 }
 
@@ -111,13 +125,20 @@ function MuscleRegion({
   const fill = getIntensityColor(percentage, isSelected)
   const glow = getGlowIntensity(percentage)
 
+  const strokeColor = getStrokeColor(percentage)
+
   return (
     <path
       d={d}
       fill={fill}
-      stroke={percentage > 0 ? "rgba(239, 68, 68, 0.3)" : "rgba(255,255,255,0.06)"}
+      stroke={isSelected ? "rgba(255, 255, 255, 0.4)" : strokeColor}
       strokeWidth={isSelected ? 1.5 : 0.5}
-      style={{ filter: glow, cursor: percentage > 0 ? "pointer" : "default", transition: "all 0.3s ease" }}
+      style={{
+        filter: glow,
+        cursor: percentage > 0 ? "pointer" : "default",
+        transition: "all 0.35s cubic-bezier(0.4, 0, 0.2, 1)",
+      }}
+      className={percentage >= 60 ? "animate-muscle-pulse" : undefined}
       onClick={() => { if (info?.muscle && onSelect) onSelect(info.muscle) }}
     />
   )
@@ -287,9 +308,20 @@ export function BodyMap({
 
       {/* Selected muscle tooltip */}
       {selectedInfo && (
-        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-4 py-2 rounded-xl bg-[#0a0a0a]/95 border border-red-500/20 backdrop-blur-xl shadow-xl shadow-red-600/10 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <p className="text-xs font-semibold text-white text-center">{selectedInfo.muscle}</p>
-          <p className="text-[10px] text-red-400 text-center font-medium">{selectedInfo.percentage.toFixed(0)}% do volume</p>
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 px-4 py-2.5 rounded-xl bg-[#0a0a0a]/95 border border-white/10 backdrop-blur-2xl shadow-2xl shadow-black/40 animate-slide-up-subtle">
+          <p className="text-xs font-bold text-white text-center tracking-wide">{selectedInfo.muscle}</p>
+          <div className="flex items-center justify-center gap-2 mt-1">
+            <div className="h-1.5 w-12 rounded-full bg-white/10 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-500"
+                style={{
+                  width: `${Math.min(selectedInfo.percentage, 100)}%`,
+                  background: selectedInfo.percentage >= 60 ? "linear-gradient(90deg, #ef4444, #dc2626)" : selectedInfo.percentage >= 25 ? "linear-gradient(90deg, #f59e0b, #f97316)" : "linear-gradient(90deg, #4ade80, #22c55e)",
+                }}
+              />
+            </div>
+            <span className="text-[10px] font-bold text-white/80 tabular-nums">{selectedInfo.percentage.toFixed(0)}%</span>
+          </div>
         </div>
       )}
     </div>
@@ -301,19 +333,20 @@ export function BodyMap({
    ═══════════════════════════════════════════ */
 export function BodyMapLegend() {
   return (
-    <div className="flex items-center justify-center gap-3 mt-2">
+    <div className="flex items-center justify-center gap-1 mt-3 px-3 py-2 rounded-xl bg-white/[0.02] border border-white/[0.05]">
       {[
-        { label: "Leve", opacity: 0.25 },
-        { label: "Moderado", opacity: 0.45 },
-        { label: "Intenso", opacity: 0.65 },
-        { label: "Máximo", opacity: 0.85 },
-      ].map(({ label, opacity }) => (
+        { label: "Leve", color: "rgba(74, 222, 128, 0.5)" },
+        { label: "Moderado", color: "rgba(234, 179, 8, 0.6)" },
+        { label: "Intenso", color: "rgba(249, 115, 22, 0.7)" },
+        { label: "Máximo", color: "rgba(220, 38, 38, 0.85)" },
+      ].map(({ label, color }, i) => (
         <div key={label} className="flex items-center gap-1">
+          {i > 0 && <div className="w-3 h-px bg-white/[0.06]" />}
           <div
-            className="w-2.5 h-2.5 rounded-sm"
-            style={{ backgroundColor: `rgba(239, 68, 68, ${opacity})` }}
+            className="w-2.5 h-2.5 rounded-full shadow-sm"
+            style={{ backgroundColor: color, boxShadow: `0 0 6px ${color}` }}
           />
-          <span className="text-[8px] text-neutral-600">{label}</span>
+          <span className="text-[8px] text-neutral-500 font-medium">{label}</span>
         </div>
       ))}
     </div>
