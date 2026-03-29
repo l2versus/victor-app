@@ -431,7 +431,59 @@ function analyzeSquatFrontal(landmarks: Point[], opts?: {
 // Aplica-se a: Walking Lunge, Reverse Lunge, Bulgarian Split Squat, Step-Up
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzeLungePattern(landmarks: Point[]): PostureFeedback[] {
+/** Lunge — FRONTAL view: knee tracking, hip drop, step alignment */
+function analyzeLungeFrontal(landmarks: Point[]): PostureFeedback[] {
+  const feedback: PostureFeedback[] = []
+  const L = LANDMARKS
+
+  const lKnee = landmarks[L.LEFT_KNEE]
+  const rKnee = landmarks[L.RIGHT_KNEE]
+  const lAnkle = landmarks[L.LEFT_ANKLE]
+  const rAnkle = landmarks[L.RIGHT_ANKLE]
+  const lHip = landmarks[L.LEFT_HIP]
+  const rHip = landmarks[L.RIGHT_HIP]
+  const lShoulder = landmarks[L.LEFT_SHOULDER]
+  const rShoulder = landmarks[L.RIGHT_SHOULDER]
+
+  // 1. Joelho da frente — nao colapsar para dentro
+  if (isVisible(lKnee) && isVisible(lAnkle)) {
+    const kneeInward = Math.abs(lKnee.x - lAnkle.x)
+    if (kneeInward > 0.08) {
+      feedback.push({ status: "warning", message: "Joelho saindo do eixo — mantenha alinhado com o pé" })
+    } else {
+      feedback.push({ status: "correct", message: "Joelho alinhado com o pé" })
+    }
+  }
+
+  // 2. Quadril nivelado — não deixar cair de um lado
+  if (isVisible(lHip) && isVisible(rHip)) {
+    const hipDrop = Math.abs(lHip.y - rHip.y)
+    if (hipDrop > 0.05) {
+      const ladoBaixo = lHip.y > rHip.y ? "esquerdo" : "direito"
+      feedback.push({ status: "warning", message: `Quadril ${ladoBaixo} caindo — nivele o quadril` })
+    } else {
+      feedback.push({ status: "correct", message: "Quadril nivelado" })
+    }
+  }
+
+  // 3. Ombros nivelados
+  if (isVisible(lShoulder) && isVisible(rShoulder)) {
+    const tilt = Math.abs(lShoulder.y - rShoulder.y)
+    if (tilt > 0.05) {
+      feedback.push({ status: "warning", message: "Ombros desnivelados — distribua o peso" })
+    } else {
+      feedback.push({ status: "correct", message: "Ombros nivelados — equilíbrio!" })
+    }
+  }
+
+  return feedback
+}
+
+function analyzeLungePattern(landmarks: Point[], forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeLungeFrontal(landmarks)
+  }
+
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.LEFT_KNEE, LANDMARKS.RIGHT_KNEE)
@@ -497,10 +549,76 @@ function analyzeLungePattern(landmarks: Point[]): PostureFeedback[] {
 // Aplica-se a: Deadlift, Romanian DL, Stiff-Leg DL, Good Morning
 // ══════════════════════════════════════════════════════════════════════════════
 
+/** Hip Hinge — FRONTAL view: bar path, grip symmetry, shoulder/hip level */
+function analyzeHingeFrontal(landmarks: Point[]): PostureFeedback[] {
+  const feedback: PostureFeedback[] = []
+  const L = LANDMARKS
+
+  const lShoulder = landmarks[L.LEFT_SHOULDER]
+  const rShoulder = landmarks[L.RIGHT_SHOULDER]
+  const lHip = landmarks[L.LEFT_HIP]
+  const rHip = landmarks[L.RIGHT_HIP]
+  const lWrist = landmarks[L.LEFT_WRIST]
+  const rWrist = landmarks[L.RIGHT_WRIST]
+  const lKnee = landmarks[L.LEFT_KNEE]
+  const rKnee = landmarks[L.RIGHT_KNEE]
+
+  // 1. Ombros nivelados — barra reta
+  if (isVisible(lShoulder) && isVisible(rShoulder)) {
+    const tilt = Math.abs(lShoulder.y - rShoulder.y)
+    if (tilt > 0.04) {
+      const ladoBaixo = lShoulder.y > rShoulder.y ? "esquerdo" : "direito"
+      feedback.push({ status: "warning", message: `Ombro ${ladoBaixo} caindo — barra inclinada` })
+    } else {
+      feedback.push({ status: "correct", message: "Ombros nivelados — barra reta!" })
+    }
+  }
+
+  // 2. Mãos simétricas (grip width)
+  if (isVisible(lWrist) && isVisible(rWrist) && isVisible(lShoulder) && isVisible(rShoulder)) {
+    const lGripDist = Math.abs(lWrist.x - lShoulder.x)
+    const rGripDist = Math.abs(rWrist.x - rShoulder.x)
+    const gripDiff = Math.abs(lGripDist - rGripDist)
+    if (gripDiff > 0.06) {
+      feedback.push({ status: "warning", message: "Pegada assimétrica — centralize as mãos na barra" })
+    } else {
+      feedback.push({ status: "correct", message: "Pegada simétrica!" })
+    }
+  }
+
+  // 3. Joelhos — não devem colapsar
+  if (isVisible(lKnee) && isVisible(rKnee)) {
+    const lKneeAnkle = landmarks[L.LEFT_ANKLE]
+    const rKneeAnkle = landmarks[L.RIGHT_ANKLE]
+    if (isVisible(lKneeAnkle) && isVisible(rKneeAnkle)) {
+      const kneeW = Math.abs(lKnee.x - rKnee.x)
+      const ankleW = Math.abs(lKneeAnkle.x - rKneeAnkle.x)
+      if (kneeW < ankleW * 0.7) {
+        feedback.push({ status: "error", message: "Joelhos colapsando para dentro! Empurre para fora" })
+      }
+    }
+  }
+
+  // 4. Quadril nivelado
+  if (isVisible(lHip) && isVisible(rHip)) {
+    const hipTilt = Math.abs(lHip.y - rHip.y)
+    if (hipTilt > 0.04) {
+      feedback.push({ status: "warning", message: "Quadril desnivelado — distribuição desigual" })
+    }
+  }
+
+  return feedback
+}
+
 function analyzeHingePattern(landmarks: Point[], opts?: {
   allowKneeBend?: boolean
   label?: string
+  forcedView?: DetectedView
 }): PostureFeedback[] {
+  if (opts?.forcedView === "front" || opts?.forcedView === "back") {
+    return analyzeHingeFrontal(landmarks)
+  }
+
   const feedback: PostureFeedback[] = []
   const allowKnee = opts?.allowKneeBend ?? true
 
@@ -742,7 +860,53 @@ function analyzePushUpFrontal(landmarks: Point[], opts?: { narrow?: boolean }): 
 // Aplica-se a: Overhead Press, Shoulder Press, Arnold Press
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzeOverheadPressPattern(landmarks: Point[]): PostureFeedback[] {
+/** OHP — FRONTAL: arm symmetry, bar path, elbow flare */
+function analyzeOverheadPressFrontal(landmarks: Point[]): PostureFeedback[] {
+  const feedback: PostureFeedback[] = []
+  const L = LANDMARKS
+  const lShoulder = landmarks[L.LEFT_SHOULDER], rShoulder = landmarks[L.RIGHT_SHOULDER]
+  const lElbow = landmarks[L.LEFT_ELBOW], rElbow = landmarks[L.RIGHT_ELBOW]
+  const lWrist = landmarks[L.LEFT_WRIST], rWrist = landmarks[L.RIGHT_WRIST]
+
+  // 1. Simetria dos braços — ambos devem subir na mesma altura
+  if (isVisible(lWrist) && isVisible(rWrist)) {
+    const heightDiff = Math.abs(lWrist.y - rWrist.y)
+    if (heightDiff > 0.06) {
+      const ladoBaixo = lWrist.y > rWrist.y ? "esquerdo" : "direito"
+      feedback.push({ status: "warning", message: `Braço ${ladoBaixo} mais baixo — empurre igual dos dois lados` })
+    } else {
+      feedback.push({ status: "correct", message: "Braços simétricos — empurrando igual!" })
+    }
+  }
+
+  // 2. Cotovelos — não devem abrir demais
+  if (isVisible(lElbow) && isVisible(rElbow) && isVisible(lShoulder) && isVisible(rShoulder)) {
+    const elbowW = Math.abs(lElbow.x - rElbow.x)
+    const shoulderW = Math.abs(lShoulder.x - rShoulder.x)
+    if (elbowW > shoulderW * 1.6) {
+      feedback.push({ status: "warning", message: "Cotovelos muito abertos — traga para a linha do ombro" })
+    } else {
+      feedback.push({ status: "correct", message: "Cotovelos alinhados" })
+    }
+  }
+
+  // 3. Ombros nivelados
+  if (isVisible(lShoulder) && isVisible(rShoulder)) {
+    const tilt = Math.abs(lShoulder.y - rShoulder.y)
+    if (tilt > 0.04) {
+      feedback.push({ status: "warning", message: "Ombros desnivelados — um lado está compensando" })
+    } else {
+      feedback.push({ status: "correct", message: "Ombros nivelados!" })
+    }
+  }
+
+  return feedback
+}
+
+function analyzeOverheadPressPattern(landmarks: Point[], forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeOverheadPressFrontal(landmarks)
+  }
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER)
@@ -816,9 +980,55 @@ function analyzeOverheadPressPattern(landmarks: Point[]): PostureFeedback[] {
 // Aplica-se a: Todas roscas biceps (barra, halter, martelo, etc)
 // ══════════════════════════════════════════════════════════════════════════════
 
+/** Curl — FRONTAL: symmetry, body swing, elbow pinning */
+function analyzeCurlFrontal(landmarks: Point[]): PostureFeedback[] {
+  const feedback: PostureFeedback[] = []
+  const L = LANDMARKS
+  const lShoulder = landmarks[L.LEFT_SHOULDER], rShoulder = landmarks[L.RIGHT_SHOULDER]
+  const lElbow = landmarks[L.LEFT_ELBOW], rElbow = landmarks[L.RIGHT_ELBOW]
+  const lWrist = landmarks[L.LEFT_WRIST], rWrist = landmarks[L.RIGHT_WRIST]
+  const lHip = landmarks[L.LEFT_HIP], rHip = landmarks[L.RIGHT_HIP]
+
+  // 1. Simetria dos braços — na rosca bilateral ambos devem subir juntos
+  if (isVisible(lWrist) && isVisible(rWrist)) {
+    const diff = Math.abs(lWrist.y - rWrist.y)
+    if (diff > 0.06) {
+      const ladoAtras = lWrist.y > rWrist.y ? "esquerdo" : "direito"
+      feedback.push({ status: "warning", message: `Braço ${ladoAtras} atrasado — suba igual!` })
+    } else {
+      feedback.push({ status: "correct", message: "Braços simétricos!" })
+    }
+  }
+
+  // 2. Cotovelos fixos ao corpo — não devem abrir lateralmente
+  if (isVisible(lElbow) && isVisible(lHip) && isVisible(rElbow) && isVisible(rHip)) {
+    const lFlare = Math.abs(lElbow.x - lHip.x)
+    const rFlare = Math.abs(rElbow.x - rHip.x)
+    if (lFlare > 0.12 || rFlare > 0.12) {
+      feedback.push({ status: "warning", message: "Cotovelos abrindo! Mantenha grudados ao corpo" })
+    } else {
+      feedback.push({ status: "correct", message: "Cotovelos fixos ao corpo — isolamento!" })
+    }
+  }
+
+  // 3. Ombros nivelados — não compensar
+  if (isVisible(lShoulder) && isVisible(rShoulder)) {
+    const tilt = Math.abs(lShoulder.y - rShoulder.y)
+    if (tilt > 0.04) {
+      feedback.push({ status: "warning", message: "Ombros desnivelados — corpo balançando" })
+    }
+  }
+
+  return feedback
+}
+
 function analyzeCurlPattern(landmarks: Point[], opts?: {
   strictShoulder?: boolean
+  forcedView?: DetectedView
 }): PostureFeedback[] {
+  if (opts?.forcedView === "front" || opts?.forcedView === "back") {
+    return analyzeCurlFrontal(landmarks)
+  }
   const feedback: PostureFeedback[] = []
   const strict = opts?.strictShoulder ?? true
 
@@ -893,7 +1103,10 @@ function analyzeCurlPattern(landmarks: Point[], opts?: {
 // Aplica-se a: Overhead Extension, Skull Crusher, Kickback
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzeTricepExtensionPattern(landmarks: Point[], variant: "overhead" | "kickback" | "pushdown"): PostureFeedback[] {
+function analyzeTricepExtensionPattern(landmarks: Point[], variant: "overhead" | "kickback" | "pushdown", forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeGenericFrontal(landmarks, "tricep")
+  }
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.RIGHT_SHOULDER, LANDMARKS.LEFT_SHOULDER)
@@ -966,7 +1179,10 @@ function analyzeTricepExtensionPattern(landmarks: Point[], variant: "overhead" |
 // Aplica-se a: Lateral Raise, Front Raise
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzeRaisePattern(landmarks: Point[], variant: "lateral" | "front"): PostureFeedback[] {
+function analyzeRaisePattern(landmarks: Point[], variant: "lateral" | "front", forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeGenericFrontal(landmarks, "raise")
+  }
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.RIGHT_SHOULDER, LANDMARKS.LEFT_SHOULDER)
@@ -1036,7 +1252,61 @@ function analyzeRaisePattern(landmarks: Point[], variant: "lateral" | "front"): 
 // Aplica-se a: Bent-Over Row, Pendlay Row, Dumbbell Row
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzeRowPattern(landmarks: Point[]): PostureFeedback[] {
+/** Generic frontal symmetry analysis — works for Row, Dip, HipThrust, CalfRaise, Tricep, etc. */
+function analyzeGenericFrontal(landmarks: Point[], exerciseType: string): PostureFeedback[] {
+  const feedback: PostureFeedback[] = []
+  const L = LANDMARKS
+  const lShoulder = landmarks[L.LEFT_SHOULDER], rShoulder = landmarks[L.RIGHT_SHOULDER]
+  const lHip = landmarks[L.LEFT_HIP], rHip = landmarks[L.RIGHT_HIP]
+  const lKnee = landmarks[L.LEFT_KNEE], rKnee = landmarks[L.RIGHT_KNEE]
+  const lElbow = landmarks[L.LEFT_ELBOW], rElbow = landmarks[L.RIGHT_ELBOW]
+
+  // 1. Ombros nivelados
+  if (isVisible(lShoulder) && isVisible(rShoulder)) {
+    const tilt = Math.abs(lShoulder.y - rShoulder.y)
+    if (tilt > 0.05) {
+      const ladoBaixo = lShoulder.y > rShoulder.y ? "esquerdo" : "direito"
+      feedback.push({ status: "warning", message: `Ombro ${ladoBaixo} caindo — equilibre o peso` })
+    } else {
+      feedback.push({ status: "correct", message: "Ombros nivelados!" })
+    }
+  }
+
+  // 2. Quadril nivelado
+  if (isVisible(lHip) && isVisible(rHip)) {
+    const hipTilt = Math.abs(lHip.y - rHip.y)
+    if (hipTilt > 0.04) {
+      feedback.push({ status: "warning", message: "Quadril desnivelado — peso desigual" })
+    } else {
+      feedback.push({ status: "correct", message: "Quadril nivelado" })
+    }
+  }
+
+  // 3. Simetria de cotovelos (para exercícios de braço)
+  if (isVisible(lElbow) && isVisible(rElbow)) {
+    const elbowDiff = Math.abs(lElbow.y - rElbow.y)
+    if (elbowDiff > 0.06) {
+      feedback.push({ status: "warning", message: "Braços assimétricos — movimente igualmente" })
+    } else {
+      feedback.push({ status: "correct", message: "Braços simétricos!" })
+    }
+  }
+
+  // 4. Joelhos (para exercícios de perna)
+  if ((exerciseType === "hipthrust" || exerciseType === "calf") && isVisible(lKnee) && isVisible(rKnee)) {
+    const kneeDiff = Math.abs(lKnee.y - rKnee.y)
+    if (kneeDiff > 0.05) {
+      feedback.push({ status: "warning", message: "Joelhos desnivelados — distribua igualmente" })
+    }
+  }
+
+  return feedback
+}
+
+function analyzeRowPattern(landmarks: Point[], forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeGenericFrontal(landmarks, "row")
+  }
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER)
@@ -1110,7 +1380,10 @@ function analyzeRowPattern(landmarks: Point[]): PostureFeedback[] {
 // Aplica-se a: Plank, Side Plank
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzePlankPattern(landmarks: Point[]): PostureFeedback[] {
+function analyzePlankPattern(landmarks: Point[], forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeGenericFrontal(landmarks, "plank")
+  }
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER)
@@ -1150,7 +1423,10 @@ function analyzePlankPattern(landmarks: Point[]): PostureFeedback[] {
 // Aplica-se a: Hip Thrust, Glute Bridge
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzeHipThrustPattern(landmarks: Point[]): PostureFeedback[] {
+function analyzeHipThrustPattern(landmarks: Point[], forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeGenericFrontal(landmarks, "hipthrust")
+  }
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.LEFT_HIP, LANDMARKS.RIGHT_HIP)
@@ -1222,7 +1498,10 @@ function analyzeHipThrustPattern(landmarks: Point[]): PostureFeedback[] {
 // Aplica-se a: Dips (peito e triceps)
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzeDipPattern(landmarks: Point[], variant: "chest" | "tricep"): PostureFeedback[] {
+function analyzeDipPattern(landmarks: Point[], variant: "chest" | "tricep", forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeGenericFrontal(landmarks, "dip")
+  }
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.LEFT_SHOULDER, LANDMARKS.RIGHT_SHOULDER)
@@ -1287,7 +1566,10 @@ function analyzeDipPattern(landmarks: Point[], variant: "chest" | "tricep"): Pos
 // PADRAO 13: PANTURRILHA / CALF Pattern
 // ══════════════════════════════════════════════════════════════════════════════
 
-function analyzeCalfRaisePattern(landmarks: Point[]): PostureFeedback[] {
+function analyzeCalfRaisePattern(landmarks: Point[], forcedView?: DetectedView): PostureFeedback[] {
+  if (forcedView === "front" || forcedView === "back") {
+    return analyzeGenericFrontal(landmarks, "calf")
+  }
   const feedback: PostureFeedback[] = []
 
   const side = bestSide(landmarks, LANDMARKS.LEFT_ANKLE, LANDMARKS.RIGHT_ANKLE)
@@ -1409,7 +1691,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "quadriceps",
     cameraPosition: "side",
     positioningTip: "De lado para a camera, espaco para caminhar",
-    analyze: (lm) => analyzeLungePattern(lm),
+    analyze: (lm, fv) => analyzeLungePattern(lm, fv),
   },
   {
     id: "reverse_lunge",
@@ -1418,7 +1700,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "quadriceps",
     cameraPosition: "side",
     positioningTip: "De lado para a camera",
-    analyze: (lm) => analyzeLungePattern(lm),
+    analyze: (lm, fv) => analyzeLungePattern(lm, fv),
   },
   {
     id: "bulgarian_split_squat",
@@ -1427,7 +1709,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "quadriceps",
     cameraPosition: "side",
     positioningTip: "De lado, pe traseiro elevado no banco",
-    analyze: (lm) => analyzeLungePattern(lm),
+    analyze: (lm, fv) => analyzeLungePattern(lm, fv),
   },
   {
     id: "step_up",
@@ -1436,7 +1718,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "quadriceps",
     cameraPosition: "side",
     positioningTip: "De lado para a camera, ao lado do step/banco",
-    analyze: (lm) => analyzeLungePattern(lm),
+    analyze: (lm, fv) => analyzeLungePattern(lm, fv),
   },
 
   // ── HAMSTRINGS ────────────────────────────────────────────────────────────
@@ -1447,7 +1729,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "hamstrings",
     cameraPosition: "side",
     positioningTip: "De lado, corpo inteiro visivel",
-    analyze: (lm) => analyzeHingePattern(lm, { allowKneeBend: false }),
+    analyze: (lm, fv) => analyzeHingePattern(lm, { allowKneeBend: false, forcedView: fv }),
   },
   {
     id: "stiff_leg_deadlift",
@@ -1456,7 +1738,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "hamstrings",
     cameraPosition: "side",
     positioningTip: "De lado, joelhos quase travados",
-    analyze: (lm) => analyzeHingePattern(lm, { allowKneeBend: false }),
+    analyze: (lm, fv) => analyzeHingePattern(lm, { allowKneeBend: false, forcedView: fv }),
   },
   {
     id: "good_morning",
@@ -1465,7 +1747,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "hamstrings",
     cameraPosition: "side",
     positioningTip: "De lado, barra nos ombros",
-    analyze: (lm) => analyzeHingePattern(lm, { allowKneeBend: false }),
+    analyze: (lm, fv) => analyzeHingePattern(lm, { allowKneeBend: false, forcedView: fv }),
   },
 
   // ── GLUTEOS ───────────────────────────────────────────────────────────────
@@ -1476,7 +1758,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "glutes",
     cameraPosition: "side",
     positioningTip: "De lado, costas apoiadas no banco",
-    analyze: (lm) => analyzeHipThrustPattern(lm),
+    analyze: (lm, fv) => analyzeHipThrustPattern(lm, fv),
   },
   {
     id: "glute_bridge",
@@ -1485,7 +1767,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "glutes",
     cameraPosition: "side",
     positioningTip: "De lado, deitado no chao",
-    analyze: (lm) => analyzeHipThrustPattern(lm),
+    analyze: (lm, fv) => analyzeHipThrustPattern(lm, fv),
   },
 
   // ── PANTURRILHA ───────────────────────────────────────────────────────────
@@ -1496,7 +1778,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "calves",
     cameraPosition: "side",
     positioningTip: "De lado, corpo inteiro visivel dos pes a cabeca",
-    analyze: (lm) => analyzeCalfRaisePattern(lm),
+    analyze: (lm, fv) => analyzeCalfRaisePattern(lm, fv),
   },
 
   // ── PEITO ─────────────────────────────────────────────────────────────────
@@ -1508,7 +1790,7 @@ const exerciseRules: ExerciseRule[] = [
     cameraPosition: "side",
     allowedPositions: ["side", "front"],
     positioningTip: "Camera no chao: de LADO (ve alinhamento) ou de FRENTE (ve cotovelos)",
-    analyze: (lm) => analyzePushUpPattern(lm),
+    analyze: (lm, fv) => analyzePushUpPattern(lm),
   },
   {
     id: "incline_push_up",
@@ -1518,7 +1800,7 @@ const exerciseRules: ExerciseRule[] = [
     cameraPosition: "side",
     allowedPositions: ["side", "front"],
     positioningTip: "Camera no chao: de lado ou de frente",
-    analyze: (lm) => analyzePushUpPattern(lm),
+    analyze: (lm, fv) => analyzePushUpPattern(lm),
   },
   {
     id: "deficit_push_up",
@@ -1528,7 +1810,7 @@ const exerciseRules: ExerciseRule[] = [
     cameraPosition: "side",
     allowedPositions: ["side", "front"],
     positioningTip: "Camera no chao: de lado ou de frente",
-    analyze: (lm) => analyzePushUpPattern(lm),
+    analyze: (lm, fv) => analyzePushUpPattern(lm),
   },
   {
     id: "dip_chest",
@@ -1537,7 +1819,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "chest",
     cameraPosition: "side",
     positioningTip: "De lado, na estacao de mergulho",
-    analyze: (lm) => analyzeDipPattern(lm, "chest"),
+    analyze: (lm, fv) => analyzeDipPattern(lm, "chest", fv),
   },
 
   // ── COSTAS ────────────────────────────────────────────────────────────────
@@ -1548,7 +1830,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "back",
     cameraPosition: "side",
     positioningTip: "De lado, tronco inclinado a 45°",
-    analyze: (lm) => analyzeRowPattern(lm),
+    analyze: (lm, fv) => analyzeRowPattern(lm, fv),
   },
   {
     id: "dumbbell_row",
@@ -1557,7 +1839,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "back",
     cameraPosition: "side",
     positioningTip: "De lado, mao apoiada no banco",
-    analyze: (lm) => analyzeRowPattern(lm),
+    analyze: (lm, fv) => analyzeRowPattern(lm, fv),
   },
   {
     id: "pendlay_row",
@@ -1566,7 +1848,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "back",
     cameraPosition: "side",
     positioningTip: "De lado, tronco paralelo ao chao",
-    analyze: (lm) => analyzeRowPattern(lm),
+    analyze: (lm, fv) => analyzeRowPattern(lm, fv),
   },
   {
     id: "t_bar_row",
@@ -1575,7 +1857,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "back",
     cameraPosition: "side",
     positioningTip: "De lado, tronco inclinado",
-    analyze: (lm) => analyzeRowPattern(lm),
+    analyze: (lm, fv) => analyzeRowPattern(lm, fv),
   },
 
   // ── OMBROS ────────────────────────────────────────────────────────────────
@@ -1586,7 +1868,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "shoulders",
     cameraPosition: "side",
     positioningTip: "De lado, em pe, barra na frente dos ombros",
-    analyze: (lm) => analyzeOverheadPressPattern(lm),
+    analyze: (lm, fv) => analyzeOverheadPressPattern(lm, fv),
   },
   {
     id: "dumbbell_shoulder_press",
@@ -1595,7 +1877,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "shoulders",
     cameraPosition: "side",
     positioningTip: "De lado, sentado ou em pe",
-    analyze: (lm) => analyzeOverheadPressPattern(lm),
+    analyze: (lm, fv) => analyzeOverheadPressPattern(lm, fv),
   },
   {
     id: "arnold_press",
@@ -1604,7 +1886,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "shoulders",
     cameraPosition: "side",
     positioningTip: "De lado, sentado",
-    analyze: (lm) => analyzeOverheadPressPattern(lm),
+    analyze: (lm, fv) => analyzeOverheadPressPattern(lm, fv),
   },
   {
     id: "lateral_raise",
@@ -1613,7 +1895,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "shoulders",
     cameraPosition: "front",
     positioningTip: "De frente para a camera, bracos ao lado do corpo",
-    analyze: (lm) => analyzeRaisePattern(lm, "lateral"),
+    analyze: (lm, fv) => analyzeRaisePattern(lm, "lateral", fv),
   },
   {
     id: "front_raise",
@@ -1622,7 +1904,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "shoulders",
     cameraPosition: "side",
     positioningTip: "De lado para a camera",
-    analyze: (lm) => analyzeRaisePattern(lm, "front"),
+    analyze: (lm, fv) => analyzeRaisePattern(lm, "front", fv),
   },
 
   // ── BICEPS ────────────────────────────────────────────────────────────────
@@ -1633,7 +1915,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "biceps",
     cameraPosition: "side",
     positioningTip: "De lado, braco visivel inteiro",
-    analyze: (lm) => analyzeCurlPattern(lm),
+    analyze: (lm, fv) => analyzeCurlPattern(lm, { forcedView: fv }),
   },
   {
     id: "dumbbell_curl",
@@ -1642,7 +1924,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "biceps",
     cameraPosition: "side",
     positioningTip: "De lado, braco que esta trabalhando visivel",
-    analyze: (lm) => analyzeCurlPattern(lm),
+    analyze: (lm, fv) => analyzeCurlPattern(lm, { forcedView: fv }),
   },
   {
     id: "hammer_curl",
@@ -1651,7 +1933,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "biceps",
     cameraPosition: "side",
     positioningTip: "De lado, punho neutro (palma pra dentro)",
-    analyze: (lm) => analyzeCurlPattern(lm),
+    analyze: (lm, fv) => analyzeCurlPattern(lm, { forcedView: fv }),
   },
   {
     id: "preacher_curl",
@@ -1660,7 +1942,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "biceps",
     cameraPosition: "side",
     positioningTip: "De lado, braco apoiado no banco Scott",
-    analyze: (lm) => analyzeCurlPattern(lm, { strictShoulder: false }),
+    analyze: (lm, fv) => analyzeCurlPattern(lm, { strictShoulder: false, forcedView: fv }),
   },
   {
     id: "concentration_curl",
@@ -1669,7 +1951,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "biceps",
     cameraPosition: "front",
     positioningTip: "De frente, sentado, cotovelo apoiado na coxa",
-    analyze: (lm) => analyzeCurlPattern(lm, { strictShoulder: false }),
+    analyze: (lm, fv) => analyzeCurlPattern(lm, { strictShoulder: false, forcedView: fv }),
   },
   {
     id: "incline_curl",
@@ -1678,7 +1960,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "biceps",
     cameraPosition: "side",
     positioningTip: "De lado, sentado no banco inclinado a 45°",
-    analyze: (lm) => analyzeCurlPattern(lm),
+    analyze: (lm, fv) => analyzeCurlPattern(lm, { forcedView: fv }),
   },
   {
     id: "spider_curl",
@@ -1687,7 +1969,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "biceps",
     cameraPosition: "side",
     positioningTip: "De lado, peito apoiado no banco inclinado",
-    analyze: (lm) => analyzeCurlPattern(lm, { strictShoulder: false }),
+    analyze: (lm, fv) => analyzeCurlPattern(lm, { strictShoulder: false, forcedView: fv }),
   },
 
   // ── TRICEPS ───────────────────────────────────────────────────────────────
@@ -1698,7 +1980,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "triceps",
     cameraPosition: "side",
     positioningTip: "De lado, proximo ao cabo",
-    analyze: (lm) => analyzeTricepExtensionPattern(lm, "pushdown"),
+    analyze: (lm, fv) => analyzeTricepExtensionPattern(lm, "pushdown", fv),
   },
   {
     id: "rope_pushdown",
@@ -1707,7 +1989,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "triceps",
     cameraPosition: "side",
     positioningTip: "De lado, proximo ao cabo",
-    analyze: (lm) => analyzeTricepExtensionPattern(lm, "pushdown"),
+    analyze: (lm, fv) => analyzeTricepExtensionPattern(lm, "pushdown", fv),
   },
   {
     id: "overhead_tricep",
@@ -1716,7 +1998,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "triceps",
     cameraPosition: "side",
     positioningTip: "De lado, bracos acima da cabeca",
-    analyze: (lm) => analyzeTricepExtensionPattern(lm, "overhead"),
+    analyze: (lm, fv) => analyzeTricepExtensionPattern(lm, "overhead", fv),
   },
   {
     id: "skull_crusher",
@@ -1725,7 +2007,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "triceps",
     cameraPosition: "side",
     positioningTip: "De lado, deitado no banco",
-    analyze: (lm) => analyzeTricepExtensionPattern(lm, "overhead"),
+    analyze: (lm, fv) => analyzeTricepExtensionPattern(lm, "overhead", fv),
   },
   {
     id: "tricep_kickback",
@@ -1734,7 +2016,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "triceps",
     cameraPosition: "side",
     positioningTip: "De lado, tronco inclinado",
-    analyze: (lm) => analyzeTricepExtensionPattern(lm, "kickback"),
+    analyze: (lm, fv) => analyzeTricepExtensionPattern(lm, "kickback", fv),
   },
   {
     id: "diamond_push_up",
@@ -1743,7 +2025,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "triceps",
     cameraPosition: "side-or-front",
     positioningTip: "Camera no chao: de frente (melhor — ve cotovelos grudados) ou de lado",
-    analyze: (lm) => analyzePushUpPattern(lm, { narrow: true }),
+    analyze: (lm, fv) => analyzePushUpPattern(lm, { narrow: true }),
   },
   {
     id: "dip_tricep",
@@ -1752,7 +2034,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "triceps",
     cameraPosition: "side",
     positioningTip: "De lado, corpo mais vertical",
-    analyze: (lm) => analyzeDipPattern(lm, "tricep"),
+    analyze: (lm, fv) => analyzeDipPattern(lm, "tricep", fv),
   },
 
   // ── CORE ──────────────────────────────────────────────────────────────────
@@ -1763,7 +2045,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "core",
     cameraPosition: "side",
     positioningTip: "Camera no chao, de lado, corpo inteiro visivel",
-    analyze: (lm) => analyzePlankPattern(lm),
+    analyze: (lm, fv) => analyzePlankPattern(lm, fv),
   },
   {
     id: "side_plank",
@@ -1772,7 +2054,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "core",
     cameraPosition: "front",
     positioningTip: "De frente para a camera, em apoio lateral",
-    analyze: (lm) => analyzePlankPattern(lm),
+    analyze: (lm, fv) => analyzePlankPattern(lm, fv),
   },
   {
     id: "mountain_climber",
@@ -1781,7 +2063,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "core",
     cameraPosition: "side",
     positioningTip: "Camera no chao, de lado",
-    analyze: (lm) => analyzePushUpPattern(lm),
+    analyze: (lm, fv) => analyzePushUpPattern(lm),
   },
 
   // ── FULL BODY ─────────────────────────────────────────────────────────────
@@ -1792,7 +2074,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "full_body",
     cameraPosition: "side",
     positioningTip: "De lado, corpo inteiro visivel com a barra",
-    analyze: (lm) => analyzeHingePattern(lm, { allowKneeBend: true }),
+    analyze: (lm, fv) => analyzeHingePattern(lm, { allowKneeBend: true, forcedView: fv }),
   },
   {
     id: "sumo_deadlift",
@@ -1801,7 +2083,7 @@ const exerciseRules: ExerciseRule[] = [
     muscleGroup: "full_body",
     cameraPosition: "front",
     positioningTip: "De frente, pes bem abertos",
-    analyze: (lm) => analyzeHingePattern(lm, { allowKneeBend: true }),
+    analyze: (lm, fv) => analyzeHingePattern(lm, { allowKneeBend: true, forcedView: fv }),
   },
   {
     id: "thruster",
