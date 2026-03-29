@@ -27,6 +27,7 @@ import {
 import type { BotType, BotConfig } from "./bot-config"
 import { BOT_CONFIGS, sendBotMessage } from "./bot-config"
 import { isBotPaused } from "./platform-settings"
+import { executeFlowTrigger } from "./bot-flow-executor"
 
 // ═══════════════════════════════════════════════════════════════
 // TIPOS
@@ -324,6 +325,15 @@ async function processLeadMessage(
     })
 
     console.log(`[${bot.name}] New lead created: ${senderName} (${phone})`)
+
+    // Fire flow trigger (fire-and-forget)
+    executeFlowTrigger("new_lead", {
+      leadId,
+      botType: bot.type as "victor" | "nutri" | "b2b",
+      leadName: senderName,
+      phone,
+      message: content,
+    }).catch(console.error)
   } else {
     leadId = existingLead.id
 
@@ -503,6 +513,15 @@ async function processB2bLeadMessage(
     })
 
     console.log(`[${bot.name}] New SaaS lead: ${senderName} (${phone})`)
+
+    // Fire flow trigger (fire-and-forget)
+    executeFlowTrigger("new_lead", {
+      leadId,
+      botType: "b2b",
+      leadName: senderName,
+      phone,
+      message: content,
+    }).catch(console.error)
   } else {
     leadId = existingLead.id
 

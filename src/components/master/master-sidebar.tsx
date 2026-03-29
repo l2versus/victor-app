@@ -14,6 +14,7 @@ import {
   ArrowLeft,
   Shield,
   Target,
+  Bot,
 } from "lucide-react"
 
 const navGroups = [
@@ -24,6 +25,7 @@ const navGroups = [
       { href: "/master/organizations", label: "Organizações", icon: Building2 },
       { href: "/master/professionals", label: "Profissionais", icon: UserCog },
       { href: "/master/crm", label: "Pipeline", icon: Target },
+      { href: "/master/bots", label: "Bot Studio", icon: Bot },
     ],
   },
   {
