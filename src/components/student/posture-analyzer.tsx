@@ -28,6 +28,14 @@ import {
   detectCameraView,
 } from "@/lib/posture-rules"
 import {
+  type TrackerState,
+  createTrackerState,
+  updateTracker,
+  calculateSetScore,
+  getRepConfig,
+  getPositioningGuide,
+} from "@/lib/posture-tracker"
+import {
   ALL_EXERCISE_GROUPS as EXERCISE_GROUPS,
   ALL_EXERCISE_RULES as EXERCISE_RULES,
   TOTAL_EXERCISES_WITH_POSTURE,
@@ -66,6 +74,13 @@ export function PostureAnalyzer() {
   /** User-selected camera angle — REQUIRED before starting analysis */
   const [selectedAngle, setSelectedAngle] = useState<"side" | "front" | "back" | "floor">("side")
   const selectedAngleRef = useRef<"side" | "front" | "back" | "floor">("side")
+  // ═══ Rep counter + Score + Speed ═══
+  const trackerRef = useRef<TrackerState>(createTrackerState())
+  const [repCount, setRepCount] = useState(0)
+  const [repPhase, setRepPhase] = useState<string>("")
+  const [eccentricSpeed, setEccentricSpeed] = useState(0)
+  const [concentricSpeed, setConcentricSpeed] = useState(0)
+  const [setScore, setSetScore] = useState<{ score: number; grade: string; gradeColor: string; details: string } | null>(null)
   // ═══ Feedback history for post-exercise replay ═══
   const [feedbackHistory, setFeedbackHistory] = useState<{ time: number; items: PostureFeedback[] }[]>([])
   const [showReplay, setShowReplay] = useState(false)
@@ -146,6 +161,11 @@ export function PostureAnalyzer() {
     }
 
     if (mountedRef.current) {
+      // Calculate final set score before resetting
+      const finalScore = calculateSetScore(trackerRef.current)
+      if (trackerRef.current.reps > 0) {
+        setSetScore(finalScore)
+      }
       setState("idle")
       setFeedback([])
       setFps(0)
@@ -173,7 +193,13 @@ export function PostureAnalyzer() {
   async function startAnalysis() {
     setState("loading")
     setErrorMsg("")
-    // angle selector is always visible in idle state
+    // Reset tracker for new set
+    trackerRef.current = createTrackerState()
+    setRepCount(0)
+    setRepPhase("")
+    setEccentricSpeed(0)
+    setConcentricSpeed(0)
+    setSetScore(null)
     setFeedbackHistory([])
     setShowReplay(false)
     analysisStartRef.current = Date.now()
@@ -352,6 +378,30 @@ export function PostureAnalyzer() {
                 ...exerciseFeedback,
               ]
             }
+
+            // ═══ Update rep tracker (counter + score + speed) ═══
+            const exercise = selectedExerciseRef.current
+            const repConfig = getRepConfig(exercise.muscleGroup, exercise.id)
+            const prevReps = trackerRef.current.reps
+            updateTracker(trackerRef.current, landmarks, repConfig, exerciseFeedback)
+
+            if (mountedRef.current) {
+              // Update rep count if changed
+              if (trackerRef.current.reps !== prevReps) {
+                setRepCount(trackerRef.current.reps)
+              }
+              // Update phase label (throttled — only when phase changes)
+              const phaseLabel = trackerRef.current.phase === "eccentric" ? repConfig.downLabel
+                : trackerRef.current.phase === "concentric" ? repConfig.upLabel : ""
+              setRepPhase(phaseLabel)
+              // Update speed (only when we have data)
+              if (trackerRef.current.lastEccentricMs > 0) {
+                setEccentricSpeed(trackerRef.current.lastEccentricMs)
+              }
+              if (trackerRef.current.lastConcentricMs > 0) {
+                setConcentricSpeed(trackerRef.current.lastConcentricMs)
+              }
+            }
             if (mountedRef.current) {
               setFeedback(exerciseFeedback)
               // Record errors/warnings for post-exercise replay (every 2s to save memory)
@@ -366,8 +416,8 @@ export function PostureAnalyzer() {
               }
             }
 
-            // Draw feedback + detected view on canvas overlay
-            drawFeedbackOnCanvas(ctx, exerciseFeedback, canvas.width, canvas.height, viewResult)
+            // Draw feedback + detected view + rep counter + ROM zone on canvas
+            drawFeedbackOnCanvas(ctx, exerciseFeedback, canvas.width, canvas.height, viewResult, trackerRef.current, repConfig, landmarks)
           } else {
             if (mountedRef.current) {
               setFeedback([{
@@ -405,6 +455,9 @@ export function PostureAnalyzer() {
     w: number,
     h: number,
     viewResult?: ViewDetectionResult,
+    tracker?: TrackerState,
+    repConfig?: ReturnType<typeof getRepConfig>,
+    landmarks?: Point[],
   ) {
     // ═══ LARGE TEXT MODE — readable from 2-3 meters away ═══
     // Only show warnings and errors on canvas (correct = no distraction)
@@ -466,6 +519,73 @@ export function PostureAnalyzer() {
     grad.addColorStop(1, "rgba(0, 0, 0, 0)")
     ctx.fillStyle = grad
     ctx.fillRect(0, panelHeight - 10, w, 10)
+
+    // ═══ REP COUNTER — large number at bottom-right ═══
+    if (tracker && tracker.reps >= 0) {
+      const repFontSize = Math.max(48, w * 0.08)
+      const repX = w - 16
+      const repY = h - 16
+
+      // Big rep number
+      ctx.font = `bold ${repFontSize}px -apple-system, sans-serif`
+      ctx.textAlign = "right"
+      ctx.fillStyle = "rgba(0, 0, 0, 0.7)"
+      ctx.fillText(String(tracker.reps), repX + 2, repY + 2) // shadow
+      ctx.fillStyle = "#ffffff"
+      ctx.fillText(String(tracker.reps), repX, repY)
+
+      // "REPS" label
+      ctx.font = `bold ${Math.max(12, w * 0.02)}px -apple-system, sans-serif`
+      ctx.fillStyle = "rgba(255, 255, 255, 0.6)"
+      ctx.fillText("REPS", repX, repY - repFontSize * 0.85)
+
+      // Phase label (Descendo / Subindo)
+      if (tracker.phase !== "idle") {
+        const phaseLabel = repConfig
+          ? (tracker.phase === "eccentric" ? repConfig.downLabel : repConfig.upLabel)
+          : ""
+        if (phaseLabel) {
+          ctx.font = `bold ${Math.max(14, w * 0.025)}px -apple-system, sans-serif`
+          ctx.fillStyle = tracker.phase === "eccentric" ? "rgba(234, 179, 8, 0.9)" : "rgba(34, 197, 94, 0.9)"
+          ctx.fillText(phaseLabel, repX, repY - repFontSize * 0.85 - Math.max(16, w * 0.025))
+        }
+      }
+
+      // Speed info (eccentric / concentric)
+      if (tracker.lastEccentricMs > 0) {
+        const speedY = repY - repFontSize * 0.85 - Math.max(36, w * 0.05)
+        const eccSec = (tracker.lastEccentricMs / 1000).toFixed(1)
+        const conSec = tracker.lastConcentricMs > 0 ? (tracker.lastConcentricMs / 1000).toFixed(1) : "—"
+        ctx.font = `${Math.max(11, w * 0.018)}px -apple-system, sans-serif`
+        const isGoodEcc = tracker.lastEccentricMs >= 1500 && tracker.lastEccentricMs <= 4500
+        ctx.fillStyle = isGoodEcc ? "rgba(34, 197, 94, 0.8)" : "rgba(234, 179, 8, 0.8)"
+        ctx.fillText(`↓${eccSec}s  ↑${conSec}s`, repX, speedY)
+      }
+
+      ctx.textAlign = "left" // Reset
+    }
+
+    // ═══ ROM TARGET ZONE — dashed horizontal line at joint level ═══
+    if (repConfig && landmarks && landmarks.length > 0) {
+      const [, pivotIdx] = repConfig.anglePoints
+      const pivot = landmarks[pivotIdx]
+      if (pivot && (pivot.visibility ?? 0) > 0.3) {
+        const lineY = pivot.y * h
+        ctx.setLineDash([8, 6])
+        ctx.strokeStyle = "rgba(34, 197, 94, 0.5)"
+        ctx.lineWidth = 2
+        ctx.beginPath()
+        ctx.moveTo(0, lineY)
+        ctx.lineTo(w, lineY)
+        ctx.stroke()
+        ctx.setLineDash([]) // Reset
+
+        // Small label
+        ctx.font = `${Math.max(10, w * 0.016)}px -apple-system, sans-serif`
+        ctx.fillStyle = "rgba(34, 197, 94, 0.6)"
+        ctx.fillText("ROM alvo", 8, lineY - 4)
+      }
+    }
 
     // Draw detected view badge at bottom-left of canvas (appears in recorded video)
     if (viewResult && viewResult.view !== "unknown") {
@@ -736,12 +856,14 @@ export function PostureAnalyzer() {
           </>
         )}
 
-        {/* Idle overlay */}
+        {/* Idle overlay with animated positioning guide */}
         {state === "idle" && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-zinc-900/90">
-            <div className="w-16 h-16 rounded-2xl bg-red-600/20 flex items-center justify-center">
-              <Camera className="w-8 h-8 text-red-400" />
-            </div>
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-zinc-900/90">
+            {/* Animated silhouette guide */}
+            <PositioningGuide
+              muscleGroup={selectedExercise.muscleGroup}
+              exerciseId={selectedExercise.id}
+            />
             <div className="text-center px-8">
               <p className="text-sm text-neutral-300 font-medium">{selectedExercise.name}</p>
               <p className="text-xs text-neutral-500 mt-1">
@@ -753,8 +875,6 @@ export function PostureAnalyzer() {
                 </span>
               </p>
             </div>
-            {/* 3D Machine Guide — hidden until models are properly mapped to exercises */}
-            {/* Camera toggle in idle */}
             <button
               onClick={switchCamera}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.06] border border-white/[0.08] text-xs text-neutral-400 hover:text-white transition-colors active:scale-95"
@@ -804,6 +924,54 @@ export function PostureAnalyzer() {
         </button>
       ) : null}
 
+      {/* ─── Rep Counter + Speed (below canvas during analysis) ─── */}
+      {state === "analyzing" && (
+        <div className="flex items-center justify-between px-1">
+          {/* Rep counter */}
+          <div className="flex items-center gap-3">
+            <div className="text-center">
+              <p className="text-3xl font-black text-white tabular-nums">{repCount}</p>
+              <p className="text-[9px] text-neutral-500 -mt-0.5">REPS</p>
+            </div>
+            {repPhase && (
+              <span className={cn(
+                "text-[10px] font-semibold px-2 py-0.5 rounded-full",
+                repPhase.includes("Desc") || repPhase.includes("Pux") || repPhase.includes("Contr")
+                  ? "bg-yellow-500/15 text-yellow-400"
+                  : "bg-emerald-500/15 text-emerald-400",
+              )}>
+                {repPhase}
+              </span>
+            )}
+          </div>
+
+          {/* Speed indicators */}
+          <div className="flex items-center gap-3 text-[10px]">
+            {eccentricSpeed > 0 && (
+              <div className="text-center">
+                <p className={cn(
+                  "text-sm font-bold tabular-nums",
+                  eccentricSpeed >= 1500 && eccentricSpeed <= 4500
+                    ? "text-emerald-400"
+                    : eccentricSpeed < 1500
+                      ? "text-yellow-400"
+                      : "text-blue-400",
+                )}>
+                  {(eccentricSpeed / 1000).toFixed(1)}s
+                </p>
+                <p className="text-neutral-600">↓ exc.</p>
+              </div>
+            )}
+            {concentricSpeed > 0 && (
+              <div className="text-center">
+                <p className="text-sm font-bold text-white tabular-nums">{(concentricSpeed / 1000).toFixed(1)}s</p>
+                <p className="text-neutral-600">↑ conc.</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* ─── Feedback cards (below canvas, LARGER for readability) ─── */}
       {feedback.length > 0 && state === "analyzing" && (
         <div className="space-y-2">
@@ -836,6 +1004,54 @@ export function PostureAnalyzer() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ─── SET SCORE — shown after analysis stops ─── */}
+      {setScore && state === "idle" && (
+        <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-3">
+              <div className={cn("text-4xl font-black", setScore.gradeColor)}>{setScore.grade}</div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-lg font-bold text-white">{setScore.score}</span>
+                  <span className="text-xs text-neutral-500">/ 100</span>
+                </div>
+                <p className="text-[10px] text-neutral-500">{setScore.details}</p>
+              </div>
+            </div>
+            {/* Score bar */}
+            <div className="w-24 h-2 rounded-full bg-white/[0.06] overflow-hidden">
+              <div
+                className={cn(
+                  "h-full rounded-full transition-all",
+                  setScore.score >= 80 ? "bg-emerald-500" :
+                  setScore.score >= 60 ? "bg-yellow-500" : "bg-red-500",
+                )}
+                style={{ width: `${setScore.score}%` }}
+              />
+            </div>
+          </div>
+          {/* Speed summary */}
+          {(eccentricSpeed > 0 || concentricSpeed > 0) && (
+            <div className="flex items-center gap-4 px-4 py-2 border-t border-white/[0.04] text-[10px]">
+              {eccentricSpeed > 0 && (
+                <span className={cn(
+                  eccentricSpeed >= 1500 && eccentricSpeed <= 4500
+                    ? "text-emerald-400" : "text-yellow-400",
+                )}>
+                  ↓ Excêntrica: {(eccentricSpeed / 1000).toFixed(1)}s
+                  {eccentricSpeed >= 1500 && eccentricSpeed <= 4500 ? " ✓" : " (ideal: 2-4s)"}
+                </span>
+              )}
+              {concentricSpeed > 0 && (
+                <span className="text-neutral-400">
+                  ↑ Concêntrica: {(concentricSpeed / 1000).toFixed(1)}s
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -962,5 +1178,87 @@ export function PostureAnalyzer() {
         <span>{TOTAL_EXERCISES_WITH_POSTURE} exercícios</span>
       </div>
     </div>
+  )
+}
+
+// ═══ Animated Positioning Guide Component ═══════════════════════════════════
+
+function PositioningGuide({ muscleGroup, exerciseId }: { muscleGroup: string; exerciseId: string }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const animRef = useRef<number>(0)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext("2d")
+    if (!ctx) return
+
+    const guide = getPositioningGuide(muscleGroup as Parameters<typeof getPositioningGuide>[0], exerciseId)
+    let t = 0
+    const speed = 0.015
+
+    function draw() {
+      if (!ctx || !canvas) return
+      const w = canvas.width
+      const h = canvas.height
+
+      ctx.clearRect(0, 0, w, h)
+
+      // Interpolate between start and end frames using sine wave (smooth back-and-forth)
+      const progress = (Math.sin(t) + 1) / 2 // 0-1 oscillating
+      t += speed
+
+      const startPts = guide.startFrame.points
+      const endPts = guide.endFrame.points
+      const connections = guide.startFrame.connections
+
+      // Interpolate points
+      const currentPts = startPts.map((sp, i) => {
+        const ep = endPts[i]
+        return [
+          sp[0] + (ep[0] - sp[0]) * progress,
+          sp[1] + (ep[1] - sp[1]) * progress,
+        ] as [number, number]
+      })
+
+      // Draw connections (skeleton lines)
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.25)"
+      ctx.lineWidth = 2.5
+      ctx.lineCap = "round"
+      for (const [a, b] of connections) {
+        ctx.beginPath()
+        ctx.moveTo(currentPts[a][0] * w, currentPts[a][1] * h)
+        ctx.lineTo(currentPts[b][0] * w, currentPts[b][1] * h)
+        ctx.stroke()
+      }
+
+      // Draw joints (landmark dots)
+      for (const pt of currentPts) {
+        ctx.beginPath()
+        ctx.arc(pt[0] * w, pt[1] * h, 5, 0, Math.PI * 2)
+        ctx.fillStyle = "rgba(239, 68, 68, 0.85)"
+        ctx.fill()
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)"
+        ctx.lineWidth = 1.5
+        ctx.stroke()
+      }
+
+      animRef.current = requestAnimationFrame(draw)
+    }
+
+    draw()
+
+    return () => {
+      if (animRef.current) cancelAnimationFrame(animRef.current)
+    }
+  }, [muscleGroup, exerciseId])
+
+  return (
+    <canvas
+      ref={canvasRef}
+      width={120}
+      height={160}
+      className="w-[120px] h-[160px] opacity-80"
+    />
   )
 }
