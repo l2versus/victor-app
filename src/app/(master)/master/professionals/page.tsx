@@ -16,6 +16,8 @@ import {
   Eye,
   ChevronDown,
   Loader2,
+  Pencil,
+  Link2Off,
 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
@@ -88,6 +90,7 @@ export default function ProfessionalsPage() {
   const [orgFilter, setOrgFilter] = useState("")
   const [orgs, setOrgs] = useState<OrgOption[]>([])
   const [showModal, setShowModal] = useState(false)
+  const [editingPro, setEditingPro] = useState<Professional | null>(null)
 
   // Debounced search
   const [debouncedSearch, setDebouncedSearch] = useState("")
@@ -207,7 +210,7 @@ export default function ProfessionalsPage() {
             placeholder="Buscar por nome ou email..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
+            className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-white/6 bg-white/2 backdrop-blur-xl text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
           />
         </div>
 
@@ -216,7 +219,7 @@ export default function ProfessionalsPage() {
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl text-sm text-white/80 focus:outline-none focus:border-violet-500/40 cursor-pointer min-w-[170px]"
+            className="appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-white/6 bg-white/2 backdrop-blur-xl text-sm text-white/80 focus:outline-none focus:border-violet-500/40 cursor-pointer min-w-42.5"
           >
             <option value="all" className="bg-neutral-900">Todos</option>
             <option value="ADMIN" className="bg-neutral-900">Personal Trainers</option>
@@ -230,7 +233,7 @@ export default function ProfessionalsPage() {
           <select
             value={orgFilter}
             onChange={(e) => setOrgFilter(e.target.value)}
-            className="appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl text-sm text-white/80 focus:outline-none focus:border-violet-500/40 cursor-pointer min-w-[170px]"
+            className="appearance-none pl-4 pr-9 py-2.5 rounded-xl border border-white/6 bg-white/2 backdrop-blur-xl text-sm text-white/80 focus:outline-none focus:border-violet-500/40 cursor-pointer min-w-42.5"
           >
             <option value="" className="bg-neutral-900">Todas organizacoes</option>
             {orgs.map((o) => (
@@ -248,7 +251,7 @@ export default function ProfessionalsPage() {
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2, duration: 0.5 }}
-        className="rounded-2xl border border-white/[0.06] bg-white/[0.02] backdrop-blur-xl p-5 sm:p-7 hover:border-white/[0.1] transition-all duration-500"
+        className="rounded-2xl border border-white/6 bg-white/2 backdrop-blur-xl p-5 sm:p-7 hover:border-white/10 transition-all duration-500"
       >
         {loading ? (
           <div className="space-y-3">
@@ -259,7 +262,7 @@ export default function ProfessionalsPage() {
         ) : professionals.length === 0 ? (
           /* Empty state */
           <div className="text-center py-16">
-            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/6 flex items-center justify-center mx-auto mb-4">
               <UserCog className="w-7 h-7 text-neutral-600" />
             </div>
             <p className="text-neutral-400 text-sm mb-1">Nenhum profissional cadastrado</p>
@@ -274,7 +277,7 @@ export default function ProfessionalsPage() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-white/[0.06]">
+                <tr className="border-b border-white/6">
                   <th className="text-left py-3 px-3 text-[10px] text-neutral-500 uppercase tracking-wider font-medium">
                     Profissional
                   </th>
@@ -318,7 +321,7 @@ export default function ProfessionalsPage() {
                             <img
                               src={pro.avatar}
                               alt={pro.name}
-                              className="w-9 h-9 rounded-xl object-cover border border-white/[0.06]"
+                              className="w-9 h-9 rounded-xl object-cover border border-white/6"
                             />
                           ) : (
                             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600/20 to-violet-900/10 flex items-center justify-center text-violet-400 text-xs font-semibold border border-violet-500/10">
@@ -378,15 +381,24 @@ export default function ProfessionalsPage() {
 
                       {/* Actions */}
                       <td className="py-3 px-3 text-right">
-                        {pro.organizationSlug && (
-                          <a
-                            href={`/master/organizations`}
-                            className="inline-flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10"
+                        <div className="flex items-center justify-end gap-1">
+                          {pro.organizationSlug && (
+                            <a
+                              href={`/master/organizations`}
+                              className="inline-flex items-center gap-1 text-[10px] text-violet-400 hover:text-violet-300 transition-colors px-2 py-1 rounded-lg hover:bg-violet-500/10"
+                            >
+                              <Eye className="w-3 h-3" />
+                              <span className="hidden sm:inline">Ver org</span>
+                            </a>
+                          )}
+                          <button
+                            onClick={() => setEditingPro(pro)}
+                            className="inline-flex items-center gap-1 text-[10px] text-neutral-400 hover:text-white transition-colors px-2 py-1 rounded-lg hover:bg-white/5"
                           >
-                            <Eye className="w-3 h-3" />
-                            <span className="hidden sm:inline">Ver org</span>
-                          </a>
-                        )}
+                            <Pencil className="w-3 h-3" />
+                            <span className="hidden sm:inline">Editar</span>
+                          </button>
+                        </div>
                       </td>
                     </motion.tr>
                   )
@@ -405,6 +417,21 @@ export default function ProfessionalsPage() {
             onClose={() => setShowModal(false)}
             onSuccess={() => {
               setShowModal(false)
+              fetchProfessionals()
+            }}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ═══ EDIT PROFESSIONAL MODAL ═══ */}
+      <AnimatePresence>
+        {editingPro && (
+          <EditProfessionalModal
+            professional={editingPro}
+            orgs={orgs}
+            onClose={() => setEditingPro(null)}
+            onSuccess={() => {
+              setEditingPro(null)
               fetchProfessionals()
             }}
           />
@@ -490,7 +517,7 @@ function AddProfessionalModal({
   }
 
   const inputClasses =
-    "w-full px-4 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
+    "w-full px-4 py-2.5 rounded-xl border border-white/6 bg-white/2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
 
   const labelClasses = "block text-[11px] text-neutral-400 uppercase tracking-wider font-medium mb-1.5"
 
@@ -532,7 +559,7 @@ function AddProfessionalModal({
             </div>
             <button
               onClick={credentials ? onSuccess : onClose}
-              className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/[0.05] transition-colors"
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/5 transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -560,7 +587,7 @@ function AddProfessionalModal({
 
               <button
                 onClick={copyCredentials}
-                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/[0.06] bg-white/[0.02] text-sm text-white/80 hover:bg-white/[0.05] transition-all"
+                className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-white/6 bg-white/2 text-sm text-white/80 hover:bg-white/5 transition-all"
               >
                 {copied ? (
                   <>
@@ -621,7 +648,7 @@ function AddProfessionalModal({
                     className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                       form.role === "ADMIN"
                         ? "border-red-500/30 bg-red-500/10 text-red-400"
-                        : "border-white/[0.06] bg-white/[0.02] text-neutral-500 hover:text-white hover:border-white/[0.1]"
+                        : "border-white/6 bg-white/2 text-neutral-500 hover:text-white hover:border-white/10"
                     }`}
                   >
                     <Dumbbell className="w-4 h-4" />
@@ -633,7 +660,7 @@ function AddProfessionalModal({
                     className={`flex items-center justify-center gap-2 px-3 py-2.5 rounded-xl border text-sm font-medium transition-all ${
                       form.role === "NUTRITIONIST"
                         ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                        : "border-white/[0.06] bg-white/[0.02] text-neutral-500 hover:text-white hover:border-white/[0.1]"
+                        : "border-white/6 bg-white/2 text-neutral-500 hover:text-white hover:border-white/10"
                     }`}
                   >
                     <Stethoscope className="w-4 h-4" />
@@ -677,7 +704,7 @@ function AddProfessionalModal({
                       type="checkbox"
                       checked={form.autoPassword}
                       onChange={(e) => update("autoPassword", e.target.checked)}
-                      className="rounded border-white/10 bg-white/[0.02] text-violet-600 focus:ring-violet-500/20"
+                      className="rounded border-white/10 bg-white/2 text-violet-600 focus:ring-violet-500/20"
                     />
                     Gerar senha automaticamente
                   </label>
@@ -750,6 +777,193 @@ function AddProfessionalModal({
               </button>
             </form>
           )}
+        </div>
+      </motion.div>
+    </>
+  )
+}
+
+/* ═══ EDIT PROFESSIONAL MODAL ═══ */
+function EditProfessionalModal({
+  professional,
+  orgs,
+  onClose,
+  onSuccess,
+}: {
+  professional: Professional
+  orgs: OrgOption[]
+  onClose: () => void
+  onSuccess: () => void
+}) {
+  const [organizationId, setOrganizationId] = useState(professional.organizationId ?? "")
+  const [active, setActive] = useState(professional.active)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
+
+  const rc = roleConfig[professional.role] || roleConfig.ADMIN
+  const orgChanged = organizationId !== (professional.organizationId ?? "")
+  const activeChanged = active !== professional.active
+  const hasChanges = orgChanged || activeChanged
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError("")
+    setSaving(true)
+
+    try {
+      const body: Record<string, unknown> = {}
+      if (orgChanged) body.organizationId = organizationId
+      if (activeChanged) body.active = active
+
+      const res = await fetch(`/api/master/professionals/${professional.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.error || "Erro ao atualizar profissional")
+        return
+      }
+
+      setSuccess(true)
+      setTimeout(onSuccess, 800)
+    } catch {
+      setError("Erro de conexão")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputClasses =
+    "w-full px-4 py-2.5 rounded-xl border border-white/6 bg-white/2 text-sm text-white placeholder:text-neutral-600 focus:outline-none focus:border-violet-500/40 focus:ring-1 focus:ring-violet-500/20 transition-all"
+  const labelClasses = "block text-[11px] text-neutral-400 uppercase tracking-wider font-medium mb-1.5"
+
+  return (
+    <>
+      <motion.div
+        variants={overlay}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        onClick={onClose}
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-70"
+      />
+      <motion.div
+        variants={modalAnim}
+        initial="hidden"
+        animate="visible"
+        exit="exit"
+        className="fixed inset-x-4 top-[10vh] sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 sm:w-full sm:max-w-md z-71 max-h-[85dvh] overflow-y-auto overscroll-contain rounded-2xl border border-white/8 bg-neutral-950/95 backdrop-blur-2xl shadow-2xl shadow-black/50"
+      >
+        <div className="p-6 sm:p-7">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-violet-600/10 flex items-center justify-center">
+                <rc.icon className="w-5 h-5 text-violet-500" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold text-white">{professional.name}</h2>
+                <p className="text-[10px] text-neutral-500 uppercase tracking-wider">{rc.label}</p>
+              </div>
+            </div>
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-lg flex items-center justify-center text-neutral-500 hover:text-white hover:bg-white/5 transition-colors"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {error && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-4 py-3 text-sm text-red-400">
+                {error}
+              </div>
+            )}
+
+            {success && (
+              <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 flex items-center gap-2 text-sm text-emerald-400">
+                <Check className="w-4 h-4" />
+                Atualizado com sucesso!
+              </div>
+            )}
+
+            {/* Organization */}
+            <div>
+              <label className={labelClasses}>Organização</label>
+              <div className="relative">
+                <select
+                  value={organizationId}
+                  onChange={(e) => setOrganizationId(e.target.value)}
+                  className={`${inputClasses} appearance-none pr-9 cursor-pointer`}
+                >
+                  <option value="" className="bg-neutral-900">Sem organização (Personal independente)</option>
+                  {orgs.map((o) => (
+                    <option key={o.id} value={o.id} className="bg-neutral-900">
+                      {o.name}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-500 pointer-events-none" />
+              </div>
+              {orgChanged && organizationId === "" && (
+                <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-amber-400">
+                  <Link2Off className="w-3 h-3" />
+                  Profissional será desvinculado da organização
+                </p>
+              )}
+            </div>
+
+            {/* Active toggle */}
+            <div className="flex items-center justify-between rounded-xl border border-white/6 bg-white/2 px-4 py-3">
+              <div>
+                <p className="text-sm text-white/80 font-medium">Conta ativa</p>
+                <p className="text-[11px] text-neutral-500">Profissional consegue fazer login</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setActive((v) => !v)}
+                className={`relative w-11 h-6 rounded-full transition-colors duration-200 focus:outline-none ${
+                  active ? "bg-violet-600" : "bg-white/10"
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow transition-transform duration-200 ${
+                    active ? "translate-x-5" : "translate-x-0"
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Actions */}
+            <div className="flex gap-3 pt-1">
+              <button
+                type="button"
+                onClick={onClose}
+                className="flex-1 px-4 py-2.5 rounded-xl border border-white/6 bg-white/2 text-sm text-neutral-400 hover:text-white hover:bg-white/5 transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={saving || !hasChanges || success}
+                className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-violet-600 hover:bg-violet-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium transition-all"
+              >
+                {saving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Salvando...
+                  </>
+                ) : (
+                  "Salvar alterações"
+                )}
+              </button>
+            </div>
+          </form>
         </div>
       </motion.div>
     </>

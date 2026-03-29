@@ -348,15 +348,19 @@ async function findUserOrgId(userId: string, role: string): Promise<string | nul
   }
 
   if (role === "STUDENT") {
-    // Student: check their trainer's org
+    // Students without a trainer are regular/public users — no org subscription required.
+    // Only apply org checks to students who are direct members of an organization.
     const student = await prisma.student.findUnique({
       where: { userId },
       select: {
         organizationId: true,
-        trainer: { select: { organizationId: true } },
+        trainerId: true,
       },
     })
-    return student?.organizationId ?? student?.trainer?.organizationId ?? null
+    // No trainer = public user, allow freely
+    if (!student?.trainerId) return null
+    // Has a trainer but no direct org membership = personal client, allow freely
+    return student?.organizationId ?? null
   }
 
   return null
