@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { generateText } from "ai"
 import { freeModel } from "@/lib/ai"
+import { YoutubeTranscript } from "youtube-transcript"
 
 function extractVideoId(url: string): string | null {
   const patterns = [
@@ -19,49 +20,17 @@ function extractVideoId(url: string): string | null {
 
 async function fetchTranscript(videoId: string): Promise<string | null> {
   try {
-    // Fetch video page to extract captions
-    const pageRes = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-      headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" },
-    })
-    const html = await pageRes.text()
+    // Try Portuguese first
+    let transcripts = await YoutubeTranscript.fetchTranscript(videoId, { lang: "pt" })
 
-    // Extract captions URL from ytInitialPlayerResponse
-    const captionMatch = html.match(/"captionTracks":\s*(\[.*?\])/)
-    if (!captionMatch) return null
+    // Fallback to English if Portuguese not available
+    if (!transcripts || transcripts.length === 0) {
+      transcripts = await YoutubeTranscript.fetchTranscript(videoId, { lang: "en" })
+    }
 
-    const captions = JSON.parse(captionMatch[1])
-    // Prefer Portuguese, then English, then first available
-    const track =
-      captions.find((c: { languageCode: string }) => c.languageCode === "pt") ||
-      captions.find((c: { languageCode: string }) => c.languageCode === "en") ||
-      captions[0]
+    if (!transcripts || transcripts.length === 0) return null
 
-    if (!track?.baseUrl) return null
-
-    // Fetch the captions XML
-    const captionRes = await fetch(track.baseUrl)
-    const xml = await captionRes.text()
-
-    // Parse XML captions → plain text
-    const textParts = xml.match(/<text[^>]*>([\s\S]*?)<\/text>/g)
-    if (!textParts) return null
-
-    const transcript = textParts
-      .map(part => {
-        const text = part.replace(/<[^>]*>/g, "")
-        return text
-          .replace(/&amp;/g, "&")
-          .replace(/&lt;/g, "<")
-          .replace(/&gt;/g, ">")
-          .replace(/&quot;/g, '"')
-          .replace(/&#39;/g, "'")
-          .replace(/\n/g, " ")
-          .trim()
-      })
-      .filter(Boolean)
-      .join(" ")
-
-    return transcript
+    return transcripts.map(t => t.text).join(" ")
   } catch {
     return null
   }
