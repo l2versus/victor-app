@@ -105,13 +105,17 @@ export function WorkoutPlans({ studentId }: { studentId: string }) {
                 <span className="text-xs text-neutral-500 w-8 font-medium">{day}</span>
 
                 {plan ? (
-                  <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-500/5 border border-purple-500/15">
+                  <div className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl bg-purple-500/5 border border-purple-500/15 min-w-0">
                     <Dumbbell className="w-3.5 h-3.5 text-purple-400 shrink-0" />
-                    <span className="text-sm text-neutral-300 truncate flex-1">{plan.template.name}</span>
-                    <span className="text-[9px] text-purple-400/70 uppercase">{plan.template.type}</span>
+                    <span className="text-sm text-neutral-300 truncate min-w-0">
+                      {plan.template.name.length > 30
+                        ? plan.template.name.slice(0, 30) + "…"
+                        : plan.template.name}
+                    </span>
+                    <span className="text-[9px] text-purple-400/70 uppercase shrink-0">{plan.template.type}</span>
                     <button
                       onClick={() => handleRemove(i)}
-                      className="text-neutral-600 hover:text-red-400 transition-colors p-0.5"
+                      className="text-neutral-600 hover:text-red-400 transition-colors p-0.5 shrink-0"
                     >
                       <X className="w-3.5 h-3.5" />
                     </button>
