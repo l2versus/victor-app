@@ -21,7 +21,7 @@ export async function POST(req: NextRequest) {
     // Admin posts with studentId: null → shows as trainer/system post
 
     const body = await req.json()
-    const { content, imageUrl } = body
+    const { content, imageUrl, type, metadata } = body
 
     if (!content?.trim() && !imageUrl) {
       return NextResponse.json({ error: "Post precisa de texto ou foto" }, { status: 400 })
@@ -35,12 +35,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Texto muito longo. Máximo 2000 caracteres." }, { status: 400 })
     }
 
+    // Determine post type
+    const validStudentTypes = ["USER_POST", "TRANSFORMATION"]
+    const postType = session.role === "ADMIN"
+      ? "ANNOUNCEMENT"
+      : (type && validStudentTypes.includes(type) ? type : "USER_POST")
+
     const post = await prisma.communityPost.create({
       data: {
         studentId,
-        type: session.role === "ADMIN" ? "ANNOUNCEMENT" : "USER_POST",
+        type: postType,
         content: content?.trim() || "",
         imageUrl: imageUrl || null,
+        metadata: metadata || null,
       },
       include: {
         student: { include: { user: { select: { name: true, avatar: true } } } },

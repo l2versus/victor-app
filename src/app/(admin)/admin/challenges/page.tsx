@@ -22,9 +22,9 @@ type ChallengeItem = {
 
 const METRICS = [
   { value: "volume_total", label: "Volume Total (kg)" },
+  { value: "sessoes_total", label: "Total de Sessões" },
   { value: "sessoes_semana", label: "Sessões na Semana" },
   { value: "streak_dias", label: "Streak (Dias)" },
-  { value: "series_exercicio", label: "Séries de Exercício" },
   { value: "consistencia", label: "Consistência (%)" },
 ]
 

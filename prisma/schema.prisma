@@ -219,6 +219,9 @@ model Student {
   storyViews        StoryView[]
   postViews         PostView[]
   storyHighlights   StoryHighlight[]
+  createdGroups     CommunityGroup[]  @relation("GroupCreator")
+  groupMemberships  GroupMember[]
+  createdChallenges Challenge[]       @relation("ChallengeCreator")
 
   // Spotify OAuth tokens (salvo no DB, não em cookies)
   spotifyAccessToken  String?
@@ -650,15 +653,17 @@ model Notification {
 // ═══════════════════════════════════════
 
 enum PostType {
-  ACHIEVEMENT  // Auto: PR, streak, sessões
-  ANNOUNCEMENT // Victor broadcast
-  MILESTONE    // Auto: 100 sessões, 1 ano, etc
-  USER_POST    // Post livre do aluno (texto + foto)
+  ACHIEVEMENT     // Auto: PR, streak, sessões
+  ANNOUNCEMENT    // Victor broadcast
+  MILESTONE       // Auto: 100 sessões, 1 ano, etc
+  USER_POST       // Post livre do aluno (texto + foto)
+  TRANSFORMATION  // Antes/depois com fotos de progresso
 }
 
 model CommunityPost {
   id        String   @id @default(cuid())
   studentId String?  // null = post do admin/sistema
+  groupId   String?  // null = feed global, set = post dentro do grupo
   type      PostType
   content   String
   imageUrl  String?  // Foto do post (base64 ou URL)
@@ -667,6 +672,7 @@ model CommunityPost {
   videoUrl  String?  /// Vídeo do post (URL)
 
   student   Student?           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  group     CommunityGroup?    @relation(fields: [groupId], references: [id], onDelete: Cascade)
   reactions CommunityReaction[]
   comments  CommunityComment[]
   likes     CommunityLike[]
@@ -676,6 +682,7 @@ model CommunityPost {
   updatedAt DateTime @updatedAt
 
   @@index([studentId])
+  @@index([groupId])
   @@index([type])
   @@index([createdAt])
 }
@@ -871,6 +878,57 @@ model BodyScan {
 }
 
 // ═══════════════════════════════════════
+// COMMUNITY GROUPS — Grupos estilo Gym Rats
+// ═══════════════════════════════════════
+
+enum GroupVisibility {
+  PUBLIC       // Qualquer um pode ver e entrar
+  PRIVATE      // Visível mas precisa pedir para entrar
+  INVITE_ONLY  // Só por convite
+}
+
+enum GroupRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+model CommunityGroup {
+  id          String          @id @default(cuid())
+  name        String
+  description String?
+  imageUrl    String?         // Foto do grupo
+  visibility  GroupVisibility @default(PUBLIC)
+  createdById String          // Student que criou
+
+  createdBy Student          @relation("GroupCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  members   GroupMember[]
+  posts     CommunityPost[] // Posts dentro do grupo
+  challenges Challenge[]     // Desafios dentro do grupo
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([visibility])
+  @@index([createdById])
+}
+
+model GroupMember {
+  id        String    @id @default(cuid())
+  groupId   String
+  studentId String
+  role      GroupRole @default(MEMBER)
+  joinedAt  DateTime  @default(now())
+
+  group   CommunityGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, studentId])
+  @@index([groupId])
+  @@index([studentId])
+}
+
+// ═══════════════════════════════════════
 // CHALLENGES — Desafios semanais
 // ═══════════════════════════════════════
 
@@ -889,14 +947,19 @@ model Challenge {
   status      ChallengeStatus @default(ACTIVE)
   startDate   DateTime
   endDate     DateTime
+  groupId     String?         // null = desafio global (admin), set = desafio do grupo
+  createdById String?         // Student que criou (null = admin)
 
-  entries ChallengeEntry[]
+  group     CommunityGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  createdBy Student?        @relation("ChallengeCreator", fields: [createdById], references: [id])
+  entries   ChallengeEntry[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([status])
   @@index([endDate])
+  @@index([groupId])
 }
 
 model ChallengeEntry {

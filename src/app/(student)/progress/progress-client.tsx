@@ -4,7 +4,7 @@ import { useState, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Camera, Plus, X, ChevronLeft, ChevronRight, Trash2,
-  Scale, Percent, StickyNote, ImageIcon,
+  Scale, Percent, StickyNote, ImageIcon, Share2, Loader2, Check,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -35,6 +35,8 @@ export function ProgressClient({ photos: initialPhotos }: { photos: Photo[] }) {
   const [form, setForm] = useState({ category: "FRONT", weight: "", bodyFat: "", notes: "" })
   const fileRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(null)
+  const [sharing, setSharing] = useState(false)
+  const [shared, setShared] = useState(false)
 
   const filtered = selectedCategory ? photos.filter(p => p.category === selectedCategory) : photos
 
@@ -75,6 +77,58 @@ export function ProgressClient({ photos: initialPhotos }: { photos: Photo[] }) {
     const reader = new FileReader()
     reader.onload = () => setPreview(reader.result as string)
     reader.readAsDataURL(file)
+  }
+
+  async function shareTransformation() {
+    if (!comparePhotos || sharing) return
+    setSharing(true)
+    try {
+      const [before, after] = comparePhotos
+      const daysBetween = Math.round(
+        (new Date(after.createdAt).getTime() - new Date(before.createdAt).getTime()) / (1000 * 60 * 60 * 24)
+      )
+      const weightDiff = before.weight && after.weight ? after.weight - before.weight : null
+
+      let content = "🔄 Minha Transformação!"
+      if (daysBetween > 0) content += `\n📅 ${daysBetween} dias de evolução`
+      if (weightDiff !== null) {
+        const sign = weightDiff > 0 ? "+" : ""
+        content += `\n⚖️ ${sign}${weightDiff.toFixed(1)} kg`
+      }
+      if (before.bodyFat && after.bodyFat) {
+        const fatDiff = after.bodyFat - before.bodyFat
+        const sign = fatDiff > 0 ? "+" : ""
+        content += `\n📊 ${sign}${fatDiff.toFixed(1)}% gordura`
+      }
+
+      const res = await fetch("/api/community/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content,
+          imageUrl: after.imageUrl,
+          type: "TRANSFORMATION",
+          metadata: {
+            beforePhotoId: before.id,
+            afterPhotoId: after.id,
+            beforeImageUrl: before.imageUrl,
+            afterImageUrl: after.imageUrl,
+            beforeDate: before.createdAt,
+            afterDate: after.createdAt,
+            beforeWeight: before.weight,
+            afterWeight: after.weight,
+            beforeBodyFat: before.bodyFat,
+            afterBodyFat: after.bodyFat,
+            daysBetween,
+          },
+        }),
+      })
+      if (res.ok) {
+        setShared(true)
+        setTimeout(() => setShared(false), 3000)
+      }
+    } catch { /* ignore */ }
+    setSharing(false)
   }
 
   function toggleSelect(id: string) {
@@ -121,11 +175,34 @@ export function ProgressClient({ photos: initialPhotos }: { photos: Photo[] }) {
       {/* Compare view */}
       {comparePhotos && (
         <div className="rounded-xl bg-white/[0.03] border border-white/[0.08] p-4">
-          <p className="text-xs text-neutral-400 mb-3 font-semibold uppercase tracking-wider">Comparação</p>
+          <div className="flex items-center justify-between mb-3">
+            <p className="text-xs text-neutral-400 font-semibold uppercase tracking-wider">Comparação</p>
+            <button
+              onClick={shareTransformation}
+              disabled={sharing || shared}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-[11px] font-semibold transition-all min-h-[44px]",
+                shared
+                  ? "bg-green-600/20 text-green-400"
+                  : "bg-gradient-to-r from-red-600 to-red-700 text-white shadow-lg shadow-red-600/20 hover:from-red-500 hover:to-red-600"
+              )}
+            >
+              {sharing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : shared ? <Check className="w-3.5 h-3.5" /> : <Share2 className="w-3.5 h-3.5" />}
+              {sharing ? "Postando..." : shared ? "Postado!" : "Compartilhar"}
+            </button>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             {comparePhotos.map((p, i) => (
               <div key={p.id} className="space-y-2">
-                <img src={p.imageUrl} alt={`Foto ${i + 1}`} className="w-full aspect-[3/4] object-cover rounded-xl" />
+                <div className="relative">
+                  <img src={p.imageUrl} alt={`Foto ${i + 1}`} className="w-full aspect-[3/4] object-cover rounded-xl" />
+                  <span className={cn(
+                    "absolute top-2 left-2 px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider",
+                    i === 0 ? "bg-neutral-900/70 text-neutral-300" : "bg-red-600/80 text-white"
+                  )}>
+                    {i === 0 ? "Antes" : "Depois"}
+                  </span>
+                </div>
                 <div className="text-center">
                   <p className="text-[10px] text-neutral-500">
                     {new Date(p.createdAt).toLocaleDateString("pt-BR")}

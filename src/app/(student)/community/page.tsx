@@ -10,7 +10,8 @@ import {
   Calendar, TrendingUp, Award, Lock,
   Heart, MessageCircle, Send, Camera, Play, Share2, Bookmark,
   Image as ImageIcon, X, Plus, Loader2,
-  UserPlus, User, Mail, Search, RefreshCw, Check, ChevronUp, Compass,
+  UserPlus, User, Mail, Search, RefreshCw, Check, ChevronUp, Compass, Users2,
+  Globe, ShieldCheck, Eye, EyeOff, DoorOpen,
 } from "lucide-react"
 import { NotificationBell } from "@/components/student/notification-bell"
 import { LiveTrainingCard } from "@/components/community/live-training"
@@ -82,7 +83,22 @@ type StoryGroup = {
   stories: { id: string; imageUrl: string; caption: string | null; viewCount: number; isViewed: boolean; createdAt: string; expiresAt: string }[]
 }
 
-type Tab = "ranking" | "feed" | "desafios"
+type Tab = "ranking" | "feed" | "desafios" | "grupos"
+
+type GroupItem = {
+  id: string
+  name: string
+  description: string | null
+  imageUrl: string | null
+  visibility: "PUBLIC" | "PRIVATE" | "INVITE_ONLY"
+  memberCount: number
+  challengeCount: number
+  creatorName: string
+  creatorAvatar: string | null
+  isMember: boolean
+  myRole: string | null
+  isOwner: boolean
+}
 
 // ═══════════════════════════════════════
 // HELPERS
@@ -153,6 +169,9 @@ export default function CommunityPage() {
   const [loadingMore, setLoadingMore] = useState(false)
   const feedEndRef = useRef<HTMLDivElement>(null)
   const [challenges, setChallenges] = useState<ChallengeItem[]>([])
+  const [groups, setGroups] = useState<GroupItem[]>([])
+  const [groupFilter, setGroupFilter] = useState<"mine" | "discover">("mine")
+  const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [loading, setLoading] = useState(true)
   const [features, setFeatures] = useState<{ hasVipGroup: boolean; planName: string | null }>({ hasVipGroup: false, planName: null })
   const [showComposer, setShowComposer] = useState(false)
@@ -310,6 +329,18 @@ export default function CommunityPage() {
     setLoading(false)
   }, [])
 
+  const fetchGroups = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/community/groups?filter=${groupFilter}`)
+      if (res.ok) {
+        const data = await res.json()
+        setGroups(data.groups || [])
+      }
+    } catch { /* ignore */ }
+    setLoading(false)
+  }, [groupFilter])
+
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
     await Promise.all([fetchFeed(), fetchStories(), fetchFeatures()])
@@ -352,11 +383,17 @@ export default function CommunityPage() {
 
   useEffect(() => { fetchFeatures(); fetchStories() }, [fetchFeatures, fetchStories])
 
+  // Refetch groups when filter changes
+  useEffect(() => {
+    if (tab === "grupos") fetchGroups()
+  }, [groupFilter, tab, fetchGroups])
+
   useEffect(() => {
     if (tab === "ranking") fetchRanking()
     else if (tab === "feed") fetchFeed()
     else if (tab === "desafios") fetchChallenges()
-  }, [tab, fetchRanking, fetchFeed, fetchChallenges])
+    else if (tab === "grupos") fetchGroups()
+  }, [tab, fetchRanking, fetchFeed, fetchChallenges, fetchGroups])
 
   // Pull-to-refresh: native listeners with passive:false to preventDefault
   useEffect(() => {
@@ -459,12 +496,51 @@ export default function CommunityPage() {
     if (res.ok) fetchChallenges()
   }
 
+  async function joinGroup(groupId: string) {
+    try {
+      const res = await fetch(`/api/community/groups/${groupId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "join" }),
+      })
+      if (res.ok) fetchGroups()
+    } catch { /* ignore */ }
+  }
+
+  async function leaveGroup(groupId: string) {
+    try {
+      const res = await fetch(`/api/community/groups/${groupId}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "leave" }),
+      })
+      if (res.ok) fetchGroups()
+    } catch { /* ignore */ }
+  }
+
+  async function createGroup(data: { name: string; description: string; visibility: string; imageUrl?: string }) {
+    try {
+      const res = await fetch("/api/community/groups", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      })
+      if (res.ok) {
+        setShowCreateGroup(false)
+        setGroupFilter("mine")
+        fetchGroups()
+      }
+      return res
+    } catch { return null }
+  }
+
   const isPro = features.planName?.toLowerCase().includes("pro") || features.planName?.toLowerCase().includes("elite") || features.hasVipGroup
 
   const tabs: { id: Tab; label: string; icon: typeof Trophy; locked: boolean }[] = [
     { id: "feed", label: "Feed", icon: Flame, locked: false },
     { id: "ranking", label: "Ranking", icon: Trophy, locked: false },
     { id: "desafios", label: "Desafios", icon: Target, locked: !isPro },
+    { id: "grupos", label: "Grupos", icon: Users2, locked: false },
   ]
 
   return (
@@ -1137,8 +1213,237 @@ export default function CommunityPage() {
             )}
           </motion.div>
         )}
+
+        {/* ═══ GRUPOS ═══ */}
+        {tab === "grupos" && (
+          <motion.div key="grupos" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-4">
+            {/* Filter + Create */}
+            <div className="flex items-center gap-2">
+              <div className="flex flex-1 gap-1 p-0.5 bg-white/[0.03] rounded-lg border border-white/[0.06]">
+                {(["mine", "discover"] as const).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setGroupFilter(f)}
+                    className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all min-h-[40px] ${
+                      groupFilter === f
+                        ? "bg-red-600/15 text-red-400 border border-red-500/20"
+                        : "text-neutral-500 hover:text-neutral-300"
+                    }`}
+                  >
+                    {f === "mine" ? "Meus Grupos" : "Descobrir"}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowCreateGroup(true)}
+                className="p-2.5 rounded-lg bg-red-600/15 text-red-400 border border-red-500/20 hover:bg-red-600/25 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+
+            {loading ? (
+              <div className="flex items-center justify-center py-16">
+                <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : groups.length === 0 ? (
+              <div className="text-center py-16">
+                <Users2 className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
+                <p className="text-neutral-500 text-sm">
+                  {groupFilter === "mine" ? "Você ainda não faz parte de nenhum grupo" : "Nenhum grupo para descobrir"}
+                </p>
+                <p className="text-neutral-600 text-xs mt-1">
+                  {groupFilter === "mine" ? "Crie um ou explore a aba Descobrir!" : "Crie o primeiro!"}
+                </p>
+                {groupFilter === "mine" && (
+                  <button
+                    onClick={() => setGroupFilter("discover")}
+                    className="mt-3 px-4 py-2 rounded-lg bg-white/[0.05] text-neutral-300 text-xs font-medium hover:bg-white/[0.08] transition-all"
+                  >
+                    <Compass className="w-3.5 h-3.5 inline mr-1" /> Descobrir Grupos
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {groups.map((group) => (
+                  <motion.div
+                    key={group.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden"
+                  >
+                    <button
+                      onClick={() => router.push(`/community/groups/${group.id}`)}
+                      className="w-full text-left p-4"
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Group avatar */}
+                        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-600/20 to-red-900/20 border border-red-500/15 flex items-center justify-center shrink-0 overflow-hidden">
+                          {group.imageUrl ? (
+                            <SafeImage src={group.imageUrl} alt={group.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <Users2 className="w-5 h-5 text-red-400/60" />
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-sm font-semibold text-white truncate">{group.name}</h3>
+                            <span className="shrink-0">
+                              {group.visibility === "PUBLIC" && <Globe className="w-3 h-3 text-green-400/60" />}
+                              {group.visibility === "PRIVATE" && <ShieldCheck className="w-3 h-3 text-yellow-400/60" />}
+                              {group.visibility === "INVITE_ONLY" && <EyeOff className="w-3 h-3 text-neutral-500" />}
+                            </span>
+                          </div>
+                          {group.description && (
+                            <p className="text-xs text-neutral-500 mt-0.5 line-clamp-2">{group.description}</p>
+                          )}
+                          <div className="flex items-center gap-3 mt-2 text-[10px] text-neutral-600">
+                            <span className="flex items-center gap-1"><Users className="w-3 h-3" />{group.memberCount} membros</span>
+                            {group.challengeCount > 0 && (
+                              <span className="flex items-center gap-1"><Target className="w-3 h-3" />{group.challengeCount} desafios</span>
+                            )}
+                            {group.isMember && (
+                              <span className="px-1.5 py-0.5 rounded bg-green-500/10 text-green-400 font-medium">
+                                {group.myRole === "OWNER" ? "Dono" : group.myRole === "ADMIN" ? "Admin" : "Membro"}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                        <ChevronRight className="w-4 h-4 text-neutral-700 shrink-0 mt-1" />
+                      </div>
+                    </button>
+
+                    {/* Quick action */}
+                    {!group.isMember && group.visibility !== "INVITE_ONLY" && (
+                      <div className="border-t border-white/[0.04] px-4 py-2.5">
+                        <button
+                          onClick={(e) => { e.stopPropagation(); joinGroup(group.id) }}
+                          className="w-full py-2 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white text-xs font-semibold hover:from-red-500 hover:to-red-600 transition-all min-h-[40px] shadow-lg shadow-red-600/20 flex items-center justify-center gap-1.5"
+                        >
+                          <DoorOpen className="w-3.5 h-3.5" /> Entrar no Grupo
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            {/* Create Group Modal */}
+            {showCreateGroup && <CreateGroupModal onClose={() => setShowCreateGroup(false)} onCreate={createGroup} />}
+          </motion.div>
+        )}
       </AnimatePresence>
     </div>
+  )
+}
+
+// ═══════════════════════════════════════
+// CREATE GROUP MODAL
+// ═══════════════════════════════════════
+
+function CreateGroupModal({ onClose, onCreate }: {
+  onClose: () => void
+  onCreate: (data: { name: string; description: string; visibility: string }) => Promise<Response | null>
+}) {
+  const [name, setName] = useState("")
+  const [description, setDescription] = useState("")
+  const [visibility, setVisibility] = useState("PUBLIC")
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState("")
+
+  async function handleSubmit() {
+    if (!name.trim()) { setError("Nome é obrigatório"); return }
+    setSaving(true)
+    setError("")
+    const res = await onCreate({ name: name.trim(), description: description.trim(), visibility })
+    if (res && !res.ok) {
+      const data = await res.json().catch(() => ({ error: "Erro ao criar grupo" }))
+      setError(data.error || "Erro ao criar grupo")
+    }
+    setSaving(false)
+  }
+
+  const visOptions = [
+    { value: "PUBLIC", label: "Público", desc: "Qualquer um pode ver e entrar", icon: Globe },
+    { value: "PRIVATE", label: "Privado", desc: "Visível mas precisa pedir pra entrar", icon: ShieldCheck },
+    { value: "INVITE_ONLY", label: "Só Convite", desc: "Só entra por convite", icon: EyeOff },
+  ]
+
+  return createPortal(
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <motion.div
+        initial={{ y: 100, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        exit={{ y: 100, opacity: 0 }}
+        className="relative w-full max-w-md max-h-[85dvh] overflow-y-auto overscroll-contain bg-[#0f0f0f] border border-white/[0.08] rounded-t-2xl sm:rounded-2xl p-5 space-y-4"
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-bold text-white">Criar Grupo</h2>
+          <button onClick={onClose} className="p-2 rounded-full hover:bg-white/[0.06]"><X className="w-5 h-5 text-neutral-400" /></button>
+        </div>
+
+        <div className="space-y-3">
+          <div>
+            <label className="text-xs text-neutral-500 mb-1 block">Nome do grupo *</label>
+            <input
+              value={name}
+              onChange={(e) => setName(e.target.value.slice(0, 50))}
+              placeholder="Ex: Squad Madrugada"
+              className="w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white placeholder:text-neutral-600 focus:border-red-500/30 focus:outline-none min-h-[44px]"
+            />
+            <span className="text-[10px] text-neutral-700 mt-0.5 block text-right">{name.length}/50</span>
+          </div>
+
+          <div>
+            <label className="text-xs text-neutral-500 mb-1 block">Descrição</label>
+            <textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+              placeholder="Sobre o que é o grupo..."
+              rows={3}
+              className="w-full px-3 py-2.5 bg-white/[0.04] border border-white/[0.08] rounded-lg text-sm text-white placeholder:text-neutral-600 focus:border-red-500/30 focus:outline-none resize-none"
+            />
+          </div>
+
+          <div>
+            <label className="text-xs text-neutral-500 mb-1.5 block">Visibilidade</label>
+            <div className="space-y-2">
+              {visOptions.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setVisibility(opt.value)}
+                  className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-all text-left ${
+                    visibility === opt.value
+                      ? "border-red-500/30 bg-red-600/10"
+                      : "border-white/[0.06] bg-white/[0.02] hover:bg-white/[0.04]"
+                  }`}
+                >
+                  <opt.icon className={`w-4 h-4 shrink-0 ${visibility === opt.value ? "text-red-400" : "text-neutral-500"}`} />
+                  <div>
+                    <p className={`text-sm font-medium ${visibility === opt.value ? "text-white" : "text-neutral-300"}`}>{opt.label}</p>
+                    <p className="text-[10px] text-neutral-600">{opt.desc}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {error && <p className="text-xs text-red-400 bg-red-500/10 px-3 py-2 rounded-lg">{error}</p>}
+
+        <button
+          onClick={handleSubmit}
+          disabled={saving || !name.trim()}
+          className="w-full py-3 rounded-xl bg-gradient-to-r from-red-600 to-red-700 text-white text-sm font-semibold hover:from-red-500 hover:to-red-600 transition-all disabled:opacity-50 min-h-[48px] shadow-lg shadow-red-600/20"
+        >
+          {saving ? <Loader2 className="w-4 h-4 animate-spin mx-auto" /> : "Criar Grupo"}
+        </button>
+      </motion.div>
+    </div>,
+    document.getElementById("modal-portal") || document.body
   )
 }
 
@@ -1313,8 +1618,60 @@ function FeedCard({
         </div>
       </div>
 
+      {/* Transformation before/after side-by-side */}
+      {post.type === "TRANSFORMATION" && post.metadata && (() => {
+        const meta = post.metadata as Record<string, unknown>
+        const beforeUrl = meta.beforeImageUrl as string | undefined
+        const afterUrl = meta.afterImageUrl as string | undefined
+        const beforeDate = meta.beforeDate as string | undefined
+        const afterDate = meta.afterDate as string | undefined
+        const days = meta.daysBetween as number | undefined
+        if (!beforeUrl || !afterUrl) return null
+        return (
+          <div
+            className="relative w-full bg-neutral-900"
+            onDoubleClick={() => {
+              if (!post.isLiked) onLike()
+              try { navigator.vibrate?.(20) } catch {}
+              setShowHeartAnim(true)
+              setTimeout(() => setShowHeartAnim(false), 1200)
+            }}
+          >
+            {days && (
+              <div className="absolute top-2 left-1/2 -translate-x-1/2 z-10 px-3 py-1 rounded-full bg-black/70 backdrop-blur-sm text-[10px] text-white font-semibold">
+                {days} dias de evolução
+              </div>
+            )}
+            <div className="grid grid-cols-2 divide-x divide-white/10">
+              <div className="relative">
+                <SafeImage src={beforeUrl} alt="Antes" className="w-full aspect-[3/4] object-cover" />
+                <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-neutral-900/70 text-[10px] text-neutral-300 font-bold uppercase">Antes</span>
+                {beforeDate && <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/50 text-[9px] text-neutral-400">{new Date(beforeDate).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })}</span>}
+              </div>
+              <div className="relative">
+                <SafeImage src={afterUrl} alt="Depois" className="w-full aspect-[3/4] object-cover" />
+                <span className="absolute bottom-2 left-2 px-2 py-0.5 rounded bg-red-600/80 text-[10px] text-white font-bold uppercase">Depois</span>
+                {afterDate && <span className="absolute bottom-2 right-2 px-1.5 py-0.5 rounded bg-black/50 text-[9px] text-neutral-400">{new Date(afterDate).toLocaleDateString("pt-BR", { month: "short", year: "2-digit" })}</span>}
+              </div>
+            </div>
+            <AnimatePresence>
+              {showHeartAnim && (
+                <motion.div
+                  initial={{ scale: 0, opacity: 1 }}
+                  animate={{ scale: 1.5, opacity: 0 }}
+                  transition={{ duration: 1, ease: "easeOut" }}
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                >
+                  <Heart className="w-28 h-28 fill-red-500 text-red-500 drop-shadow-[0_0_40px_rgba(239,68,68,0.6)]" />
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        )
+      })()}
+
       {/* Media — photo or video, edge-to-edge, double-tap heart */}
-      {post.imageUrl && (() => {
+      {post.type !== "TRANSFORMATION" && post.imageUrl && (() => {
         const url = post.imageUrl!
         const isPostVideo = /\.(mp4|mov|webm|quicktime)/i.test(url) || url.includes("video")
         return (
@@ -2196,6 +2553,7 @@ function PostTypeBadge({ type }: { type: string }) {
     ACHIEVEMENT: { icon: Award, label: "PR", color: "text-yellow-400 bg-yellow-400/10" },
     MILESTONE: { icon: Zap, label: "Marco", color: "text-blue-400 bg-blue-400/10" },
     ANNOUNCEMENT: { icon: HandMetal, label: "Aviso", color: "text-red-400 bg-red-400/10" },
+    TRANSFORMATION: { icon: TrendingUp, label: "Transformação", color: "text-green-400 bg-green-400/10" },
   }
   const c = config[type] || config.ACHIEVEMENT
   return (
