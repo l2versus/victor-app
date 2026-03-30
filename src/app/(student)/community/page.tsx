@@ -117,6 +117,14 @@ const REACTION_ICONS = {
   MUSCLE: { emoji: "💪", label: "Força" },
 } as const
 
+const METRIC_LABELS: Record<string, { label: string; unit: string }> = {
+  volume_total: { label: "Volume Total", unit: "kg" },
+  sessoes_total: { label: "Sessões", unit: "" },
+  sessoes_semana: { label: "Sessões", unit: "" },
+  streak_dias: { label: "Streak", unit: "dias" },
+  consistencia: { label: "Consistência", unit: "%" },
+}
+
 const MEDAL_COLORS = [
   "from-yellow-400 to-amber-600",
   "from-slate-300 to-slate-500",
@@ -151,6 +159,7 @@ export default function CommunityPage() {
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const [myStudentId, setMyStudentId] = useState<string | null>(null)
   const [myAvatar, setMyAvatar] = useState<string | null>(null)
+  const [myName, setMyName] = useState<string>("Você")
   const [myBio, setMyBio] = useState<string | null>(null)
   const [myProfession, setMyProfession] = useState<string | null>(null)
   const [suggestedUsers, setSuggestedUsers] = useState<Array<{ studentId: string; name: string; avatar: string | null; sessions: number }>>([])
@@ -211,6 +220,7 @@ export default function CommunityPage() {
       if (profileRes.ok) {
         const data = await profileRes.json()
         setMyStudentId(data.student?.id ?? null)
+        setMyName(data.student?.user?.name ?? "Você")
         setMyAvatar(data.student?.user?.avatar ?? null)
         setMyBio(data.student?.bio ?? null)
         setMyProfession(data.student?.profession ?? null)
@@ -925,6 +935,8 @@ export default function CommunityPage() {
                         isFollowing={!!post.studentId && followingIds.has(post.studentId)}
                         isMe={post.studentId === myStudentId}
                         onFollow={() => post.studentId && handleFollow(post.studentId)}
+                        myName={myName}
+                        myAvatar={myAvatar}
                       />
                     </div>
                   </FadeIn>
@@ -1112,7 +1124,10 @@ export default function CommunityPage() {
                           <span className="text-[10px] font-bold w-4 text-center">{entry.position}</span>
                           <Avatar name={entry.name} avatar={entry.avatar} size="xs" />
                           <span className="text-xs flex-1 truncate">{entry.name}</span>
-                          <span className="text-xs font-semibold">{entry.value}</span>
+                          <span className="text-xs font-semibold">
+                            {challenge.metric === "volume_total" ? formatVolume(entry.value) : entry.value}
+                            {challenge.metric !== "volume_total" && METRIC_LABELS[challenge.metric]?.unit ? ` ${METRIC_LABELS[challenge.metric].unit}` : ""}
+                          </span>
                         </div>
                       ))}
                     </div>
@@ -1139,6 +1154,8 @@ function FeedCard({
   isFollowing,
   isMe,
   onFollow,
+  myName,
+  myAvatar,
 }: {
   post: FeedPost
   onLike: () => void
@@ -1147,6 +1164,8 @@ function FeedCard({
   isFollowing: boolean
   isMe: boolean
   onFollow: () => void
+  myName: string
+  myAvatar: string | null
 }) {
   const router = useRouter()
   const [showHeartAnim, setShowHeartAnim] = useState(false)
@@ -1178,17 +1197,46 @@ function FeedCard({
 
   async function submitComment() {
     if (!commentText.trim() || submitting) return
+    const text = commentText.trim()
+
+    // ═══ OPTIMISTIC UPDATE — comment appears instantly ═══
+    const optimisticComment: FeedComment = {
+      id: `temp-${Date.now()}`,
+      content: text,
+      studentName: myName,
+      studentAvatar: myAvatar,
+      createdAt: new Date().toISOString(),
+    }
+    setAllComments(prev => [...prev, optimisticComment])
+    setTotalComments(prev => prev + 1)
+    setCommentText("")
+
+    // Haptic feedback
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      navigator.vibrate(10)
+    }
+
+    // ═══ Server sync in background ═══
     setSubmitting(true)
-    const res = await fetch(`/api/community/posts/${post.id}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "comment", content: commentText }),
-    })
-    if (res.ok) {
-      setCommentText("")
-      setTotalComments(prev => prev + 1)
-      await loadComments()
-      onCommentAdded()
+    try {
+      const res = await fetch(`/api/community/posts/${post.id}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "comment", content: text }),
+      })
+      if (res.ok) {
+        // Replace optimistic with real data silently
+        loadComments()
+        onCommentAdded()
+      } else {
+        // Revert optimistic on failure
+        setAllComments(prev => prev.filter(c => c.id !== optimisticComment.id))
+        setTotalComments(prev => prev - 1)
+      }
+    } catch {
+      // Revert on network error
+      setAllComments(prev => prev.filter(c => c.id !== optimisticComment.id))
+      setTotalComments(prev => prev - 1)
     }
     setSubmitting(false)
   }
