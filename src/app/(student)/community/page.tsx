@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { motion, AnimatePresence } from "framer-motion"
 import {
   Trophy, Flame, Target, Users, Medal,
@@ -106,7 +106,8 @@ function timeAgo(date: string): string {
   return `${Math.floor(days / 7)}sem`
 }
 
-function getInitials(name: string): string {
+function getInitials(name: string | null | undefined): string {
+  if (!name) return "?"
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
 }
 
@@ -134,6 +135,8 @@ const MEDAL_GLOW = [
 
 export default function CommunityPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const deepLinkPostId = searchParams.get("post")
   const [tab, setTab] = useState<Tab>("feed")
   const [period, setPeriod] = useState<"week" | "month" | "all">("month")
   const [ranking, setRanking] = useState<RankedStudent[]>([])
@@ -156,6 +159,8 @@ export default function CommunityPage() {
   const [searching, setSearching] = useState(false)
   const searchTimer = useRef<NodeJS.Timeout>(null)
   const [feedHasFollows, setFeedHasFollows] = useState(false)
+  const [highlightPostId, setHighlightPostId] = useState<string | null>(null)
+  const deepLinkScrolled = useRef(false)
 
   // Cleanup search timer on unmount
   useEffect(() => {
@@ -319,6 +324,21 @@ export default function CommunityPage() {
       setFollowingIds(prev => { const n = new Set(prev); n.delete(studentId); return n })
     }
   }
+
+  // Deep link: scroll to post from ?post= param (e.g. from notifications)
+  useEffect(() => {
+    if (!deepLinkPostId || deepLinkScrolled.current || feed.length === 0) return
+    const el = document.getElementById(`post-${deepLinkPostId}`)
+    if (el) {
+      deepLinkScrolled.current = true
+      setTab("feed")
+      setTimeout(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "center" })
+        setHighlightPostId(deepLinkPostId)
+        setTimeout(() => setHighlightPostId(null), 2500)
+      }, 300)
+    }
+  }, [deepLinkPostId, feed])
 
   useEffect(() => { fetchFeatures(); fetchStories() }, [fetchFeatures, fetchStories])
 
@@ -893,15 +913,20 @@ export default function CommunityPage() {
               <>
                 {feed.map((post, i) => (
                   <FadeIn key={post.id} direction="up" distance={12} delay={Math.min(i * 0.06, 0.3)}>
-                    <FeedCard
-                      post={post}
-                      onLike={() => toggleLike(post.id)}
-                      onReaction={(type) => toggleReaction(post.id, type)}
-                      onCommentAdded={() => fetchFeed()}
-                      isFollowing={!!post.studentId && followingIds.has(post.studentId)}
-                      isMe={post.studentId === myStudentId}
-                      onFollow={() => post.studentId && handleFollow(post.studentId)}
-                    />
+                    <div
+                      id={`post-${post.id}`}
+                      className={`transition-all duration-700 rounded-2xl ${highlightPostId === post.id ? "ring-2 ring-red-500/60 bg-red-500/5" : ""}`}
+                    >
+                      <FeedCard
+                        post={post}
+                        onLike={() => toggleLike(post.id)}
+                        onReaction={(type) => toggleReaction(post.id, type)}
+                        onCommentAdded={() => fetchFeed()}
+                        isFollowing={!!post.studentId && followingIds.has(post.studentId)}
+                        isMe={post.studentId === myStudentId}
+                        onFollow={() => post.studentId && handleFollow(post.studentId)}
+                      />
+                    </div>
                   </FadeIn>
                 ))}
                 {/* Infinite scroll sentinel */}
@@ -1688,7 +1713,7 @@ function StoryViewer({
   useEffect(() => {
     if ("mediaSession" in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: `Story de ${viewingStory.(group.name || "").split(" ")[0]}`,
+        title: `Story de ${(viewingStory.group.name || "").split(" ")[0]}`,
         artist: "Victor Personal",
         album: "Stories",
         artwork: [
@@ -1841,10 +1866,10 @@ function StoryViewer({
               {viewingStory.group.avatar ? (
                 <SafeImage src={viewingStory.group.avatar} alt="" className="w-full h-full object-cover" />
               ) : (
-                viewingStory.(group.name || "").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+                (viewingStory.group.name || "").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
               )}
             </div>
-            <span className="text-white text-sm font-semibold">{viewingStory.(group.name || "").split(" ")[0]}</span>
+            <span className="text-white text-sm font-semibold">{(viewingStory.group.name || "").split(" ")[0]}</span>
           </button>
           <span className="text-white/50 text-xs">
             {timeAgo(currentStory.createdAt)}
@@ -1918,7 +1943,7 @@ function StoryViewer({
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendReply(replyText)}
-                placeholder={`Responder a ${viewingStory.(group.name || "").split(" ")[0]}...`}
+                placeholder={`Responder a ${(viewingStory.group.name || "").split(" ")[0]}...`}
                 className="flex-1 bg-white/[0.08] border border-white/[0.12] rounded-full px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 outline-none focus:border-white/[0.25] transition-colors"
               />
               {replyText.trim() && (
