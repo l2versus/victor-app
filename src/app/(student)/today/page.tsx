@@ -28,6 +28,7 @@ export default async function TodayPage({
 
   const student = await prisma.student.findUnique({
     where: { userId: session.userId },
+    include: { user: { select: { name: true, avatar: true } } },
   })
   if (!student) redirect("/login")
 
@@ -194,6 +195,8 @@ export default async function TodayPage({
         } : null}
         isScheduledToday={isScheduledToday}
         viewingDayName={DAY_NAMES_FULL[dayOfWeek]}
+        userName={student.user.name || session.email.split("@")[0]}
+        userAvatar={student.user.avatar}
       />
     </div>
   )

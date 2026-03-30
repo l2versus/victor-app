@@ -87,6 +87,8 @@ interface WorkoutPlayerProps {
   } | null
   isScheduledToday?: boolean
   viewingDayName?: string
+  userName?: string
+  userAvatar?: string | null
 }
 
 type Phase = "preview" | "active" | "rest" | "summary" | "done"
@@ -130,6 +132,8 @@ export function WorkoutPlayer({
   completedToday,
   isScheduledToday = true,
   viewingDayName,
+  userName = "Atleta",
+  userAvatar,
 }: WorkoutPlayerProps) {
   const [phase, setPhase] = useState<Phase>(() => {
     if (completedToday) return "done"
@@ -543,6 +547,8 @@ export function WorkoutPlayer({
             totalVolume={Array.from(completedSets.values()).flat().reduce((sum, s) => sum + (s.reps * s.loadKg), 0)}
             durationMin={completedToday?.durationMin || 0}
             streak={0}
+            userName={userName}
+            userAvatar={userAvatar}
             onClose={() => setShowShareCard(false)}
           />
         )}
