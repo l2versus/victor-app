@@ -356,7 +356,7 @@ export default function DiscoverPage() {
                     </div>
                     <div className="text-center">
                       <p className="text-xs font-medium text-white truncate max-w-[80px]">
-                        {p.name.split(" ")[0]}
+                        {(p.name || "").split(" ")[0]}
                       </p>
                       <p className="text-[10px] text-neutral-500">
                         {p.sessionsCount} treinos

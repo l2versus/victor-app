@@ -573,13 +573,13 @@ export default function CommunityPage() {
                   {group.avatar ? (
                     <SafeImage src={group.avatar} alt="" className="w-full h-full object-cover" />
                   ) : (
-                    group.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+                    (group.name || "").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
                   )}
                 </div>
               </div>
             </div>
             <span className="text-[10px] text-neutral-400 w-16 text-center truncate">
-              {group.isMe ? "Você" : group.name.split(" ")[0]}
+              {group.isMe ? "Você" : (group.name || "").split(" ")[0]}
             </span>
           </button>
         ))}
@@ -822,7 +822,7 @@ export default function CommunityPage() {
                       >
                         {u.avatar ? <SafeImage src={u.avatar} alt="" className="w-full h-full object-cover" /> : getInitials(u.name)}
                       </button>
-                      <p className="text-[10px] text-neutral-300 text-center truncate w-full">{u.name.split(" ")[0]}</p>
+                      <p className="text-[10px] text-neutral-300 text-center truncate w-full">{(u.name || "").split(" ")[0]}</p>
                       <button
                         onClick={() => handleFollow(u.studentId)}
                         className="px-3 py-2 min-h-11 rounded-md bg-red-600 text-white text-[10px] font-bold active:scale-95 transition-transform w-full"
@@ -1404,7 +1404,7 @@ function FeedCard({
         {/* Caption */}
         {post.content && (
           <p className="text-sm text-neutral-300 mt-1.5 leading-relaxed break-words whitespace-pre-wrap">
-            <span className="font-semibold text-white mr-1.5">{post.studentName.split(" ")[0]}</span>
+            <span className="font-semibold text-white mr-1.5">{(post.studentName || "").split(" ")[0]}</span>
             <MentionText text={post.content} />
           </p>
         )}
@@ -1435,7 +1435,7 @@ function FeedCard({
                   <Avatar name={c.studentName} avatar={c.studentAvatar} size="xs" />
                   <div className="flex-1 min-w-0">
                     <p className="text-xs text-neutral-300 break-words">
-                      <span className="font-semibold text-white mr-1">{c.studentName.split(" ")[0]}</span>
+                      <span className="font-semibold text-white mr-1">{(c.studentName || "").split(" ")[0]}</span>
                       <MentionText text={c.content} />
                     </p>
                     <p className="text-[10px] text-neutral-600 mt-0.5">{timeAgo(c.createdAt)}</p>
@@ -1688,7 +1688,7 @@ function StoryViewer({
   useEffect(() => {
     if ("mediaSession" in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: `Story de ${viewingStory.group.name.split(" ")[0]}`,
+        title: `Story de ${viewingStory.(group.name || "").split(" ")[0]}`,
         artist: "Victor Personal",
         album: "Stories",
         artwork: [
@@ -1841,10 +1841,10 @@ function StoryViewer({
               {viewingStory.group.avatar ? (
                 <SafeImage src={viewingStory.group.avatar} alt="" className="w-full h-full object-cover" />
               ) : (
-                viewingStory.group.name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
+                viewingStory.(group.name || "").split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2)
               )}
             </div>
-            <span className="text-white text-sm font-semibold">{viewingStory.group.name.split(" ")[0]}</span>
+            <span className="text-white text-sm font-semibold">{viewingStory.(group.name || "").split(" ")[0]}</span>
           </button>
           <span className="text-white/50 text-xs">
             {timeAgo(currentStory.createdAt)}
@@ -1918,7 +1918,7 @@ function StoryViewer({
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && sendReply(replyText)}
-                placeholder={`Responder a ${viewingStory.group.name.split(" ")[0]}...`}
+                placeholder={`Responder a ${viewingStory.(group.name || "").split(" ")[0]}...`}
                 className="flex-1 bg-white/[0.08] border border-white/[0.12] rounded-full px-4 py-2.5 text-sm text-white placeholder:text-neutral-500 outline-none focus:border-white/[0.25] transition-colors"
               />
               {replyText.trim() && (
@@ -2097,7 +2097,7 @@ function PodiumCard({ student, position, myStudentId, onNavigate }: { student: R
 
       {/* Name */}
       <p className={`${nameSize} font-bold text-white mt-1 text-center max-w-[100px] truncate`}>
-        {student.name.split(" ")[0]}
+        {(student.name || "").split(" ")[0]}
       </p>
 
       {/* XP / Volume */}

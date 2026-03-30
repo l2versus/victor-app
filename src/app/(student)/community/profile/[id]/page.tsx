@@ -550,7 +550,7 @@ export default function SocialProfilePage() {
               </div>
               <div>
                 <span className="text-white text-sm font-semibold block">{viewingHighlight.highlight.title}</span>
-                {profile && <span className="text-white/50 text-[10px]">{profile.name.split(" ")[0]}</span>}
+                {profile && <span className="text-white/50 text-[10px]">{(profile.name || "").split(" ")[0]}</span>}
               </div>
               <button onClick={() => setViewingHighlight(null)} className="ml-auto text-white/70 p-1">
                 <X className="w-5 h-5" />
@@ -604,7 +604,7 @@ export default function SocialProfilePage() {
           <EmptyState
             icon={Grid3X3}
             title="Nenhuma foto publicada"
-            description={profile.isMe ? "Compartilhe sua primeira foto ou conquista!" : `${profile.name.split(" ")[0]} ainda não publicou fotos.`}
+            description={profile.isMe ? "Compartilhe sua primeira foto ou conquista!" : `${(profile.name || "").split(" ")[0]} ainda não publicou fotos.`}
             className="mx-4 my-8"
           />
         </FadeIn>
@@ -656,7 +656,7 @@ export default function SocialProfilePage() {
                   getInitials(profile.name)
                 )}
               </div>
-              <span className="text-white text-sm font-semibold">{profile.name.split(" ")[0]}</span>
+              <span className="text-white text-sm font-semibold">{(profile.name || "").split(" ")[0]}</span>
               <span className="text-white/50 text-xs">{timeAgo(profileStories[viewingStoryIndex].createdAt)}</span>
               {profile.isMe && profileStories[viewingStoryIndex].viewCount > 0 && (
                 <span className="text-white/50 text-[10px]">👁 {profileStories[viewingStoryIndex].viewCount}</span>
