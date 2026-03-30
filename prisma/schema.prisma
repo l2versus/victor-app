@@ -171,7 +171,7 @@ enum StudentStatus {
 model Student {
   id           String        @id @default(cuid())
   userId       String        @unique
-  trainerId    String
+  trainerId    String?
   organizationId String?
   nutritionistId String?
   birthDate    DateTime?
@@ -190,7 +190,7 @@ model Student {
   lastSeenAt   DateTime? /// Último acesso — online status
 
   user         User                @relation("UserStudent", fields: [userId], references: [id])
-  trainer      TrainerProfile      @relation(fields: [trainerId], references: [id])
+  trainer      TrainerProfile?     @relation(fields: [trainerId], references: [id])
   organization   Organization?        @relation(fields: [organizationId], references: [id])
   nutritionist   NutritionistProfile? @relation("StudentNutritionist", fields: [nutritionistId], references: [id])
   mealPlanAssignments StudentMealPlan[]
@@ -500,6 +500,9 @@ model Plan {
   hasNutrition    Boolean @default(false)
   maxSessionsWeek Int?    // null = ilimitado
 
+  // B2C flag — planos vendidos diretamente ao consumidor final (sem trainer)
+  isB2C       Boolean  @default(false)
+
   description String?
 
   trainer       TrainerProfile @relation(fields: [trainerId], references: [id])
@@ -509,16 +512,18 @@ model Plan {
   updatedAt DateTime @updatedAt
 
   @@index([trainerId])
+  @@index([isB2C])
 }
 
 model Subscription {
-  id        String             @id @default(cuid())
-  studentId String
-  planId    String
-  status    SubscriptionStatus @default(ACTIVE)
-  startDate DateTime           @default(now())
-  endDate   DateTime
-  autoRenew Boolean            @default(true)
+  id          String             @id @default(cuid())
+  studentId   String
+  planId      String
+  status      SubscriptionStatus @default(ACTIVE)
+  startDate   DateTime           @default(now())
+  endDate     DateTime
+  autoRenew   Boolean            @default(true)
+  trialEndsAt DateTime?          /// Data de expiração do trial gratuito (B2C)
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
   plan    Plan    @relation(fields: [planId], references: [id])

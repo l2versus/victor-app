@@ -6,6 +6,7 @@ import {
   Calculator, Plus, Trash2, Power, Receipt, ArrowUpRight,
   ArrowDownRight, Users, Zap, Globe, Smartphone, Shield,
   Megaphone, Scale, UserCog, HelpCircle, RefreshCw, X,
+  Target, AlertTriangle, CheckCircle2, Clock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -56,10 +57,40 @@ interface CalcDefaults {
   currentOrgs: number
 }
 
+interface ProjectionMonth {
+  month: number
+  subscribers: number
+  mrr: number
+  costs: number
+  profit: number
+  accumulated: number
+  margin: number
+}
+
+interface ProjectionScenario {
+  label: string
+  monthlyMetrics: ProjectionMonth[]
+  breakEvenMonth: number | null
+}
+
+interface ProjectionsData {
+  current: {
+    mrr: number
+    costs: number
+    profit: number
+    subscribers: number
+    churnRate: number
+    growthRate: number
+    ticketMedio: number
+  }
+  scenarios: Record<string, ProjectionScenario>
+}
+
 const TABS = [
   { key: "overview", label: "Visão Geral", icon: BarChart3 },
   { key: "costs", label: "Custos", icon: Receipt },
   { key: "calculator", label: "Calculadora", icon: Calculator },
+  { key: "projections", label: "Projeções", icon: TrendingUp },
 ] as const
 
 type TabKey = (typeof TABS)[number]["key"]
@@ -88,6 +119,8 @@ export function FinanceMasterClient() {
   const [overview, setOverview] = useState<OverviewData | null>(null)
   const [costs, setCosts] = useState<MasterCost[]>([])
   const [calcDefaults, setCalcDefaults] = useState<CalcDefaults | null>(null)
+  const [projections, setProjections] = useState<ProjectionsData | null>(null)
+  const [projectionsLoading, setProjectionsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const fetchOverview = useCallback(async () => {
@@ -111,10 +144,24 @@ export function FinanceMasterClient() {
     } catch {}
   }, [])
 
+  const fetchProjections = useCallback(async () => {
+    if (projections) return // already loaded
+    setProjectionsLoading(true)
+    try {
+      const res = await fetch("/api/master/finance/projections")
+      if (res.ok) setProjections(await res.json())
+    } catch {} finally { setProjectionsLoading(false) }
+  }, [projections])
+
   useEffect(() => {
     setLoading(true)
     Promise.all([fetchOverview(), fetchCosts(), fetchCalcDefaults()]).finally(() => setLoading(false))
   }, [fetchOverview, fetchCosts, fetchCalcDefaults])
+
+  // Lazy-load projections when tab is selected
+  useEffect(() => {
+    if (tab === "projections") fetchProjections()
+  }, [tab, fetchProjections])
 
   if (loading) {
     return (
@@ -138,7 +185,7 @@ export function FinanceMasterClient() {
             <h1 className="text-2xl font-bold">Financeiro</h1>
             <p className="text-sm text-zinc-500">Visão financeira da plataforma ONEFIT</p>
           </div>
-          <button onClick={() => { fetchOverview(); fetchCosts() }} className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 transition">
+          <button onClick={() => { fetchOverview(); fetchCosts(); setProjections(null) }} className="p-2 rounded-lg bg-zinc-900 hover:bg-zinc-800 transition">
             <RefreshCw className="w-4 h-4" />
           </button>
         </div>
@@ -164,6 +211,21 @@ export function FinanceMasterClient() {
         {tab === "overview" && overview && <OverviewTab data={overview} />}
         {tab === "costs" && <CostsTab costs={costs} onRefresh={fetchCosts} />}
         {tab === "calculator" && <CalculatorTab defaults={calcDefaults} />}
+        {tab === "projections" && (
+          projectionsLoading ? (
+            <div className="space-y-4">
+              <div className="h-24 bg-zinc-900 rounded-xl animate-pulse" />
+              <div className="h-64 bg-zinc-900 rounded-xl animate-pulse" />
+            </div>
+          ) : projections ? (
+            <ProjectionsTab data={projections} />
+          ) : (
+            <div className="text-center py-12 text-zinc-600">
+              <Target className="w-10 h-10 mx-auto mb-3 opacity-50" />
+              <p>Erro ao carregar projeções</p>
+            </div>
+          )
+        )}
       </div>
     </div>
   )
@@ -178,16 +240,16 @@ function OverviewTab({ data }: { data: OverviewData }) {
     <div className="space-y-6">
       {/* KPI Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
-        <KpiCard label="MRR" value={BRL(data.mrr)} icon={DollarSign} color="violet" />
-        <KpiCard label="ARR" value={BRL(data.arr)} icon={TrendingUp} color="violet" />
-        <KpiCard label="Custos/mês" value={BRL(data.monthlyCosts)} icon={TrendingDown} color="red" />
-        <KpiCard label="Lucro Líquido" value={BRL(data.profit)} icon={DollarSign} color={data.profit >= 0 ? "emerald" : "red"} />
-        <KpiCard label="Margem" value={PCT(data.margin)} icon={PieChart} color={data.margin >= 50 ? "emerald" : data.margin >= 0 ? "amber" : "red"} />
-        <KpiCard label="Orgs Ativas" value={String(data.activeOrgs)} sub={`de ${data.totalOrgs}`} icon={Users} color="blue" />
-        <KpiCard label="Churn" value={PCT(data.churnRate)} sub={`${data.cancelledLast30} cancel.`} icon={TrendingDown} color={data.churnRate < 5 ? "emerald" : "red"} />
-        <KpiCard label="Ticket Médio" value={BRL(data.ticketMedio)} icon={Receipt} color="violet" />
-        <KpiCard label="LTV" value={BRL(data.ltv)} icon={TrendingUp} color="emerald" />
-        <KpiCard label="CAC" value={BRL(data.cac)} icon={Megaphone} color="amber" />
+        <KpiCard label="MRR" value={BRL(data.mrr)} icon={DollarSign} color="violet" tooltip="Receita Recorrente Mensal — quanto tu fatura por mês com assinaturas ativas. É o número mais importante do SaaS." />
+        <KpiCard label="ARR" value={BRL(data.arr)} icon={TrendingUp} color="violet" tooltip="Receita Recorrente Anual — é o MRR × 12. Mostra o potencial anual se manter o ritmo atual." />
+        <KpiCard label="Custos/mês" value={BRL(data.monthlyCosts)} icon={TrendingDown} color="red" tooltip="Soma de todos os custos operacionais mensais — hospedagem, IA, WhatsApp, domínios, marketing, equipe, etc." />
+        <KpiCard label="Lucro Líquido" value={BRL(data.profit)} icon={DollarSign} color={data.profit >= 0 ? "emerald" : "red"} tooltip="MRR menos custos. Se tá verde, tu tá lucrando. Se tá vermelho, tá gastando mais do que fatura." />
+        <KpiCard label="Margem" value={PCT(data.margin)} icon={PieChart} color={data.margin >= 50 ? "emerald" : data.margin >= 0 ? "amber" : "red"} tooltip="Percentual do faturamento que sobra depois dos custos. Acima de 50% é excelente pra SaaS. Acima de 80% é elite." />
+        <KpiCard label="Orgs Ativas" value={String(data.activeOrgs)} sub={`de ${data.totalOrgs}`} icon={Users} color="blue" tooltip="Quantas academias/profissionais estão com assinatura ativa na plataforma." />
+        <KpiCard label="Churn" value={PCT(data.churnRate)} sub={`${data.cancelledLast30} cancel.`} icon={TrendingDown} color={data.churnRate < 5 ? "emerald" : "red"} tooltip="Taxa de cancelamento mensal. Abaixo de 5% é bom. Acima de 10% é preocupante — significa que tá perdendo clientes rápido demais." />
+        <KpiCard label="Ticket Médio" value={BRL(data.ticketMedio)} icon={Receipt} color="violet" tooltip="Valor médio que cada cliente paga por mês. Quanto maior, melhor — significa que estão nos planos mais caros." />
+        <KpiCard label="LTV" value={BRL(data.ltv)} icon={TrendingUp} color="emerald" tooltip="Lifetime Value — quanto um cliente vale durante toda a vida dele na plataforma. Calculado: ticket médio ÷ churn. Se o LTV for 10x o CAC, o negócio é muito saudável." />
+        <KpiCard label="CAC" value={BRL(data.cac)} icon={Megaphone} color="amber" tooltip="Custo de Aquisição de Cliente — quanto tu gasta em marketing/vendas pra conquistar 1 novo cliente. Ideal: LTV ser pelo menos 3x maior que o CAC." />
       </div>
 
       {/* Charts Row */}
@@ -314,9 +376,10 @@ function OverviewTab({ data }: { data: OverviewData }) {
 // KPI CARD
 // ═══════════════════════════════════════════════════════════════
 
-function KpiCard({ label, value, sub, icon: Icon, color }: {
-  label: string; value: string; sub?: string; icon: typeof DollarSign; color: string
+function KpiCard({ label, value, sub, icon: Icon, color, tooltip }: {
+  label: string; value: string; sub?: string; icon: typeof DollarSign; color: string; tooltip?: string
 }) {
+  const [showTip, setShowTip] = useState(false)
   const colorMap: Record<string, string> = {
     violet: "text-violet-400 bg-violet-600/10",
     emerald: "text-emerald-400 bg-emerald-600/10",
@@ -327,13 +390,19 @@ function KpiCard({ label, value, sub, icon: Icon, color }: {
   const [textC, bgC] = (colorMap[color] || colorMap.violet).split(" ")
 
   return (
-    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3">
+    <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-3 relative" onClick={() => tooltip && setShowTip(!showTip)}>
       <div className="flex items-center gap-2 mb-2">
         <div className={cn("p-1.5 rounded-lg", bgC)}>
           <Icon className={cn("w-3.5 h-3.5", textC)} />
         </div>
         <span className="text-xs text-zinc-500">{label}</span>
+        {tooltip && <HelpCircle className="w-3 h-3 text-zinc-600 cursor-pointer" />}
       </div>
+      {showTip && tooltip && (
+        <div className="absolute z-20 top-full left-0 right-0 mt-1 p-2.5 bg-zinc-800 border border-zinc-700 rounded-lg text-xs text-zinc-300 leading-relaxed shadow-xl">
+          {tooltip}
+        </div>
+      )}
       <p className="text-lg font-bold text-white truncate">{value}</p>
       {sub && <p className="text-xs text-zinc-500 mt-0.5">{sub}</p>}
     </div>
@@ -559,6 +628,273 @@ function CalculatorTab({ defaults }: { defaults: CalcDefaults | null }) {
               })}
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PROJECTIONS TAB
+// ═══════════════════════════════════════════════════════════════
+
+type ScenarioKey = "pessimistic" | "realistic" | "optimistic"
+
+const SCENARIO_META: Record<ScenarioKey, { label: string; color: string; bg: string; border: string; barColor: string; accent: string }> = {
+  pessimistic: { label: "Pessimista", color: "text-red-400", bg: "bg-red-600/10", border: "border-red-800/50", barColor: "bg-red-500", accent: "text-red-300" },
+  realistic: { label: "Realista", color: "text-violet-400", bg: "bg-violet-600/10", border: "border-violet-800/50", barColor: "bg-violet-500", accent: "text-violet-300" },
+  optimistic: { label: "Otimista", color: "text-emerald-400", bg: "bg-emerald-600/10", border: "border-emerald-800/50", barColor: "bg-emerald-500", accent: "text-emerald-300" },
+}
+
+function ProjectionsTab({ data }: { data: ProjectionsData }) {
+  const [scenario, setScenario] = useState<ScenarioKey>("realistic")
+
+  const current = data.current
+  const activeScenario = data.scenarios[scenario]
+  const meta = SCENARIO_META[scenario]
+
+  if (!activeScenario) return null
+
+  const metrics = activeScenario.monthlyMetrics
+
+  // Max values for chart scaling
+  const maxMrrCost = Math.max(...metrics.map(m => Math.max(m.mrr, m.costs)), 1)
+  const maxAccumulated = Math.max(...metrics.map(m => Math.abs(m.accumulated)), 1)
+
+  return (
+    <div className="space-y-6">
+      {/* ── Current Snapshot KPIs ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-zinc-400 mb-3">Snapshot Atual</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+          <KpiCard label="MRR Atual" value={BRL(current.mrr)} icon={DollarSign} color="violet" />
+          <KpiCard label="Custos Atuais" value={BRL(current.costs)} icon={TrendingDown} color="red" />
+          <KpiCard label="Lucro Atual" value={BRL(current.profit)} icon={DollarSign} color={current.profit >= 0 ? "emerald" : "red"} />
+          <KpiCard label="Assinantes" value={String(current.subscribers)} icon={Users} color="blue" />
+          <KpiCard label="Churn" value={PCT(current.churnRate)} icon={TrendingDown} color={current.churnRate < 5 ? "emerald" : "red"} />
+          <KpiCard label="Growth Rate" value={PCT(current.growthRate)} icon={TrendingUp} color={current.growthRate > 0 ? "emerald" : "amber"} />
+          <KpiCard label="Ticket Médio" value={BRL(current.ticketMedio)} icon={Receipt} color="violet" />
+        </div>
+      </div>
+
+      {/* ── Scenario Selector ── */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+        <span className="text-sm text-zinc-500 shrink-0">Cenário:</span>
+        <div className="flex gap-1 bg-zinc-900/50 rounded-xl p-1">
+          {(Object.keys(SCENARIO_META) as ScenarioKey[]).map(key => {
+            const sm = SCENARIO_META[key]
+            const isActive = scenario === key
+            return (
+              <button
+                key={key}
+                onClick={() => setScenario(key)}
+                className={cn(
+                  "px-4 py-2 rounded-lg text-sm font-medium transition",
+                  isActive
+                    ? cn(sm.barColor, "text-white")
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-800"
+                )}
+              >
+                {sm.label}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* ── Break-even Indicators ── */}
+      <div className="flex flex-wrap gap-3">
+        {(Object.keys(SCENARIO_META) as ScenarioKey[]).map(key => {
+          const sc = data.scenarios[key]
+          const sm = SCENARIO_META[key]
+          if (!sc) return null
+          const be = sc.breakEvenMonth
+          let badgeColor = "bg-red-600/15 text-red-400 border-red-800/40"
+          let icon = AlertTriangle
+          if (be !== null && be <= 1) {
+            badgeColor = "bg-emerald-600/15 text-emerald-400 border-emerald-800/40"
+            icon = CheckCircle2
+          } else if (be !== null && be <= 6) {
+            badgeColor = "bg-amber-600/15 text-amber-400 border-amber-800/40"
+            icon = Clock
+          }
+          const Icon = icon
+          return (
+            <div key={key} className={cn("flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm", badgeColor)}>
+              <Icon className="w-3.5 h-3.5" />
+              <span className="font-medium">{sm.label}:</span>
+              {be !== null ? `Break-even no mês ${be}` : "Sem break-even em 12 meses"}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* ── 12-Month Timeline Chart ── */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+        <h3 className="text-sm font-semibold text-zinc-300 mb-4">
+          Projeção 12 Meses — {meta.label}
+        </h3>
+
+        {/* Bar chart: MRR vs Costs */}
+        <div className="flex items-end gap-1.5 h-48 mb-2">
+          {metrics.map((m) => (
+            <div key={m.month} className="flex-1 flex flex-col items-center gap-1 group relative">
+              <div className="w-full flex gap-0.5 items-end" style={{ height: "160px" }}>
+                <div
+                  className={cn("flex-1 rounded-t transition-all", meta.barColor)}
+                  style={{ height: `${(m.mrr / maxMrrCost) * 100}%`, minHeight: "2px" }}
+                />
+                <div
+                  className="flex-1 bg-red-600/60 rounded-t transition-all"
+                  style={{ height: `${(m.costs / maxMrrCost) * 100}%`, minHeight: "2px" }}
+                />
+              </div>
+              <span className="text-[10px] text-zinc-500">M{m.month}</span>
+
+              {/* Hover tooltip */}
+              <div className="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 hidden group-hover:block z-10">
+                <div className="bg-zinc-800 border border-zinc-700 rounded-lg p-2 text-xs whitespace-nowrap shadow-xl">
+                  <p className="font-semibold text-zinc-200 mb-1">Mês {m.month}</p>
+                  <p className={meta.color}>MRR: {BRL(m.mrr)}</p>
+                  <p className="text-red-400">Custos: {BRL(m.costs)}</p>
+                  <p className={m.profit >= 0 ? "text-emerald-400" : "text-red-400"}>
+                    Lucro: {BRL(m.profit)}
+                  </p>
+                  <p className="text-zinc-400">Acumulado: {BRL(m.accumulated)}</p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Accumulated profit line (simplified bar representation) */}
+        <div className="mt-4">
+          <p className="text-xs text-zinc-500 mb-2">Lucro Acumulado</p>
+          <div className="flex items-center gap-1.5 h-10">
+            {metrics.map((m) => {
+              const pct = maxAccumulated > 0 ? (Math.abs(m.accumulated) / maxAccumulated) * 100 : 0
+              const isPositive = m.accumulated >= 0
+              return (
+                <div key={m.month} className="flex-1 flex flex-col items-center justify-end h-full">
+                  <div
+                    className={cn(
+                      "w-full rounded-sm transition-all",
+                      isPositive ? "bg-emerald-500/70" : "bg-red-500/70"
+                    )}
+                    style={{ height: `${Math.max(pct, 5)}%` }}
+                  />
+                </div>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex gap-4 mt-3 text-xs text-zinc-500">
+          <span className="flex items-center gap-1">
+            <span className={cn("w-2 h-2 rounded", meta.barColor)} /> MRR
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded bg-red-600/60" /> Custos
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded bg-emerald-500/70" /> Acumulado +
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-2 h-2 rounded bg-red-500/70" /> Acumulado -
+          </span>
+        </div>
+      </div>
+
+      {/* ── Key Metrics Table ── */}
+      <div className="bg-zinc-900/50 border border-zinc-800 rounded-xl overflow-hidden">
+        <div className="p-4 border-b border-zinc-800">
+          <h3 className="text-sm font-semibold text-zinc-300">
+            Detalhamento Mensal — {meta.label}
+          </h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-zinc-800 text-zinc-500">
+                <th className="text-left px-4 py-2 font-medium">Mês</th>
+                <th className="text-right px-4 py-2 font-medium">Assinantes</th>
+                <th className="text-right px-4 py-2 font-medium">MRR</th>
+                <th className="text-right px-4 py-2 font-medium">Custos</th>
+                <th className="text-right px-4 py-2 font-medium">Lucro</th>
+                <th className="text-right px-4 py-2 font-medium">Acumulado</th>
+                <th className="text-right px-4 py-2 font-medium">Margem</th>
+              </tr>
+            </thead>
+            <tbody>
+              {metrics.map((m) => (
+                <tr
+                  key={m.month}
+                  className={cn(
+                    "border-b border-zinc-800/50 hover:bg-zinc-800/30 transition",
+                    activeScenario.breakEvenMonth === m.month && "bg-emerald-600/5"
+                  )}
+                >
+                  <td className="px-4 py-2 text-zinc-300 font-medium">Mês {m.month}</td>
+                  <td className="px-4 py-2 text-right text-zinc-300">{m.subscribers}</td>
+                  <td className={cn("px-4 py-2 text-right font-medium", meta.color)}>{BRL(m.mrr)}</td>
+                  <td className="px-4 py-2 text-right text-red-400">{BRL(m.costs)}</td>
+                  <td className={cn("px-4 py-2 text-right font-medium", m.profit >= 0 ? "text-emerald-400" : "text-red-400")}>
+                    {BRL(m.profit)}
+                  </td>
+                  <td className={cn("px-4 py-2 text-right", m.accumulated >= 0 ? "text-emerald-400" : "text-red-400")}>
+                    {BRL(m.accumulated)}
+                  </td>
+                  <td className={cn("px-4 py-2 text-right", m.margin >= 50 ? "text-emerald-400" : m.margin >= 0 ? "text-amber-400" : "text-red-400")}>
+                    {PCT(m.margin)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── Comparison Cards (Month 6 & 12) ── */}
+      <div>
+        <h3 className="text-sm font-semibold text-zinc-400 mb-3">Comparativo dos Cenários</h3>
+        <div className="grid md:grid-cols-2 gap-4">
+          {[6, 12].map(targetMonth => (
+            <div key={targetMonth} className="bg-zinc-900/50 border border-zinc-800 rounded-xl p-4">
+              <h4 className="text-sm font-semibold text-zinc-300 mb-3">Mês {targetMonth}</h4>
+              <div className="space-y-3">
+                {(Object.keys(SCENARIO_META) as ScenarioKey[]).map(key => {
+                  const sc = data.scenarios[key]
+                  const sm = SCENARIO_META[key]
+                  if (!sc) return null
+                  const m = sc.monthlyMetrics[targetMonth - 1]
+                  if (!m) return null
+                  return (
+                    <div key={key} className={cn("border rounded-lg p-3", sm.border, key === scenario && "ring-1 ring-zinc-600")}>
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className={cn("w-2 h-2 rounded-full", sm.barColor)} />
+                        <span className={cn("text-sm font-medium", sm.color)}>{sm.label}</span>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-xs">
+                        <div>
+                          <p className="text-zinc-500">MRR</p>
+                          <p className={cn("font-semibold", sm.accent)}>{BRL(m.mrr)}</p>
+                        </div>
+                        <div>
+                          <p className="text-zinc-500">Lucro</p>
+                          <p className={cn("font-semibold", m.profit >= 0 ? "text-emerald-400" : "text-red-400")}>{BRL(m.profit)}</p>
+                        </div>
+                        <div>
+                          <p className="text-zinc-500">Acumulado</p>
+                          <p className={cn("font-semibold", m.accumulated >= 0 ? "text-emerald-400" : "text-red-400")}>{BRL(m.accumulated)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>
