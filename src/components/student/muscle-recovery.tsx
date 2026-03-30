@@ -104,6 +104,54 @@ function getFrequencyFromRecovery(percent: number): number {
   return 4                     // Fresh/just trained → red
 }
 
+// Determine which view (anterior/posterior) best shows each muscle
+const MUSCLE_VIEW: Record<string, "anterior" | "posterior"> = {
+  "Peito": "anterior",
+  "Abdômen": "anterior",
+  "Bíceps": "anterior",
+  "Quadríceps": "anterior",
+  "Ombros": "anterior",
+  "Antebraço": "anterior",
+  "Adutores": "anterior",
+  "Abdutores": "posterior",
+  "Costas": "posterior",
+  "Trapézio": "posterior",
+  "Tríceps": "posterior",
+  "Posterior de Coxa": "posterior",
+  "Glúteos": "posterior",
+  "Panturrilha": "posterior",
+}
+
+/** Mini anatomical icon — renders a tiny body with only one muscle highlighted */
+function MuscleIcon({ muscle, color }: { muscle: string; color: string }) {
+  const slugs = MUSCLE_TO_SLUG[muscle]
+  if (!slugs) return null
+
+  const view = MUSCLE_VIEW[muscle] || "anterior"
+  const iconData = [{ name: muscle, muscles: slugs, frequency: 1 }]
+
+  return (
+    <div className="w-10 h-10 shrink-0 rounded-lg bg-white/[0.03] overflow-hidden flex items-center justify-center">
+      <Model
+        data={iconData}
+        type={view}
+        bodyColor="#1a1a2e"
+        highlightedColors={[color]}
+        style={{ width: 36, height: 36, padding: 0, margin: 0 }}
+        svgStyle={{ width: "100%", height: "100%" }}
+      />
+    </div>
+  )
+}
+
+// Status → highlight color for the mini icon
+const STATUS_ICON_COLOR: Record<string, string> = {
+  fresh: "#ef4444",
+  recovering: "#eab308",
+  ready: "#22c55e",
+  overdue: "#525252",
+}
+
 export function MuscleRecoveryPanel() {
   const [data, setData] = useState<MuscleRecoveryData[]>([])
   const [loading, setLoading] = useState(true)
@@ -274,8 +322,7 @@ export function MuscleRecoveryPanel() {
                 isSelected ? config.bg : "border-transparent hover:bg-white/[0.02]",
               )}
             >
-              <div className={cn("w-2 h-2 rounded-full shrink-0", config.badge)} />
-              <Icon className={cn("w-4 h-4 shrink-0", config.color)} />
+              <MuscleIcon muscle={muscle.muscle} color={STATUS_ICON_COLOR[muscle.status]} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white">{muscle.muscle}</span>
