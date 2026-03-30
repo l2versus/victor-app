@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     const checkIn = await prisma.checkIn.create({
       data: {
         studentId: student.id,
-        trainerId: student.trainerId,
+        trainerId: student.trainerId!,
         method: "QR",
       },
     })

@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         where: { userId: session.userId },
         select: { id: true, trainerId: true },
       })
-      trainerId = student?.trainerId
+      trainerId = student?.trainerId ?? undefined
       currentStudentId = student?.id ?? null
     } else {
       const trainer = await prisma.trainerProfile.findUnique({

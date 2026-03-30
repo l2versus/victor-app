@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
         where: { userId: session.userId },
         select: { trainerId: true },
       })
-      trainerId = student?.trainerId
+      trainerId = student?.trainerId ?? undefined
     } else {
       const trainer = await prisma.trainerProfile.findUnique({
         where: { userId: session.userId },

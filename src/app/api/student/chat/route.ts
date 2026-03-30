@@ -282,7 +282,7 @@ Proteína ideal: ${Math.round(student.weight * 1.8)}-${Math.round(student.weight
     try {
       const lastUserMsg = safeMessages.filter(m => m.role === "user").at(-1)?.content || ""
       if (lastUserMsg.length > 5) {
-        const ragResults = await searchKnowledge(student.trainerId, lastUserMsg, { limit: 3, minScore: 0.35 })
+        const ragResults = await searchKnowledge(student.trainerId!, lastUserMsg, { limit: 3, minScore: 0.35 })
         ragContext = buildRAGContext(ragResults)
       }
     } catch (err) {
