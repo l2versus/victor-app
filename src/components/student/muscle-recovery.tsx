@@ -104,22 +104,42 @@ function getFrequencyFromRecovery(percent: number): number {
   return 4                     // Fresh/just trained → red
 }
 
-// Muscle group emoji icons — visually distinct per group
-const MUSCLE_EMOJI: Record<string, string> = {
-  "Peito": "🫁",
-  "Costas": "🔙",
-  "Ombros": "🏋️",
-  "Bíceps": "💪",
-  "Tríceps": "🦾",
-  "Quadríceps": "🦵",
-  "Posterior de Coxa": "🦿",
-  "Glúteos": "🍑",
-  "Panturrilha": "🦶",
-  "Abdômen": "🎯",
-  "Trapézio": "⬆️",
-  "Antebraço": "✊",
-  "Adutores": "🔽",
-  "Abdutores": "🔼",
+// Determine which view (anterior/posterior) best shows each muscle
+const MUSCLE_VIEW: Record<string, "anterior" | "posterior"> = {
+  "Peito": "anterior", "Abdômen": "anterior", "Bíceps": "anterior",
+  "Quadríceps": "anterior", "Ombros": "anterior", "Antebraço": "anterior",
+  "Adutores": "anterior", "Abdutores": "posterior", "Costas": "posterior",
+  "Trapézio": "posterior", "Tríceps": "posterior",
+  "Posterior de Coxa": "posterior", "Glúteos": "posterior", "Panturrilha": "posterior",
+}
+
+/** Mini anatomical body icon — highlights only one muscle group */
+function MuscleIcon({ muscle, highlightColor }: { muscle: string; highlightColor: string }) {
+  const slugs = MUSCLE_TO_SLUG[muscle]
+  if (!slugs) return <div className="w-11 h-14 shrink-0 rounded-lg bg-white/[0.04]" />
+
+  const view = MUSCLE_VIEW[muscle] || "anterior"
+
+  return (
+    <div className="w-11 h-14 shrink-0 rounded-lg bg-[#0d1117] overflow-hidden relative">
+      <Model
+        data={[{ name: muscle, muscles: slugs, frequency: 1 }]}
+        type={view}
+        bodyColor="#1e293b"
+        highlightedColors={[highlightColor]}
+        style={{ position: "absolute", top: "-2px", left: "-2px", right: "-2px", bottom: "-2px", padding: 0 }}
+        svgStyle={{ width: "100%", height: "100%" }}
+      />
+    </div>
+  )
+}
+
+// Status → highlight color for the mini icon
+const STATUS_ICON_COLOR: Record<string, string> = {
+  fresh: "#ef4444",
+  recovering: "#eab308",
+  ready: "#3b82f6",
+  overdue: "#475569",
 }
 
 export function MuscleRecoveryPanel() {
@@ -292,12 +312,7 @@ export function MuscleRecoveryPanel() {
                 isSelected ? config.bg : "border-transparent hover:bg-white/[0.02]",
               )}
             >
-              <div className={cn(
-                "w-10 h-10 rounded-xl flex items-center justify-center text-lg shrink-0",
-                config.bg,
-              )}>
-                {MUSCLE_EMOJI[muscle.muscle] || "💪"}
-              </div>
+              <MuscleIcon muscle={muscle.muscle} highlightColor={STATUS_ICON_COLOR[muscle.status]} />
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white">{muscle.muscle}</span>
