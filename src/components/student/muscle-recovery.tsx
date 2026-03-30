@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import { Loader2, ShieldCheck, AlertTriangle, Flame, Clock } from "lucide-react"
-import { BodyMap } from "@/components/student/body-map"
+import dynamic from "next/dynamic"
+
+// react-body-highlighter — professional anatomical SVG (anterior + posterior)
+import type { Muscle } from "react-body-highlighter"
+const Model = dynamic(() => import("react-body-highlighter"), { ssr: false })
 
 interface MuscleRecoveryData {
   muscle: string
@@ -14,6 +18,30 @@ interface MuscleRecoveryData {
   status: "fresh" | "recovering" | "ready" | "overdue"
   totalVolume: number
   sets: number
+}
+
+// Map our muscle names → react-body-highlighter slug(s)
+const MUSCLE_TO_SLUG: Record<string, Muscle[]> = {
+  "Peito": ["chest"],
+  "Costas": ["upper-back", "lower-back"],
+  "Ombros": ["front-deltoids", "back-deltoids"],
+  "Bíceps": ["biceps"],
+  "Tríceps": ["triceps"],
+  "Quadríceps": ["quadriceps"],
+  "Posterior de Coxa": ["hamstring"],
+  "Glúteos": ["gluteal"],
+  "Panturrilha": ["calves"],
+  "Abdômen": ["abs", "obliques"],
+  "Trapézio": ["trapezius"],
+  "Antebraço": ["forearm"],
+  "Adutores": ["adductor"],
+  "Abdutores": ["abductors"],
+}
+
+// Reverse mapping: slug → our muscle name
+const SLUG_TO_MUSCLE: Record<string, string> = {}
+for (const [muscle, slugs] of Object.entries(MUSCLE_TO_SLUG)) {
+  for (const slug of slugs) SLUG_TO_MUSCLE[slug] = muscle
 }
 
 const STATUS_CONFIG = {
@@ -51,6 +79,14 @@ const STATUS_CONFIG = {
   },
 }
 
+// Color palette: index 0 = trained 1x, 1 = recovering, 2 = ready, 3 = fresh
+const HIGHLIGHT_COLORS = [
+  "#22c55e", // 1x — green (recovered)
+  "#eab308", // 2x — yellow (recovering)
+  "#f97316", // 3x — orange (moderate)
+  "#ef4444", // 4x — red (freshly trained)
+]
+
 function formatTimeSince(hours: number | null): string {
   if (hours === null) return "Sem dados"
   if (hours < 1) return "Agora"
@@ -58,6 +94,14 @@ function formatTimeSince(hours: number | null): string {
   const days = Math.floor(hours / 24)
   if (days === 1) return "1 dia atrás"
   return `${days} dias atrás`
+}
+
+function getFrequencyFromRecovery(percent: number): number {
+  // Map recovery % to frequency (higher freq = less recovered = more red)
+  if (percent >= 90) return 1  // Recovered → green
+  if (percent >= 50) return 2  // Recovering → yellow
+  if (percent >= 20) return 3  // Moderate → orange
+  return 4                     // Fresh/just trained → red
 }
 
 export function MuscleRecoveryPanel() {
@@ -103,18 +147,27 @@ export function MuscleRecoveryPanel() {
   const readyCount = data.filter(d => d.status === "ready").length
   const overdueCount = data.filter(d => d.status === "overdue").length
 
-  // Body map data (invert: 100% recovery = 0% intensity on map → red = needs rest)
-  const bodyMapData = data.map(d => ({
-    muscle: d.muscle,
-    volume: d.totalVolume,
-    percentage: Math.max(0, 100 - d.recoveryPercent),
-  }))
+  // Convert recovery data → react-body-highlighter format
+  // Each muscle becomes an "exercise" entry with frequency based on recovery %
+  const bodyData = data
+    .filter(d => d.status !== "overdue" && MUSCLE_TO_SLUG[d.muscle])
+    .map(d => ({
+      name: d.muscle,
+      muscles: MUSCLE_TO_SLUG[d.muscle] || [],
+      frequency: getFrequencyFromRecovery(d.recoveryPercent),
+    }))
 
   const selectedData = selectedMuscle ? data.find(d => d.muscle === selectedMuscle) : null
 
+  // Handle muscle click on the body model
+  function handleMuscleClick(muscleStats: { muscle: string }) {
+    const muscleName = SLUG_TO_MUSCLE[muscleStats.muscle] || muscleStats.muscle
+    setSelectedMuscle(prev => prev === muscleName ? null : muscleName)
+  }
+
   return (
     <div className="space-y-4">
-      {/* ── Header: Status summary pills ── */}
+      {/* ── Status summary pills ── */}
       <div className="grid grid-cols-4 gap-1.5">
         {[
           { count: freshCount, label: "Treinado", color: "text-red-400", bg: "bg-red-500/10", dot: "bg-red-500" },
@@ -132,23 +185,46 @@ export function MuscleRecoveryPanel() {
         ))}
       </div>
 
-      {/* ── Body Map (frente + costas) — ALWAYS visible ── */}
-      <div className="rounded-2xl border border-white/[0.06] bg-white/[0.02] p-3">
-        <BodyMap
-          data={bodyMapData}
-          view="both"
-          selectedMuscle={selectedMuscle}
-          onMuscleSelect={(m) => setSelectedMuscle(m === selectedMuscle ? null : m)}
-        />
+      {/* ── Anatomical Body (anterior + posterior) ── */}
+      <div className="rounded-2xl border border-white/[0.06] bg-gradient-to-b from-white/[0.03] to-transparent p-4">
+        <div className="flex items-stretch justify-center gap-2">
+          {/* Anterior (front) */}
+          <div className="flex-1 max-w-[180px]">
+            <p className="text-[9px] text-neutral-600 text-center mb-1 uppercase tracking-wider">Frente</p>
+            <Model
+              data={bodyData}
+              type="anterior"
+              bodyColor="#1a1a2e"
+              highlightedColors={HIGHLIGHT_COLORS}
+              onClick={handleMuscleClick}
+              style={{ width: "100%", padding: 0 }}
+              svgStyle={{ width: "100%", height: "auto" }}
+            />
+          </div>
 
-        {/* Legend inline */}
-        <div className="flex items-center justify-center gap-5 mt-2 text-[9px] text-neutral-600">
+          {/* Posterior (back) */}
+          <div className="flex-1 max-w-[180px]">
+            <p className="text-[9px] text-neutral-600 text-center mb-1 uppercase tracking-wider">Costas</p>
+            <Model
+              data={bodyData}
+              type="posterior"
+              bodyColor="#1a1a2e"
+              highlightedColors={HIGHLIGHT_COLORS}
+              onClick={handleMuscleClick}
+              style={{ width: "100%", padding: 0 }}
+              svgStyle={{ width: "100%", height: "auto" }}
+            />
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center justify-center gap-4 mt-3 text-[9px] text-neutral-600">
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /> Treinado</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-amber-500" /> Recuperando</span>
           <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-500" /> Pronto</span>
         </div>
 
-        {/* Selected muscle detail card — overlays below body map */}
+        {/* Selected muscle detail card */}
         {selectedData && (
           <div className={cn(
             "mt-3 rounded-xl border p-3 space-y-2 animate-in slide-in-from-bottom-2 fade-in duration-200",
@@ -159,13 +235,10 @@ export function MuscleRecoveryPanel() {
                 {(() => { const Icon = STATUS_CONFIG[selectedData.status].icon; return <Icon className="w-4 h-4" /> })()}
                 <span className="text-sm font-bold text-white">{selectedData.muscle}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className={cn("text-lg font-black tabular-nums", STATUS_CONFIG[selectedData.status].color)}>
-                  {selectedData.recoveryPercent}%
-                </span>
-              </div>
+              <span className={cn("text-lg font-black tabular-nums", STATUS_CONFIG[selectedData.status].color)}>
+                {selectedData.recoveryPercent}%
+              </span>
             </div>
-            {/* Recovery bar */}
             <div className="w-full h-2.5 rounded-full bg-white/[0.06] overflow-hidden">
               <div
                 className={cn("h-full rounded-full transition-all duration-700", STATUS_CONFIG[selectedData.status].barColor)}
@@ -185,7 +258,7 @@ export function MuscleRecoveryPanel() {
         )}
       </div>
 
-      {/* ── Muscle List — ALWAYS visible below body map ── */}
+      {/* ── Muscle List ── */}
       <div className="space-y-1">
         <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium px-1 mb-2">Músculos</p>
         {data.map((muscle) => {
@@ -201,13 +274,8 @@ export function MuscleRecoveryPanel() {
                 isSelected ? config.bg : "border-transparent hover:bg-white/[0.02]",
               )}
             >
-              {/* Status dot */}
               <div className={cn("w-2 h-2 rounded-full shrink-0", config.badge)} />
-
-              {/* Icon */}
               <Icon className={cn("w-4 h-4 shrink-0", config.color)} />
-
-              {/* Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-semibold text-white">{muscle.muscle}</span>
@@ -215,15 +283,12 @@ export function MuscleRecoveryPanel() {
                     {muscle.recoveryPercent}%
                   </span>
                 </div>
-
-                {/* Progress bar */}
                 <div className="w-full h-1.5 rounded-full bg-white/[0.04] mt-1.5 overflow-hidden">
                   <div
                     className={cn("h-full rounded-full transition-all duration-700", config.barColor)}
                     style={{ width: `${muscle.recoveryPercent}%` }}
                   />
                 </div>
-
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-[10px] text-neutral-600">
                     {muscle.lastWorkedAt ? formatTimeSince(muscle.hoursSince) : "Sem dados"}
