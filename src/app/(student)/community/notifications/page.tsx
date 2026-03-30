@@ -160,12 +160,29 @@ export default function NotificationsPage() {
   }
 
   function handleNotificationClick(n: Notification) {
-    if (n.senderStudentId && (n.type === "social_follow" || n.type === "social_like" || n.type === "social_comment" || n.type === "social_mention")) {
+    const postId = n.metadata?.postId as string | undefined
+
+    if (n.type === "social_follow" && n.senderStudentId) {
+      // Follow → go to THEIR profile
+      router.push(`/community/profile/${n.senderStudentId}`)
+    } else if ((n.type === "social_like" || n.type === "social_comment" || n.type === "social_mention") && postId) {
+      // Like/comment/mention → go to the POST
+      router.push(`/community?post=${postId}`)
+    } else if (n.type === "achievement" && postId) {
+      // PR/Achievement → go to the POST
+      router.push(`/community?post=${postId}`)
+    } else if (n.type === "achievement" && n.senderStudentId) {
+      // PR without postId → go to their profile
+      router.push(`/community/profile/${n.senderStudentId}`)
+    } else if (n.senderStudentId && n.type.startsWith("social_")) {
+      // Other social → sender profile
       router.push(`/community/profile/${n.senderStudentId}`)
     } else if (n.type === "new_message") {
       router.push("/community/dm")
     } else if (n.type.startsWith("schedule")) {
       router.push("/schedule")
+    } else if (n.type === "WORKOUT_INCOMPLETE") {
+      router.push("/community")
     } else {
       router.push("/community")
     }
@@ -361,7 +378,17 @@ export default function NotificationsPage() {
                               </>
                             ) : (
                               <>
-                                <span className="font-bold text-white">{n.senderName || n.title}</span>
+                                <span
+                                  className="font-bold text-white hover:underline"
+                                  onClick={(e) => {
+                                    if (n.senderStudentId) {
+                                      e.stopPropagation()
+                                      router.push(`/community/profile/${n.senderStudentId}`)
+                                    }
+                                  }}
+                                >
+                                  {n.senderName || n.title}
+                                </span>
                                 {" "}
                                 {getNotificationText(n)}
                               </>
