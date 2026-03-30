@@ -21,6 +21,8 @@ import { format, subDays, startOfWeek, addDays } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { FadeIn } from "@/components/ui/motion"
 import { ActivityHeatmap } from "@/components/ui/activity-heatmap"
+import { MuscleRecoveryPanel } from "@/components/student/muscle-recovery"
+import { ShieldCheck } from "lucide-react"
 
 /* ═══ Types ═══ */
 type EvolutionData = {
@@ -63,7 +65,7 @@ const MUSCLE_COLORS: Record<string, string> = {
 }
 const PIE_COLORS = ["#ef4444", "#f97316", "#3b82f6", "#22c55e", "#8b5cf6", "#eab308", "#ec4899", "#14b8a6"]
 
-type TabId = "dashboard" | "exercises" | "history" | "medidas"
+type TabId = "dashboard" | "exercises" | "history" | "medidas" | "recovery"
 
 /* ═══ 3D Anatomy Viewer — Sketchfab Embed ═══ */
 function Anatomy3DViewer() {
@@ -522,6 +524,7 @@ export function EvolutionClient() {
       <div className="flex gap-1 p-1 rounded-xl bg-white/[0.02] border border-white/[0.04]">
         {([
           { id: "dashboard" as const, label: "Dashboard", icon: BarChart3 },
+          { id: "recovery" as const, label: "Recuperação", icon: ShieldCheck },
           { id: "exercises" as const, label: "Exercicios", icon: Dumbbell },
           { id: "medidas" as const, label: "Medidas", icon: Ruler },
           { id: "history" as const, label: "Historico", icon: Calendar },
@@ -1014,6 +1017,9 @@ export function EvolutionClient() {
           )}
         </div>
       )}
+
+      {/* ═══════════════ TAB: RECUPERAÇÃO ═══════════════ */}
+      {tab === "recovery" && <MuscleRecoveryPanel />}
 
       {/* ═══════════════ TAB: MEDIDAS ═══════════════ */}
       {tab === "medidas" && <MedidasTab />}
