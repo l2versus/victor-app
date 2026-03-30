@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma"
 import { getPaymentClient, calculateEndDate } from "@/lib/mercadopago"
 import { hashPassword } from "@/lib/auth"
 import { sendWelcomeEmail } from "@/lib/email"
+import { validatePaymentAmount, logTransaction } from "@/lib/payment-security"
 import crypto from "crypto"
 
 // ═══════════════════════════════════════
@@ -79,6 +80,13 @@ function mapMpPaymentMethod(
 
 // POST /api/webhooks/mercadopago/b2c — Receive B2C payment notifications
 export async function POST(req: NextRequest) {
+  // Extract IP and user agent for audit logging
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    "unknown"
+  const userAgent = req.headers.get("user-agent") || "unknown"
+
   try {
     // Verify webhook signature
     if (!verifyMpSignature(req)) {
@@ -141,6 +149,22 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Missing reference data" }, { status: 400 })
     }
 
+    // Log payment received event
+    await logTransaction({
+      type: "payment_received",
+      amount: mpPayment.transaction_amount || 0,
+      email: buyerEmail,
+      planId,
+      gatewayId: String(paymentId),
+      ip,
+      userAgent,
+      metadata: {
+        mpStatus: mpPayment.status,
+        paymentType: mpPayment.payment_type_id,
+        buyerName,
+      },
+    })
+
     // Idempotency: check if already processed
     const existingPayment = await prisma.payment.findFirst({
       where: { gatewayId: String(paymentId) },
@@ -155,6 +179,40 @@ export async function POST(req: NextRequest) {
     if (!plan || !plan.isB2C) {
       console.error(`[B2C Webhook] B2C Plan ${planId} not found`)
       return NextResponse.json({ error: "B2C plan not found" }, { status: 404 })
+    }
+
+    // Validate payment amount matches plan price (anti-fraud)
+    const paidAmount = mpPayment.transaction_amount || 0
+    const amountCheck = validatePaymentAmount(paidAmount, plan.price)
+    if (!amountCheck.valid) {
+      console.error(
+        `[B2C Webhook] AMOUNT MISMATCH — paid=${paidAmount}, plan=${plan.price}: ${amountCheck.reason}`
+      )
+      await logTransaction({
+        type: "fraud_flagged",
+        amount: paidAmount,
+        email: buyerEmail,
+        planId: plan.id,
+        gatewayId: String(paymentId),
+        ip,
+        userAgent,
+        riskLevel: "high",
+        flags: ["amount_mismatch"],
+        metadata: {
+          expectedAmount: plan.price,
+          paidAmount,
+          difference: amountCheck.difference,
+          reason: amountCheck.reason,
+          paymentType: mpPayment.payment_type_id,
+          buyerName,
+        },
+      })
+      // Do NOT create subscription — suspicious payment
+      return NextResponse.json({
+        received: true,
+        flagged: true,
+        reason: "amount_mismatch",
+      })
     }
 
     // Check if user already exists before hashing (bcrypt is expensive)
@@ -277,6 +335,25 @@ export async function POST(req: NextRequest) {
         planName: `${plan.name} B2C (${plan.interval})`,
       })
     }
+
+    // Log successful payment verification
+    await logTransaction({
+      type: "payment_verified",
+      amount: paidAmount,
+      email: buyerEmail,
+      planId: plan.id,
+      gatewayId: String(paymentId),
+      ip,
+      userAgent,
+      riskLevel: "low",
+      metadata: {
+        userId: user.id,
+        planSlug: plan.slug,
+        isNewUser,
+        paymentType: mpPayment.payment_type_id,
+        buyerName,
+      },
+    })
 
     console.log(
       `[B2C Webhook] Payment ${paymentId} processed — user=${user.id}, plan=${plan.slug}, new=${isNewUser}`,

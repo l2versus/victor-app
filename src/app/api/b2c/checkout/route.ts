@@ -1,10 +1,29 @@
 import { NextRequest, NextResponse } from "next/server"
 import { prisma } from "@/lib/prisma"
 import { getPreferenceClient } from "@/lib/mercadopago"
+import { checkRateLimit } from "@/lib/rate-limit"
+import { checkFraudSignals, logTransaction } from "@/lib/payment-security"
 
 // POST /api/b2c/checkout — Create Mercado Pago preference for B2C consumer plan
 export async function POST(req: NextRequest) {
   try {
+    // Extract IP and user agent for security logging
+    const ip =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown"
+    const userAgent = req.headers.get("user-agent") || "unknown"
+
+    // Rate limit: max 5 checkout creations per IP per hour
+    const rateLimitResult = checkRateLimit(ip, 5, 60 * 60 * 1000)
+    if (!rateLimitResult.success) {
+      console.warn(`[B2C Checkout] Rate limited IP: ${ip}`)
+      return NextResponse.json(
+        { error: "Muitas tentativas. Tente novamente mais tarde." },
+        { status: 429 }
+      )
+    }
+
     const body = await req.json()
     const { planSlug, buyerName, buyerEmail, buyerPhone } = body
 
@@ -15,10 +34,36 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Nome e email sao obrigatorios" }, { status: 400 })
     }
 
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(buyerEmail)) {
+    // Strict email validation
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!emailRegex.test(buyerEmail) || buyerEmail.length > 254) {
       return NextResponse.json({ error: "Email invalido" }, { status: 400 })
+    }
+
+    // Check fraud signals
+    const fraudCheck = await checkFraudSignals({
+      email: buyerEmail,
+      phone: buyerPhone,
+      ip,
+      userAgent,
+    })
+
+    if (fraudCheck.shouldBlock) {
+      console.warn(`[B2C Checkout] Blocked by fraud check: ${buyerEmail}`, fraudCheck.flags)
+      await logTransaction({
+        type: "fraud_flagged",
+        amount: 0,
+        email: buyerEmail,
+        ip,
+        userAgent,
+        riskLevel: fraudCheck.riskLevel,
+        flags: fraudCheck.flags,
+        metadata: { planSlug, buyerName, buyerPhone },
+      })
+      return NextResponse.json(
+        { error: "Nao foi possivel processar. Entre em contato com o suporte." },
+        { status: 403 }
+      )
     }
 
     // Find the B2C plan by slug
@@ -78,6 +123,24 @@ export async function POST(req: NextRequest) {
           excluded_payment_types: [],
           installments: 1,
         },
+      },
+    })
+
+    // Log successful checkout creation
+    await logTransaction({
+      type: "checkout_created",
+      amount: plan.price,
+      email: buyerEmail,
+      planId: plan.id,
+      ip,
+      userAgent,
+      riskLevel: fraudCheck.riskLevel,
+      flags: fraudCheck.flags.length > 0 ? fraudCheck.flags : undefined,
+      metadata: {
+        planSlug: plan.slug,
+        buyerName,
+        buyerPhone,
+        preferenceId: preference.id,
       },
     })
 

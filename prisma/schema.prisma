@@ -1763,3 +1763,27 @@ model MasterCost {
   @@index([category])
   @@index([active])
 }
+
+// ═══════════════════════════════════════════════════════════════
+// TRANSACTION LOG — Anti-fraud audit trail for payment events
+// ═══════════════════════════════════════════════════════════════
+
+model TransactionLog {
+  id          String   @id @default(cuid())
+  type        String   // checkout_created, payment_received, payment_verified, fraud_flagged, refund
+  amount      Float
+  email       String
+  planId      String?
+  gatewayId   String?  // Mercado Pago payment ID
+  ip          String?
+  userAgent   String?
+  riskLevel   String?  // low, medium, high
+  flags       Json?    // ["amount_mismatch", "suspicious_email", etc]
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  @@index([email])
+  @@index([type])
+  @@index([gatewayId])
+  @@index([createdAt])
+}

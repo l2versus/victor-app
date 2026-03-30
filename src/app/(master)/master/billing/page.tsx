@@ -17,9 +17,13 @@ import {
   ChevronDown,
   Check,
   AlertCircle,
+  ShoppingBag,
 } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
+import dynamic from "next/dynamic"
+
+const B2CPlansTab = dynamic(() => import("./B2CPlansTab"), { ssr: false })
 
 // ═══ TYPES ═══
 
@@ -76,6 +80,7 @@ interface Invoice {
 const TABS = [
   { key: "overview", label: "Visao Geral", icon: TrendingUp },
   { key: "plans", label: "Planos SaaS", icon: Package },
+  { key: "b2c", label: "Planos B2C", icon: ShoppingBag },
   { key: "subscriptions", label: "Assinaturas", icon: CreditCard },
   { key: "invoices", label: "Faturas", icon: Receipt },
 ] as const
@@ -280,6 +285,7 @@ export default function BillingPage() {
             onDelete={handleDeletePlan}
           />
         )}
+        {activeTab === "b2c" && <B2CPlansTab key="b2c" />}
         {activeTab === "subscriptions" && (
           <SubscriptionsTab key="subscriptions" subscriptions={subscriptions} loading={loading} />
         )}
