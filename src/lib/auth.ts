@@ -28,8 +28,10 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   return bcrypt.compare(password, hash)
 }
 
-export function generateToken(payload: TokenPayload): string {
-  return jwt.sign(payload, getJwtSecret(), { expiresIn: JWT_EXPIRES_IN })
+export function generateToken(payload: TokenPayload, expiresIn?: string): string {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const opts = { expiresIn: expiresIn ?? JWT_EXPIRES_IN } as any
+  return jwt.sign(payload as object, getJwtSecret(), opts)
 }
 
 export function verifyToken(token: string): TokenPayload | null {

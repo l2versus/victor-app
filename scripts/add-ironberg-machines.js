@@ -2,9 +2,7 @@ const pg = require("pg")
 
 async function addMachines() {
   const client = new pg.Client({
-    host: "187.77.226.144", port: 5433, user: "postgres",
-    password: "GxrbBZwZliStmYTi58BVifHPm4W3lPXK4ZuPZZBIvUZxBSoo96i41yr0ijEki07U",
-    database: "postgres",
+    connectionString: process.env.DATABASE_URL,
   })
   await client.connect()
 

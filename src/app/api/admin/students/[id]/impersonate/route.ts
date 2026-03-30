@@ -23,13 +23,13 @@ export async function POST(
       return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 })
     }
 
-    // Generate a short-lived student token (1 hour)
+    // Generate a short-lived student token (1 hour only)
     const token = generateToken({
       userId: student.user.id,
       email: student.user.email,
       role: "STUDENT",
       sv: student.user.sessionVersion,
-    })
+    }, "1h")
 
     return NextResponse.json({ token })
   } catch (error) {

@@ -4,11 +4,11 @@ import { processIncomingMessage } from "@/lib/whatsapp-processor"
 
 // GET /api/webhooks/zapi/test?phone=5585999999999&mode=send|full&secret=xxx — teste de envio e fluxo completo
 export async function GET(req: NextRequest) {
-  // Proteger endpoint: requer ZAPI_WEBHOOK_SECRET como query param em produção
+  // Proteger endpoint: SEMPRE requer ZAPI_WEBHOOK_SECRET
   const secret = req.nextUrl.searchParams.get("secret")
   const expectedSecret = process.env.ZAPI_WEBHOOK_SECRET
-  if (expectedSecret && secret !== expectedSecret) {
-    return NextResponse.json({ error: "Unauthorized — pass ?secret=YOUR_ZAPI_WEBHOOK_SECRET" }, { status: 401 })
+  if (!expectedSecret || secret !== expectedSecret) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
   const phone = req.nextUrl.searchParams.get("phone") || "5585999999999"
