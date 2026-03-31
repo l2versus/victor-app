@@ -2,50 +2,22 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { generateText } from "ai"
 import { freeModel } from "@/lib/ai"
-import * as pdfjsLib from "pdfjs-dist"
+import { PDFParse } from "pdf-parse"
 
-// Disable worker — serverless runs Node.js, not a browser.
-// pdfjs-dist processes on the main thread without a worker in Node.
-pdfjsLib.GlobalWorkerOptions.workerSrc = ""
-
-// ─── PDF text extraction with enhanced error handling ──────────────────────
+// ─── PDF text extraction — pdf-parse v4 works natively in Node.js/serverless
 async function extractPdfText(data: Uint8Array): Promise<string> {
+  let parser: PDFParse | undefined
   try {
-    const doc = await pdfjsLib.getDocument({
-      data,
-      useSystemFonts: true,
-      disableAutoFetch: true,
-      disableStream: true,
-    }).promise
-
-    const pages: string[] = []
-
-    for (let i = 1; i <= doc.numPages; i++) {
-      try {
-        const page = await doc.getPage(i)
-        const content = await page.getTextContent()
-        const text = content.items
-          .filter((item) => "str" in item)
-          .map((item) => (item as { str: string }).str)
-          .join(" ")
-
-        if (text.trim()) pages.push(text)
-      } catch (pageError) {
-        console.warn(`⚠️ Error extracting page ${i}:`, pageError)
-        continue
-      }
-    }
-
-    return pages.join("\n\n")
+    parser = new PDFParse({ data })
+    const result = await parser.getText()
+    return result.text
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     const isEncrypted = msg.includes("encrypted") || msg.includes("password") || msg.includes("security")
 
-    throw new Error(
-      isEncrypted
-        ? "PDF_ENCRYPTED"
-        : `PDF_EXTRACT_FAILED: ${msg}`
-    )
+    throw new Error(isEncrypted ? "PDF_ENCRYPTED" : `PDF_EXTRACT_FAILED: ${msg}`)
+  } finally {
+    await parser?.destroy()
   }
 }
 
