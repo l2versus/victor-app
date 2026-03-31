@@ -79,7 +79,7 @@ export async function PATCH(req: NextRequest) {
         if (key === "weight" || key === "height") {
           updateData[key] = body[key] ? parseFloat(body[key]) : null
         } else if (key === "birthDate") {
-          updateData[key] = body[key] ? new Date(body[key]) : null
+          updateData[key] = body[key] ? new Date(body[key] + "T12:00:00") : null
         } else {
           updateData[key] = body[key] || null
         }

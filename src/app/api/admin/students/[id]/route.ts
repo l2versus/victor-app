@@ -84,7 +84,7 @@ export async function PUT(req: NextRequest, context: RouteContext) {
 
       // Update student fields
       const studentData: Record<string, unknown> = {}
-      if (birthDate !== undefined) studentData.birthDate = birthDate ? new Date(birthDate) : null
+      if (birthDate !== undefined) studentData.birthDate = birthDate ? new Date(birthDate + "T12:00:00") : null
       if (gender !== undefined) studentData.gender = gender || null
       if (weight !== undefined) studentData.weight = weight ? parseFloat(weight) : null
       if (height !== undefined) studentData.height = height ? parseFloat(height) : null

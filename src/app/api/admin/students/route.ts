@@ -129,7 +129,7 @@ export async function POST(req: NextRequest) {
         data: {
           userId: user.id,
           trainerId: trainer.id,
-          birthDate: birthDate ? new Date(birthDate) : null,
+          birthDate: birthDate ? new Date(birthDate + "T12:00:00") : null,
           gender: gender || null,
           weight: weight ? parseFloat(weight) : null,
           height: height ? parseFloat(height) : null,

@@ -210,7 +210,7 @@ export async function POST(req: NextRequest) {
             data: {
               userId: user.id,
               trainerId: trainer.id,
-              birthDate: mfitStudent.birthDate ? new Date(mfitStudent.birthDate) : null,
+              birthDate: mfitStudent.birthDate ? new Date(mfitStudent.birthDate + "T12:00:00") : null,
               gender: mfitStudent.gender || null,
               weight: mfitStudent.weight || null,
               height: mfitStudent.height || null,
