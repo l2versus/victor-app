@@ -2,13 +2,24 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { generateText } from "ai"
 import { freeModel } from "@/lib/ai"
+import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs"
 
-// ─── PDF text extraction ────────────────────────────────────────────────────
-// pdf-parse requires dynamic import to avoid webpack issues with test file
-async function extractPdfText(buffer: Buffer): Promise<string> {
-  const pdfParse = (await import("pdf-parse") as any).default
-  const data = await pdfParse(buffer)
-  return data.text
+// ─── PDF text extraction using pdfjs-dist (serverless-safe) ─────────────────
+async function extractPdfText(data: Uint8Array): Promise<string> {
+  const doc = await getDocument({ data, useSystemFonts: true }).promise
+  const pages: string[] = []
+
+  for (let i = 1; i <= doc.numPages; i++) {
+    const page = await doc.getPage(i)
+    const content = await page.getTextContent()
+    const text = content.items
+      .filter((item) => "str" in item)
+      .map((item) => (item as { str: string }).str)
+      .join(" ")
+    if (text.trim()) pages.push(text)
+  }
+
+  return pages.join("\n\n")
 }
 
 // ─── Language detection (simple heuristic) ──────────────────────────────────
@@ -77,11 +88,11 @@ export async function POST(req: NextRequest) {
 
     // ── Step 1: Extract text from PDF ─────────────────────────────────────
     const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
+    const uint8 = new Uint8Array(arrayBuffer)
     let rawText: string
 
     try {
-      rawText = await extractPdfText(buffer)
+      rawText = await extractPdfText(uint8)
     } catch {
       return NextResponse.json(
         { error: "Não foi possível extrair texto do PDF. Verifique se o arquivo não está corrompido ou protegido." },

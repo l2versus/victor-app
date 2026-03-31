@@ -5,7 +5,7 @@ const nextConfig: NextConfig = {
   output: "standalone",
 
   // Allow larger request bodies for photo/video uploads (base64)
-  serverExternalPackages: [],
+  serverExternalPackages: ["pdfjs-dist"],
   experimental: {
     serverActions: {
       bodySizeLimit: "10mb",
