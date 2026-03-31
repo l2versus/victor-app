@@ -38,14 +38,16 @@ async function extractPdfText(data: Uint8Array): Promise<{ text: string; isEncry
     }
 
     const fullText = pages.join("\n\n")
-    const isEncrypted = doc.isEncrypted
+    // Note: isEncrypted detection happens in catch block since doc doesn't expose it
     const isEmpty = extractedChars < 100
 
-    return { text: fullText, isEncrypted, isEmpty }
+    return { text: fullText, isEncrypted: false, isEmpty }
   } catch (error) {
-    // Detect if PDF is encrypted/protected
+    // Detect if PDF is encrypted/protected by error message
     const isEncrypted = error instanceof Error &&
-      (error.message.includes("encrypted") || error.message.includes("password"))
+      (error.message.includes("encrypted") ||
+       error.message.includes("password") ||
+       error.message.includes("security"))
 
     throw new Error(
       isEncrypted
@@ -133,14 +135,6 @@ export async function POST(req: NextRequest) {
       extractionInfo = { isEncrypted: result.isEncrypted, isEmpty: result.isEmpty }
 
       console.log(`✅ PDF text extracted: ${rawText.length} chars, ${rawText.split('\n\n').length} sections`)
-
-      if (result.isEncrypted) {
-        console.warn(`🔒 PDF is encrypted`)
-        return NextResponse.json(
-          { error: "🔒 PDF está protegido com senha. Remova a proteção e tente novamente." },
-          { status: 400 },
-        )
-      }
     } catch (error) {
       const errMsg = error instanceof Error ? error.message : String(error)
       console.error(`❌ PDF extraction error: ${errMsg}`)
