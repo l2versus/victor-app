@@ -122,7 +122,7 @@ export default function KnowledgePage() {
         fileName: data.fileName,
       })
     } catch {
-      alert("Erro de conexão. Tente novamente.")
+      setPdfError("❌ Erro de conexão. Verifique sua internet e tente novamente.")
     }
     setPdfProcessing(false)
   }

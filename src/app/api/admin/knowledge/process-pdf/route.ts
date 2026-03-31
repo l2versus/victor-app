@@ -4,11 +4,12 @@ import { generateText } from "ai"
 import { freeModel } from "@/lib/ai"
 import * as pdfjsLib from "pdfjs-dist"
 
-// Set worker for serverless environment
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
+// Disable worker — serverless runs Node.js, not a browser.
+// pdfjs-dist processes on the main thread without a worker in Node.
+pdfjsLib.GlobalWorkerOptions.workerSrc = ""
 
 // ─── PDF text extraction with enhanced error handling ──────────────────────
-async function extractPdfText(data: Uint8Array): Promise<{ text: string; isEncrypted: boolean; isEmpty: boolean }> {
+async function extractPdfText(data: Uint8Array): Promise<string> {
   try {
     const doc = await pdfjsLib.getDocument({
       data,
@@ -18,7 +19,6 @@ async function extractPdfText(data: Uint8Array): Promise<{ text: string; isEncry
     }).promise
 
     const pages: string[] = []
-    let extractedChars = 0
 
     for (let i = 1; i <= doc.numPages; i++) {
       try {
@@ -29,33 +29,22 @@ async function extractPdfText(data: Uint8Array): Promise<{ text: string; isEncry
           .map((item) => (item as { str: string }).str)
           .join(" ")
 
-        if (text.trim()) {
-          pages.push(text)
-          extractedChars += text.length
-        }
+        if (text.trim()) pages.push(text)
       } catch (pageError) {
-        // Skip pages with errors, continue with next page
         console.warn(`⚠️ Error extracting page ${i}:`, pageError)
         continue
       }
     }
 
-    const fullText = pages.join("\n\n")
-    // Note: isEncrypted detection happens in catch block since doc doesn't expose it
-    const isEmpty = extractedChars < 100
-
-    return { text: fullText, isEncrypted: false, isEmpty }
+    return pages.join("\n\n")
   } catch (error) {
-    // Detect if PDF is encrypted/protected by error message
-    const isEncrypted = error instanceof Error &&
-      (error.message.includes("encrypted") ||
-       error.message.includes("password") ||
-       error.message.includes("security"))
+    const msg = error instanceof Error ? error.message : String(error)
+    const isEncrypted = msg.includes("encrypted") || msg.includes("password") || msg.includes("security")
 
     throw new Error(
       isEncrypted
-        ? "PDF_ENCRYPTED: O arquivo está protegido com senha. Remova a proteção e tente novamente."
-        : `PDF_EXTRACT_FAILED: ${error instanceof Error ? error.message : String(error)}`
+        ? "PDF_ENCRYPTED"
+        : `PDF_EXTRACT_FAILED: ${msg}`
     )
   }
 }
@@ -130,12 +119,9 @@ export async function POST(req: NextRequest) {
     const arrayBuffer = await file.arrayBuffer()
     const uint8 = new Uint8Array(arrayBuffer)
     let rawText: string
-    let extractionInfo: { isEncrypted: boolean; isEmpty: boolean } = { isEncrypted: false, isEmpty: false }
 
     try {
-      const result = await extractPdfText(uint8)
-      rawText = result.text
-      extractionInfo = { isEncrypted: result.isEncrypted, isEmpty: result.isEmpty }
+      rawText = await extractPdfText(uint8)
 
       console.log(`✅ PDF text extracted: ${rawText.length} chars, ${rawText.split('\n\n').length} sections`)
     } catch (error) {
