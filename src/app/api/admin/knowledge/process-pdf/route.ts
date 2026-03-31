@@ -181,7 +181,7 @@ Regras:
 - A categoria deve ser a mais adequada ao tema do estudo`,
     })
 
-    // ── Step 4: Parse AI result ───────────────────────────────────────────
+    // ── Step 4: Parse AI result (robust JSON extraction) ──────────────────
     let parsed: {
       title: string
       content: string
@@ -196,11 +196,55 @@ Regras:
     }
 
     try {
-      const cleaned = aiResult.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim()
-      parsed = JSON.parse(cleaned)
-    } catch {
+      // Try multiple strategies to extract valid JSON from the AI response
+      let cleaned = aiResult.trim()
+
+      // Strategy 1: Remove markdown code fences (```json ... ``` or ``` ... ```)
+      cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "")
+
+      // Strategy 2: If still not valid JSON, find the first { and last }
+      if (!cleaned.startsWith("{")) {
+        const firstBrace = cleaned.indexOf("{")
+        const lastBrace = cleaned.lastIndexOf("}")
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          cleaned = cleaned.substring(firstBrace, lastBrace + 1)
+        }
+      }
+
+      // Strategy 3: Fix common LLM JSON issues
+      // - Trailing commas before } or ]
+      cleaned = cleaned.replace(/,\s*([}\]])/g, "$1")
+      // - Single quotes to double quotes (only outside of values)
+      // - Newlines in string values
+      cleaned = cleaned.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t")
+
+      // Try parsing the cleaned result
+      try {
+        parsed = JSON.parse(cleaned)
+      } catch {
+        // Strategy 4: If newline escaping broke it, try the original with just brace extraction
+        const original = aiResult.trim()
+        const firstBrace = original.indexOf("{")
+        const lastBrace = original.lastIndexOf("}")
+        if (firstBrace !== -1 && lastBrace > firstBrace) {
+          const extracted = original.substring(firstBrace, lastBrace + 1)
+          parsed = JSON.parse(extracted)
+        } else {
+          throw new Error("No JSON object found in AI response")
+        }
+      }
+
+      // Validate required fields
+      if (!parsed.title || !parsed.content) {
+        throw new Error("Missing required fields: title or content")
+      }
+    } catch (parseError) {
+      const parseMsg = parseError instanceof Error ? parseError.message : String(parseError)
+      console.error(`❌ JSON parse error: ${parseMsg}`)
+      console.error(`🔍 Raw AI response (first 500 chars): ${aiResult.substring(0, 500)}`)
+
       return NextResponse.json(
-        { error: "Erro ao processar conteúdo com IA. Tente novamente." },
+        { error: `Erro ao processar resposta da IA. O modelo retornou formato inválido.\n\n💡 Tente novamente — respostas de IA podem variar.\n\nDetalhes técnicos: ${parseMsg}` },
         { status: 500 },
       )
     }
