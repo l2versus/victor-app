@@ -42,6 +42,49 @@ function isLikelyEnglish(text: string): boolean {
   return enScore > ptScore
 }
 
+// ─── Sanitize control chars inside JSON string values ───────────────────────
+// LLMs often produce literal newlines/tabs inside JSON strings which is invalid.
+// This walks the string char-by-char and only escapes control chars inside "...".
+function sanitizeJsonControlChars(json: string): string {
+  let result = ""
+  let inString = false
+  let escaped = false
+
+  for (let i = 0; i < json.length; i++) {
+    const ch = json[i]
+    const code = json.charCodeAt(i)
+
+    if (escaped) {
+      result += ch
+      escaped = false
+      continue
+    }
+
+    if (ch === "\\" && inString) {
+      escaped = true
+      result += ch
+      continue
+    }
+
+    if (ch === '"') {
+      inString = !inString
+      result += ch
+      continue
+    }
+
+    if (inString && code < 0x20) {
+      if (code === 0x0a) result += "\\n"
+      else if (code === 0x0d) result += "\\r"
+      else if (code === 0x09) result += "\\t"
+      else result += " "
+    } else {
+      result += ch
+    }
+  }
+
+  return result
+}
+
 // ─── Categories ─────────────────────────────────────────────────────────────
 const CATEGORIES = [
   "EXERCISE", "MACHINE", "POSTURE", "NUTRITION",
@@ -196,13 +239,13 @@ Regras:
     }
 
     try {
-      // Try multiple strategies to extract valid JSON from the AI response
+      // Extract JSON from AI response
       let cleaned = aiResult.trim()
 
-      // Strategy 1: Remove markdown code fences (```json ... ``` or ``` ... ```)
+      // Remove markdown code fences
       cleaned = cleaned.replace(/^```(?:json)?\s*\n?/i, "").replace(/\n?```\s*$/i, "")
 
-      // Strategy 2: If still not valid JSON, find the first { and last }
+      // Extract JSON object if surrounded by text
       if (!cleaned.startsWith("{")) {
         const firstBrace = cleaned.indexOf("{")
         const lastBrace = cleaned.lastIndexOf("}")
@@ -211,28 +254,14 @@ Regras:
         }
       }
 
-      // Strategy 3: Fix common LLM JSON issues
-      // - Trailing commas before } or ]
+      // Fix trailing commas
       cleaned = cleaned.replace(/,\s*([}\]])/g, "$1")
-      // - Single quotes to double quotes (only outside of values)
-      // - Newlines in string values
-      cleaned = cleaned.replace(/\n/g, "\\n").replace(/\r/g, "\\r").replace(/\t/g, "\\t")
 
-      // Try parsing the cleaned result
-      try {
-        parsed = JSON.parse(cleaned)
-      } catch {
-        // Strategy 4: If newline escaping broke it, try the original with just brace extraction
-        const original = aiResult.trim()
-        const firstBrace = original.indexOf("{")
-        const lastBrace = original.lastIndexOf("}")
-        if (firstBrace !== -1 && lastBrace > firstBrace) {
-          const extracted = original.substring(firstBrace, lastBrace + 1)
-          parsed = JSON.parse(extracted)
-        } else {
-          throw new Error("No JSON object found in AI response")
-        }
-      }
+      // Escape control characters ONLY inside JSON string values
+      // (not structural whitespace between keys/values)
+      cleaned = sanitizeJsonControlChars(cleaned)
+
+      parsed = JSON.parse(cleaned)
 
       // Validate required fields
       if (!parsed.title || !parsed.content) {
