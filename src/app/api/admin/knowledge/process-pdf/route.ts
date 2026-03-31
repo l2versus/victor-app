@@ -2,22 +2,18 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { generateText } from "ai"
 import { freeModel } from "@/lib/ai"
-import { PDFParse } from "pdf-parse"
+import { extractText } from "unpdf"
 
-// ─── PDF text extraction — pdf-parse v4 works natively in Node.js/serverless
+// ─── PDF text extraction — unpdf uses pdfjs-serverless (no worker needed) ──
 async function extractPdfText(data: Uint8Array): Promise<string> {
-  let parser: PDFParse | undefined
   try {
-    parser = new PDFParse({ data })
-    const result = await parser.getText()
-    return result.text
+    const { text } = await extractText(data)
+    return Array.isArray(text) ? text.join("\n\n") : text
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
     const isEncrypted = msg.includes("encrypted") || msg.includes("password") || msg.includes("security")
 
     throw new Error(isEncrypted ? "PDF_ENCRYPTED" : `PDF_EXTRACT_FAILED: ${msg}`)
-  } finally {
-    await parser?.destroy()
   }
 }
 

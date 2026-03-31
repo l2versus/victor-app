@@ -751,11 +751,11 @@ export default function CommunityPage() {
               </>
             ) : (
               <>
-                <div className="relative rounded-xl overflow-hidden border border-white/[0.08]">
+                <div className="relative rounded-xl overflow-hidden border border-white/[0.08] bg-black">
                   {storyFile?.type.startsWith("video/") ? (
-                    <video src={storyPreview} className="w-full max-h-[40dvh] object-cover" autoPlay muted loop playsInline />
+                    <video src={storyPreview} className="w-full max-h-[40dvh] object-contain" autoPlay muted loop playsInline />
                   ) : (
-                    <SafeImage src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-cover" />
+                    <SafeImage src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-contain" />
                   )}
                   <button
                     onClick={() => { setStoryPreview(null); setStoryFile(null); setStoryProgress("") }}
@@ -2028,13 +2028,13 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
           />
           <p className="text-[10px] text-neutral-700 text-right">{text.length}/2000</p>
 
-          {/* Media preview — photo or video */}
+          {/* Media preview — photo or video (object-contain to show full image like feed) */}
           {mediaPreview && (
-            <div className="relative mt-3 rounded-xl overflow-hidden border border-white/[0.08]">
+            <div className="relative mt-3 rounded-xl overflow-hidden border border-white/[0.08] bg-black">
               {isVideo ? (
-                <video src={mediaPreview} className="w-full max-h-[300px] object-cover" autoPlay muted loop playsInline />
+                <video src={mediaPreview} className="w-full max-h-[400px] object-contain" autoPlay muted loop playsInline />
               ) : (
-                <SafeImage src={mediaPreview} alt="Preview" className="w-full max-h-[300px] object-cover" />
+                <SafeImage src={mediaPreview} alt="Preview" className="w-full max-h-[400px] object-contain" />
               )}
               <button
                 onClick={() => { setMediaPreview(null); setMediaFile(null) }}
@@ -2053,6 +2053,7 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
 
         {/* Media buttons — above nav bar with extra padding */}
         <div className="flex items-center gap-2 px-4 py-3 border-t border-white/[0.06] shrink-0 pb-20">
+          {/* Gallery pickers — no capture, opens gallery/files */}
           <input ref={fileRef} type="file" accept="image/*" onChange={handleMedia} className="hidden" />
           <input ref={videoRef} type="file" accept="video/*" onChange={handleMedia} className="hidden" />
 
@@ -2074,7 +2075,9 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
             onClick={() => {
               const input = document.createElement("input")
               input.type = "file"
-              input.accept = "image/*"
+              // Accept both image and video so native camera can record or snap
+              input.accept = "image/*,video/*"
+              // "environment" = rear camera at full native resolution
               input.capture = "environment"
               input.onchange = (e) => handleMedia(e as unknown as React.ChangeEvent<HTMLInputElement>)
               input.click()
