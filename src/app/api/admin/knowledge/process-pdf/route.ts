@@ -177,9 +177,10 @@ export async function POST(req: NextRequest) {
     const isEnglish = isLikelyEnglish(rawText)
     console.log(`🌍 Language detected: ${isEnglish ? "ENGLISH (will translate)" : "PORTUGUESE"}`)
 
-    // Truncate for AI processing (Groq has context limits)
-    const truncated = rawText.length > 12000
-      ? rawText.substring(0, 12000) + "\n\n[...texto truncado para processamento...]"
+    // Truncate for AI processing — Llama 3.3 70B supports 128K context
+    // Use up to 40K chars for much richer analysis
+    const truncated = rawText.length > 40000
+      ? rawText.substring(0, 40000) + "\n\n[...texto truncado para processamento...]"
       : rawText
 
     // ── Step 3: AI processing — translate + structure ─────────────────────
@@ -204,7 +205,7 @@ Analise o conteúdo e gere um documento de conhecimento estruturado para persona
 Retorne APENAS um JSON válido (sem markdown, sem \`\`\`):
 {
   "title": "Título claro e descritivo em PORTUGUÊS (mesmo que o original seja em inglês)",
-  "content": "Resumo técnico completo em PORTUGUÊS BRASILEIRO (mínimo 300 palavras). Estruture assim:\n\n📋 OBJETIVO DO ESTUDO\n[resumo do objetivo]\n\n🔬 METODOLOGIA\n[participantes, protocolos, variáveis medidas]\n\n📊 RESULTADOS PRINCIPAIS\n[dados concretos com números, percentuais, efeitos significativos]\n\n💡 APLICAÇÃO PRÁTICA PARA PERSONAL TRAINERS\n[como usar esses achados na prescrição de treino]\n\n⚠️ LIMITAÇÕES\n[limitações do estudo]\n\n✅ CONCLUSÃO\n[conclusão principal em 2-3 frases]",
+  "content": "Documento técnico COMPLETO e DETALHADO em PORTUGUÊS BRASILEIRO (mínimo 800 palavras, quanto mais detalhado melhor). Estruture assim:\n\n📋 OBJETIVO DO ESTUDO\n[resumo detalhado do objetivo, hipóteses testadas]\n\n🔬 METODOLOGIA\n[participantes (n, idade, nível), protocolos completos com séries/reps/carga/descanso, variáveis medidas, instrumentos usados, duração do estudo]\n\n📊 RESULTADOS PRINCIPAIS\n[TODOS os dados concretos com números exatos, percentuais, p-values, tamanho de efeito, diferenças entre grupos — preserve TODOS os números do artigo original]\n\n🔑 DADOS ESPECÍFICOS\n[tabelas de dados, comparações numéricas, médias ± desvio padrão — quanto mais números melhor para o bot usar como referência]\n\n💡 APLICAÇÃO PRÁTICA PARA PERSONAL TRAINERS\n[como usar cada achado na prescrição de treino — seja específico com exemplos de séries, cargas, intervalos]\n\n📝 PROTOCOLOS RECOMENDADOS\n[protocolos práticos baseados nos resultados — ex: '4 séries de 10RM com 90s descanso para hipertrofia']\n\n⚠️ LIMITAÇÕES\n[limitações do estudo e para quem NÃO se aplica]\n\n✅ CONCLUSÃO\n[conclusão detalhada em 3-5 frases com recomendações práticas]",
   "category": "UMA das categorias: ${CATEGORIES.join(", ")}",
   "tags": ["tag1", "tag2", "tag3", "tag4", "tag5"],
   "originalLanguage": "${isEnglish ? "en" : "pt"}",
@@ -218,10 +219,13 @@ Retorne APENAS um JSON válido (sem markdown, sem \`\`\`):
 Regras:
 - TUDO em português brasileiro no título, conteúdo, tags e insights
 - Se o estudo for em inglês, TRADUZA completamente
-- Preserve números e dados estatísticos exatos
-- Os marketingInsights devem ser frases curtas que um personal trainer pode usar em posts de Instagram, stories ou carrosséis
-- As tags devem ser em português
-- A categoria deve ser a mais adequada ao tema do estudo`,
+- PRESERVE TODOS os números, dados estatísticos, p-values, médias e desvios padrão EXATAMENTE como no original
+- O conteúdo deve ser o MAIS COMPLETO possível — este documento será usado por uma IA para responder perguntas. Quanto mais detalhado, melhor
+- Inclua TODOS os protocolos, séries, repetições, cargas, intervalos mencionados no estudo
+- Os marketingInsights devem ser frases curtas e impactantes para Instagram/stories
+- As tags devem ser em português (mínimo 5, máximo 10)
+- A categoria deve ser a mais adequada ao tema do estudo
+- Os keyFindings devem ter pelo menos 5 achados específicos com números`,
     })
 
     // ── Step 4: Parse AI result (robust JSON extraction) ──────────────────
@@ -291,9 +295,17 @@ Regras:
       • Was translated: ${isEnglish ? "YES (EN→PT)" : "NO (already PT)"}
       • Key findings: ${(parsed.keyFindings || []).length}`)
 
+    // Append raw PDF text to content for RAG — the AI summary is for display,
+    // but the full text gives the bot much richer knowledge to search through
+    const rawTextCleaned = rawText.replace(/\s{3,}/g, "\n\n").trim()
+    const fullContent = parsed.content
+      + "\n\n───────────────────────────────────\n"
+      + "📄 TEXTO ORIGINAL DO ARTIGO (para referência da IA):\n\n"
+      + (rawTextCleaned.length > 50000 ? rawTextCleaned.substring(0, 50000) : rawTextCleaned)
+
     return NextResponse.json({
       title: parsed.title,
-      content: parsed.content,
+      content: fullContent,
       category: parsed.category,
       tags: Array.isArray(parsed.tags) ? parsed.tags : [],
       sourceType: "pdf",
