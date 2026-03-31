@@ -1496,7 +1496,17 @@ function FeedCard({
     const res = await fetch(`/api/community/posts/${post.id}`)
     if (res.ok) {
       const data = await res.json()
-      setAllComments(data.comments)
+      // API returns nested { student: { user: { name, avatar } } } — flatten to FeedComment shape
+      setAllComments(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        data.comments.map((c: any) => ({
+          id: c.id,
+          content: c.content,
+          studentName: c.studentName ?? c.student?.user?.name ?? "Anônimo",
+          studentAvatar: c.studentAvatar ?? c.student?.user?.avatar ?? null,
+          createdAt: c.createdAt,
+        }))
+      )
     }
   }
 
