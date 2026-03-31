@@ -406,6 +406,57 @@ select:focus {
   100% { background-position: 0% 50%; }
 }
 
+/* ═══ SPLIT SECTION — CINEMATIC EFFECTS ═══ */
+@keyframes split-gradient-drift {
+  0% { transform: translate(0%, 0%) scale(1); }
+  33% { transform: translate(5%, -3%) scale(1.05); }
+  66% { transform: translate(-3%, 5%) scale(0.97); }
+  100% { transform: translate(0%, 0%) scale(1); }
+}
+@keyframes split-glow-pulse {
+  0%, 100% { opacity: 0.35; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.55; transform: translate(-50%, -50%) scale(1.15); }
+}
+@keyframes split-particle-float {
+  0% { transform: translateY(0) scale(1); opacity: 0.6; }
+  50% { transform: translateY(-30px) scale(1.2); opacity: 1; }
+  100% { transform: translateY(-60px) scale(0.8); opacity: 0; }
+}
+@keyframes split-line-draw {
+  from { stroke-dashoffset: 800; opacity: 0; }
+  to { stroke-dashoffset: 0; opacity: 1; }
+}
+@keyframes split-shimmer {
+  0% { transform: translateX(-100%) rotate(25deg); }
+  100% { transform: translateX(200%) rotate(25deg); }
+}
+
+/* ═══ LANDING PAGE — Grid pattern background ═══ */
+.landing-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.landing-grid-fade {
+  mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+  -webkit-mask-image: radial-gradient(ellipse at center, black 30%, transparent 70%);
+}
+
+/* ═══ LANDING PAGE — Beam animation ═══ */
+@keyframes landing-beam-sweep {
+  0% { transform: translateX(-100%) rotate(-45deg); opacity: 0; }
+  30% { opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateX(200%) rotate(-45deg); opacity: 0; }
+}
+.landing-beam {
+  animation: landing-beam-sweep 8s ease-in-out infinite;
+}
+.landing-beam-delay {
+  animation: landing-beam-sweep 10s ease-in-out 3s infinite;
+}
+
 /* ═══ STUDENT SAFE BOTTOM ═══ */
 .safe-bottom { padding-bottom: env(safe-area-inset-bottom, 0px); }
 

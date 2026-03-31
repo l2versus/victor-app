@@ -11,6 +11,10 @@ import {
   CheckCircle2, Star, Play, Zap, Shield, Clock,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { Entropy } from "@/components/ui/entropy"
+import { ParticleText } from "@/components/ui/particle-text"
+import { PhoneDive } from "@/components/ui/phone-dive"
+import { FlickeringGrid } from "@/components/ui/flickering-grid"
 
 /* ===================================================================
    CONSTANTS
@@ -422,6 +426,235 @@ function PhoneMockup({ className }: { className?: string }) {
 }
 
 /* ===================================================================
+   SPLIT SECTION — Cinematic "Personal × Aluno"
+   =================================================================== */
+function SplitSection() {
+  const sectionRef = useRef<HTMLElement>(null)
+  const coupleRef = useRef<HTMLDivElement>(null)
+  const { ref: revealRef, visible } = useReveal(0.15)
+
+  useEffect(() => {
+    const section = sectionRef.current
+    const couple = coupleRef.current
+    if (!section || !couple) return
+    function handleMouse(e: MouseEvent) {
+      const rect = section!.getBoundingClientRect()
+      const cx = (e.clientX - rect.left) / rect.width - 0.5
+      const cy = (e.clientY - rect.top) / rect.height - 0.5
+      couple!.style.transform = `translate(${cx * -15}px, ${cy * -10}px)`
+    }
+    section.addEventListener("mousemove", handleMouse, { passive: true })
+    return () => section.removeEventListener("mousemove", handleMouse)
+  }, [])
+
+  return (
+    <section
+      ref={sectionRef}
+      className="relative min-h-[70vh] lg:min-h-[85vh] flex items-center overflow-hidden bg-[#0B0B0B]"
+    >
+      {/* BG: Dark gym blurred */}
+      <div className="absolute inset-0">
+        <Image
+          src={IMAGES.heroGym}
+          alt=""
+          fill
+          className="object-cover opacity-[0.10] blur-[3px]"
+          aria-hidden="true"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0B0B0B]/95 via-[#0B0B0B]/85 to-[#0B0B0B]/90" />
+      </div>
+
+      {/* Red spotlight RIGHT */}
+      <div
+        className="absolute -right-[100px] top-[10%] w-[900px] h-[900px] pointer-events-none"
+        style={{ background: "radial-gradient(circle at 60% 45%, rgba(220,38,38,0.55) 0%, rgba(180,20,20,0.25) 30%, rgba(120,10,10,0.08) 55%, transparent 75%)" }}
+      />
+      {/* Red spotlight LEFT */}
+      <div
+        className="absolute -left-[50px] top-[20%] w-[600px] h-[600px] pointer-events-none"
+        style={{ background: "radial-gradient(circle at 30% 50%, rgba(220,38,38,0.2) 0%, rgba(180,20,20,0.06) 40%, transparent 65%)" }}
+      />
+      {/* Center bottom glow */}
+      <div
+        className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[800px] h-[300px] pointer-events-none"
+        style={{ background: "radial-gradient(ellipse at 50% 100%, rgba(220,38,38,0.2) 0%, transparent 60%)" }}
+      />
+
+      {/* Energy wave lines */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none" preserveAspectRatio="none" viewBox="0 0 1440 800">
+        <path d="M-100 700 C 200 650, 400 680, 600 660 S 900 640, 1100 660 S 1400 630, 1600 610" fill="none" stroke="rgba(255,30,30,0.5)" strokeWidth="2.5" strokeDasharray="1800" style={{ animation: "split-line-draw 2s ease-out forwards" }} />
+        <path d="M-100 720 C 250 690, 500 710, 750 695 S 1050 680, 1250 700 S 1500 670, 1600 650" fill="none" stroke="rgba(255,30,30,0.3)" strokeWidth="1.5" strokeDasharray="1800" style={{ animation: "split-line-draw 2.5s ease-out 0.2s forwards" }} />
+        <path d="M-100 740 C 300 720, 600 735, 900 720 S 1200 710, 1600 690" fill="none" stroke="rgba(255,30,30,0.15)" strokeWidth="1" strokeDasharray="1800" style={{ animation: "split-line-draw 3s ease-out 0.5s forwards" }} />
+      </svg>
+
+      {/* Embers / sparks */}
+      <div className="absolute inset-0 pointer-events-none hidden lg:block" aria-hidden="true">
+        {[
+          { l: "65%", t: "70%", s: 3, d: "0s" }, { l: "72%", t: "65%", s: 2, d: "0.5s" },
+          { l: "80%", t: "72%", s: 2.5, d: "1s" }, { l: "85%", t: "60%", s: 2, d: "1.5s" },
+          { l: "78%", t: "55%", s: 3, d: "0.8s" }, { l: "90%", t: "68%", s: 2, d: "2s" },
+          { l: "70%", t: "80%", s: 2.5, d: "0.3s" }, { l: "88%", t: "75%", s: 1.5, d: "1.2s" },
+          { l: "60%", t: "78%", s: 2, d: "1.8s" }, { l: "75%", t: "50%", s: 2, d: "2.2s" },
+          { l: "15%", t: "75%", s: 2, d: "0.7s" }, { l: "25%", t: "70%", s: 1.5, d: "1.4s" },
+        ].map((p, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              left: p.l, top: p.t, width: p.s, height: p.s,
+              background: "radial-gradient(circle, rgba(255,80,80,0.9), rgba(255,30,30,0.3))",
+              boxShadow: `0 0 ${p.s * 3}px ${p.s}px rgba(255,30,30,0.4)`,
+              animation: `split-particle-float ${2 + i * 0.3}s ease-in-out ${p.d} infinite`,
+            }}
+          />
+        ))}
+      </div>
+
+      {/* Entropy particle constellation effect */}
+      <Entropy
+        className="pointer-events-auto z-[1] opacity-60 lg:opacity-80"
+        color="#ff2222"
+        count={160}
+        linkDistance={180}
+        mouseRadius={150}
+      />
+
+      {/* Noise grain */}
+      <div className="absolute inset-0 landing-grain opacity-15 pointer-events-none z-[2]" />
+
+      {/* Content */}
+      <div ref={revealRef} className="relative z-10 max-w-7xl mx-auto px-5 lg:px-8 w-full py-12 lg:py-0">
+        <div className="flex flex-col lg:flex-row items-center lg:items-center gap-6 lg:gap-0">
+
+          {/* LEFT — Para o personal */}
+          <div className={cn(
+            "text-center lg:text-left space-y-4 lg:space-y-5 flex-1 order-2 lg:order-1 transition-all duration-1000 ease-out",
+            visible ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-10",
+          )}>
+            <p className="text-red-500 italic text-sm lg:text-base font-medium tracking-wide">
+              Para o personal
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-extrabold text-white leading-[1.1] tracking-[-0.02em]">
+              Escale seu<br />negócio fitness.
+            </h2>
+            <p className="text-neutral-400 text-sm lg:text-[15px] leading-relaxed max-w-[320px] mx-auto lg:mx-0">
+              Prescreva treinos, gerencie alunos<br className="hidden lg:block" /> e automatize sua operação.
+            </p>
+            <div className="pt-1">
+              <a
+                href="#pricing"
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-white font-bold text-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_20px_60px_rgba(255,42,42,0.5)]"
+                style={{
+                  background: "linear-gradient(135deg, #ff2a2a, #dc2626)",
+                  boxShadow: "0 12px 40px rgba(255,0,0,0.35)",
+                }}
+              >
+                Comecar agora
+              </a>
+            </div>
+          </div>
+
+          {/* CENTER — Couple hero (no box, no crop) */}
+          <div className={cn(
+            "relative flex items-end justify-center order-1 lg:order-2 shrink-0 transition-all duration-1000 ease-out",
+            visible ? "opacity-100 scale-100 translate-y-0" : "opacity-0 scale-95 translate-y-6",
+          )} style={{ transitionDelay: "200ms" }}>
+            {/* OneFit logo watermark behind couple */}
+            <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[320px] h-[120px] sm:w-[400px] sm:h-[150px] lg:w-[520px] lg:h-[200px] pointer-events-none z-0 opacity-[0.06]">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/onefit-logo.png"
+                alt=""
+                className="w-full h-full object-contain"
+                aria-hidden="true"
+              />
+            </div>
+
+            {/* ONEFIT logo watermark with animated glow */}
+            <div
+              className="absolute left-1/2 top-[45%] -translate-x-1/2 -translate-y-1/2 w-[380px] sm:w-[460px] lg:w-[600px] pointer-events-none z-0"
+              style={{ animation: "split-glow-pulse 4s ease-in-out infinite" }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/onefit-logo.png"
+                alt=""
+                className="w-full h-auto opacity-[0.08] drop-shadow-[0_0_60px_rgba(220,38,38,0.3)]"
+                style={{ filter: "drop-shadow(0 0 40px rgba(220,38,38,0.2)) drop-shadow(0 0 80px rgba(220,38,38,0.1))" }}
+                aria-hidden="true"
+              />
+            </div>
+
+            {/* Dramatic red aura behind couple */}
+            <div
+              className="absolute left-1/2 top-1/2 w-[400px] h-[500px] lg:w-[600px] lg:h-[700px] pointer-events-none z-0"
+              style={{
+                transform: "translate(-50%, -50%)",
+                background: "radial-gradient(ellipse at 50% 55%, rgba(220,38,38,0.35) 0%, rgba(180,20,20,0.12) 35%, rgba(120,10,10,0.04) 55%, transparent 75%)",
+              }}
+            />
+
+            {/* Floor reflection glow */}
+            <div
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[350px] lg:w-[500px] h-[80px] lg:h-[120px] pointer-events-none z-[3]"
+              style={{
+                background: "radial-gradient(ellipse at 50% 0%, rgba(220,38,38,0.25) 0%, rgba(220,38,38,0.06) 50%, transparent 80%)",
+                filter: "blur(20px)",
+              }}
+            />
+
+            <div
+              ref={coupleRef}
+              className="relative z-[2] transition-transform duration-300 ease-out"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="/onefit-couple.png"
+                alt="Personal trainers OneFit"
+                className="w-[280px] sm:w-[340px] lg:w-[460px] xl:w-[500px] h-auto max-h-[60vh] lg:max-h-[72vh] object-contain drop-shadow-[0_15px_50px_rgba(0,0,0,0.9)]"
+              />
+              {/* Soft dissolve at feet — no hard cut */}
+              <div
+                className="absolute inset-x-0 bottom-0 h-[60px] lg:h-[90px] pointer-events-none"
+                style={{
+                  background: "linear-gradient(to top, #0B0B0B 0%, rgba(11,11,11,0.7) 40%, transparent 100%)",
+                  maskImage: "linear-gradient(to top, black 0%, transparent 100%)",
+                  WebkitMaskImage: "linear-gradient(to top, black 0%, transparent 100%)",
+                }}
+              />
+            </div>
+          </div>
+
+          {/* RIGHT — Para o aluno */}
+          <div className={cn(
+            "text-center lg:text-right space-y-4 lg:space-y-5 flex-1 order-3 transition-all duration-1000 ease-out",
+            visible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-10",
+          )} style={{ transitionDelay: "400ms" }}>
+            <p className="text-red-500 italic text-sm lg:text-base font-medium tracking-wide">
+              Para o aluno
+            </p>
+            <h2 className="text-3xl sm:text-4xl lg:text-[2.75rem] xl:text-5xl font-extrabold text-white leading-[1.1] tracking-[-0.02em]">
+              Treine com<br />clareza e resultado.
+            </h2>
+            <p className="text-neutral-400 text-sm lg:text-[15px] leading-relaxed max-w-[320px] mx-auto lg:ml-auto lg:mr-0">
+              Acompanhe treinos, videos e evolucao em tempo real.
+            </p>
+            <div className="pt-1">
+              <a
+                href="#demo"
+                className="inline-flex items-center gap-2.5 px-7 py-3.5 rounded-xl text-white font-bold text-sm border border-white/20 transition-all duration-300 hover:bg-white/10 hover:-translate-y-0.5"
+              >
+                Ver como funciona
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/* ===================================================================
    DEMO FORM
    =================================================================== */
 function DemoForm() {
@@ -642,7 +875,11 @@ export function B2BLandingPage() {
       {/* ================================================================
            STATS BAR — Trust numbers
          ================================================================ */}
-      <section className="py-16 bg-[#0a0a0a]" id="stats">
+      <section className="relative py-16 bg-[#0a0a0a] overflow-hidden" id="stats">
+        {/* Grid pattern */}
+        <FlickeringGrid className="absolute inset-0 pointer-events-none [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]" color="#dc2626" maxOpacity={0.15} flickerChance={0.12} squareSize={4} gridGap={5} />
+        {/* Ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-red-600/[0.04] blur-[100px] rounded-full pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
             {[
@@ -725,13 +962,27 @@ export function B2BLandingPage() {
         </div>
       </section>
 
-      {/* Dashed separator */}
-      <div className="max-w-7xl mx-auto px-6"><div className="border-t border-dashed border-white/[0.06]" /></div>
+      {/* ================================================================
+           SPLIT — Personal × Aluno with Entropy particles
+         ================================================================ */}
+      <SplitSection />
+
+      {/* ================================================================
+           PHONE DIVE — Scroll to "enter" the app
+         ================================================================ */}
+      <PhoneDive />
 
       {/* ================================================================
            FEATURES — Alternating image + text rows
          ================================================================ */}
-      <section id="features" className="py-24 bg-[#0a0a0a]">
+      <section id="features" className="relative py-24 bg-[#0a0a0a] overflow-hidden">
+        {/* Grid pattern */}
+        <FlickeringGrid className="absolute inset-0 pointer-events-none [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]" color="#dc2626" maxOpacity={0.15} flickerChance={0.12} squareSize={4} gridGap={5} />
+        {/* Sweeping beam effect */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="landing-beam absolute top-0 left-0 w-[200px] h-full bg-gradient-to-r from-transparent via-red-500/[0.03] to-transparent" />
+          <div className="landing-beam-delay absolute top-0 left-0 w-[150px] h-full bg-gradient-to-r from-transparent via-white/[0.02] to-transparent" />
+        </div>
         <div className="max-w-7xl mx-auto px-6">
           <Reveal>
             <div className="text-center max-w-3xl mx-auto mb-20">
@@ -810,7 +1061,11 @@ export function B2BLandingPage() {
       {/* ================================================================
            HOW IT WORKS — 3 steps with connector lines
          ================================================================ */}
-      <section id="how-it-works" className="py-24 bg-[#0a0a0a]">
+      <section id="how-it-works" className="relative py-24 bg-[#0a0a0a] overflow-hidden">
+        {/* Subtle grid */}
+        <FlickeringGrid className="absolute inset-0 pointer-events-none opacity-60 [mask-image:radial-gradient(500px_circle_at_center,white,transparent)]" color="#dc2626" maxOpacity={0.12} flickerChance={0.1} squareSize={4} gridGap={5} />
+        {/* Side glow */}
+        <div className="absolute top-0 -left-[200px] w-[500px] h-full bg-red-600/[0.03] blur-[150px] pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6">
           <Reveal>
             <div className="text-center max-w-3xl mx-auto mb-20">
@@ -871,7 +1126,12 @@ export function B2BLandingPage() {
       {/* ================================================================
            COMPARISON — Clean horizontal table
          ================================================================ */}
-      <section id="comparison" className="py-24 bg-[#0a0a0a]">
+      <section id="comparison" className="relative py-24 bg-[#0a0a0a] overflow-hidden">
+        {/* Grid + beam */}
+        <FlickeringGrid className="absolute inset-0 pointer-events-none [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]" color="#dc2626" maxOpacity={0.15} flickerChance={0.12} squareSize={4} gridGap={5} />
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div className="landing-beam-delay absolute top-0 left-0 w-[180px] h-full bg-gradient-to-r from-transparent via-red-500/[0.04] to-transparent" />
+        </div>
         <div className="max-w-7xl mx-auto px-6">
           <Reveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
@@ -913,13 +1173,88 @@ export function B2BLandingPage() {
         </div>
       </section>
 
-      {/* Dashed separator */}
-      <div className="max-w-7xl mx-auto px-6"><div className="border-t border-dashed border-white/[0.06]" /></div>
+      {/* ================================================================
+           PARTICLE TEXT — Cinematic brand reveal before pricing
+         ================================================================ */}
+      <section className="relative bg-[#0a0a0a] overflow-hidden">
+        {/* FlickeringGrid background */}
+        <FlickeringGrid
+          className="absolute inset-0 pointer-events-none z-0 [mask-image:radial-gradient(800px_circle_at_center,white,transparent)]"
+          color="#dc2626"
+          maxOpacity={0.2}
+          flickerChance={0.15}
+          squareSize={3}
+          gridGap={4}
+        />
+
+        {/* Logo mask FlickeringGrid overlay */}
+        <div
+          className="absolute inset-0 z-[1] pointer-events-none translate-y-[2vh]"
+          style={{
+            WebkitMaskImage: "url('/onefit-logo.png')",
+            WebkitMaskSize: "60vw",
+            WebkitMaskPosition: "center",
+            WebkitMaskRepeat: "no-repeat",
+            maskImage: "url('/onefit-logo.png')",
+            maskSize: "60vw",
+            maskPosition: "center",
+            maskRepeat: "no-repeat",
+          }}
+        >
+          <FlickeringGrid
+            color="#ef4444"
+            maxOpacity={0.6}
+            flickerChance={0.18}
+            squareSize={3}
+            gridGap={5}
+          />
+        </div>
+
+        {/* Beam effects — diagonal light rays */}
+        <div className="absolute inset-0 pointer-events-none z-[2]">
+          <div className="absolute top-0 left-[20%] w-[1px] h-full bg-gradient-to-b from-transparent via-red-500/20 to-transparent" style={{ transform: "rotate(15deg)", transformOrigin: "top" }} />
+          <div className="absolute top-0 right-[30%] w-[1px] h-full bg-gradient-to-b from-transparent via-red-500/10 to-transparent" style={{ transform: "rotate(-10deg)", transformOrigin: "top" }} />
+          <div className="absolute top-0 left-[60%] w-[2px] h-full bg-gradient-to-b from-transparent via-red-600/15 to-transparent" style={{ transform: "rotate(8deg)", transformOrigin: "top" }} />
+        </div>
+
+        {/* Radial glow center */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-red-600/[0.06] blur-[120px] rounded-full pointer-events-none z-[1]" />
+
+        <ParticleText
+          text="ONEFIT"
+          className="h-[45vh] md:h-[55vh]"
+          fontFamily="system-ui, -apple-system, sans-serif"
+          fontSize={180}
+          particleSize={0.08}
+          animationSpeed={2.0}
+          mouseForce={250}
+          interactionMode="repel"
+          primaryColor={[0.92, 0.12, 0.12]}
+          secondaryColor={[0.65, 0.05, 0.05]}
+          accentColor={[1.0, 0.35, 0.2]}
+          glowColor={[1.0, 0.5, 0.3]}
+          coreColor={[1.0, 1.0, 1.0]}
+        />
+
+        {/* Overlay text — subtitle below particles */}
+        <div className="absolute bottom-[15%] md:bottom-[18%] inset-x-0 text-center pointer-events-none z-20">
+          <p className="text-neutral-500 text-xs md:text-sm uppercase tracking-[0.3em] font-medium">
+            Toque para interagir
+          </p>
+        </div>
+
+        {/* Smooth top/bottom fades */}
+        <div className="absolute top-0 inset-x-0 h-24 bg-gradient-to-b from-[#0a0a0a] to-transparent pointer-events-none z-10" />
+        <div className="absolute bottom-0 inset-x-0 h-24 bg-gradient-to-t from-[#0a0a0a] to-transparent pointer-events-none z-10" />
+      </section>
 
       {/* ================================================================
            PRICING — Clean cards with feature lists
          ================================================================ */}
-      <section id="pricing" className="py-24 bg-[#0a0a0a]">
+      <section id="pricing" className="relative py-24 bg-[#0a0a0a] overflow-hidden">
+        {/* Grid + center glow */}
+        <FlickeringGrid className="absolute inset-0 pointer-events-none [mask-image:radial-gradient(600px_circle_at_center,white,transparent)]" color="#dc2626" maxOpacity={0.15} flickerChance={0.12} squareSize={4} gridGap={5} />
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-600/[0.05] blur-[150px] rounded-full pointer-events-none" />
         <div className="max-w-7xl mx-auto px-6">
           <Reveal>
             <div className="text-center max-w-3xl mx-auto mb-12">
@@ -1087,7 +1422,9 @@ export function B2BLandingPage() {
       {/* ================================================================
            FAQ — Accordion
          ================================================================ */}
-      <section id="faq" className="py-24 bg-[#0a0a0a]">
+      <section id="faq" className="relative py-24 bg-[#0a0a0a] overflow-hidden">
+        {/* Subtle grid */}
+        <FlickeringGrid className="absolute inset-0 pointer-events-none opacity-50 [mask-image:radial-gradient(500px_circle_at_center,white,transparent)]" color="#dc2626" maxOpacity={0.1} flickerChance={0.08} squareSize={4} gridGap={6} />
         <div className="max-w-7xl mx-auto px-6">
           <div className="max-w-3xl mx-auto">
             <Reveal>
