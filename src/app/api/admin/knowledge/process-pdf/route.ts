@@ -177,10 +177,10 @@ export async function POST(req: NextRequest) {
     const isEnglish = isLikelyEnglish(rawText)
     console.log(`🌍 Language detected: ${isEnglish ? "ENGLISH (will translate)" : "PORTUGUESE"}`)
 
-    // Truncate for AI processing — Llama 3.3 70B supports 128K context
-    // Use up to 40K chars for much richer analysis
-    const truncated = rawText.length > 40000
-      ? rawText.substring(0, 40000) + "\n\n[...texto truncado para processamento...]"
+    // Truncate for AI processing — Groq free tier = 12K TPM
+    // ~20K chars ≈ 5-6K tokens + ~1K prompt = ~7K total (safe under 12K limit)
+    const truncated = rawText.length > 20000
+      ? rawText.substring(0, 20000) + "\n\n[...texto truncado para processamento...]"
       : rawText
 
     // ── Step 3: AI processing — translate + structure ─────────────────────
