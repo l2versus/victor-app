@@ -60,6 +60,7 @@ export default function KnowledgePage() {
 
   // PDF upload state
   const [pdfProcessing, setPdfProcessing] = useState(false)
+  const [pdfError, setPdfError] = useState<string | null>(null)
   const [pdfResult, setPdfResult] = useState<{
     wasTranslated?: boolean
     originalLanguage?: string
@@ -75,15 +76,16 @@ export default function KnowledgePage() {
   async function handlePdfUpload(file: File) {
     if (!file || pdfProcessing) return
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      alert("Apenas arquivos PDF são aceitos")
+      setPdfError("❌ Apenas arquivos PDF são aceitos")
       return
     }
     if (file.size > 20 * 1024 * 1024) {
-      alert("PDF muito grande. Máximo: 20MB")
+      setPdfError("❌ PDF muito grande. Máximo: 20MB")
       return
     }
 
     setPdfProcessing(true)
+    setPdfError(null)
     setPdfResult(null)
     setProcessResult(null)
     try {
@@ -96,7 +98,7 @@ export default function KnowledgePage() {
       })
       const data = await res.json()
       if (!res.ok) {
-        alert(data.error || "Erro ao processar PDF")
+        setPdfError(data.error || "❌ Erro ao processar PDF. Tente novamente.")
         setPdfProcessing(false)
         return
       }
@@ -396,13 +398,54 @@ export default function KnowledgePage() {
               e.preventDefault()
               setDragOver(false)
               const file = e.dataTransfer.files[0]
-              if (file) handlePdfUpload(file)
+              if (file) {
+                setPdfError(null)
+                handlePdfUpload(file)
+              }
             }}
           >
             <label className="text-xs text-neutral-400 flex items-center gap-1.5">
               <FileUp className="w-3.5 h-3.5 text-purple-400" />
               Importar de PDF (Artigo Científico / Estudo)
             </label>
+
+            {pdfError && (
+              <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 space-y-2">
+                <p className="text-xs text-red-300 whitespace-pre-line">{pdfError}</p>
+                <div className="text-[10px] text-red-300/70 space-y-1">
+                  {pdfError.includes("protegido") && (
+                    <>
+                      <p>💡 <strong>Solução:</strong> Remova a senha do PDF usando:</p>
+                      <ul className="list-disc list-inside ml-1">
+                        <li>Adobe Reader ou Preview do macOS</li>
+                        <li>Ferramentas online como smallpdf.com ou pdffiller.com</li>
+                        <li>Python: PyPDF2 ou pikepdf libraries</li>
+                      </ul>
+                    </>
+                  )}
+                  {pdfError.includes("escaneado") && (
+                    <>
+                      <p>💡 <strong>Solução:</strong> Use OCR (Optical Character Recognition):</p>
+                      <ul className="list-disc list-inside ml-1">
+                        <li>Google Drive (upload PDF → baixar como DOCX → converter para PDF)</li>
+                        <li>Free Tools: ilovepdf.com, ocr.space, smallpdf.com</li>
+                        <li>Paid: ABBYY FineReader, Adobe Acrobat Pro</li>
+                      </ul>
+                    </>
+                  )}
+                  {pdfError.includes("corrompido") && (
+                    <>
+                      <p>💡 <strong>Solução:</strong></p>
+                      <ul className="list-disc list-inside ml-1">
+                        <li>Tente baixar o PDF novamente (pode estar corrompido no download)</li>
+                        <li>Abra em outro programa (Adobe Reader, Preview) para verificar</li>
+                        <li>Procure por outra versão do documento</li>
+                      </ul>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
 
             {pdfProcessing ? (
               <div className="flex flex-col items-center gap-3 py-4">
@@ -434,7 +477,10 @@ export default function KnowledgePage() {
                     className="hidden"
                     onChange={e => {
                       const file = e.target.files?.[0]
-                      if (file) handlePdfUpload(file)
+                      if (file) {
+                        setPdfError(null)
+                        handlePdfUpload(file)
+                      }
                       e.target.value = ""
                     }}
                   />

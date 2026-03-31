@@ -4,22 +4,55 @@ import { generateText } from "ai"
 import { freeModel } from "@/lib/ai"
 import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs"
 
-// ─── PDF text extraction using pdfjs-dist (serverless-safe) ─────────────────
-async function extractPdfText(data: Uint8Array): Promise<string> {
-  const doc = await getDocument({ data, useSystemFonts: true }).promise
-  const pages: string[] = []
+// ─── PDF text extraction with enhanced error handling ──────────────────────
+async function extractPdfText(data: Uint8Array): Promise<{ text: string; isEncrypted: boolean; isEmpty: boolean }> {
+  try {
+    const doc = await getDocument({
+      data,
+      useSystemFonts: true,
+      disableAutoFetch: true,
+      disableStream: true,
+    }).promise
 
-  for (let i = 1; i <= doc.numPages; i++) {
-    const page = await doc.getPage(i)
-    const content = await page.getTextContent()
-    const text = content.items
-      .filter((item) => "str" in item)
-      .map((item) => (item as { str: string }).str)
-      .join(" ")
-    if (text.trim()) pages.push(text)
+    const pages: string[] = []
+    let extractedChars = 0
+
+    for (let i = 1; i <= doc.numPages; i++) {
+      try {
+        const page = await doc.getPage(i)
+        const content = await page.getTextContent()
+        const text = content.items
+          .filter((item) => "str" in item)
+          .map((item) => (item as { str: string }).str)
+          .join(" ")
+
+        if (text.trim()) {
+          pages.push(text)
+          extractedChars += text.length
+        }
+      } catch (pageError) {
+        // Skip pages with errors, continue with next page
+        console.warn(`⚠️ Error extracting page ${i}:`, pageError)
+        continue
+      }
+    }
+
+    const fullText = pages.join("\n\n")
+    const isEncrypted = doc.isEncrypted
+    const isEmpty = extractedChars < 100
+
+    return { text: fullText, isEncrypted, isEmpty }
+  } catch (error) {
+    // Detect if PDF is encrypted/protected
+    const isEncrypted = error instanceof Error &&
+      (error.message.includes("encrypted") || error.message.includes("password"))
+
+    throw new Error(
+      isEncrypted
+        ? "PDF_ENCRYPTED: O arquivo está protegido com senha. Remova a proteção e tente novamente."
+        : `PDF_EXTRACT_FAILED: ${error instanceof Error ? error.message : String(error)}`
+    )
   }
-
-  return pages.join("\n\n")
 }
 
 // ─── Language detection (simple heuristic) ──────────────────────────────────
@@ -87,28 +120,68 @@ export async function POST(req: NextRequest) {
     }
 
     // ── Step 1: Extract text from PDF ─────────────────────────────────────
+    console.log(`📄 Processing PDF: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)}MB)`)
+
     const arrayBuffer = await file.arrayBuffer()
     const uint8 = new Uint8Array(arrayBuffer)
     let rawText: string
+    let extractionInfo: { isEncrypted: boolean; isEmpty: boolean } = { isEncrypted: false, isEmpty: false }
 
     try {
-      rawText = await extractPdfText(uint8)
-    } catch {
+      const result = await extractPdfText(uint8)
+      rawText = result.text
+      extractionInfo = { isEncrypted: result.isEncrypted, isEmpty: result.isEmpty }
+
+      console.log(`✅ PDF text extracted: ${rawText.length} chars, ${rawText.split('\n\n').length} sections`)
+
+      if (result.isEncrypted) {
+        console.warn(`🔒 PDF is encrypted`)
+        return NextResponse.json(
+          { error: "🔒 PDF está protegido com senha. Remova a proteção e tente novamente." },
+          { status: 400 },
+        )
+      }
+    } catch (error) {
+      const errMsg = error instanceof Error ? error.message : String(error)
+      console.error(`❌ PDF extraction error: ${errMsg}`)
+
+      if (errMsg.startsWith("PDF_ENCRYPTED")) {
+        return NextResponse.json(
+          { error: "🔒 PDF está protegido com senha. Remova a proteção e tente novamente." },
+          { status: 400 },
+        )
+      }
+
+      if (errMsg.startsWith("PDF_EXTRACT_FAILED")) {
+        const details = errMsg.replace("PDF_EXTRACT_FAILED:", "").trim()
+        console.error(`⚠️ PDF extraction failed: ${details}`)
+        return NextResponse.json(
+          {
+            error: `❌ Não consegui extrair texto deste PDF. Possíveis causas:\n• PDF é um documento escaneado sem OCR\n• PDF está corrompido\n• Formato não suportado\n\nDetalhes técnicos: ${details}`,
+          },
+          { status: 400 },
+        )
+      }
+
       return NextResponse.json(
-        { error: "Não foi possível extrair texto do PDF. Verifique se o arquivo não está corrompido ou protegido." },
+        { error: "❌ Erro ao processar PDF. Tente outro arquivo ou verifique se está corrompido." },
         { status: 400 },
       )
     }
 
     if (!rawText || rawText.trim().length < 50) {
+      console.warn(`⚠️ PDF has insufficient text: ${rawText.trim().length} chars`)
       return NextResponse.json(
-        { error: "PDF com pouco ou nenhum texto extraível. Verifique se não é um PDF de imagens (escaneado)." },
+        {
+          error: `⚠️ PDF tem muito pouco texto extraível (${rawText.trim().length} caracteres).\n\nIsso pode significar:\n• É um PDF de imagens escaneadas (precisa OCR)\n• Está protegido contra cópia\n• Está vazio ou corrompido\n\n💡 Dica: Se é um PDF escaneado, use um serviço OCR antes de enviar.`,
+        },
         { status: 400 },
       )
     }
 
     // ── Step 2: Detect language ───────────────────────────────────────────
     const isEnglish = isLikelyEnglish(rawText)
+    console.log(`🌍 Language detected: ${isEnglish ? "ENGLISH (will translate)" : "PORTUGUESE"}`)
 
     // Truncate for AI processing (Groq has context limits)
     const truncated = rawText.length > 12000
@@ -116,6 +189,8 @@ export async function POST(req: NextRequest) {
       : rawText
 
     // ── Step 3: AI processing — translate + structure ─────────────────────
+    console.log(`🤖 Starting AI processing (model: ${freeModel})...`)
+
     const translationInstruction = isEnglish
       ? `O texto está em INGLÊS. Você DEVE traduzir TODO o conteúdo para PORTUGUÊS BRASILEIRO no documento final.
 Mantenha termos técnicos em inglês entre parênteses quando necessário (ex: "tempo sob tensão (time under tension)").`
@@ -183,6 +258,14 @@ Regras:
     if (!CATEGORIES.includes(parsed.category)) {
       parsed.category = "SCIENCE"
     }
+
+    console.log(`✅ PDF processing complete:
+      • Title: ${parsed.title}
+      • Category: ${parsed.category}
+      • Content length: ${parsed.content.length} chars
+      • Tags: ${(parsed.tags || []).join(", ")}
+      • Was translated: ${isEnglish ? "YES (EN→PT)" : "NO (already PT)"}
+      • Key findings: ${(parsed.keyFindings || []).length}`)
 
     return NextResponse.json({
       title: parsed.title,
