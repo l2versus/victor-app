@@ -4,10 +4,17 @@ import { useState, useRef, useCallback } from "react"
 import {
   Sparkles, Loader2, Dumbbell, Save, RotateCcw,
   Brain, Target, AlertTriangle, Wrench, CalendarDays,
-  ImagePlus, Link2, X, Youtube, FileText, Pencil, UserPlus, LayoutTemplate,
+  ImagePlus, Link2, X, Youtube, FileText, Pencil, UserPlus, LayoutTemplate, Heart, Clock, Zap,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input, Select, Textarea } from "@/components/ui/input"
+
+type CardioItem = {
+  name: string
+  durationMin: number
+  intensity: string
+  notes: string | null
+}
 
 type GeneratedWorkout = {
   name: string
@@ -22,6 +29,7 @@ type GeneratedWorkout = {
     notes: string | null
     supersetGroup: string | null
   }>
+  cardio?: CardioItem[]
 }
 
 type Attachment = {
@@ -195,10 +203,14 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
       if (onSave && mode === "assign") {
         onSave({ ...result, name: workoutName })
       } else {
+        const cardioNotes = result.cardio?.length
+          ? "\n\nCARDIO: " + result.cardio.map(c => `${c.name} (${c.durationMin}min, ${c.intensity}${c.notes ? " - " + c.notes : ""})`).join(" | ")
+          : ""
+
         const payload = {
           name: workoutName,
           type: result.type,
-          notes: result.notes,
+          notes: (result.notes || "") + cardioNotes,
           ...(mode === "assign" && studentId ? { studentId } : {}),
           exercises: result.exercises.map((ex, i) => ({
             exerciseName: ex.exerciseName,
@@ -493,6 +505,37 @@ export function AIWorkoutGenerator({ studentId, onSave }: { studentId?: string; 
               </div>
             ))}
           </div>
+
+          {/* Cardio section */}
+          {result.cardio && result.cardio.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-semibold text-red-400 flex items-center gap-1.5">
+                <Heart className="w-4 h-4" />
+                Cardio Recomendado
+              </h4>
+              {result.cardio.map((c, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-red-500/5 border border-red-500/10 hover:border-red-500/20 transition-all"
+                >
+                  <div className="w-7 h-7 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+                    <Zap className="w-3.5 h-3.5 text-red-400" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm font-medium">{c.name}</p>
+                    {c.notes && <p className="text-neutral-500 text-[10px]">{c.notes}</p>}
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-neutral-400 shrink-0">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {c.durationMin}min
+                    </span>
+                    <span className="text-red-400/60">{c.intensity}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Action buttons */}
           <div className="space-y-2">

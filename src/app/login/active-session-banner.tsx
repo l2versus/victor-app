@@ -1,11 +1,9 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import { LogOut, ArrowRight, User } from "lucide-react"
 
 export function ActiveSessionBanner({ role }: { role: string }) {
-  const router = useRouter()
   const [loggingOut, setLoggingOut] = useState(false)
 
   const dashboardUrl = role === "MASTER" ? "/master/dashboard" : role === "ADMIN" ? "/admin/dashboard" : role === "NUTRITIONIST" ? "/nutri/dashboard" : "/today"
@@ -26,13 +24,13 @@ export function ActiveSessionBanner({ role }: { role: string }) {
         Voce tem uma sessao ativa. Pode continuar para o app ou sair para trocar de conta.
       </p>
       <div className="flex gap-2">
-        <button
-          onClick={() => router.push(dashboardUrl)}
+        <a
+          href={dashboardUrl}
           className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-500 transition-all"
         >
           <ArrowRight className="w-3.5 h-3.5" />
           Continuar
-        </button>
+        </a>
         <button
           onClick={handleLogout}
           disabled={loggingOut}

@@ -61,6 +61,8 @@ REGRAS IMPORTANTES:
 - Varie series (3-5), repeticoes e descanso conforme o objetivo
 - Inclua notas tecnicas relevantes (ex: "contracao isometrica no pico", "descer controlado 3s")
 
+SEMPRE inclua uma secao "cardio" separada com 1-3 atividades aerobicas recomendadas para o objetivo.
+
 Responda APENAS com JSON valido no formato:
 {
   "name": "Nome Descritivo do Treino - Tipo (Objetivo)",
@@ -75,6 +77,14 @@ Responda APENAS com JSON valido no formato:
       "loadKg": null,
       "notes": "Dica tecnica de execucao",
       "supersetGroup": null
+    }
+  ],
+  "cardio": [
+    {
+      "name": "Esteira com inclinacao",
+      "durationMin": 20,
+      "intensity": "Moderada (60-70% FCmax)",
+      "notes": "Pos-treino, inclinacao 6-10%"
     }
   ]
 }`,

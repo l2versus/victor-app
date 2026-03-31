@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { getTrainerProfile } from "@/lib/admin"
 import { prisma } from "@/lib/prisma"
+import { executeFlowTrigger } from "@/lib/bot-flow-executor"
 
 // GET /api/admin/crm — list leads with filters
 export async function GET(req: NextRequest) {
@@ -178,6 +179,19 @@ export async function PATCH(req: NextRequest) {
     // Auto re-score se status ou dados relevantes mudaram
     if (body.status || body.followUp || body.value) {
       import("@/lib/lead-scoring").then(m => m.scoreAndNotify(id)).catch(() => {})
+    }
+
+    // Fire flow trigger on status change (fire-and-forget)
+    if (body.status && body.status !== existing.status) {
+      const botType = existing.nutritionistId ? "nutri" : "victor"
+      executeFlowTrigger("status_change", {
+        leadId: id,
+        botType,
+        leadName: existing.name,
+        phone: existing.phone || "",
+        oldStatus: existing.status,
+        newStatus: body.status,
+      }).catch(console.error)
     }
 
     return NextResponse.json({ lead })

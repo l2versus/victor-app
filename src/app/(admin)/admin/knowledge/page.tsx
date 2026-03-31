@@ -7,6 +7,7 @@ import {
   Dumbbell, Cpu, Camera, Salad, FlaskConical, ListChecks,
   ShieldAlert, HelpCircle, ArrowLeft, Tag, Link2, Image,
   Sparkles, FileText, ChevronDown, Globe, Play, Eye, Youtube,
+  Upload, FileUp, Languages, Lightbulb, Instagram,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
@@ -56,6 +57,73 @@ export default function KnowledgePage() {
   const [urlInput, setUrlInput] = useState("")
   const [processing, setProcessing] = useState(false)
   const [processResult, setProcessResult] = useState<{ sourceType?: string; hasVisionAnalysis?: boolean } | null>(null)
+
+  // PDF upload state
+  const [pdfProcessing, setPdfProcessing] = useState(false)
+  const [pdfResult, setPdfResult] = useState<{
+    wasTranslated?: boolean
+    originalLanguage?: string
+    studyType?: string
+    authors?: string
+    year?: string
+    keyFindings?: string[]
+    marketingInsights?: string[]
+    fileName?: string
+  } | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+
+  async function handlePdfUpload(file: File) {
+    if (!file || pdfProcessing) return
+    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+      alert("Apenas arquivos PDF são aceitos")
+      return
+    }
+    if (file.size > 20 * 1024 * 1024) {
+      alert("PDF muito grande. Máximo: 20MB")
+      return
+    }
+
+    setPdfProcessing(true)
+    setPdfResult(null)
+    setProcessResult(null)
+    try {
+      const formData = new FormData()
+      formData.append("file", file)
+
+      const res = await fetch("/api/admin/knowledge/process-pdf", {
+        method: "POST",
+        body: formData,
+      })
+      const data = await res.json()
+      if (!res.ok) {
+        alert(data.error || "Erro ao processar PDF")
+        setPdfProcessing(false)
+        return
+      }
+
+      setForm({
+        title: data.title || "",
+        content: data.content || "",
+        category: data.category || "SCIENCE",
+        tags: Array.isArray(data.tags) ? data.tags.join(", ") : "",
+        imageUrl: "",
+        sourceUrl: "",
+      })
+      setPdfResult({
+        wasTranslated: data.wasTranslated,
+        originalLanguage: data.originalLanguage,
+        studyType: data.studyType,
+        authors: data.authors,
+        year: data.year,
+        keyFindings: data.keyFindings,
+        marketingInsights: data.marketingInsights,
+        fileName: data.fileName,
+      })
+    } catch {
+      alert("Erro de conexão. Tente novamente.")
+    }
+    setPdfProcessing(false)
+  }
 
   async function handleProcessUrl() {
     if (!urlInput.trim()) return
@@ -122,6 +190,7 @@ export default function KnowledgePage() {
         setForm({ title: "", content: "", category: "EXERCISE", tags: "", imageUrl: "", sourceUrl: "" })
         setUrlInput("")
         setProcessResult(null)
+        setPdfResult(null)
         fetchDocs()
       }
     } catch { /* ignore */ }
@@ -139,6 +208,38 @@ export default function KnowledgePage() {
       fetchDocs()
     } catch { /* ignore */ }
     setDeleting(null)
+  }
+
+  // Generate marketing content from knowledge doc
+  const [mktGenerating, setMktGenerating] = useState(false)
+  const [mktResult, setMktResult] = useState<string | null>(null)
+  const [mktPostType, setMktPostType] = useState("legenda")
+
+  async function handleGenerateMarketing() {
+    if (!viewingDoc || mktGenerating) return
+    setMktGenerating(true)
+    setMktResult(null)
+    try {
+      const res = await fetch("/api/admin/academy/generate-from-study", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: viewingDoc.title,
+          content: viewingDoc.content,
+          postType: mktPostType,
+          niche: "hipertrofia",
+        }),
+      })
+      const data = await res.json()
+      if (res.ok) {
+        setMktResult(data.text)
+      } else {
+        alert(data.error || "Erro ao gerar conteúdo")
+      }
+    } catch {
+      alert("Erro de conexão")
+    }
+    setMktGenerating(false)
   }
 
   const getCat = (val: string) => CATEGORIES.find(c => c.value === val) || CATEGORIES[7]
@@ -277,6 +378,140 @@ export default function KnowledgePage() {
                   )}
                 </span>
                 <span className="text-neutral-600">— revise e salve abaixo</span>
+              </div>
+            )}
+          </div>
+
+          {/* ── PDF Upload ──────────────────────────────────────────── */}
+          <div
+            className={cn(
+              "rounded-xl border-2 border-dashed p-4 space-y-3 transition-all",
+              dragOver
+                ? "border-emerald-400/50 bg-emerald-500/[0.06]"
+                : "border-white/[0.08] bg-white/[0.02]"
+            )}
+            onDragOver={e => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={e => {
+              e.preventDefault()
+              setDragOver(false)
+              const file = e.dataTransfer.files[0]
+              if (file) handlePdfUpload(file)
+            }}
+          >
+            <label className="text-xs text-neutral-400 flex items-center gap-1.5">
+              <FileUp className="w-3.5 h-3.5 text-purple-400" />
+              Importar de PDF (Artigo Científico / Estudo)
+            </label>
+
+            {pdfProcessing ? (
+              <div className="flex flex-col items-center gap-3 py-4">
+                <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+                <div className="text-center">
+                  <p className="text-xs text-white font-medium">Processando PDF com IA...</p>
+                  <p className="text-[10px] text-neutral-500 mt-1">
+                    Extraindo texto, detectando idioma, traduzindo e gerando documento
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-2">
+                <label className="cursor-pointer flex flex-col items-center gap-2">
+                  <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center group-hover:bg-purple-500/15 transition-colors">
+                    <Upload className="w-5 h-5 text-purple-400" />
+                  </div>
+                  <div className="text-center">
+                    <span className="text-xs text-purple-400 font-medium">
+                      Clique para selecionar ou arraste o PDF aqui
+                    </span>
+                    <p className="text-[10px] text-neutral-600 mt-0.5">
+                      PDF até 20MB — artigos em inglês são traduzidos automaticamente
+                    </p>
+                  </div>
+                  <input
+                    type="file"
+                    accept=".pdf,application/pdf"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0]
+                      if (file) handlePdfUpload(file)
+                      e.target.value = ""
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+
+            {pdfResult && (
+              <div className="space-y-3 pt-2 border-t border-white/[0.04]">
+                <div className="flex items-center gap-2 text-[11px]">
+                  <FileText className="w-3.5 h-3.5 text-purple-400" />
+                  <span className="text-emerald-400 font-medium">
+                    PDF processado com sucesso!
+                  </span>
+                  {pdfResult.wasTranslated && (
+                    <span className="text-blue-400 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/15">
+                      <Languages className="w-3 h-3" /> EN → PT traduzido
+                    </span>
+                  )}
+                </div>
+
+                {/* Study metadata */}
+                <div className="flex flex-wrap gap-1.5">
+                  {pdfResult.studyType && (
+                    <span className="px-2 py-0.5 rounded-full bg-purple-500/10 border border-purple-500/15 text-[10px] text-purple-300">
+                      {pdfResult.studyType}
+                    </span>
+                  )}
+                  {pdfResult.authors && (
+                    <span className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-[10px] text-neutral-400">
+                      {pdfResult.authors}
+                    </span>
+                  )}
+                  {pdfResult.year && (
+                    <span className="px-2 py-0.5 rounded-full bg-white/[0.04] border border-white/[0.06] text-[10px] text-neutral-400">
+                      {pdfResult.year}
+                    </span>
+                  )}
+                </div>
+
+                {/* Key findings */}
+                {pdfResult.keyFindings && pdfResult.keyFindings.length > 0 && (
+                  <div className="rounded-lg bg-amber-500/[0.05] border border-amber-500/15 p-3">
+                    <p className="text-[10px] text-amber-400 font-semibold mb-1.5 flex items-center gap-1">
+                      <Lightbulb className="w-3 h-3" /> Achados Principais
+                    </p>
+                    <ul className="space-y-1">
+                      {pdfResult.keyFindings.map((finding, i) => (
+                        <li key={i} className="text-[10px] text-neutral-400 flex items-start gap-1.5">
+                          <span className="text-amber-500 mt-0.5">•</span>
+                          {finding}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Marketing insights */}
+                {pdfResult.marketingInsights && pdfResult.marketingInsights.length > 0 && (
+                  <div className="rounded-lg bg-pink-500/[0.05] border border-pink-500/15 p-3">
+                    <p className="text-[10px] text-pink-400 font-semibold mb-1.5 flex items-center gap-1">
+                      <Instagram className="w-3 h-3" /> Insights para Marketing / Instagram
+                    </p>
+                    <ul className="space-y-1">
+                      {pdfResult.marketingInsights.map((insight, i) => (
+                        <li key={i} className="text-[10px] text-neutral-400 flex items-start gap-1.5">
+                          <span className="text-pink-500 mt-0.5">•</span>
+                          {insight}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                <p className="text-[10px] text-neutral-600">
+                  {pdfResult.fileName} — revise o conteúdo abaixo e salve
+                </p>
               </div>
             )}
           </div>
@@ -432,7 +667,7 @@ export default function KnowledgePage() {
 
       {/* Article Viewer Modal */}
       {viewingDoc && typeof document !== "undefined" && createPortal(
-        <div className="fixed inset-0 z-[100] bg-black/80" onClick={() => setViewingDoc(null)}>
+        <div className="fixed inset-0 z-[100] bg-black/80" onClick={() => { setViewingDoc(null); setMktResult(null) }}>
           <div
             className="absolute inset-x-0 bottom-0 top-8 max-w-2xl mx-auto bg-[#0a0a0a] border border-white/[0.08] rounded-t-2xl flex flex-col overflow-hidden"
             onClick={(e) => e.stopPropagation()}
@@ -456,7 +691,7 @@ export default function KnowledgePage() {
                   </p>
                 </div>
               </div>
-              <button onClick={() => setViewingDoc(null)} className="text-neutral-400 hover:text-white p-1.5 transition-colors">
+              <button onClick={() => { setViewingDoc(null); setMktResult(null) }} className="text-neutral-400 hover:text-white p-1.5 transition-colors">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -496,6 +731,77 @@ export default function KnowledgePage() {
                   {viewingDoc.sourceUrl.replace(/^https?:\/\//, "").slice(0, 50)}
                 </a>
               )}
+
+              {/* ── Generate Marketing Content ─────────────────────────── */}
+              <div className="rounded-xl border border-pink-500/15 bg-pink-500/[0.03] p-4 space-y-3">
+                <p className="text-xs font-semibold text-white flex items-center gap-2">
+                  <Instagram className="w-4 h-4 text-pink-400" />
+                  Gerar Conteúdo para Instagram
+                </p>
+                <p className="text-[10px] text-neutral-500">
+                  Transforme este estudo/documento em conteúdo pronto para postar
+                </p>
+
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { value: "legenda", label: "Legenda" },
+                    { value: "carrossel", label: "Carrossel" },
+                    { value: "reels", label: "Roteiro Reels" },
+                    { value: "stories", label: "Stories" },
+                  ].map(t => (
+                    <button
+                      key={t.value}
+                      onClick={() => setMktPostType(t.value)}
+                      className={cn(
+                        "px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all",
+                        mktPostType === t.value
+                          ? "bg-pink-600/15 border border-pink-500/25 text-pink-300"
+                          : "bg-white/[0.02] border border-white/[0.06] text-neutral-500"
+                      )}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+
+                <button
+                  onClick={handleGenerateMarketing}
+                  disabled={mktGenerating}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-pink-600 to-purple-600 text-white text-xs font-semibold shadow-lg shadow-pink-600/15 hover:from-pink-500 hover:to-purple-500 active:scale-[0.98] transition-all disabled:opacity-50"
+                >
+                  {mktGenerating ? (
+                    <>
+                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      Gerando conteúdo...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      Gerar {mktPostType === "legenda" ? "Legenda" : mktPostType === "carrossel" ? "Carrossel" : mktPostType === "reels" ? "Roteiro Reels" : "Stories"}
+                    </>
+                  )}
+                </button>
+
+                {mktResult && (
+                  <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[10px] text-emerald-400 font-semibold">Conteúdo Gerado</p>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(mktResult)
+                          alert("Copiado!")
+                        }}
+                        className="text-[10px] text-neutral-500 hover:text-white px-2 py-1 rounded-md bg-white/[0.04] border border-white/[0.06] transition-colors"
+                      >
+                        Copiar
+                      </button>
+                    </div>
+                    <div className="text-xs text-neutral-300 leading-relaxed whitespace-pre-wrap break-words max-h-[300px] overflow-y-auto overscroll-contain">
+                      {mktResult}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Footer actions */}
@@ -511,7 +817,7 @@ export default function KnowledgePage() {
                 Excluir
               </button>
               <button
-                onClick={() => setViewingDoc(null)}
+                onClick={() => { setViewingDoc(null); setMktResult(null) }}
                 className="px-4 py-2 rounded-lg bg-white/[0.06] border border-white/[0.08] text-sm text-neutral-300 hover:bg-white/[0.08] transition-colors"
               >
                 Fechar

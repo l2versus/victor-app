@@ -1,6 +1,7 @@
 import { requireMaster } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { calculateSaasLeadScore } from "@/lib/saas-lead-scoring"
+import { executeFlowTrigger } from "@/lib/bot-flow-executor"
 import { NextRequest } from "next/server"
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -82,6 +83,11 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
+    // Fetch old status before update for flow trigger
+    const existingForFlow = status !== undefined
+      ? await prisma.saasLead.findUnique({ where: { id }, select: { status: true, name: true, phone: true } })
+      : null
+
     const lead = await prisma.saasLead.update({
       where: { id },
       data,
@@ -89,6 +95,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
         followUps: { orderBy: { createdAt: "desc" } },
       },
     })
+
+    // Fire flow trigger on status change (fire-and-forget)
+    if (existingForFlow && status && status !== existingForFlow.status) {
+      executeFlowTrigger("status_change", {
+        leadId: id,
+        botType: "b2b",
+        leadName: existingForFlow.name,
+        phone: existingForFlow.phone || "",
+        oldStatus: existingForFlow.status,
+        newStatus: status,
+      }).catch(console.error)
+    }
 
     return Response.json(lead)
   } catch (error) {
