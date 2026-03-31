@@ -2,12 +2,15 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAdmin } from "@/lib/auth"
 import { generateText } from "ai"
 import { freeModel } from "@/lib/ai"
-import { getDocument } from "pdfjs-dist/legacy/build/pdf.mjs"
+import * as pdfjsLib from "pdfjs-dist"
+
+// Set worker for serverless environment
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`
 
 // ─── PDF text extraction with enhanced error handling ──────────────────────
 async function extractPdfText(data: Uint8Array): Promise<{ text: string; isEncrypted: boolean; isEmpty: boolean }> {
   try {
-    const doc = await getDocument({
+    const doc = await pdfjsLib.getDocument({
       data,
       useSystemFonts: true,
       disableAutoFetch: true,
