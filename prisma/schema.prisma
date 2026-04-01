@@ -207,8 +207,9 @@ model Student {
   followers         Follow[]          @relation("Following")
   following         Follow[]          @relation("Follower")
   challengeEntries  ChallengeEntry[]
-  bodyScans         BodyScan[]
-  nutritionLogs     NutritionLog[]
+  bodyScans              BodyScan[]
+  posturalAssessments    PosturalAssessment[]
+  nutritionLogs          NutritionLog[]
   pushSubscriptions PushSubscription[]
   progressPhotos    ProgressPhoto[]
   bodyMeasurements  BodyMeasurement[]
@@ -868,6 +869,34 @@ model BodyScan {
   bodyShape    String? // "V_SHAPE" | "X_SHAPE" | "TRAPEZOID" | "RECTANGLE" | "PEAR"
   aiAnalysis   String?
   notes        String?
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([createdAt])
+}
+
+// ═══════════════════════════════════════
+// POSTURAL ASSESSMENT — Avaliação Postural Estática
+// ═══════════════════════════════════════
+
+model PosturalAssessment {
+  id        String @id @default(cuid())
+  studentId String
+
+  frontalAngles Json  // FrontalAngles (6 measurements)
+  lateralAngles Json? // LateralAngles (6 measurements) — null if skipped
+
+  findings Json // PosturalFinding[]
+
+  overallScore  Int
+  severeCount   Int @default(0)
+  moderateCount Int @default(0)
+  mildCount     Int @default(0)
+
+  correctiveExerciseIds String[]
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
 
