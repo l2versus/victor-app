@@ -74,6 +74,11 @@ type ChallengeItem = {
   endDate: string
   participantCount: number
   isParticipating: boolean
+  groupName: string | null
+  groupId: string | null
+  creatorName: string | null
+  creatorAvatar: string | null
+  isCreator: boolean
   leaderboard: { position: number; name: string; avatar: string | null; value: number; isMe: boolean }[]
   myEntry: { value: number } | null
 }
@@ -487,6 +492,8 @@ export default function CommunityPage() {
     if (res.ok) fetchFeed()
   }
 
+  const [showCreateChallenge, setShowCreateChallenge] = useState(false)
+
   async function joinChallenge(challengeId: string) {
     const res = await fetch("/api/community/challenges", {
       method: "POST",
@@ -494,6 +501,28 @@ export default function CommunityPage() {
       body: JSON.stringify({ challengeId }),
     })
     if (res.ok) fetchChallenges()
+  }
+
+  async function leaveChallenge(challengeId: string) {
+    const res = await fetch("/api/community/challenges", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "leave", challengeId }),
+    })
+    if (res.ok) fetchChallenges()
+  }
+
+  async function createChallenge(data: { title: string; description: string; metric: string; targetValue: number | null; endDate: string }) {
+    const res = await fetch("/api/community/challenges", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "create", ...data }),
+    })
+    if (res.ok) {
+      setShowCreateChallenge(false)
+      fetchChallenges()
+    }
+    return res
   }
 
   async function joinGroup(groupId: string) {
@@ -1144,90 +1173,205 @@ export default function CommunityPage() {
         {/* ═══ DESAFIOS ═══ */}
         {tab === "desafios" && (
           <motion.div key="desafios" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-4">
+            {/* Create challenge button */}
+            <button
+              onClick={() => setShowCreateChallenge(true)}
+              className="w-full flex items-center justify-center gap-2 py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 transition-all min-h-[48px] shadow-lg shadow-red-600/20 active:scale-[0.98]"
+            >
+              <Plus className="w-4 h-4" />
+              Criar Desafio
+            </button>
+
             {loading ? (
               <div className="flex items-center justify-center py-16">
                 <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : challenges.length === 0 ? (
-              <div className="text-center py-16">
-                <Target className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
-                <p className="text-neutral-500 text-sm">Nenhum desafio ativo</p>
-                <p className="text-neutral-600 text-xs mt-1">O treinador vai criar novos desafios em breve!</p>
+              <div className="flex flex-col items-center py-14 px-6">
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-4">
+                  <Target className="w-7 h-7 text-neutral-600" />
+                </div>
+                <p className="text-neutral-300 text-sm font-medium text-center">Nenhum desafio ativo</p>
+                <p className="text-neutral-600 text-xs mt-1.5 text-center">Crie o primeiro e desafie seus amigos!</p>
               </div>
             ) : (
-              challenges.map((challenge) => (
-                <motion.div
-                  key={challenge.id}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="rounded-xl bg-white/[0.02] border border-white/[0.06] backdrop-blur-sm overflow-hidden"
-                >
-                  <div className="p-4 space-y-2">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+              challenges.map((challenge) => {
+                const daysLeft = Math.max(0, Math.ceil((new Date(challenge.endDate).getTime() - Date.now()) / 86400000))
+                const isActive = challenge.status === "ACTIVE"
+                const progressPct = challenge.myEntry && challenge.targetValue
+                  ? Math.min(100, (challenge.myEntry.value / challenge.targetValue) * 100)
+                  : null
+
+                return (
+                  <motion.div
+                    key={challenge.id}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-xl bg-white/[0.02] border border-white/[0.06] overflow-hidden"
+                  >
+                    <div className="p-4 space-y-3">
+                      {/* Header row: badges + participant count */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider ${
-                            challenge.status === "ACTIVE" ? "bg-green-500/15 text-green-400" : "bg-neutral-500/15 text-neutral-400"
+                            isActive ? "bg-green-500/15 text-green-400" : "bg-neutral-500/15 text-neutral-400"
                           }`}>
-                            {challenge.status === "ACTIVE" ? "Ativo" : "Encerrado"}
+                            {isActive ? "Ativo" : "Encerrado"}
                           </span>
-                          <span className="text-[10px] text-neutral-600">
-                            <Calendar className="w-3 h-3 inline mr-0.5" />
-                            até {new Date(challenge.endDate).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
-                          </span>
+                          {challenge.groupName && (
+                            <span className="px-2 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-400">
+                              {challenge.groupName}
+                            </span>
+                          )}
+                          {challenge.creatorName && (
+                            <span className="text-[10px] text-neutral-600">
+                              por {challenge.creatorName}
+                            </span>
+                          )}
                         </div>
-                        <h3 className="text-sm font-semibold text-white">{challenge.title}</h3>
-                        {challenge.description && <p className="text-xs text-neutral-400 mt-1">{challenge.description}</p>}
-                      </div>
-                      <div className="flex items-center gap-1 text-neutral-500">
-                        <Users className="w-3.5 h-3.5" />
-                        <span className="text-xs">{challenge.participantCount}</span>
-                      </div>
-                    </div>
-
-                    {challenge.myEntry && challenge.targetValue && (
-                      <div className="mt-2">
-                        <div className="flex justify-between text-[10px] text-neutral-500 mb-1">
-                          <span>Seu progresso</span>
-                          <span>{Math.round((challenge.myEntry.value / challenge.targetValue) * 100)}%</span>
-                        </div>
-                        <div className="h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-red-600 to-red-400 transition-all duration-500"
-                            style={{ width: `${Math.min(100, (challenge.myEntry.value / challenge.targetValue) * 100)}%` }}
-                          />
+                        <div className="flex items-center gap-1 text-neutral-500 shrink-0">
+                          <Users className="w-3.5 h-3.5" />
+                          <span className="text-xs font-medium">{challenge.participantCount}</span>
                         </div>
                       </div>
-                    )}
 
-                    {!challenge.isParticipating && challenge.status === "ACTIVE" && (
-                      <button
-                        onClick={() => joinChallenge(challenge.id)}
-                        className="w-full mt-2 py-2.5 rounded-lg bg-gradient-to-r from-red-600 to-red-700 text-white text-xs font-semibold hover:from-red-500 hover:to-red-600 transition-all min-h-[44px] shadow-lg shadow-red-600/20"
-                      >
-                        Participar do Desafio
-                      </button>
-                    )}
-                  </div>
+                      {/* Title + description */}
+                      <div>
+                        <h3 className="text-sm font-bold text-white">{challenge.title}</h3>
+                        {challenge.description && <p className="text-xs text-neutral-400 mt-1 leading-relaxed">{challenge.description}</p>}
+                      </div>
 
-                  {challenge.leaderboard.length > 0 && (
-                    <div className="border-t border-white/[0.04] px-4 py-3 space-y-1.5">
-                      <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium mb-2">Ranking do desafio</p>
-                      {challenge.leaderboard.slice(0, 5).map((entry) => (
-                        <div key={entry.position} className={`flex items-center gap-2 py-1 ${entry.isMe ? "text-red-400" : "text-neutral-400"}`}>
-                          <span className="text-[10px] font-bold w-4 text-center">{entry.position}</span>
-                          <Avatar name={entry.name} avatar={entry.avatar} size="xs" />
-                          <span className="text-xs flex-1 truncate">{entry.name}</span>
-                          <span className="text-xs font-semibold">
-                            {challenge.metric === "volume_total" ? formatVolume(entry.value) : entry.value}
+                      {/* Countdown + metric info */}
+                      <div className="flex items-center gap-3">
+                        {isActive && (
+                          <div className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold ${
+                            daysLeft <= 3
+                              ? "bg-red-500/10 text-red-400"
+                              : daysLeft <= 7
+                                ? "bg-amber-500/10 text-amber-400"
+                                : "bg-white/[0.04] text-neutral-300"
+                          }`}>
+                            <Flame className="w-3.5 h-3.5" />
+                            {daysLeft === 0 ? "Último dia!" : daysLeft === 1 ? "1 dia restante" : `${daysLeft} dias restantes`}
+                          </div>
+                        )}
+                        <span className="text-[10px] text-neutral-600 flex items-center gap-1">
+                          <Target className="w-3 h-3" />
+                          {METRIC_LABELS[challenge.metric]?.label || challenge.metric}
+                          {challenge.targetValue ? ` · Meta: ${challenge.targetValue}${METRIC_LABELS[challenge.metric]?.unit ? ` ${METRIC_LABELS[challenge.metric].unit}` : ""}` : ""}
+                        </span>
+                      </div>
+
+                      {/* Progress bar (if participating + has target) */}
+                      {progressPct !== null && (
+                        <div>
+                          <div className="flex justify-between text-[10px] text-neutral-500 mb-1">
+                            <span className="font-medium">Seu progresso</span>
+                            <span className="font-bold text-white">{Math.round(progressPct)}%</span>
+                          </div>
+                          <div className="h-2 rounded-full bg-white/[0.06] overflow-hidden">
+                            <div
+                              className={`h-full rounded-full transition-all duration-500 ${
+                                progressPct >= 100
+                                  ? "bg-gradient-to-r from-green-500 to-emerald-400"
+                                  : "bg-gradient-to-r from-red-600 to-red-400"
+                              }`}
+                              style={{ width: `${progressPct}%` }}
+                            />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* My current value (if participating, no target) */}
+                      {challenge.myEntry && !challenge.targetValue && (
+                        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.06]">
+                          <span className="text-[10px] text-neutral-500">Seu valor:</span>
+                          <span className="text-sm font-bold text-white">
+                            {challenge.metric === "volume_total" ? formatVolume(challenge.myEntry.value) : challenge.myEntry.value}
                             {challenge.metric !== "volume_total" && METRIC_LABELS[challenge.metric]?.unit ? ` ${METRIC_LABELS[challenge.metric].unit}` : ""}
                           </span>
                         </div>
-                      ))}
+                      )}
+
+                      {/* Action buttons */}
+                      {isActive && (
+                        <div className="flex gap-2">
+                          {!challenge.isParticipating ? (
+                            <button
+                              onClick={() => joinChallenge(challenge.id)}
+                              className="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-xs font-semibold hover:bg-red-500 transition-all min-h-[44px] shadow-lg shadow-red-600/20 flex items-center justify-center gap-1.5"
+                            >
+                              <Zap className="w-3.5 h-3.5" />
+                              Participar
+                            </button>
+                          ) : !challenge.isCreator ? (
+                            <button
+                              onClick={() => leaveChallenge(challenge.id)}
+                              className="flex-1 py-2.5 rounded-lg bg-white/[0.04] border border-white/[0.08] text-neutral-400 text-xs font-medium hover:bg-white/[0.08] transition-all min-h-[44px] flex items-center justify-center gap-1.5"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                              Sair do Desafio
+                            </button>
+                          ) : (
+                            <div className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-green-500/10 border border-green-500/15 text-green-400 text-xs font-medium flex-1 justify-center">
+                              <Check className="w-3.5 h-3.5" />
+                              Participando (criador)
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
-                  )}
+
+                    {/* Leaderboard */}
+                    {challenge.leaderboard.length > 0 && (
+                      <div className="border-t border-white/[0.04] px-4 py-3 space-y-1.5">
+                        <p className="text-[10px] text-neutral-600 uppercase tracking-wider font-medium mb-2">
+                          Ranking {challenge.groupName ? `· ${challenge.groupName}` : ""}
+                        </p>
+                        {challenge.leaderboard.slice(0, 5).map((entry) => (
+                          <div key={entry.position} className={`flex items-center gap-2 py-1.5 ${entry.isMe ? "text-red-400" : "text-neutral-400"}`}>
+                            <span className={`text-[10px] font-bold w-5 text-center ${
+                              entry.position === 1 ? "text-yellow-400" : entry.position === 2 ? "text-slate-300" : entry.position === 3 ? "text-orange-400" : ""
+                            }`}>
+                              {entry.position <= 3 ? ["🥇", "🥈", "🥉"][entry.position - 1] : entry.position}
+                            </span>
+                            <Avatar name={entry.name} avatar={entry.avatar} size="xs" />
+                            <span className="text-xs flex-1 truncate font-medium">{entry.name}</span>
+                            {entry.isMe && <span className="text-[9px] font-bold text-red-400 bg-red-400/15 px-1.5 py-0.5 rounded">YOU</span>}
+                            <span className="text-xs font-semibold">
+                              {challenge.metric === "volume_total" ? formatVolume(entry.value) : entry.value}
+                              {challenge.metric !== "volume_total" && METRIC_LABELS[challenge.metric]?.unit ? ` ${METRIC_LABELS[challenge.metric].unit}` : ""}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </motion.div>
+                )
+              })
+            )}
+
+            {/* Create Challenge Modal */}
+            {showCreateChallenge && typeof document !== "undefined" && createPortal(
+              <div className="fixed inset-0 z-[100] bg-black/80 flex items-end justify-center" onClick={() => setShowCreateChallenge(false)}>
+                <motion.div
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                  className="w-full max-w-lg bg-[#0a0a0a] border-t border-white/[0.08] rounded-t-2xl overflow-hidden overscroll-contain"
+                  style={{ maxHeight: "85dvh" }}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex justify-center pt-3 pb-1">
+                    <div className="w-10 h-1 rounded-full bg-white/[0.15]" />
+                  </div>
+                  <CreateChallengeForm
+                    onClose={() => setShowCreateChallenge(false)}
+                    onCreate={createChallenge}
+                  />
                 </motion.div>
-              ))
+              </div>,
+              document.getElementById("modal-portal") || document.body
             )}
           </motion.div>
         )}
@@ -1367,6 +1511,144 @@ export default function CommunityPage() {
           </motion.div>
         )}
       </AnimatePresence>
+    </div>
+  )
+}
+
+// ═══════════════════════════════════════
+// CREATE CHALLENGE FORM
+// ═══════════════════════════════════════
+
+const CHALLENGE_METRICS = [
+  { value: "volume_total", label: "Volume Total (kg)", desc: "Soma de carga × repetições" },
+  { value: "sessoes_total", label: "Total de Sessões", desc: "Quantidade de treinos completados" },
+  { value: "sessoes_semana", label: "Sessões por Semana", desc: "Treinos na semana atual" },
+  { value: "streak_dias", label: "Streak (dias)", desc: "Dias consecutivos treinando" },
+  { value: "consistencia", label: "Consistência (%)", desc: "Sessões ÷ dias × 100" },
+]
+
+function CreateChallengeForm({ onClose, onCreate }: {
+  onClose: () => void
+  onCreate: (data: { title: string; description: string; metric: string; targetValue: number | null; endDate: string }) => Promise<Response | null>
+}) {
+  const [title, setTitle] = useState("")
+  const [description, setDescription] = useState("")
+  const [metric, setMetric] = useState("sessoes_total")
+  const [targetValue, setTargetValue] = useState("")
+  const [endDate, setEndDate] = useState("")
+  const [creating, setCreating] = useState(false)
+  const [error, setError] = useState("")
+
+  // Default end date: 30 days from now
+  useEffect(() => {
+    const d = new Date()
+    d.setDate(d.getDate() + 30)
+    setEndDate(d.toISOString().slice(0, 10))
+  }, [])
+
+  async function handleSubmit() {
+    if (!title.trim() || !endDate) return
+    setCreating(true)
+    setError("")
+    const res = await onCreate({
+      title: title.trim(),
+      description: description.trim(),
+      metric,
+      targetValue: targetValue ? Number(targetValue) : null,
+      endDate,
+    })
+    if (res && !res.ok) {
+      const data = await res.json().catch(() => ({}))
+      setError(data.error || "Erro ao criar desafio")
+      setCreating(false)
+    }
+  }
+
+  return (
+    <div className="overflow-y-auto overscroll-contain px-5 pb-10 space-y-5" style={{ maxHeight: "calc(85dvh - 40px)" }}>
+      <div className="flex items-center justify-between py-3">
+        <button onClick={onClose} className="text-neutral-400 text-sm min-h-[44px]">Cancelar</button>
+        <h3 className="text-base font-bold text-white">Novo Desafio</h3>
+        <button
+          onClick={handleSubmit}
+          disabled={creating || !title.trim() || !endDate}
+          className="text-red-400 text-sm font-bold min-h-[44px] disabled:opacity-50"
+        >
+          {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar"}
+        </button>
+      </div>
+
+      {error && (
+        <div className="px-3 py-2 rounded-lg bg-red-600/15 border border-red-500/20 text-xs text-red-400 text-center">
+          {error}
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <div>
+          <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Nome do desafio *</label>
+          <input
+            value={title}
+            onChange={(e) => setTitle(e.target.value.slice(0, 60))}
+            placeholder="Ex: 30 Dias de Treino, Maratona de Volume..."
+            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Descrição</label>
+          <textarea
+            value={description}
+            onChange={(e) => setDescription(e.target.value.slice(0, 200))}
+            placeholder="Descreva as regras do desafio..."
+            rows={2}
+            className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 resize-none focus:outline-none focus:border-red-500/40 transition-colors"
+          />
+        </div>
+
+        <div>
+          <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Métrica *</label>
+          <div className="space-y-1.5">
+            {CHALLENGE_METRICS.map((m) => (
+              <button
+                key={m.value}
+                onClick={() => setMetric(m.value)}
+                className={`w-full text-left px-3.5 py-2.5 rounded-xl border transition-all ${
+                  metric === m.value
+                    ? "bg-red-600/10 border-red-500/25 text-white"
+                    : "bg-white/[0.02] border-white/[0.06] text-neutral-400 hover:border-white/[0.12]"
+                }`}
+              >
+                <p className="text-xs font-medium">{m.label}</p>
+                <p className="text-[10px] text-neutral-600 mt-0.5">{m.desc}</p>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <div className="flex-1">
+            <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Meta (opcional)</label>
+            <input
+              type="number"
+              value={targetValue}
+              onChange={(e) => setTargetValue(e.target.value)}
+              placeholder="Ex: 100"
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
+            />
+          </div>
+          <div className="flex-1">
+            <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Data final *</label>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              min={new Date().toISOString().slice(0, 10)}
+              className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors [color-scheme:dark]"
+            />
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
