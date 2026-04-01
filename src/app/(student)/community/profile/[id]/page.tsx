@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { createPortal } from "react-dom"
 import { useParams, useRouter } from "next/navigation"
-import { motion } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import {
   ArrowLeft, UserPlus, UserCheck, Dumbbell, Flame,
   Heart, MessageCircle, Grid3X3, Trophy, Calendar,
@@ -74,6 +74,8 @@ export default function SocialProfilePage() {
   const [saving, setSaving] = useState(false)
   const [editAvatarPreview, setEditAvatarPreview] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [saveError, setSaveError] = useState(false)
+  const avatarEditRef = useRef<HTMLInputElement>(null)
   const [showFollowList, setShowFollowList] = useState<"followers" | "following" | null>(null)
   const [followList, setFollowList] = useState<Array<{ studentId: string; name: string; avatar: string | null; isMe: boolean; iFollow: boolean; followsMe: boolean }>>([])
   const [loadingFollows, setLoadingFollows] = useState(false)
@@ -161,7 +163,9 @@ export default function SocialProfilePage() {
   function compressImage(file: File, maxSize: number, quality: number): Promise<string> {
     return new Promise((resolve, reject) => {
       const img = new Image()
+      const objectUrl = URL.createObjectURL(file)
       img.onload = () => {
+        URL.revokeObjectURL(objectUrl)
         const canvas = document.createElement("canvas")
         let { width, height } = img
         if (width > height) { if (width > maxSize) { height = (height * maxSize) / width; width = maxSize } }
@@ -172,8 +176,8 @@ export default function SocialProfilePage() {
         ctx.drawImage(img, 0, 0, width, height)
         resolve(canvas.toDataURL("image/jpeg", quality))
       }
-      img.onerror = reject
-      img.src = URL.createObjectURL(file)
+      img.onerror = (e) => { URL.revokeObjectURL(objectUrl); reject(e) }
+      img.src = objectUrl
     })
   }
 
@@ -200,6 +204,7 @@ export default function SocialProfilePage() {
   async function saveProfile() {
     if (!profile || saving) return
     setSaving(true)
+    setSaveError(false)
     try {
       const body: Record<string, string> = { bio: editBio, profession: editProfession, bioLink: editLink }
       if (editAvatarPreview) body.avatar = editAvatarPreview
@@ -218,8 +223,14 @@ export default function SocialProfilePage() {
         } : null)
         setEditAvatarPreview(null)
         setEditing(false)
+      } else {
+        setSaveError(true)
+        setTimeout(() => setSaveError(false), 3000)
       }
-    } catch { /* ignore */ }
+    } catch {
+      setSaveError(true)
+      setTimeout(() => setSaveError(false), 3000)
+    }
     setSaving(false)
   }
 
@@ -394,112 +405,132 @@ export default function SocialProfilePage() {
         </div>
 
         {/* Edit profile — bottom sheet modal */}
-        {editing && typeof document !== "undefined" && createPortal(
-          <div className="fixed inset-0 z-[100] bg-black/80 flex items-end justify-center" onClick={() => setEditing(false)}>
-            <motion.div
-              initial={{ y: "100%" }}
-              animate={{ y: 0 }}
-              exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="w-full max-w-lg bg-[#0a0a0a] border-t border-white/[0.08] rounded-t-2xl overflow-hidden overscroll-contain"
-              style={{ maxHeight: "85dvh" }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* Handle bar */}
-              <div className="flex justify-center pt-3 pb-1">
-                <div className="w-10 h-1 rounded-full bg-white/[0.15]" />
-              </div>
-
-              {/* Header */}
-              <div className="flex items-center justify-between px-5 py-3">
-                <button onClick={() => setEditing(false)} className="text-neutral-400 text-sm min-h-[44px] min-w-[44px] flex items-center">
-                  Cancelar
-                </button>
-                <h3 className="text-base font-bold text-white">Editar perfil</h3>
-                <button
-                  onClick={saveProfile}
-                  disabled={saving}
-                  className="text-red-400 text-sm font-bold min-h-[44px] min-w-[44px] flex items-center justify-end disabled:opacity-50"
+        {typeof document !== "undefined" && createPortal(
+          <AnimatePresence>
+            {editing && (
+              <motion.div
+                key="edit-backdrop"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 z-[100] bg-black/80 flex items-end justify-center"
+                onClick={() => setEditing(false)}
+              >
+                <motion.div
+                  key="edit-sheet"
+                  initial={{ y: "100%" }}
+                  animate={{ y: 0 }}
+                  exit={{ y: "100%" }}
+                  transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                  className="w-full max-w-lg bg-[#0a0a0a] border-t border-white/[0.08] rounded-t-2xl overflow-hidden overscroll-contain"
+                  style={{ maxHeight: "85dvh" }}
+                  onClick={(e) => e.stopPropagation()}
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar"}
-                </button>
-              </div>
+                  {/* Handle bar */}
+                  <div className="flex justify-center pt-3 pb-1">
+                    <div className="w-10 h-1 rounded-full bg-white/[0.15]" />
+                  </div>
 
-              <div className="overflow-y-auto overscroll-contain px-5 pb-10 space-y-5" style={{ maxHeight: "calc(85dvh - 100px)" }}>
-                {/* Avatar section */}
-                <div className="flex flex-col items-center gap-3 py-2">
-                  <div className="relative">
-                    <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-red-600/30 to-red-900/30 border-2 border-white/[0.1]">
-                      <SafeAvatar
-                        src={editAvatarPreview || profile.avatar}
-                        name={profile.name}
-                        size="lg"
-                        className="w-full h-full text-xl"
-                      />
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-5 py-3">
+                    <button onClick={() => setEditing(false)} className="text-neutral-400 text-sm min-h-[44px] min-w-[44px] flex items-center">
+                      Cancelar
+                    </button>
+                    <h3 className="text-base font-bold text-white">Editar perfil</h3>
+                    <button
+                      onClick={saveProfile}
+                      disabled={saving}
+                      className="text-red-400 text-sm font-bold min-h-[44px] min-w-[44px] flex items-center justify-end disabled:opacity-50"
+                    >
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : "Salvar"}
+                    </button>
+                  </div>
+
+                  {/* Save error toast */}
+                  {saveError && (
+                    <div className="mx-5 mb-2 px-3 py-2 rounded-lg bg-red-600/15 border border-red-500/20 text-xs text-red-400 text-center">
+                      Erro ao salvar. Tente novamente.
                     </div>
-                    <label className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-red-600 border-2 border-[#0a0a0a] flex items-center justify-center cursor-pointer active:scale-90 transition-transform">
-                      {uploadingAvatar ? (
-                        <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
-                      ) : (
-                        <Camera className="w-3.5 h-3.5 text-white" />
-                      )}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarChange}
-                        disabled={uploadingAvatar}
-                      />
-                    </label>
-                  </div>
-                  <button
-                    onClick={() => document.querySelector<HTMLInputElement>('input[accept="image/*"]')?.click()}
-                    className="text-xs text-red-400 font-medium"
-                  >
-                    Alterar foto
-                  </button>
-                </div>
+                  )}
 
-                {/* Divider */}
-                <div className="h-px bg-white/[0.06]" />
+                  <div className="overflow-y-auto overscroll-contain px-5 pb-10 space-y-5" style={{ maxHeight: "calc(85dvh - 100px)" }}>
+                    {/* Avatar section */}
+                    <div className="flex flex-col items-center gap-3 py-2">
+                      <div className="relative">
+                        <div className="w-20 h-20 rounded-full overflow-hidden bg-gradient-to-br from-red-600/30 to-red-900/30 border-2 border-white/[0.1]">
+                          <SafeAvatar
+                            src={editAvatarPreview || profile.avatar}
+                            name={profile.name}
+                            size="lg"
+                            className="w-full h-full text-xl"
+                          />
+                        </div>
+                        <label className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full bg-red-600 border-2 border-[#0a0a0a] flex items-center justify-center cursor-pointer active:scale-90 transition-transform">
+                          {uploadingAvatar ? (
+                            <Loader2 className="w-3.5 h-3.5 text-white animate-spin" />
+                          ) : (
+                            <Camera className="w-3.5 h-3.5 text-white" />
+                          )}
+                          <input
+                            ref={avatarEditRef}
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleAvatarChange}
+                            disabled={uploadingAvatar}
+                          />
+                        </label>
+                      </div>
+                      <button
+                        onClick={() => avatarEditRef.current?.click()}
+                        className="text-xs text-red-400 font-medium"
+                      >
+                        Alterar foto
+                      </button>
+                    </div>
 
-                {/* Fields */}
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Bio</label>
-                    <textarea
-                      value={editBio}
-                      onChange={(e) => setEditBio(e.target.value.slice(0, 150))}
-                      placeholder="Conte sobre você..."
-                      rows={3}
-                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 resize-none focus:outline-none focus:border-red-500/40 transition-colors"
-                    />
-                    <p className="text-[10px] text-neutral-600 text-right mt-0.5">{editBio.length}/150</p>
-                  </div>
+                    {/* Divider */}
+                    <div className="h-px bg-white/[0.06]" />
 
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Profissão</label>
-                    <input
-                      value={editProfession}
-                      onChange={(e) => setEditProfession(e.target.value.slice(0, 60))}
-                      placeholder="Ex: Engenheiro, Designer, Estudante..."
-                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
-                    />
-                  </div>
+                    {/* Fields */}
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Bio</label>
+                        <textarea
+                          value={editBio}
+                          onChange={(e) => setEditBio(e.target.value.slice(0, 150))}
+                          placeholder="Conte sobre você..."
+                          rows={3}
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 resize-none focus:outline-none focus:border-red-500/40 transition-colors"
+                        />
+                        <p className="text-[10px] text-neutral-600 text-right mt-0.5">{editBio.length}/150</p>
+                      </div>
 
-                  <div>
-                    <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Link</label>
-                    <input
-                      value={editLink}
-                      onChange={(e) => setEditLink(e.target.value.slice(0, 200))}
-                      placeholder="instagram.com/seuuser"
-                      className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
-                    />
+                      <div>
+                        <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Profissão</label>
+                        <input
+                          value={editProfession}
+                          onChange={(e) => setEditProfession(e.target.value.slice(0, 60))}
+                          placeholder="Ex: Engenheiro, Designer, Estudante..."
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] uppercase tracking-wider text-neutral-500 mb-1.5 block font-medium">Link</label>
+                        <input
+                          value={editLink}
+                          onChange={(e) => setEditLink(e.target.value.slice(0, 200))}
+                          placeholder="instagram.com/seuuser"
+                          className="w-full bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-3 text-sm text-white placeholder-neutral-600 focus:outline-none focus:border-red-500/40 transition-colors"
+                        />
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            </motion.div>
-          </div>,
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>,
           document.getElementById("modal-portal") || document.body
         )}
       </div>
