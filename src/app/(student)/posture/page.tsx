@@ -7,9 +7,11 @@ import { PostureLoader } from "@/components/student/posture-loader"
 import { TOTAL_EXERCISES_WITH_POSTURE, ALL_EXERCISE_GROUPS as EXERCISE_GROUPS } from "@/lib/posture-rules-all"
 import Link from "next/link"
 
-export default async function PosturePage() {
+export default async function PosturePage({ searchParams }: { searchParams: Promise<{ exercise?: string }> }) {
   const session = await requireAuth()
   if (session.role !== "STUDENT") redirect("/login")
+  const params = await searchParams
+  const initialExercise = params.exercise || null
 
   const student = await getStudentProfile(session.userId)
   const hasPosture = await checkFeature(student.id, "hasPostureCamera")
@@ -112,7 +114,7 @@ export default async function PosturePage() {
         <Activity className="w-4 h-4 text-neutral-600" />
       </Link>
 
-      <PostureLoader />
+      <PostureLoader initialExercise={initialExercise} />
     </div>
   )
 }

@@ -19,6 +19,6 @@ const PostureAnalyzer = dynamic(
   { ssr: false, loading: () => <PostureLoading /> }
 )
 
-export function PostureLoader() {
-  return <PostureAnalyzer />
+export function PostureLoader({ initialExercise }: { initialExercise?: string | null }) {
+  return <PostureAnalyzer initialExercise={initialExercise ?? undefined} />
 }

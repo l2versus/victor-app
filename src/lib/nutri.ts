@@ -5,6 +5,7 @@ export async function getNutriProfile(userId: string) {
   if (profile) return profile
 
   // Fallback: find the nutritionist with the most students (primary nutri)
+  console.warn(`[Nutri] No nutritionist profile for userId=${userId}, falling back to primary nutri`)
   const primary = await prisma.nutritionistProfile.findFirst({
     orderBy: { students: { _count: "desc" } },
   })

@@ -659,13 +659,14 @@ export default function CommunityPage() {
           <button
             key={group.studentId}
             onClick={() => {
+              if (group.stories.length === 0) return
               setViewingStory({ group, index: 0 })
               // Mark first story as viewed
               fetch("/api/community/stories/view", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ storyId: group.stories[0].id }),
-              })
+              }).catch(() => {})
             }}
             className="flex flex-col items-center gap-1 shrink-0"
           >
@@ -823,24 +824,41 @@ export default function CommunityPage() {
         document.getElementById("modal-portal") || document.body
       )}
 
-      {/* Tabs */}
-      <div className="flex gap-1.5 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">
-        {tabs.map((t) => (
-          <button
-            key={t.id}
-            onClick={() => !t.locked && setTab(t.id)}
-            className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-lg text-xs font-medium transition-all duration-300 min-h-[44px] ${
-              tab === t.id
-                ? "bg-red-600/15 text-red-400 border border-red-500/20"
-                : t.locked
-                  ? "text-neutral-700 cursor-not-allowed"
-                  : "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.04]"
-            }`}
-          >
-            {t.locked ? <Lock className="w-3.5 h-3.5" /> : <t.icon className="w-3.5 h-3.5" />}
-            {t.label}
-          </button>
-        ))}
+      {/* Tabs — clean underline style */}
+      <div className="relative">
+        <div className="flex">
+          {tabs.map((t) => {
+            const isActive = tab === t.id
+            return (
+              <button
+                key={t.id}
+                onClick={() => !t.locked && setTab(t.id)}
+                className={`flex-1 flex flex-col items-center gap-1 py-3 relative transition-all duration-200 min-h-[52px] ${
+                  isActive
+                    ? "text-white"
+                    : t.locked
+                      ? "text-neutral-700 cursor-not-allowed"
+                      : "text-neutral-500 hover:text-neutral-300 active:text-neutral-200"
+                }`}
+              >
+                <div className="flex items-center gap-1.5">
+                  {t.locked ? <Lock className="w-4 h-4" /> : <t.icon className={`w-4 h-4 ${isActive ? "text-red-400" : ""}`} />}
+                  <span className={`text-xs font-semibold ${isActive ? "text-white" : ""}`}>{t.label}</span>
+                </div>
+                {/* Active indicator */}
+                {isActive && (
+                  <motion.div
+                    layoutId="community-tab-indicator"
+                    className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-red-500 shadow-[0_0_8px_rgba(220,38,38,0.4)]"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </button>
+            )
+          })}
+        </div>
+        {/* Bottom border */}
+        <div className="absolute bottom-0 left-0 right-0 h-px bg-white/[0.06]" />
       </div>
 
       {/* Content */}
@@ -1218,27 +1236,31 @@ export default function CommunityPage() {
         {tab === "grupos" && (
           <motion.div key="grupos" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="space-y-4">
             {/* Filter + Create */}
-            <div className="flex items-center gap-2">
-              <div className="flex flex-1 gap-1 p-0.5 bg-white/[0.03] rounded-lg border border-white/[0.06]">
-                {(["mine", "discover"] as const).map((f) => (
-                  <button
-                    key={f}
-                    onClick={() => setGroupFilter(f)}
-                    className={`flex-1 py-2 px-3 rounded-md text-xs font-medium transition-all min-h-[40px] ${
-                      groupFilter === f
-                        ? "bg-red-600/15 text-red-400 border border-red-500/20"
-                        : "text-neutral-500 hover:text-neutral-300"
-                    }`}
-                  >
-                    {f === "mine" ? "Meus Grupos" : "Descobrir"}
-                  </button>
-                ))}
+            <div className="flex items-center gap-2.5">
+              <div className="flex flex-1 gap-0.5 p-1 bg-white/[0.03] rounded-xl border border-white/[0.06]">
+                {(["mine", "discover"] as const).map((f) => {
+                  const active = groupFilter === f
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setGroupFilter(f)}
+                      className={`flex-1 py-2.5 px-3 rounded-lg text-xs font-semibold transition-all duration-200 min-h-[42px] flex items-center justify-center gap-1.5 ${
+                        active
+                          ? "bg-white/[0.08] text-white shadow-sm"
+                          : "text-neutral-500 hover:text-neutral-300"
+                      }`}
+                    >
+                      {f === "mine" ? <Users2 className="w-3.5 h-3.5" /> : <Compass className="w-3.5 h-3.5" />}
+                      {f === "mine" ? "Meus Grupos" : "Descobrir"}
+                    </button>
+                  )
+                })}
               </div>
               <button
                 onClick={() => setShowCreateGroup(true)}
-                className="p-2.5 rounded-lg bg-red-600/15 text-red-400 border border-red-500/20 hover:bg-red-600/25 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center"
+                className="p-2.5 rounded-xl bg-red-600 text-white hover:bg-red-500 transition-all min-h-[42px] min-w-[42px] flex items-center justify-center shadow-lg shadow-red-600/20 active:scale-95"
               >
-                <Plus className="w-4 h-4" />
+                <Plus className="w-4.5 h-4.5" />
               </button>
             </div>
 
@@ -1247,22 +1269,32 @@ export default function CommunityPage() {
                 <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
               </div>
             ) : groups.length === 0 ? (
-              <div className="text-center py-16">
-                <Users2 className="w-12 h-12 text-neutral-700 mx-auto mb-3" />
-                <p className="text-neutral-500 text-sm">
+              <div className="flex flex-col items-center py-14 px-6">
+                <div className="w-16 h-16 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center mb-4">
+                  <Users2 className="w-7 h-7 text-neutral-600" />
+                </div>
+                <p className="text-neutral-300 text-sm font-medium text-center">
                   {groupFilter === "mine" ? "Você ainda não faz parte de nenhum grupo" : "Nenhum grupo para descobrir"}
                 </p>
-                <p className="text-neutral-600 text-xs mt-1">
-                  {groupFilter === "mine" ? "Crie um ou explore a aba Descobrir!" : "Crie o primeiro!"}
+                <p className="text-neutral-600 text-xs mt-1.5 text-center">
+                  {groupFilter === "mine" ? "Crie um ou explore a aba Descobrir!" : "Seja o primeiro a criar!"}
                 </p>
-                {groupFilter === "mine" && (
+                <div className="flex gap-2 mt-5">
+                  {groupFilter === "mine" && (
+                    <button
+                      onClick={() => setGroupFilter("discover")}
+                      className="px-5 py-2.5 rounded-xl bg-white/[0.06] border border-white/[0.08] text-neutral-300 text-xs font-semibold hover:bg-white/[0.1] transition-all min-h-[44px] flex items-center gap-1.5"
+                    >
+                      <Compass className="w-3.5 h-3.5" /> Descobrir
+                    </button>
+                  )}
                   <button
-                    onClick={() => setGroupFilter("discover")}
-                    className="mt-3 px-4 py-2 rounded-lg bg-white/[0.05] text-neutral-300 text-xs font-medium hover:bg-white/[0.08] transition-all"
+                    onClick={() => setShowCreateGroup(true)}
+                    className="px-5 py-2.5 rounded-xl bg-red-600 text-white text-xs font-semibold hover:bg-red-500 transition-all min-h-[44px] flex items-center gap-1.5 shadow-lg shadow-red-600/20"
                   >
-                    <Compass className="w-3.5 h-3.5 inline mr-1" /> Descobrir Grupos
+                    <Plus className="w-3.5 h-3.5" /> Criar grupo
                   </button>
-                )}
+                </div>
               </div>
             ) : (
               <div className="space-y-3">

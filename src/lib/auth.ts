@@ -37,7 +37,10 @@ export function generateToken(payload: TokenPayload, expiresIn?: string): string
 export function verifyToken(token: string): TokenPayload | null {
   try {
     return jwt.verify(token, getJwtSecret()) as TokenPayload
-  } catch {
+  } catch (err) {
+    if (err instanceof Error && err.name !== "TokenExpiredError") {
+      console.error("[Auth] Token verification failed:", err.name, err.message)
+    }
     return null
   }
 }

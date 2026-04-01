@@ -80,7 +80,9 @@ async function legacySendReply(phone: string, message: string, provider: WhatsAp
     try {
       const { sendTextMessage } = await import("./zapi")
       if (await sendTextMessage(phone, message)) return true
-    } catch {}
+    } catch (err) {
+      console.error("[WA Processor] Z-API legacy send failed:", err)
+    }
   }
   // Meta
   const token = process.env.WHATSAPP_ACCESS_TOKEN
@@ -102,7 +104,10 @@ async function legacySendReply(phone: string, message: string, provider: WhatsAp
         }
       )
       if (res.ok) return true
-    } catch {}
+      console.error(`[WA Processor] Meta API failed (${res.status}):`, await res.text().catch(() => ""))
+    } catch (err) {
+      console.error("[WA Processor] Meta API fetch error:", err)
+    }
   }
 
   console.error(`[WA Processor] ALL providers failed for ${phone}`)

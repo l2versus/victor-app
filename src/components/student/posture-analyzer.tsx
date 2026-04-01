@@ -59,9 +59,17 @@ const defaultExercise = EXERCISE_RULES[0] ?? {
   analyze: () => [{ status: "warning" as const, message: "Exercicio nao carregado" }],
 }
 
-export function PostureAnalyzer() {
+export function PostureAnalyzer({ initialExercise }: { initialExercise?: string } = {}) {
   const [state, setState] = useState<AnalyzerState>("idle")
-  const [selectedExercise, setSelectedExercise] = useState<ExerciseRule>(defaultExercise)
+  const [selectedExercise, setSelectedExercise] = useState<ExerciseRule>(() => {
+    if (initialExercise) {
+      const nameLower = initialExercise.toLowerCase()
+      const match = EXERCISE_RULES.find(r => r.name.toLowerCase() === nameLower)
+        || EXERCISE_RULES.find(r => r.name.toLowerCase().includes(nameLower) || nameLower.includes(r.name.toLowerCase()))
+      if (match) return match
+    }
+    return defaultExercise
+  })
   const [feedback, setFeedback] = useState<PostureFeedback[]>([])
   const [errorMsg, setErrorMsg] = useState("")
   const [showSelector, setShowSelector] = useState(false)

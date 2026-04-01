@@ -293,6 +293,7 @@ export function WorkoutPlayer({
         body: JSON.stringify({ templateId }),
       })
       const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || "Erro ao iniciar treino")
       if (data.session) {
         // Clean up any previous discard flags
         if (activeSession?.id) {
@@ -391,11 +392,12 @@ export function WorkoutPlayer({
     if (!sessionId) return
     const loadKg = Math.round(Math.min(Math.max(rawLoadKg, 0), 999) * 10) / 10
     try {
-      await fetch(`/api/student/sessions/${sessionId}/sets`, {
+      const res = await fetch(`/api/student/sessions/${sessionId}/sets`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ setId, reps, loadKg, technique }),
       })
+      if (!res.ok) throw new Error("Falha ao salvar")
 
       setCompletedSets((prev) => {
         const next = new Map(prev)
@@ -416,9 +418,10 @@ export function WorkoutPlayer({
   const handleDeleteSet = useCallback(async (setId: string, exerciseId: string) => {
     if (!sessionId || !setId) return
     try {
-      await fetch(`/api/student/sessions/${sessionId}/sets?setId=${setId}`, {
+      const res = await fetch(`/api/student/sessions/${sessionId}/sets?setId=${setId}`, {
         method: "DELETE",
       })
+      if (!res.ok) throw new Error("Falha ao deletar")
       setCompletedSets((prev) => {
         const next = new Map(prev)
         const sets = (next.get(exerciseId) || []).filter((s) => s.id !== setId)
@@ -560,13 +563,29 @@ export function WorkoutPlayer({
   if (phase === "preview") {
     return (
       <div className="space-y-5">
+        {/* ═══ STICKY START BUTTON — always visible ═══ */}
+        <div className="sticky top-0 z-30 pt-2 pb-1 -mx-4 px-4 bg-gradient-to-b from-[#0a0a0a] via-[#0a0a0a] to-transparent">
+          <button
+            onClick={handleStart}
+            className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base shadow-xl shadow-red-600/25 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all duration-300"
+          >
+            <Play className="w-5 h-5" fill="currentColor" />
+            {sessionId ? "Retomar Treino" : isScheduledToday ? "Iniciar Treino" : "Treinar Agora"}
+          </button>
+          {sessionId && activeSession && (
+            <p className="text-center text-[10px] text-amber-400/70 mt-1">
+              {totalCompleted} séries feitas · treino em andamento
+            </p>
+          )}
+        </div>
+
         {error && (
           <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-sm animate-slide-up">
             <X className="w-4 h-4 shrink-0 cursor-pointer" onClick={() => setError(null)} />
             <span>{error}</span>
           </div>
         )}
-        <div className="text-center pt-4">
+        <div className="text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 mb-3">
             <Dumbbell className="w-3 h-3 text-red-400" />
             <span className="text-[10px] text-red-400 font-medium uppercase tracking-wider">{templateType}</span>
@@ -729,14 +748,6 @@ export function WorkoutPlayer({
             </div>
           </div>
         )}
-
-        <button
-          onClick={handleStart}
-          className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white font-bold text-base shadow-xl shadow-red-600/25 hover:from-red-500 hover:to-red-600 active:scale-[0.98] transition-all duration-300"
-        >
-          <Play className="w-5 h-5" fill="currentColor" />
-          {sessionId ? "Retomar Treino" : isScheduledToday ? "Iniciar Treino" : "Treinar Agora"}
-        </button>
 
         {/* ═══ EXERCISE DETAIL MODAL ═══ */}
         {exerciseDetail && (

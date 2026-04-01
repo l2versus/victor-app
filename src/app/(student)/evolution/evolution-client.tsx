@@ -313,7 +313,7 @@ export function EvolutionClient() {
     // --- Heatmap (calendar) ---
     const heatmapDots = stats.heatmap.slice(-60).filter(h => h.count > 0).map(h => {
       const d = new Date(h.date)
-      const dayName = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"][d.getDay()]
+      const dayName = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"][d.getDay()]
       return `<span class="heat-dot" style="opacity:${Math.min(0.3 + h.count * 0.25, 1)}">${h.date.slice(5)} (${dayName}) — ${h.count}x</span>`
     }).join("")
     const heatmapSection = stats.heatmap.length > 0

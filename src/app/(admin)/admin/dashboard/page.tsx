@@ -183,7 +183,7 @@ export default async function DashboardPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-white/80 text-sm font-medium truncate">{sess.student.user.name}</p>
-                    <p className="text-neutral-600 text-[11px] truncate">{sess.template.name}</p>
+                    <p className="text-neutral-600 text-[11px] truncate">{sess.template?.name ?? "Treino removido"}</p>
                   </div>
                   <div className="text-right">
                     <p className="text-neutral-500 text-[11px]">{format(sess.startedAt, "dd/MM")}</p>

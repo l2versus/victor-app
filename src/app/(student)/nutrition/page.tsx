@@ -57,17 +57,19 @@ export default async function NutritionPage() {
   const features = await getStudentFeatures(student.id)
 
   // Load today's log + 7-day history (server-side initial data)
-  const today = new Date()
-  today.setHours(0, 0, 0, 0)
-  const sevenDaysAgo = new Date(today)
-  sevenDaysAgo.setDate(today.getDate() - 6)
+  const { start: todayStart, end: todayEnd } = (await import("@/lib/timezone")).getBrazilTodayRange()
+  const sevenDaysAgo = new Date(todayStart)
+  sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6)
 
   const logs = await prisma.nutritionLog.findMany({
     where: { studentId: student.id, date: { gte: sevenDaysAgo } },
     orderBy: { date: "desc" },
   })
 
-  const todayLog = logs.find((l) => new Date(l.date).toDateString() === today.toDateString()) ?? null
+  const todayLog = logs.find((l) => {
+    const d = new Date(l.date)
+    return d >= todayStart && d < todayEnd
+  }) ?? null
 
   // Calculate daily targets based on weight and goal
   const weight = student.weight ?? 75

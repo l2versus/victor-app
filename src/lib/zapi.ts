@@ -108,7 +108,10 @@ export function isConfigured(): boolean {
  */
 export function verifyWebhook(req: Request): boolean {
   const secret = process.env.ZAPI_WEBHOOK_SECRET
-  if (!secret) return true // sem secret → aceita tudo
+  if (!secret) {
+    console.warn("[Z-API] ZAPI_WEBHOOK_SECRET not configured — accepting all webhooks (insecure)")
+    return true
+  }
   const incoming = req.headers.get("client-token") || req.headers.get("x-webhook-secret") || ""
   return incoming === secret
 }

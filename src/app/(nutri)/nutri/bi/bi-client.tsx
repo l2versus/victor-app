@@ -82,7 +82,7 @@ const fadeUp = {
   }),
 }
 
-const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
+const DAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
 function getLast7DayLabels(): string[] {
   const labels: string[] = []

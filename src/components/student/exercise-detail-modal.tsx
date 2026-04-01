@@ -1,9 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
-import { X, Play, AlertTriangle, Dumbbell, Target, ShieldAlert, ChevronDown, Box, RotateCcw } from "lucide-react"
+import { X, Play, AlertTriangle, Dumbbell, Target, ShieldAlert, ChevronDown, Box, RotateCcw, Camera } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { find3DModel, getSketchfabEmbedUrl } from "@/lib/exercise-3d-models"
+import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
 
 const Machine3DGuide = dynamic(
@@ -133,6 +134,7 @@ const BRAND_ORIGINS: Record<string, { origin: string; flag: string; desc: string
 }
 
 export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalProps) {
+  const router = useRouter()
   const muscleInfo = getMuscleInfo(exercise.muscle)
   const model3D = find3DModel(exercise.name)
   const heroImage = exercise.gifUrl || exercise.imageUrl
@@ -256,6 +258,20 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
               </button>
             )
           })}
+        </div>
+
+        {/* ═══ POSTURE CORRECTOR — direct link to exercise ═══ */}
+        <div className="px-4 py-2 shrink-0">
+          <button
+            onClick={() => {
+              onClose()
+              router.push(`/posture?exercise=${encodeURIComponent(exercise.name)}`)
+            }}
+            className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600/15 to-emerald-700/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold hover:from-emerald-600/25 hover:to-emerald-700/15 active:scale-[0.98] transition-all"
+          >
+            <Camera className="w-3.5 h-3.5" />
+            Corrigir Postura — {exercise.name}
+          </button>
         </div>
 
         {/* Content — scrollable */}

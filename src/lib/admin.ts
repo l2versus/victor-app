@@ -6,6 +6,7 @@ export async function getTrainerProfile(userId: string) {
   if (profile) return profile
 
   // Fallback: find the trainer with the most students (primary trainer)
+  console.warn(`[Admin] No trainer profile for userId=${userId}, falling back to primary trainer`)
   const primary = await prisma.trainerProfile.findFirst({
     orderBy: { students: { _count: "desc" } },
   })

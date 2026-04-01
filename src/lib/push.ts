@@ -35,7 +35,8 @@ export async function sendPushToStudent(
       }
     }
     return sent
-  } catch {
+  } catch (err) {
+    console.error("[Push] sendPushToStudent failed:", err)
     return false
   }
 }
@@ -60,7 +61,8 @@ export async function pushToFollowers(
       if (sent) sentCount++
     }
     return sentCount
-  } catch {
+  } catch (err) {
+    console.error("[Push] pushToFollowers failed:", err)
     return 0
   }
 }

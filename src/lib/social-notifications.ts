@@ -51,8 +51,8 @@ export async function notifySocial(params: {
         metadata: { fromName, fromStudentId, type, postId },
       },
     })
-  } catch {
-    // Silent fail — social notifications should never block
+  } catch (err) {
+    console.error("[Social] Notification failed:", err)
   }
 }
 
@@ -99,7 +99,7 @@ export async function notifyMentions(params: {
         }
       }
     }
-  } catch {
-    // Silent fail
+  } catch (err) {
+    console.error("[Social] Mention notification failed:", err)
   }
 }

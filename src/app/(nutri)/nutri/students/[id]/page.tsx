@@ -64,7 +64,7 @@ const tabs: { key: TabKey; label: string; icon: typeof User }[] = [
   { key: "history", label: "Historico", icon: History },
 ]
 
-const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
+const dayLabels = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
 export default function NutriStudentDetailPage() {
   const params = useParams()
