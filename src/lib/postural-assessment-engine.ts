@@ -199,7 +199,7 @@ export function analyzeLateralView(lm: Point[]): LateralAngles {
 
   // 10. Anterior pelvic tilt — derived from lordosis
   // Ref [8]: Normal APT 7-15° in asymptomatic adults (Kroll et al: 3-22° range)
-  const pelvicTiltDeg = 180 - lordosisAngleDeg
+  const pelvicTiltDeg = Math.max(0, 180 - lordosisAngleDeg)
 
   // 11. Knee hyperextension — hip-knee-ankle angle
   // Ref [9]: > 5° beyond neutral = genu recurvatum, > 10° = clinical concern
@@ -305,11 +305,12 @@ export function computeFindings(frontal: FrontalAngles, lateral: LateralAngles |
       "Fon 1980 AJR, Frontiers Endocrinol 2020")
 
     // Lordosis — Ref [1]: normal lumbar lordosis ~40-60°, hyperlordosis > 60°
-    // Proxy via shoulder-hip-knee angle deviation
-    // Calibrated: < 12° normal, 12-20° mild, 20-30° moderate, > 30° severe
+    // Proxy via shoulder-hip-knee angle deviation from neutral (~170°)
+    // Calibrated: < 10° normal, 10-20° mild, 20-30° moderate, > 30° severe
+    const lordosisDev = Math.max(0, 170 - lateral.lordosisAngleDeg)
     addFinding("lordosis", "Lordose Lombar", "lateral",
-      lateral.pelvicTiltDeg, "< 12° (lordose 40-60° normal)",
-      classify(lateral.pelvicTiltDeg, 12, 20, 30),
+      lordosisDev, "< 10° (desvio do ângulo lombar)",
+      classify(lordosisDev, 10, 20, 30),
       "Kendall 2005, Sahrmann 2002")
 
     // Anterior pelvic tilt — Ref [8]: normal ~7-15°, > 15° = excessive

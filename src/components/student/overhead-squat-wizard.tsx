@@ -31,6 +31,7 @@ export function OverheadSquatWizard() {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
+  const [modelReady, setModelReady] = useState(false)
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment")
   const poseLandmarkerRef = useRef<unknown>(null)
   const animFrameRef = useRef<number>(0)
@@ -42,8 +43,11 @@ export function OverheadSquatWizard() {
   const [isRecording, setIsRecording] = useState(false)
   const repsRef = useRef<SquatRepResult[]>([])
   const phaseRef = useRef<SquatPhase["phase"]>("standing")
+  const phaseTimestampRef = useRef<number>(0)
   const bottomLandmarksRef = useRef<Point[] | null>(null)
+  const deepestAngleRef = useRef<number>(999)
   const targetReps = 5
+  const MIN_PHASE_MS = 300 // debounce: minimum ms before accepting phase change
 
   // ═══ CAMERA ═══
 
@@ -62,8 +66,18 @@ export function OverheadSquatWizard() {
         await videoRef.current.play()
         setCameraReady(true)
       }
-    } catch {
-      setError("Permissão de câmera negada.")
+    } catch (err) {
+      console.error("[OverheadSquat] Camera error:", err)
+      if (err instanceof DOMException) {
+        switch (err.name) {
+          case "NotAllowedError": setError("Permissão de câmera negada."); break
+          case "NotFoundError": setError("Nenhuma câmera encontrada."); break
+          case "NotReadableError": setError("Câmera em uso por outro app."); break
+          default: setError(`Erro de câmera: ${err.message}`)
+        }
+      } else {
+        setError("Erro ao acessar câmera.")
+      }
     }
   }, [facingMode])
 
@@ -93,7 +107,9 @@ export function OverheadSquatWizard() {
         numPoses: 1,
       })
       poseLandmarkerRef.current = landmarker
-    } catch {
+      setModelReady(true)
+    } catch (gpuErr) {
+      console.warn("[OverheadSquat] GPU delegate failed, falling back to CPU:", gpuErr)
       try {
         const vision = await import("@mediapipe/tasks-vision")
         const { PoseLandmarker, FilesetResolver } = vision
@@ -109,6 +125,7 @@ export function OverheadSquatWizard() {
           numPoses: 1,
         })
         poseLandmarkerRef.current = landmarker
+        setModelReady(true)
       } catch (err) {
         console.error("[OverheadSquat] PoseLandmarker failed:", err)
         setError("Erro ao carregar modelo de IA.")
@@ -130,6 +147,7 @@ export function OverheadSquatWizard() {
     if (!cameraReady || step !== "camera" || !isRecording) return
     let running = true
     let lastTime = 0
+    let consecutiveErrors = 0
 
     const loop = (timestamp: number) => {
       if (!running || !videoRef.current || !poseLandmarkerRef.current) {
@@ -152,6 +170,8 @@ export function OverheadSquatWizard() {
         }
         const result = landmarker.detectForVideo(videoRef.current!, timestamp)
 
+        consecutiveErrors = 0
+
         if (result.landmarks?.[0]) {
           const lm = result.landmarks[0] as Point[]
           const L = LANDMARKS
@@ -166,34 +186,60 @@ export function OverheadSquatWizard() {
 
           setKneeAngle(angle)
 
-          const newPhase = detectSquatPhase(angle, phaseRef.current)
+          const candidatePhase = detectSquatPhase(angle, phaseRef.current)
 
-          // Detect bottom of squat — capture landmarks for analysis
-          if (newPhase === "bottom" && phaseRef.current !== "bottom") {
-            bottomLandmarksRef.current = lm
-          }
+          // Debounce: only accept phase change after MIN_PHASE_MS in current phase
+          const now = performance.now()
+          const dwellOk = (now - phaseTimestampRef.current) >= MIN_PHASE_MS
+          const newPhase = (candidatePhase !== phaseRef.current && dwellOk)
+            ? candidatePhase
+            : phaseRef.current
 
-          // Detect completed rep: bottom → ascending → standing
-          if (newPhase === "standing" && phaseRef.current === "ascending" && bottomLandmarksRef.current) {
-            const repNum = repsRef.current.length + 1
-            const rep = analyzeSquatRep(bottomLandmarksRef.current, bottomLandmarksRef.current, repNum)
-            repsRef.current.push(rep)
-            setRepCount(repNum)
-            bottomLandmarksRef.current = null
-
-            // Auto-finish after target reps
-            if (repNum >= targetReps) {
-              finishAssessment()
-              running = false
-              return
+          // Track deepest angle during descent to avoid losing fast "bottom" phases
+          if ((phaseRef.current === "descending" || phaseRef.current === "bottom") && angle < deepestAngleRef.current) {
+            if (angle < 120) { // near-bottom zone: capture landmarks at deepest point
+              deepestAngleRef.current = angle
+              bottomLandmarksRef.current = lm
             }
           }
 
-          phaseRef.current = newPhase
-          setCurrentPhase(newPhase)
+          if (newPhase !== phaseRef.current) {
+            // Detect bottom of squat — capture landmarks for analysis
+            if (newPhase === "bottom") {
+              bottomLandmarksRef.current = lm
+              deepestAngleRef.current = angle
+            }
+
+            // Detect completed rep: ascending → standing (after passing through bottom)
+            if (newPhase === "standing" && phaseRef.current === "ascending" && bottomLandmarksRef.current) {
+              const repNum = repsRef.current.length + 1
+              const rep = analyzeSquatRep(bottomLandmarksRef.current, null, repNum)
+              repsRef.current.push(rep)
+              setRepCount(repNum)
+              bottomLandmarksRef.current = null
+              deepestAngleRef.current = 999
+
+              // Auto-finish after target reps
+              if (repNum >= targetReps) {
+                finishAssessment()
+                running = false
+                return
+              }
+            }
+
+            phaseRef.current = newPhase
+            phaseTimestampRef.current = now
+            setCurrentPhase(newPhase)
+          }
         }
-      } catch {
-        // Continue loop on error
+      } catch (err) {
+        console.error("[OverheadSquat] Analysis loop error:", err)
+        consecutiveErrors++
+        if (consecutiveErrors > 30) {
+          setError("Erro na análise. Reposicione-se ou reinicie a câmera.")
+          running = false
+          return
+        }
       }
 
       if (running) animFrameRef.current = requestAnimationFrame(loop)
@@ -206,17 +252,29 @@ export function OverheadSquatWizard() {
   function startRecording() {
     repsRef.current = []
     bottomLandmarksRef.current = null
+    deepestAngleRef.current = 999
     phaseRef.current = "standing"
+    phaseTimestampRef.current = performance.now()
     setRepCount(0)
     setIsRecording(true)
   }
 
+  const finishingRef = useRef(false)
   function finishAssessment() {
+    if (finishingRef.current) return
+    finishingRef.current = true
     setIsRecording(false)
     stopCamera()
+    if (repsRef.current.length === 0) {
+      setError("Nenhuma repetição detectada. Tente novamente.")
+      setStep("instructions")
+      finishingRef.current = false
+      return
+    }
     const assessment = buildSquatAssessment(repsRef.current)
     setResult(assessment)
     setStep("result")
+    finishingRef.current = false
   }
 
   async function handleSave() {
@@ -277,8 +335,12 @@ export function OverheadSquatWizard() {
     if (navigator.share) {
       try { await navigator.share({ title: "Overhead Squat Assessment", text }) } catch {}
     } else {
-      await navigator.clipboard.writeText(text).catch(() => {})
-      alert("Copiado!")
+      try {
+        await navigator.clipboard.writeText(text)
+        alert("Copiado!")
+      } catch {
+        setError("Não foi possível copiar.")
+      }
     }
   }
 
@@ -293,7 +355,7 @@ export function OverheadSquatWizard() {
           </div>
           <h2 className="text-lg font-bold text-white">Overhead Squat Assessment</h2>
           <p className="text-xs text-neutral-500 max-w-sm mx-auto">
-            Protocolo NASM — 5 checkpoints analisados em tempo real durante o agachamento overhead.
+            Protocolo NASM — 2 checkpoints frontais analisados em tempo real durante o agachamento overhead.
           </p>
         </div>
 
@@ -316,9 +378,9 @@ export function OverheadSquatWizard() {
         </div>
 
         <div className="rounded-xl bg-orange-500/5 border border-orange-500/15 p-3">
-          <h4 className="text-[10px] text-orange-300 font-semibold mb-1.5">5 Checkpoints NASM:</h4>
+          <h4 className="text-[10px] text-orange-300 font-semibold mb-1.5">2 Checkpoints Frontais NASM:</h4>
           <div className="grid grid-cols-2 gap-1">
-            {["Pés (rotação)", "Joelhos (valgo)", "Lombar (arco)", "Braços (caem)", "Calcanhares (sobem)"].map(c => (
+            {["Pés (rotação)", "Joelhos (valgo)"].map(c => (
               <span key={c} className="text-[9px] text-neutral-500 flex items-center gap-1">
                 <ChevronDown className="w-2.5 h-2.5 text-orange-400/50" />{c}
               </span>
@@ -399,10 +461,10 @@ export function OverheadSquatWizard() {
         </div>
 
         {!isRecording ? (
-          <button onClick={startRecording} disabled={!cameraReady}
+          <button onClick={startRecording} disabled={!cameraReady || !modelReady}
             className="w-full flex items-center justify-center gap-2 py-3.5 rounded-2xl bg-gradient-to-r from-orange-600 to-orange-700 text-white font-bold text-sm shadow-xl shadow-orange-600/20 active:scale-[0.98] transition-all disabled:opacity-50">
-            <Dumbbell className="w-4 h-4" />
-            Iniciar — Faça {targetReps} agachamentos
+            {!modelReady ? <><Loader2 className="w-4 h-4 animate-spin" />Carregando IA...</> :
+             <><Dumbbell className="w-4 h-4" />Iniciar — Faça {targetReps} agachamentos</>}
           </button>
         ) : (
           <button onClick={finishAssessment}
@@ -441,7 +503,7 @@ export function OverheadSquatWizard() {
 
         {/* Checkpoints */}
         <div className="space-y-2">
-          <h3 className="text-xs font-semibold text-white uppercase tracking-wider">5 Checkpoints NASM</h3>
+          <h3 className="text-xs font-semibold text-white uppercase tracking-wider">Checkpoints NASM (Frontal)</h3>
           {result.allCheckpoints.map(c => (
             <div key={c.key} className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-1.5">
               <div className="flex items-center gap-3">
