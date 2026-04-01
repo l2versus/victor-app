@@ -603,22 +603,27 @@ function ScoreRing({ score }: { score: number }) {
 
 function FindingRow({ finding }: { finding: PosturalFinding }) {
   return (
-    <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.02] border border-white/[0.06]">
-      <div className={cn("w-2 h-2 rounded-full shrink-0", {
-        "bg-emerald-400": finding.severity === "normal",
-        "bg-amber-400": finding.severity === "mild",
-        "bg-orange-400": finding.severity === "moderate",
-        "bg-red-400": finding.severity === "severe",
-      })} />
-      <div className="flex-1 min-w-0">
-        <p className="text-xs font-medium text-white">{finding.label}</p>
-        <p className="text-[10px] text-neutral-500">
-          {finding.measuredValue.toFixed(1)}° — ref: {finding.referenceNormal}
-        </p>
+    <div className="p-3 rounded-xl bg-white/[0.02] border border-white/[0.06] space-y-1">
+      <div className="flex items-center gap-3">
+        <div className={cn("w-2 h-2 rounded-full shrink-0", {
+          "bg-emerald-400": finding.severity === "normal",
+          "bg-amber-400": finding.severity === "mild",
+          "bg-orange-400": finding.severity === "moderate",
+          "bg-red-400": finding.severity === "severe",
+        })} />
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-medium text-white">{finding.label}</p>
+          <p className="text-[10px] text-neutral-500">
+            {finding.measuredValue.toFixed(1)}° — ref: {finding.referenceNormal}
+          </p>
+        </div>
+        <span className={cn("text-[10px] font-semibold", finding.colorClass)}>
+          {finding.severityLabel}
+        </span>
       </div>
-      <span className={cn("text-[10px] font-semibold", finding.colorClass)}>
-        {finding.severityLabel}
-      </span>
+      {"reference" in finding && finding.reference && (
+        <p className="text-[8px] text-neutral-700 pl-5">Fonte: {finding.reference}</p>
+      )}
     </div>
   )
 }
