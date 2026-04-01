@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react"
 import {
   Camera, X, Loader2, ChevronRight, Check, AlertTriangle,
-  Save, RotateCcw, SwitchCamera, PersonStanding,
+  Save, RotateCcw, SwitchCamera, PersonStanding, Share2, TrendingUp, TrendingDown, Minus,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { LANDMARKS, type Point, detectCameraView } from "@/lib/posture-rules"
@@ -269,6 +269,38 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
     }
   }
 
+  async function handleShare(assessmentResult: AssessmentResult) {
+    const abnormal = assessmentResult.findings.filter(f => f.severity !== "normal")
+    const lines = [
+      `🏋️ Avaliação Postural — Score: ${assessmentResult.overallScore}/100`,
+      "",
+      ...assessmentResult.findings.map(f => {
+        const icon = f.severity === "normal" ? "✅" : f.severity === "mild" ? "⚠️" : f.severity === "moderate" ? "🟠" : "🔴"
+        return `${icon} ${f.label}: ${f.measuredValue.toFixed(1)}° (${f.severityLabel})`
+      }),
+      "",
+      abnormal.length > 0
+        ? `📋 ${abnormal.length} desvio${abnormal.length > 1 ? "s" : ""} encontrado${abnormal.length > 1 ? "s" : ""}`
+        : "✅ Nenhum desvio significativo",
+      "",
+      "📱 Victor App — Avaliação por IA com MediaPipe",
+      "Baseado em: Kendall, Sahrmann, NASM CPT",
+    ]
+    const text = lines.join("\n")
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: "Avaliação Postural", text })
+      } catch {
+        // User cancelled share
+      }
+    } else {
+      await navigator.clipboard.writeText(text).catch(() => {})
+      setError("") // clear any previous error
+      alert("Resultado copiado para a área de transferência!")
+    }
+  }
+
   function restart() {
     setStep("instructions")
     setFrontalLandmarks(null)
@@ -276,6 +308,7 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
     setResult(null)
     setSaved(false)
     setError("")
+    setResultTab("frontal")
   }
 
   // ═══ RENDER ═══
@@ -536,9 +569,8 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
         {/* Actions */}
         <div className="flex gap-2">
           <button onClick={restart}
-            className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/[0.04] border border-white/[0.06] text-neutral-400 text-xs font-semibold hover:bg-white/[0.06] transition-all">
+            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/[0.04] border border-white/[0.06] text-neutral-400 text-xs font-semibold hover:bg-white/[0.06] transition-all">
             <RotateCcw className="w-3.5 h-3.5" />
-            Nova Avaliação
           </button>
           <button onClick={handleSave} disabled={saving || saved}
             className={cn(
@@ -549,9 +581,18 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
             )}>
             {saved ? <><Check className="w-3.5 h-3.5" /> Salvo!</> :
              saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> :
-             <><Save className="w-3.5 h-3.5" /> Salvar Resultado</>}
+             <><Save className="w-3.5 h-3.5" /> Salvar</>}
+          </button>
+          <button onClick={() => handleShare(result)}
+            className="flex items-center justify-center gap-2 py-3 px-4 rounded-xl bg-white/[0.04] border border-white/[0.06] text-neutral-400 text-xs font-semibold hover:bg-white/[0.06] active:scale-[0.98] transition-all">
+            <Share2 className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        {/* Evolution chart */}
+        {history.length >= 2 && (
+          <EvolutionChart history={history} currentScore={result.overallScore} />
+        )}
 
         {error && (
           <div className="px-3 py-2 rounded-xl bg-red-500/15 border border-red-500/20 text-red-400 text-xs text-center">
@@ -624,6 +665,95 @@ function FindingRow({ finding }: { finding: PosturalFinding }) {
       {"reference" in finding && finding.reference && (
         <p className="text-[8px] text-neutral-700 pl-5">Fonte: {finding.reference}</p>
       )}
+    </div>
+  )
+}
+
+function EvolutionChart({ history, currentScore }: { history: HistoryItem[]; currentScore: number }) {
+  // Combine history + current (if not saved yet, show as "Agora")
+  const points = [
+    ...history.map(h => ({ score: h.overallScore, date: new Date(h.createdAt) })).reverse(),
+  ]
+  // If current score differs from latest history, add it
+  if (points.length === 0 || points[points.length - 1].score !== currentScore) {
+    points.push({ score: currentScore, date: new Date() })
+  }
+
+  if (points.length < 2) return null
+
+  const first = points[0].score
+  const last = points[points.length - 1].score
+  const diff = last - first
+  const improved = diff > 0
+  const worsened = diff < 0
+
+  // SVG chart dimensions
+  const W = 280
+  const H = 80
+  const pad = 8
+  const minScore = Math.min(...points.map(p => p.score)) - 5
+  const maxScore = Math.max(...points.map(p => p.score)) + 5
+  const range = Math.max(maxScore - minScore, 10)
+
+  const pathPoints = points.map((p, i) => {
+    const x = pad + (i / (points.length - 1)) * (W - pad * 2)
+    const y = H - pad - ((p.score - minScore) / range) * (H - pad * 2)
+    return { x, y, score: p.score }
+  })
+
+  const pathD = pathPoints.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")
+  const strokeColor = improved ? "#34d399" : worsened ? "#f87171" : "#fbbf24"
+
+  return (
+    <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-semibold text-white flex items-center gap-1.5">
+          {improved ? <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> :
+           worsened ? <TrendingDown className="w-3.5 h-3.5 text-red-400" /> :
+           <Minus className="w-3.5 h-3.5 text-amber-400" />}
+          Evolução Postural
+        </h3>
+        <span className={cn("text-[10px] font-bold tabular-nums", {
+          "text-emerald-400": improved,
+          "text-red-400": worsened,
+          "text-amber-400": !improved && !worsened,
+        })}>
+          {diff > 0 ? "+" : ""}{diff} pts
+        </span>
+      </div>
+
+      <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 80 }}>
+        {/* Grid lines */}
+        {[0, 1, 2].map(i => {
+          const y = pad + (i / 2) * (H - pad * 2)
+          return <line key={i} x1={pad} y1={y} x2={W - pad} y2={y} stroke="rgba(255,255,255,0.04)" />
+        })}
+
+        {/* Line */}
+        <path d={pathD} fill="none" stroke={strokeColor} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+
+        {/* Dots */}
+        {pathPoints.map((p, i) => (
+          <g key={i}>
+            <circle cx={p.x} cy={p.y} r={i === pathPoints.length - 1 ? 5 : 3}
+              fill={i === pathPoints.length - 1 ? strokeColor : "#1a1a1a"}
+              stroke={strokeColor} strokeWidth="2" />
+            <text x={p.x} y={p.y - 10} textAnchor="middle" fill="white" fontSize="8" fontWeight="bold">
+              {p.score}
+            </text>
+          </g>
+        ))}
+      </svg>
+
+      <div className="flex items-center justify-between">
+        <span className="text-[9px] text-neutral-600">
+          {points[0].date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
+        </span>
+        <span className="text-[9px] text-neutral-600">
+          {points.length} avaliações
+        </span>
+        <span className="text-[9px] text-neutral-600">Agora</span>
+      </div>
     </div>
   )
 }
