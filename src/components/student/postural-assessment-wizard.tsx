@@ -30,10 +30,12 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
   const [step, setStep] = useState<Step>("instructions")
   const [frontalLandmarks, setFrontalLandmarks] = useState<Point[] | null>(null)
   const [lateralLandmarks, setLateralLandmarks] = useState<Point[] | null>(null)
+  const frontalLandmarksRef = useRef<Point[] | null>(null)
   const [result, setResult] = useState<AssessmentResult | null>(null)
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState("")
+  const [resultTab, setResultTab] = useState<"frontal" | "lateral">("frontal")
 
   // Camera refs
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -218,12 +220,13 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
 
       if (step === "camera_front") {
         setFrontalLandmarks(lm)
+        frontalLandmarksRef.current = lm
         stopCamera()
         setStep("camera_lateral")
       } else if (step === "camera_lateral") {
         setLateralLandmarks(lm)
         stopCamera()
-        processResults(frontalLandmarks!, lm)
+        processResults(frontalLandmarksRef.current!, lm)
       }
     } catch (err) {
       console.error("[PosturalAssessment] Capture error:", err)
@@ -233,7 +236,7 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
 
   function skipLateral() {
     stopCamera()
-    processResults(frontalLandmarks!, null)
+    processResults(frontalLandmarksRef.current!, null)
   }
 
   function processResults(frontal: Point[], lateral: Point[] | null) {
@@ -450,7 +453,8 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
     const frontalFindings = result.findings.filter(f => f.view === "frontal")
     const lateralFindings = result.findings.filter(f => f.view === "lateral")
     const abnormalFindings = result.findings.filter(f => f.severity !== "normal")
-    const [tab, setTab] = useState<"frontal" | "lateral">("frontal")
+    const tab = resultTab
+    const setTab = setResultTab
 
     return (
       <div className="space-y-4">
