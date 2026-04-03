@@ -81,6 +81,7 @@ model TrainerProfile {
   crmBroadcasts CrmBroadcast[]
   crmBotFlows   CrmBotFlow[]
   knowledge     KnowledgeDocument[]
+  blogPosts     BlogPost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1878,4 +1879,36 @@ model TransactionLog {
   @@index([type])
   @@index([gatewayId])
   @@index([createdAt])
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BLOG — Artigos públicos do trainer
+// ═══════════════════════════════════════════════════════════════
+
+enum BlogPostStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+model BlogPost {
+  id          String         @id @default(cuid())
+  trainerId   String
+  slug        String         @unique
+  title       String
+  excerpt     String?
+  content     String         // markdown ou HTML
+  coverImage  String?        // URL da thumbnail/capa
+  category    String?        // ex: "treino", "nutrição", "lifestyle"
+  tags        String[]
+  status      BlogPostStatus @default(DRAFT)
+  publishedAt DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  trainer TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+
+  @@index([trainerId])
+  @@index([status, publishedAt])
+  @@index([slug])
 }
