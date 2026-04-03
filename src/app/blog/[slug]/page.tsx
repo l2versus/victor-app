@@ -5,6 +5,7 @@ import { notFound } from "next/navigation"
 import { BRAND } from "@/lib/branding"
 import { ArrowLeft, Calendar, Tag, BookOpen, User } from "lucide-react"
 import { prisma } from "@/lib/prisma"
+import sanitizeHtml from "sanitize-html"
 
 type Props = {
   params: Promise<{ slug: string }>
@@ -91,9 +92,23 @@ export default async function BlogPostPage({ params }: Props) {
 
   const authorName = post.trainer?.user?.name ?? BRAND.trainerName
 
-  // SEGURANCA: Quando usar conteúdo do banco de dados em produção,
-  // sanitizar o HTML com sanitize-html ou DOMPurify antes de renderizar.
-  const sanitizedContent = post.content
+  const sanitizedContent = sanitizeHtml(post.content, {
+    allowedTags: [
+      "h2", "h3", "h4", "p", "br",
+      "strong", "b", "em", "i", "u",
+      "ul", "ol", "li",
+      "a", "img",
+      "blockquote", "code", "pre",
+    ],
+    allowedAttributes: {
+      a: ["href", "target", "rel"],
+      img: ["src", "alt", "width", "height"],
+    },
+    allowedSchemes: ["https", "http"],
+    transformTags: {
+      a: sanitizeHtml.simpleTransform("a", { rel: "noopener noreferrer", target: "_blank" }),
+    },
+  })
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
