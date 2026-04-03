@@ -1,43 +1,9 @@
-// ═══════════════════════════════════════════════════════════════════════════════
-// TODO: Blog público requer modelo BlogPost no Prisma. Adicionar ao schema:
-//
-// model BlogPost {
-//   id          String   @id @default(cuid())
-//   trainerId   String
-//   slug        String   @unique
-//   title       String
-//   excerpt     String?
-//   content     String   // markdown ou HTML
-//   coverImage  String?  // URL da thumbnail/capa
-//   category    String?  // ex: "treino", "nutrição", "lifestyle"
-//   tags        String[]
-//   status      BlogPostStatus @default(DRAFT)
-//   publishedAt DateTime?
-//   createdAt   DateTime @default(now())
-//   updatedAt   DateTime @updatedAt
-//
-//   trainer     TrainerProfile @relation(fields: [trainerId], references: [id])
-//
-//   @@index([trainerId])
-//   @@index([status, publishedAt])
-//   @@index([slug])
-// }
-//
-// enum BlogPostStatus {
-//   DRAFT
-//   PUBLISHED
-//   ARCHIVED
-// }
-//
-// Após criar o modelo, rodar: npx prisma migrate dev --name add-blog-posts
-// Depois substituir MOCK_POSTS abaixo por queries reais do Prisma.
-// ═══════════════════════════════════════════════════════════════════════════════
-
 import type { Metadata } from "next"
 import Link from "next/link"
 import Image from "next/image"
 import { BRAND } from "@/lib/branding"
 import { BookOpen, ArrowLeft, Calendar, Tag } from "lucide-react"
+import { prisma } from "@/lib/prisma"
 
 export const metadata: Metadata = {
   title: `Blog — ${BRAND.appName}`,
@@ -51,81 +17,7 @@ export const metadata: Metadata = {
   },
 }
 
-// ── Mock data — substituir por query Prisma quando modelo existir ──────────
-interface BlogPostPreview {
-  slug: string
-  title: string
-  excerpt: string
-  coverImage: string | null
-  category: string
-  publishedAt: string
-}
-
-const MOCK_POSTS: BlogPostPreview[] = [
-  {
-    slug: "como-ganhar-massa-muscular",
-    title: "Como Ganhar Massa Muscular: Guia Completo",
-    excerpt:
-      "Descubra as melhores estratégias de treino e alimentação para hipertrofia muscular, com base na ciência do exercício.",
-    coverImage: null,
-    category: "Treino",
-    publishedAt: "2026-03-20",
-  },
-  {
-    slug: "importancia-do-sono-para-treino",
-    title: "A Importância do Sono para seus Resultados",
-    excerpt:
-      "Entenda como a qualidade do sono impacta diretamente seus ganhos na academia e como melhorar sua rotina noturna.",
-    coverImage: null,
-    category: "Saúde",
-    publishedAt: "2026-03-15",
-  },
-  {
-    slug: "mitos-sobre-emagrecimento",
-    title: "5 Mitos sobre Emagrecimento que Você Precisa Parar de Acreditar",
-    excerpt:
-      "Desmistificamos as crenças mais comuns que atrapalham seu processo de perda de gordura.",
-    coverImage: null,
-    category: "Nutrição",
-    publishedAt: "2026-03-10",
-  },
-  {
-    slug: "treino-de-pernas-completo",
-    title: "Treino de Pernas Completo: Do Iniciante ao Avançado",
-    excerpt:
-      "Montamos uma progressão completa de treino de membros inferiores com os melhores exercícios para cada nível.",
-    coverImage: null,
-    category: "Treino",
-    publishedAt: "2026-03-05",
-  },
-  {
-    slug: "suplementos-que-funcionam",
-    title: "Suplementos que Realmente Funcionam (e os que Não Valem a Pena)",
-    excerpt:
-      "Uma análise baseada em evidências dos suplementos mais populares do mercado fitness.",
-    coverImage: null,
-    category: "Nutrição",
-    publishedAt: "2026-02-28",
-  },
-  {
-    slug: "postura-no-dia-a-dia",
-    title: "Correção Postural: Exercícios para o Dia a Dia",
-    excerpt:
-      "Exercícios simples que você pode fazer em casa para melhorar sua postura e prevenir dores.",
-    coverImage: null,
-    category: "Saúde",
-    publishedAt: "2026-02-20",
-  },
-]
-
-// TODO: substituir por query real:
-// const posts = await prisma.blogPost.findMany({
-//   where: { status: "PUBLISHED" },
-//   orderBy: { publishedAt: "desc" },
-//   select: { slug: true, title: true, excerpt: true, coverImage: true, category: true, publishedAt: true },
-// })
-
-function formatDate(dateStr: string) {
+function formatDate(dateStr: string | Date) {
   return new Date(dateStr).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
@@ -140,8 +32,19 @@ const CATEGORY_COLORS: Record<string, string> = {
   Lifestyle: "bg-amber-500/15 text-amber-400 border-amber-500/25",
 }
 
-export default function BlogPage() {
-  const posts = MOCK_POSTS
+export default async function BlogPage() {
+  const posts = await prisma.blogPost.findMany({
+    where: { status: "PUBLISHED" },
+    orderBy: { publishedAt: "desc" },
+    select: {
+      slug: true,
+      title: true,
+      excerpt: true,
+      coverImage: true,
+      category: true,
+      publishedAt: true,
+    },
+  })
 
   return (
     <div className="min-h-screen bg-[#0a0a0a]">
@@ -218,14 +121,14 @@ export default function BlogPage() {
                   {/* Category + date */}
                   <div className="flex items-center justify-between">
                     <span
-                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${CATEGORY_COLORS[post.category] ?? "bg-neutral-500/15 text-neutral-400 border-neutral-500/25"}`}
+                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold uppercase tracking-wider border ${CATEGORY_COLORS[post.category ?? ""] ?? "bg-neutral-500/15 text-neutral-400 border-neutral-500/25"}`}
                     >
                       <Tag className="w-2.5 h-2.5" />
-                      {post.category}
+                      {post.category ?? "Geral"}
                     </span>
                     <span className="flex items-center gap-1 text-[10px] text-neutral-600">
                       <Calendar className="w-2.5 h-2.5" />
-                      {formatDate(post.publishedAt)}
+                      {post.publishedAt ? formatDate(post.publishedAt) : "—"}
                     </span>
                   </div>
 
