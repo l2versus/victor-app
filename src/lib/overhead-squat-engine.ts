@@ -275,11 +275,21 @@ export function analyzeSquatRep(
   checkpoints.push(checkFeetTurnout(frontalLandmarks))
   checkpoints.push(checkKneeValgus(frontalLandmarks))
 
-  // Lateral checkpoints (if lateral view provided)
+  // Lateral checkpoints (if lateral view provided AND actually from a lateral angle).
+  // Guard: in a true lateral view, one shoulder is much closer to the camera than the other,
+  // producing a large z-depth difference. When both shoulders have similar z values
+  // (difference < 0.15), the landmarks are from a frontal view and lateral checks
+  // would produce unreliable results — skip them even if lateralLandmarks is non-null.
   if (lateralLandmarks) {
-    checkpoints.push(checkLumbarArch(lateralLandmarks))
-    checkpoints.push(checkArmsFallForward(lateralLandmarks))
-    checkpoints.push(checkHeelRise(lateralLandmarks))
+    const lShoulderZ = lateralLandmarks[L.LEFT_SHOULDER]?.z ?? 0
+    const rShoulderZ = lateralLandmarks[L.RIGHT_SHOULDER]?.z ?? 0
+    const shoulderZDiff = Math.abs(lShoulderZ - rShoulderZ)
+
+    if (shoulderZDiff >= 0.15) {
+      checkpoints.push(checkLumbarArch(lateralLandmarks))
+      checkpoints.push(checkArmsFallForward(lateralLandmarks))
+      checkpoints.push(checkHeelRise(lateralLandmarks))
+    }
   }
 
   const kneeAngle = calculateAngle(

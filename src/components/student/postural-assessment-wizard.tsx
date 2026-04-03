@@ -42,6 +42,7 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const [cameraReady, setCameraReady] = useState(false)
+  const [modelReady, setModelReady] = useState(false)
   const [facingMode, setFacingMode] = useState<"user" | "environment">("environment")
   const [viewValid, setViewValid] = useState(false)
   const [validationMsg, setValidationMsg] = useState("")
@@ -100,6 +101,7 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
         numPoses: 1,
       })
       poseLandmarkerRef.current = landmarker
+      setModelReady(true)
     } catch {
       // Fallback to CPU
       try {
@@ -117,6 +119,7 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
           numPoses: 1,
         })
         poseLandmarkerRef.current = landmarker
+        setModelReady(true)
       } catch (err) {
         console.error("[PosturalAssessment] Failed to load PoseLandmarker:", err)
         setError("Erro ao carregar modelo de IA. Tente recarregar a página.")
@@ -440,11 +443,23 @@ export function PosturalAssessmentWizard({ history }: { history: HistoryItem[] }
             </div>
           )}
 
+          {/* AI model loading indicator */}
+          {cameraReady && !modelReady && (
+            <div className="absolute top-3 left-3 right-3">
+              <div className="px-3 py-1.5 rounded-full bg-black/70 backdrop-blur-sm text-center">
+                <p className="text-[10px] text-amber-400 flex items-center justify-center gap-1.5">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Carregando modelo de IA...
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Capture button */}
           <div className="absolute bottom-4 left-0 right-0 flex justify-center">
             <button
               onClick={handleCapture}
-              disabled={!cameraReady}
+              disabled={!cameraReady || !modelReady}
               className={cn(
                 "w-16 h-16 rounded-full border-4 flex items-center justify-center transition-all active:scale-90",
                 viewValid

@@ -316,9 +316,16 @@ export function computeFindings(frontal: FrontalAngles, lateral: LateralAngles |
     // Anterior pelvic tilt — Ref [8]: normal ~7-15°, > 15° = excessive
     // Kroll et al: 3-22° range in normals, mean ~11°
     // Calibrated: < 15° normal, 15-20° mild, 20-25° moderate, > 25° severe
+    // Cap severity to avoid double-penalizing with lordosis —
+    // pelvicTiltDeg is derived from lordosisAngleDeg, so they always correlate
+    const pelvicSeverity = classify(lateral.pelvicTiltDeg, 15, 20, 25)
+    const lordosisSeverity = classify(lordosisDev, 10, 20, 30)
+    const SEVERITY_ORDER: Severity[] = ["normal", "mild", "moderate", "severe"]
+    const lordosisIdx = SEVERITY_ORDER.indexOf(lordosisSeverity)
+    const cappedPelvicSeverity = SEVERITY_ORDER[Math.min(SEVERITY_ORDER.indexOf(pelvicSeverity), Math.max(0, lordosisIdx))] as Severity
     addFinding("pelvic_tilt", "Inclinação Pélvica Anterior", "lateral",
       lateral.pelvicTiltDeg, "< 15° (normal 7-15°)",
-      classify(lateral.pelvicTiltDeg, 15, 20, 25),
+      cappedPelvicSeverity,
       "PMC 2565125, Kroll 2000, Physiopedia")
 
     // Knee hyperextension — Ref [9]: > 5° = genu recurvatum, > 10° = clinical

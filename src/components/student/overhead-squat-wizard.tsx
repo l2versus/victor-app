@@ -9,7 +9,6 @@ import {
 import { cn } from "@/lib/utils"
 import { LANDMARKS, type Point } from "@/lib/posture-rules"
 import {
-  detectSquatPhase,
   analyzeSquatRep,
   buildSquatAssessment,
   type SquatRepResult,
@@ -46,8 +45,17 @@ export function OverheadSquatWizard() {
   const phaseTimestampRef = useRef<number>(0)
   const bottomLandmarksRef = useRef<Point[] | null>(null)
   const deepestAngleRef = useRef<number>(999)
+  const descentStartRef = useRef<number>(0)
   const targetReps = 5
-  const MIN_PHASE_MS = 300 // debounce: minimum ms before accepting phase change
+  const MIN_PHASE_MS = 500 // debounce: minimum ms before accepting phase change
+
+  // Hysteresis thresholds to prevent ghost reps
+  const HYSTERESIS = {
+    standingEnter: 165,     // must exceed 165° to register standing (vs 160° in engine)
+    bottomEnter: 95,        // must go below 95° for bottom (vs 100° in engine)
+    bottomExit: 110,        // must rise above 110° to leave bottom
+    minRepDurationMs: 1500, // minimum time for a full rep cycle
+  }
 
   // ═══ CAMERA ═══
 
@@ -186,11 +194,27 @@ export function OverheadSquatWizard() {
 
           setKneeAngle(angle)
 
-          const candidatePhase = detectSquatPhase(angle, phaseRef.current)
-
-          // Debounce: only accept phase change after MIN_PHASE_MS in current phase
+          // Hysteresis-based phase detection (prevents ghost reps from threshold oscillation)
           const now = performance.now()
           const dwellOk = (now - phaseTimestampRef.current) >= MIN_PHASE_MS
+          let candidatePhase: SquatPhase["phase"] = phaseRef.current
+
+          if (phaseRef.current === "standing" && angle < HYSTERESIS.bottomEnter) {
+            candidatePhase = "descending"
+          } else if (phaseRef.current === "standing" && angle < 150) {
+            candidatePhase = "descending"
+          } else if (phaseRef.current === "descending" && angle < HYSTERESIS.bottomEnter) {
+            candidatePhase = "bottom"
+          } else if (phaseRef.current === "descending" && angle > HYSTERESIS.standingEnter) {
+            candidatePhase = "standing"
+          } else if (phaseRef.current === "bottom" && angle > HYSTERESIS.bottomExit) {
+            candidatePhase = "ascending"
+          } else if (phaseRef.current === "ascending" && angle > HYSTERESIS.standingEnter) {
+            candidatePhase = "standing"
+          } else if (phaseRef.current === "ascending" && angle < HYSTERESIS.bottomEnter) {
+            candidatePhase = "bottom"
+          }
+
           const newPhase = (candidatePhase !== phaseRef.current && dwellOk)
             ? candidatePhase
             : phaseRef.current
@@ -204,6 +228,11 @@ export function OverheadSquatWizard() {
           }
 
           if (newPhase !== phaseRef.current) {
+            // Track when descent begins for minimum rep duration check
+            if (newPhase === "descending" && phaseRef.current === "standing") {
+              descentStartRef.current = now
+            }
+
             // Detect bottom of squat — capture landmarks for analysis
             if (newPhase === "bottom") {
               bottomLandmarksRef.current = lm
@@ -211,7 +240,15 @@ export function OverheadSquatWizard() {
             }
 
             // Detect completed rep: ascending → standing (after passing through bottom)
-            if (newPhase === "standing" && phaseRef.current === "ascending" && bottomLandmarksRef.current) {
+            // Validate: landmarks captured, deep enough squat, and minimum rep duration
+            const repDuration = now - descentStartRef.current
+            if (
+              newPhase === "standing" &&
+              phaseRef.current === "ascending" &&
+              bottomLandmarksRef.current &&
+              deepestAngleRef.current < 110 &&
+              repDuration >= HYSTERESIS.minRepDurationMs
+            ) {
               const repNum = repsRef.current.length + 1
               const rep = analyzeSquatRep(bottomLandmarksRef.current, null, repNum)
               repsRef.current.push(rep)
@@ -225,6 +262,10 @@ export function OverheadSquatWizard() {
                 running = false
                 return
               }
+            } else if (newPhase === "standing") {
+              // Returning to standing without a valid rep — reset tracking
+              bottomLandmarksRef.current = null
+              deepestAngleRef.current = 999
             }
 
             phaseRef.current = newPhase
@@ -253,6 +294,7 @@ export function OverheadSquatWizard() {
     repsRef.current = []
     bottomLandmarksRef.current = null
     deepestAngleRef.current = 999
+    descentStartRef.current = 0
     phaseRef.current = "standing"
     phaseTimestampRef.current = performance.now()
     setRepCount(0)
