@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getStudentFeatures } from "@/lib/subscription"
 
 // GET /api/community/dm — list conversations (inbox)
 export async function GET() {
@@ -94,6 +95,21 @@ export async function POST(req: NextRequest) {
 
     if (receiverId === session.userId) {
       return NextResponse.json({ error: "Não pode mandar DM para si mesmo" }, { status: 400 })
+    }
+
+    // Free tier cannot send DMs
+    const student = await prisma.student.findUnique({
+      where: { userId: session.userId },
+      select: { id: true },
+    })
+    if (student) {
+      const features = await getStudentFeatures(student.id)
+      if (!features.subscriptionStatus || features.subscriptionStatus === "EXPIRED") {
+        return NextResponse.json({
+          error: "Interagir na comunidade é exclusivo de planos pagos",
+          upgradeUrl: "/upgrade"
+        }, { status: 403 })
+      }
     }
 
     const message = await prisma.directMessage.create({

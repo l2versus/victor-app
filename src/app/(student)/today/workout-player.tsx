@@ -177,6 +177,7 @@ export function WorkoutPlayer({
   )
   const [rpe, setRpe] = useState<number | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [weeklyLimitHit, setWeeklyLimitHit] = useState<{ limit: number; used: number } | null>(null)
   // Timer state — ONLY trust sessionStorage, never raw startedAt (could be hours ago)
   const [elapsed, setElapsed] = useState(() => {
     if (typeof window === "undefined" || !activeSession) return 0
@@ -293,7 +294,13 @@ export function WorkoutPlayer({
         body: JSON.stringify({ templateId }),
       })
       const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || "Erro ao iniciar treino")
+      if (!res.ok) {
+        if (res.status === 403 && data?.upgradeUrl) {
+          setWeeklyLimitHit({ limit: data.limit, used: data.used })
+          return
+        }
+        throw new Error(data?.error || "Erro ao iniciar treino")
+      }
       if (data.session) {
         // Clean up any previous discard flags
         if (activeSession?.id) {
@@ -585,6 +592,27 @@ export function WorkoutPlayer({
             <span>{error}</span>
           </div>
         )}
+
+        {weeklyLimitHit && (
+          <div className="rounded-2xl bg-amber-500/10 border border-amber-500/25 p-5 text-center space-y-3 animate-slide-up">
+            <div className="flex items-center justify-center gap-2 text-amber-400">
+              <AlertTriangle className="w-5 h-5" />
+              <span className="font-bold text-sm">Limite semanal atingido</span>
+            </div>
+            <p className="text-neutral-300 text-sm leading-relaxed">
+              Você atingiu o limite de <strong className="text-amber-400">{weeklyLimitHit.limit} treinos/semana</strong> do plano gratuito.
+              Faça upgrade para treinar sem limites!
+            </p>
+            <a
+              href="/upgrade"
+              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-black font-bold text-sm shadow-lg shadow-amber-500/25 hover:from-amber-400 hover:to-amber-500 active:scale-[0.98] transition-all"
+            >
+              <Trophy className="w-4 h-4" />
+              Fazer Upgrade
+            </a>
+          </div>
+        )}
+
         <div className="text-center">
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/10 border border-red-500/20 mb-3">
             <Dumbbell className="w-3 h-3 text-red-400" />

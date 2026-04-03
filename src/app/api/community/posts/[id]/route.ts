@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { notifySocial, notifyMentions } from "@/lib/social-notifications"
+import { getStudentFeatures } from "@/lib/subscription"
 
 // POST /api/community/posts/[id] — like/unlike or comment
 export async function POST(
@@ -41,6 +42,17 @@ export async function POST(
 
     if (!student) {
       return NextResponse.json({ error: "Usuário não encontrado" }, { status: 404 })
+    }
+
+    // Free tier cannot like, comment, or react
+    if (session.role !== "ADMIN") {
+      const features = await getStudentFeatures(student.id)
+      if (!features.subscriptionStatus || features.subscriptionStatus === "EXPIRED") {
+        return NextResponse.json({
+          error: "Interagir na comunidade é exclusivo de planos pagos",
+          upgradeUrl: "/upgrade"
+        }, { status: 403 })
+      }
     }
 
     const body = await req.json()

@@ -178,7 +178,7 @@ export default function CommunityPage() {
   const [groupFilter, setGroupFilter] = useState<"mine" | "discover">("mine")
   const [showCreateGroup, setShowCreateGroup] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [features, setFeatures] = useState<{ hasVipGroup: boolean; planName: string | null }>({ hasVipGroup: false, planName: null })
+  const [features, setFeatures] = useState<{ hasVipGroup: boolean; planName: string | null; subscriptionStatus: string | null }>({ hasVipGroup: false, planName: null, subscriptionStatus: null })
   const [showComposer, setShowComposer] = useState(false)
   const [followingIds, setFollowingIds] = useState<Set<string>>(new Set())
   const [myStudentId, setMyStudentId] = useState<string | null>(null)
@@ -235,7 +235,7 @@ export default function CommunityPage() {
       ])
       if (subRes.ok) {
         const data = await subRes.json()
-        setFeatures({ hasVipGroup: data.hasVipGroup ?? false, planName: data.planName ?? null })
+        setFeatures({ hasVipGroup: data.hasVipGroup ?? false, planName: data.planName ?? null, subscriptionStatus: data.subscriptionStatus ?? null })
       }
       if (followRes.ok) {
         const data = await followRes.json()

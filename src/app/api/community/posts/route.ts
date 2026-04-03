@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
 import { pushToFollowers } from "@/lib/push"
+import { getStudentFeatures } from "@/lib/subscription"
 
 // POST /api/community/posts — create a user post (text + optional photo)
 export async function POST(req: NextRequest) {
@@ -17,6 +18,15 @@ export async function POST(req: NextRequest) {
       })
       if (!student) return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 })
       studentId = student.id
+
+      // Free tier cannot create posts
+      const features = await getStudentFeatures(student.id)
+      if (!features.subscriptionStatus || features.subscriptionStatus === "EXPIRED") {
+        return NextResponse.json({
+          error: "Interagir na comunidade é exclusivo de planos pagos",
+          upgradeUrl: "/upgrade"
+        }, { status: 403 })
+      }
     }
     // Admin posts with studentId: null → shows as trainer/system post
 

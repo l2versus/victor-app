@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { requireAuth } from "@/lib/auth"
 import { prisma } from "@/lib/prisma"
+import { getStudentFeatures } from "@/lib/subscription"
 
 // GET /api/community/stories — active stories from people I follow + my own
 export async function GET() {
@@ -110,6 +111,15 @@ export async function POST(req: NextRequest) {
       select: { id: true },
     })
     if (!me) return NextResponse.json({ error: "Aluno não encontrado" }, { status: 404 })
+
+    // Free tier cannot create stories
+    const features = await getStudentFeatures(me.id)
+    if (!features.subscriptionStatus || features.subscriptionStatus === "EXPIRED") {
+      return NextResponse.json({
+        error: "Interagir na comunidade é exclusivo de planos pagos",
+        upgradeUrl: "/upgrade"
+      }, { status: 403 })
+    }
 
     const { imageUrl, caption } = await req.json()
 
