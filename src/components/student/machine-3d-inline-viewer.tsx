@@ -104,7 +104,7 @@ export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }
         </div>
       </div>
 
-      {resolvedName && (
+      {resolvedName && !/^[a-f0-9-]{20,}$/i.test(resolvedName) && (
         <div className="text-center mt-2">
           <p className="text-xs text-white font-medium">{resolvedName}</p>
           {brand && <p className="text-[10px] text-neutral-500">{brand}</p>}
