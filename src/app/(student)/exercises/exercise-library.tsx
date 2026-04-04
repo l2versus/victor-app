@@ -219,6 +219,9 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
                         </p>
                       </div>
                       <div className="flex items-center gap-1.5 shrink-0">
+                        {ex.machine3dModel && (
+                          <span className="text-[8px] px-1.5 py-0.5 rounded bg-red-600/15 text-red-400 border border-red-500/20 font-bold uppercase tracking-wider">AR</span>
+                        )}
                         {has3D && (
                           <span className="text-[8px] px-1.5 py-0.5 rounded bg-red-600/15 text-red-400 border border-red-500/20 font-bold uppercase tracking-wider">3D</span>
                         )}
