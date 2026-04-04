@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, Suspense } from "react"
 import { X, Play, AlertTriangle, Dumbbell, Target, ShieldAlert, ChevronDown, Box, RotateCcw, Camera } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { ExerciseMuscleHighlight } from "@/components/ui/exercise-muscle-highlight"
 import { find3DModel, getSketchfabEmbedUrl } from "@/lib/exercise-3d-models"
 import { useRouter } from "next/navigation"
 import dynamic from "next/dynamic"
@@ -333,6 +334,15 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
                   <p className="text-sm text-neutral-400 leading-relaxed">{exercise.instructions}</p>
                 </div>
               )}
+
+              {/* Muscle Map — visual highlight */}
+              <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-4">
+                <h3 className="text-xs font-semibold text-white uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-red-400" />
+                  Músculos Ativados
+                </h3>
+                <ExerciseMuscleHighlight muscle={exercise.muscle} size="md" />
+              </div>
 
               {/* Muscle Info — Synergists & Antagonists */}
               {muscleInfo && (

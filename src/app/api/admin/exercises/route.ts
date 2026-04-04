@@ -51,11 +51,12 @@ export async function GET(req: NextRequest) {
       prisma.exercise.count({ where }),
     ])
 
-    // Get distinct muscle groups for filter dropdown
+    // Get distinct muscle groups for filter dropdown (always show all groups including inactive)
     const muscleGroups = await prisma.exercise.findMany({
       select: { muscle: true },
       distinct: ["muscle"],
       orderBy: { muscle: "asc" },
+      where: showInactive ? {} : { isActive: true },
     })
 
     const response = NextResponse.json({

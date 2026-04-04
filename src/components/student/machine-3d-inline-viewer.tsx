@@ -1,9 +1,11 @@
 "use client"
 
-import { Suspense, useState, useEffect } from "react"
+import { Suspense, useState, useEffect, lazy } from "react"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls, useGLTF, Environment, Center } from "@react-three/drei"
-import { RotateCcw, Maximize2, X } from "lucide-react"
+import { RotateCcw, Maximize2, X, View } from "lucide-react"
+
+const MachineARViewer = lazy(() => import("./machine-ar-viewer"))
 
 function Model({ url }: { url: string }) {
   const { scene } = useGLTF(url)
@@ -20,6 +22,7 @@ export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }
   const [exists, setExists] = useState(false)
   const [loading, setLoading] = useState(true)
   const [fullscreen, setFullscreen] = useState(false)
+  const [showAR, setShowAR] = useState(false)
   const [resolvedName, setResolvedName] = useState(machineName || slug)
   const [brand, setBrand] = useState<string | null>(null)
   const modelUrl = `/models/machines/${slug}.glb`
@@ -73,13 +76,22 @@ export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }
           <RotateCcw className="w-5 h-5 text-neutral-800 animate-spin" />
         </div>
 
-        {/* Fullscreen button */}
-        <button
-          onClick={() => setFullscreen(true)}
-          className="absolute top-3 right-3 w-8 h-8 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center text-neutral-400 hover:text-white transition-colors border border-white/10"
-        >
-          <Maximize2 className="w-4 h-4" />
-        </button>
+        {/* Top buttons */}
+        <div className="absolute top-3 right-3 flex items-center gap-2">
+          <button
+            onClick={() => setShowAR(true)}
+            className="h-8 px-2.5 rounded-lg bg-red-600/80 backdrop-blur-sm flex items-center gap-1.5 text-white text-[10px] font-bold transition-colors border border-red-500/30 active:scale-95"
+          >
+            <View className="w-3.5 h-3.5" />
+            AR
+          </button>
+          <button
+            onClick={() => setFullscreen(true)}
+            className="w-8 h-8 rounded-lg bg-black/60 backdrop-blur-sm flex items-center justify-center text-neutral-400 hover:text-white transition-colors border border-white/10"
+          >
+            <Maximize2 className="w-4 h-4" />
+          </button>
+        </div>
 
         {/* 3D badge */}
         <div className="absolute bottom-3 left-3 flex items-center gap-2">
@@ -97,6 +109,17 @@ export default function MachineInlineViewer({ slug, machineName, onBrandLoaded }
           <p className="text-xs text-white font-medium">{resolvedName}</p>
           {brand && <p className="text-[10px] text-neutral-500">{brand}</p>}
         </div>
+      )}
+
+      {/* AR Viewer */}
+      {showAR && (
+        <Suspense fallback={null}>
+          <MachineARViewer
+            modelUrl={modelUrl}
+            machineName={resolvedName}
+            onClose={() => setShowAR(false)}
+          />
+        </Suspense>
       )}
 
       {/* Fullscreen Modal */}

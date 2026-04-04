@@ -1,10 +1,11 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Search, Filter, Plus, Dumbbell, X, ChevronRight, Pencil, ImageIcon, Play, ExternalLink } from "lucide-react"
+import { Search, Filter, Plus, Dumbbell, X, ChevronRight, Pencil, ImageIcon, Play, ExternalLink, Eye, EyeOff, Power } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input, Select, Textarea } from "@/components/ui/input"
 import { Modal } from "@/components/ui/modal"
+import { ExerciseMuscleHighlight } from "@/components/ui/exercise-muscle-highlight"
 
 type Exercise = {
   id: string
@@ -17,6 +18,7 @@ type Exercise = {
   imageUrl: string | null
   machineBrand: string | null
   isCustom: boolean
+  isActive: boolean
 }
 
 type ExerciseData = {
@@ -48,6 +50,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
   const [pages, setPages] = useState(initialData.pages)
   const [loading, setLoading] = useState(false)
   const [showForm, setShowForm] = useState(false)
+  const [showInactive, setShowInactive] = useState(false)
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set())
   const [expandedEquip, setExpandedEquip] = useState<Set<string>>(new Set())
   const [selectedExercise, setSelectedExercise] = useState<Exercise | null>(null)
@@ -60,6 +63,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
       const params = new URLSearchParams()
       if (s) params.set("search", s)
       if (m) params.set("muscle", m)
+      if (showInactive) params.set("showInactive", "true")
       params.set("limit", "9999")
 
       const res = await fetch(`/api/admin/exercises?${params}`)
@@ -72,7 +76,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
     } finally {
       setLoading(false)
     }
-  }, [])
+  }, [showInactive])
 
   // Debounced search
   useEffect(() => {
@@ -80,7 +84,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
       fetchExercises(search, muscle)
     }, 300)
     return () => clearTimeout(timer)
-  }, [search, muscle, fetchExercises])
+  }, [search, muscle, showInactive, fetchExercises])
 
   // When search is active, auto-expand all groups so results are visible
   useEffect(() => {
@@ -197,6 +201,18 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
             </Select>
           </div>
 
+          <button
+            onClick={() => setShowInactive(!showInactive)}
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all whitespace-nowrap ${
+              showInactive
+                ? "bg-amber-500/10 border-amber-500/20 text-amber-400"
+                : "bg-white/[0.03] border-white/[0.06] text-neutral-500 hover:text-neutral-300"
+            }`}
+          >
+            {showInactive ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+            {showInactive ? "Catalogo" : "Inativas"}
+          </button>
+
           <Button onClick={() => setShowForm(true)} className="whitespace-nowrap">
             <Plus className="w-4 h-4 mr-1.5" />
             Personalizado
@@ -298,16 +314,21 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                               className="group/item flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-white/[0.04] transition-colors w-full text-left cursor-pointer"
                             >
                               {/* Thumbnail */}
-                              <div className="w-10 h-10 rounded-lg bg-neutral-800/50 border border-neutral-700/30 overflow-hidden shrink-0 flex items-center justify-center">
-                                {ex.gifUrl ? (
-                                  <img src={ex.gifUrl} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
+                              <div className={`w-10 h-10 rounded-lg bg-neutral-800/50 border overflow-hidden shrink-0 flex items-center justify-center ${ex.isActive ? "border-neutral-700/30" : "border-neutral-800/30 opacity-60"}`}>
+                                {(ex.gifUrl || ex.imageUrl) ? (
+                                  <img src={ex.gifUrl || ex.imageUrl!} alt={ex.name} className="w-full h-full object-cover" loading="lazy" />
                                 ) : (
                                   <Dumbbell className="w-4 h-4 text-neutral-600" />
                                 )}
                               </div>
                               <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                  <p className="text-neutral-200 text-sm truncate">{ex.name}</p>
+                                  <p className={`text-sm truncate ${ex.isActive ? "text-neutral-200" : "text-neutral-500"}`}>{ex.name}</p>
+                                  {!ex.isActive && (
+                                    <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-amber-500/10 text-amber-500/70 shrink-0">
+                                      Inativa
+                                    </span>
+                                  )}
                                   {ex.isCustom && (
                                     <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-400 shrink-0">
                                       Personalizado
@@ -352,8 +373,8 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
 
             {/* Image */}
             <div className="w-full h-48 bg-neutral-900 flex items-center justify-center overflow-hidden">
-              {selectedExercise.gifUrl ? (
-                <img src={selectedExercise.gifUrl} alt={selectedExercise.name} className="w-full h-full object-contain" />
+              {(selectedExercise.gifUrl || selectedExercise.imageUrl) ? (
+                <img src={selectedExercise.gifUrl || selectedExercise.imageUrl!} alt={selectedExercise.name} className="w-full h-full object-contain" />
               ) : (
                 <div className="text-center">
                   <ImageIcon className="w-10 h-10 text-neutral-700 mx-auto mb-2" />
@@ -364,9 +385,38 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
 
             <div className="p-6 pb-10">
               <h3 className="text-lg font-bold text-white mb-1">{selectedExercise.name}</h3>
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-4 flex-wrap">
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/15">{selectedExercise.muscle}</span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-neutral-500 border border-neutral-800">{equipmentIcons[selectedExercise.equipment] || "📦"} {selectedExercise.equipment}</span>
+                <button
+                  onClick={async () => {
+                    const newActive = !selectedExercise.isActive
+                    const res = await fetch(`/api/admin/exercises?id=${selectedExercise.id}`, {
+                      method: "PATCH",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({ isActive: newActive }),
+                    })
+                    if (res.ok) {
+                      setSelectedExercise({ ...selectedExercise, isActive: newActive })
+                      setExercises(prev => prev.map(ex =>
+                        ex.id === selectedExercise.id ? { ...ex, isActive: newActive } : ex
+                      ))
+                    }
+                  }}
+                  className={`text-[10px] px-2 py-0.5 rounded-full border flex items-center gap-1 transition-all ${
+                    selectedExercise.isActive
+                      ? "bg-green-500/10 text-green-400 border-green-500/20 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/20"
+                      : "bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-green-500/10 hover:text-green-400 hover:border-green-500/20"
+                  }`}
+                >
+                  <Power className="w-3 h-3" />
+                  {selectedExercise.isActive ? "Ativa" : "Inativa"}
+                </button>
+              </div>
+
+              {/* Muscle highlight body map */}
+              <div className="mb-4 flex justify-center">
+                <ExerciseMuscleHighlight muscle={selectedExercise.muscle} size="sm" />
               </div>
 
               {selectedExercise.instructions && (
