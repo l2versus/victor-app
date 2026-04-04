@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useCallback } from "react"
-import { Search, X, ChevronLeft, ChevronRight, Power, Package, Dumbbell, Ruler, Weight, CheckCheck, XCircle, ArrowLeft } from "lucide-react"
+import { Search, X, ChevronRight, Power, Package, Dumbbell, Ruler, Weight, CheckCheck, XCircle, ArrowLeft, Target, Maximize2 } from "lucide-react"
 
 type CatalogExercise = {
   id: string
@@ -13,6 +13,7 @@ type CatalogExercise = {
   machineLine: string | null
   machineCode: string | null
   isActive: boolean
+  instructions: string | null
   widthCm: number | null
   lengthCm: number | null
   heightCm: number | null
@@ -58,6 +59,7 @@ export default function CatalogoPage() {
   const [batchingGroup, setBatchingGroup] = useState<string | null>(null)
   const [failedImgs, setFailedImgs] = useState<Set<string>>(new Set())
   const [collapsedLines, setCollapsedLines] = useState<Set<string>>(new Set())
+  const [detailExercise, setDetailExercise] = useState<CatalogExercise | null>(null)
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -255,11 +257,12 @@ export default function CatalogoPage() {
                       return (
                         <div
                           key={ex.id}
-                          className={`group rounded-xl border overflow-hidden transition-all hover:scale-[1.01] ${
+                          className={`group rounded-xl border overflow-hidden transition-all hover:scale-[1.01] cursor-pointer ${
                             ex.isActive
                               ? "border-green-500/15 bg-[#080808]"
                               : "border-white/[0.04] bg-[#060606] opacity-70 hover:opacity-100"
                           }`}
+                          onClick={() => setDetailExercise(ex)}
                         >
                           <div className="aspect-square bg-[#050505] flex items-center justify-center overflow-hidden relative">
                             {img && !failedImgs.has(ex.id) ? (
@@ -268,7 +271,7 @@ export default function CatalogoPage() {
                               <Dumbbell className="w-8 h-8 text-neutral-800" />
                             )}
                             <button
-                              onClick={() => toggleActive(ex.id, ex.isActive)}
+                              onClick={e => { e.stopPropagation(); toggleActive(ex.id, ex.isActive) }}
                               disabled={isToggling}
                               className={`absolute top-2 right-2 w-7 h-7 rounded-full flex items-center justify-center transition-all ${
                                 ex.isActive
@@ -278,6 +281,10 @@ export default function CatalogoPage() {
                             >
                               <Power className={`w-3.5 h-3.5 ${ex.isActive ? "text-green-400" : "text-neutral-500"}`} />
                             </button>
+                            {/* View detail hint */}
+                            <div className="absolute bottom-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <Maximize2 className="w-4 h-4 text-neutral-500" />
+                            </div>
                           </div>
                           <div className="p-2.5 space-y-1">
                             <p className="text-xs font-semibold text-white truncate leading-tight">{ex.name}</p>
@@ -290,12 +297,6 @@ export default function CatalogoPage() {
                                 </span>
                               )}
                             </div>
-                            {(ex.widthCm || ex.lengthCm) && (
-                              <p className="text-[9px] text-neutral-700 flex items-center gap-0.5">
-                                <Ruler className="w-2.5 h-2.5" />
-                                {[ex.lengthCm, ex.widthCm, ex.heightCm].filter(Boolean).join(" x ")} cm
-                              </p>
-                            )}
                           </div>
                         </div>
                       )
@@ -306,6 +307,9 @@ export default function CatalogoPage() {
             )
           })}
         </div>
+
+        {/* Machine Detail Modal */}
+        {detailExercise && <MachineDetailModal exercise={detailExercise} onClose={() => setDetailExercise(null)} onToggle={toggleActive} getMachineImage={getMachineImage} brandInfo={BRAND_INFO[selectedBrand]} brandName={selectedBrand} />}
       </div>
     )
   }
@@ -419,6 +423,125 @@ export default function CatalogoPage() {
           })}
         </div>
       )}
+    </div>
+  )
+}
+
+// ─── MACHINE DETAIL MODAL ───
+function MachineDetailModal({ exercise, onClose, onToggle, getMachineImage, brandInfo, brandName }: {
+  exercise: CatalogExercise
+  onClose: () => void
+  onToggle: (id: string, current: boolean) => void
+  getMachineImage: (ex: CatalogExercise) => string | null
+  brandInfo?: { flag: string; origin: string; color: string }
+  brandName: string
+}) {
+  const img = getMachineImage(exercise)
+  const specs = [
+    exercise.lengthCm && { label: "Comprimento", value: `${exercise.lengthCm} cm` },
+    exercise.widthCm && { label: "Largura", value: `${exercise.widthCm} cm` },
+    exercise.heightCm && { label: "Altura", value: `${exercise.heightCm} cm` },
+    exercise.weightKg && { label: "Peso", value: `${exercise.weightKg} kg` },
+    exercise.maxLoadKg && { label: "Carga Max", value: `${exercise.maxLoadKg} kg` },
+  ].filter(Boolean) as { label: string; value: string }[]
+
+  return (
+    <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" onClick={onClose}>
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
+      <div
+        className="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col"
+        style={{ maxHeight: "90dvh" }}
+        onClick={e => e.stopPropagation()}
+      >
+        {/* Hero Image */}
+        <div className="relative w-full h-56 sm:h-72 bg-[#050505] flex items-center justify-center overflow-hidden shrink-0">
+          {img ? (
+            <img src={img} alt={exercise.name} className="w-full h-full object-contain p-6" />
+          ) : (
+            <Dumbbell className="w-16 h-16 text-neutral-800" />
+          )}
+          <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+          {/* Brand badge */}
+          <div className="absolute top-3 left-3 flex items-center gap-2">
+            <span className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-xs font-semibold text-white border border-white/10">
+              {brandInfo?.flag} {brandName}
+            </span>
+          </div>
+          {/* Active status */}
+          <div className="absolute bottom-3 right-3">
+            <button
+              onClick={() => onToggle(exercise.id, exercise.isActive)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
+                exercise.isActive
+                  ? "bg-green-500/20 border-green-500/30 text-green-400"
+                  : "bg-neutral-800/80 border-neutral-700/30 text-neutral-400"
+              }`}
+            >
+              <Power className="w-3.5 h-3.5" />
+              {exercise.isActive ? "Ativa" : "Inativa"}
+            </button>
+          </div>
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-5">
+          {/* Title + Tags */}
+          <div>
+            <h2 className="text-xl font-bold text-white">{exercise.name}</h2>
+            <div className="flex items-center gap-2 mt-2 flex-wrap">
+              {exercise.machineCode && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/[0.06] font-mono">{exercise.machineCode}</span>
+              )}
+              {exercise.machineLine && (
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/[0.06]">{exercise.machineLine}</span>
+              )}
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/15">{exercise.muscle}</span>
+            </div>
+          </div>
+
+          {/* Instructions */}
+          {exercise.instructions && (
+            <div>
+              <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-amber-400" />
+                Descricao e Instrucoes
+              </h3>
+              <p className="text-sm text-neutral-300 leading-relaxed">{exercise.instructions}</p>
+            </div>
+          )}
+
+          {/* Specs Grid */}
+          {specs.length > 0 && (
+            <div>
+              <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                <Ruler className="w-3.5 h-3.5 text-blue-400" />
+                Especificacoes Tecnicas
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {specs.map(s => (
+                  <div key={s.label} className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+                    <p className="text-lg font-bold text-white">{s.value}</p>
+                    <p className="text-[10px] text-neutral-500 mt-0.5">{s.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Equipment type */}
+          <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center shrink-0">
+              <span className="text-lg">{brandInfo?.flag || "📦"}</span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-white">{brandName}</p>
+              <p className="text-[11px] text-neutral-500">{brandInfo?.origin || ""} — {exercise.equipment}</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }
