@@ -38,6 +38,7 @@ const mainItems = [
   { href: "/admin/students", label: "Alunos", icon: Users },
   { href: "/admin/schedule", label: "Agenda", icon: Calendar },
   { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
+  { href: "/admin/catalogo", label: "Catálogo", icon: Package },
 ]
 
 const moreItems = [
@@ -58,7 +59,6 @@ const moreItems = [
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/admin/finance", label: "Financeiro", icon: DollarSign },
   { href: "/admin/exercises", label: "Exercícios", icon: Dumbbell },
-  { href: "/admin/catalogo", label: "Catálogo", icon: Package },
   { href: "/admin/machines", label: "Equip. 3D", icon: Dumbbell },
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },
   { href: "/admin/settings", label: "Configurações", icon: Settings },
@@ -165,7 +165,7 @@ export function AdminMobileNav() {
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all duration-300 min-w-[56px]",
+                  "flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl transition-all duration-300 min-w-12",
                   isActive
                     ? "text-white"
                     : "text-neutral-600 active:text-neutral-400"
@@ -197,7 +197,7 @@ export function AdminMobileNav() {
           <button
             onClick={() => setMoreOpen(!moreOpen)}
             className={cn(
-              "flex flex-col items-center gap-0.5 px-3 py-2 rounded-xl transition-all duration-300 min-w-[56px]",
+              "flex flex-col items-center gap-0.5 px-2 py-2 rounded-xl transition-all duration-300 min-w-12",
               moreOpen || isMoreActive
                 ? "text-white"
                 : "text-neutral-600 active:text-neutral-400"
