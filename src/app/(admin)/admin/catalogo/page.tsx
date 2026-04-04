@@ -14,6 +14,7 @@ type CatalogExercise = {
   machineCode: string | null
   isActive: boolean
   instructions: string | null
+  machine3dModel: string | null
   widthCm: number | null
   lengthCm: number | null
   heightCm: number | null
@@ -268,7 +269,16 @@ export default function CatalogoPage() {
                             {img && !failedImgs.has(ex.id) ? (
                               <img src={img} alt={ex.name} className="w-full h-full object-contain p-2" loading="lazy" onError={() => setFailedImgs(prev => new Set(prev).add(ex.id))} />
                             ) : (
-                              <Dumbbell className="w-8 h-8 text-neutral-800" />
+                              <div className="flex flex-col items-center gap-1.5 px-3">
+                                <Dumbbell className="w-8 h-8 text-neutral-700" />
+                                <p className="text-[9px] text-neutral-600 text-center leading-tight">{ex.name}</p>
+                              </div>
+                            )}
+                            {/* 3D badge */}
+                            {ex.machine3dModel && (
+                              <div className="absolute top-2 left-2 px-1.5 py-0.5 rounded bg-purple-500/20 border border-purple-500/30 text-[8px] font-bold text-purple-400">
+                                3D
+                              </div>
                             )}
                             <button
                               onClick={e => { e.stopPropagation(); toggleActive(ex.id, ex.isActive) }}
