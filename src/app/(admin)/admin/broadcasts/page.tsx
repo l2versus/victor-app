@@ -59,8 +59,8 @@ export default function BroadcastsPage() {
   const [studentSearch, setStudentSearch] = useState("")
 
   useEffect(() => {
-    fetch("/api/admin/broadcasts").then(r => r.json()).then(d => {
-      setStats(d.stats)
+    fetch("/api/admin/broadcasts").then(r => r.json()).then((d: { stats?: typeof stats; students?: typeof allStudents }) => {
+      if (d.stats) setStats(d.stats)
       if (d.students) setAllStudents(d.students)
     }).catch(() => {})
   }, [])
