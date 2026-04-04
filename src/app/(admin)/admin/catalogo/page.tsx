@@ -1,7 +1,15 @@
 "use client"
 
-import { useState, useEffect, useCallback } from "react"
-import { Search, X, ChevronRight, Power, Package, Dumbbell, Ruler, Weight, CheckCheck, XCircle, ArrowLeft, Target, Maximize2 } from "lucide-react"
+import { useState, useEffect, useCallback, lazy, Suspense } from "react"
+import { Search, X, ChevronRight, Power, Package, Dumbbell, Ruler, Weight, CheckCheck, XCircle, ArrowLeft, Target, Maximize2, RotateCcw, View } from "lucide-react"
+import dynamic from "next/dynamic"
+
+const MachineViewer = dynamic(
+  () => import("@/components/student/machine-3d-inline-viewer"),
+  { ssr: false, loading: () => <div className="w-full h-64 rounded-2xl bg-[#080808] flex items-center justify-center"><RotateCcw className="w-5 h-5 text-neutral-700 animate-spin" /></div> }
+)
+
+const MachineARViewer = lazy(() => import("@/components/student/machine-ar-viewer"))
 
 type CatalogExercise = {
   id: string
@@ -476,9 +484,12 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
   brandInfo?: { flag: string; origin: string; color: string }
   brandName: string
 }) {
-  const [tab, setTab] = useState<"info" | "edit">("info")
+  const has3D = !!exercise.machine3dModel
+  const defaultTab = has3D && !getMachineImage(exercise) ? "3d" : "info"
+  const [tab, setTab] = useState<"info" | "3d" | "edit">(defaultTab)
   const [editData, setEditData] = useState({ name: exercise.name, instructions: exercise.instructions || "", imageUrl: exercise.imageUrl || "" })
   const [saving, setSaving] = useState(false)
+  const [showAR, setShowAR] = useState(false)
 
   const img = getMachineImage(exercise)
   const muscleData = MUSCLE_TARGETS[exercise.muscle]
@@ -514,10 +525,14 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
         style={{ maxHeight: "92dvh" }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Hero Image */}
+        {/* Hero Image / 3D */}
         <div className="relative w-full h-48 sm:h-64 bg-[#050505] flex items-center justify-center overflow-hidden shrink-0">
           {img ? (
             <img src={img} alt={exercise.name} className="w-full h-full object-contain p-4" />
+          ) : has3D ? (
+            <div className="w-full h-full">
+              <MachineViewer slug={exercise.machine3dModel!} machineName={exercise.name} />
+            </div>
           ) : (
             <div className="text-center">
               <Dumbbell className="w-14 h-14 text-neutral-700 mx-auto mb-2" />
@@ -552,6 +567,7 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
         <div className="flex border-b border-white/[0.06] shrink-0">
           {[
             { key: "info" as const, label: "Detalhes" },
+            ...(has3D ? [{ key: "3d" as const, label: "3D / AR" }] : []),
             { key: "edit" as const, label: "Editar" },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)} className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all ${tab === t.key ? "text-white border-b-2 border-red-500" : "text-neutral-600 hover:text-neutral-400"}`}>
@@ -697,6 +713,32 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
                 )}
               </div>
             </>
+          ) : tab === "3d" && has3D ? (
+            /* ─── 3D / AR TAB ─── */
+            <div className="space-y-4">
+              <MachineViewer slug={exercise.machine3dModel!} machineName={exercise.name} />
+
+              {/* AR Button */}
+              <button
+                onClick={() => setShowAR(true)}
+                className="w-full py-3 rounded-xl bg-purple-600/20 border border-purple-500/20 text-sm font-semibold text-purple-400 hover:bg-purple-600/30 transition-all flex items-center justify-center gap-2"
+              >
+                <View className="w-4 h-4" />
+                Ver em Realidade Aumentada (AR)
+              </button>
+
+              <p className="text-center text-[10px] text-neutral-600">Arraste para girar — Pinca para zoom — AR coloca a maquina no seu espaco</p>
+
+              {showAR && (
+                <Suspense fallback={null}>
+                  <MachineARViewer
+                    modelUrl={`/models/machines/${exercise.machine3dModel}.glb`}
+                    machineName={exercise.name}
+                    onClose={() => setShowAR(false)}
+                  />
+                </Suspense>
+              )}
+            </div>
           ) : (
             /* ─── EDIT TAB ─── */
             <div className="space-y-4">
