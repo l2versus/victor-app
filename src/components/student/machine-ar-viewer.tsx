@@ -71,7 +71,7 @@ export default function MachineARViewer({ modelUrl, machineName, onClose }: Prop
             src={modelUrl}
             ar
             ar-modes="scene-viewer quick-look webxr"
-            ar-scale="fixed"
+            ar-scale="auto"
             ar-placement="floor"
             camera-controls
             touch-action="pan-y"
