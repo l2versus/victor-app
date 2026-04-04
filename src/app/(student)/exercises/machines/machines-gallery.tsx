@@ -1,10 +1,12 @@
 "use client"
 
-import { useState, useEffect, Suspense } from "react"
+import { useState, useEffect, Suspense, lazy } from "react"
 import { Canvas } from "@react-three/fiber"
 import { OrbitControls, useGLTF, Environment, Center } from "@react-three/drei"
-import { ArrowLeft, X, RotateCcw, Box, ChevronRight } from "lucide-react"
+import { ArrowLeft, X, RotateCcw, Box, ChevronRight, View } from "lucide-react"
 import Link from "next/link"
+
+const MachineARViewer = lazy(() => import("@/components/student/machine-ar-viewer"))
 
 // ═══════════════════════════════════════════════════════════════════
 // VICTOR PERSONAL MACHINES 3D GALLERY
@@ -43,49 +45,78 @@ function MiniPreview({ url }: { url: string }) {
 }
 
 function FullscreenViewer({ model, onClose }: { model: ModelEntry; onClose: () => void }) {
+  const [showAR, setShowAR] = useState(false)
+  const displayName = model.name.length > 36 ? `Maquina #${model.slug.slice(0, 6)}` : model.name
+
   return (
-    <div className="fixed inset-0 z-[9999] bg-black flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
-        <div>
-          <p className="text-sm font-bold text-white">
-            {model.name.length > 36 ? `Maquina #${model.slug.slice(0, 6)}` : model.name}
-          </p>
-          <p className="text-[10px] text-neutral-500">Arraste para girar · Pinch para zoom</p>
+    <>
+      <div className="fixed inset-0 z-[9999] bg-black flex flex-col overscroll-contain">
+        {/* Header */}
+        <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
+          <div>
+            <p className="text-sm font-bold text-white">{displayName}</p>
+            <p className="text-[10px] text-neutral-500">Arraste para girar · Pinch para zoom</p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAR(true)}
+              className="h-9 px-3 rounded-full bg-red-600 flex items-center gap-1.5 text-white text-xs font-bold active:scale-95 transition-transform"
+            >
+              <View className="w-4 h-4" />
+              AR
+            </button>
+            <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/[0.08] flex items-center justify-center">
+              <X className="w-4 h-4 text-white" />
+            </button>
+          </div>
         </div>
-        <button onClick={onClose} className="w-9 h-9 rounded-full bg-white/[0.08] flex items-center justify-center">
-          <X className="w-4 h-4 text-white" />
-        </button>
+
+        {/* 3D Canvas */}
+        <div className="flex-1">
+          <Canvas camera={{ position: [3, 2, 3], fov: 40 }} style={{ background: "#0a0a0a" }}>
+            <ambientLight intensity={0.5} />
+            <directionalLight position={[5, 5, 5]} intensity={1.2} />
+            <directionalLight position={[-3, 2, -3]} intensity={0.3} />
+            <Suspense fallback={null}>
+              <Model url={model.file} />
+              <Environment preset="studio" />
+            </Suspense>
+            <OrbitControls
+              autoRotate
+              autoRotateSpeed={2}
+              enablePan={false}
+              minDistance={0.5}
+              maxDistance={8}
+            />
+          </Canvas>
+        </div>
+
+        {/* Footer */}
+        <div className="px-4 py-3 border-t border-white/[0.06] flex items-center justify-between safe-bottom">
+          <button
+            onClick={() => setShowAR(true)}
+            className="text-[10px] text-red-400 font-semibold flex items-center gap-1 active:scale-95 transition-transform"
+          >
+            <View className="w-3.5 h-3.5" />
+            Ver em AR
+          </button>
+          <span className="text-[8px] px-2 py-1 rounded-full bg-red-600/15 text-red-400 border border-red-500/20 font-bold">
+            VICTOR PERSONAL
+          </span>
+        </div>
       </div>
 
-      {/* 3D Canvas */}
-      <div className="flex-1">
-        <Canvas camera={{ position: [3, 2, 3], fov: 40 }} style={{ background: "#0a0a0a" }}>
-          <ambientLight intensity={0.5} />
-          <directionalLight position={[5, 5, 5]} intensity={1.2} />
-          <directionalLight position={[-3, 2, -3]} intensity={0.3} />
-          <Suspense fallback={null}>
-            <Model url={model.file} />
-            <Environment preset="studio" />
-          </Suspense>
-          <OrbitControls
-            autoRotate
-            autoRotateSpeed={2}
-            enablePan={false}
-            minDistance={0.5}
-            maxDistance={8}
+      {/* AR Viewer */}
+      {showAR && (
+        <Suspense fallback={null}>
+          <MachineARViewer
+            modelUrl={model.file}
+            machineName={displayName}
+            onClose={() => setShowAR(false)}
           />
-        </Canvas>
-      </div>
-
-      {/* Footer */}
-      <div className="px-4 py-3 border-t border-white/[0.06] flex items-center justify-between safe-bottom">
-        <p className="text-[9px] text-neutral-600 font-mono">{model.slug}.glb</p>
-        <span className="text-[8px] px-2 py-1 rounded-full bg-red-600/15 text-red-400 border border-red-500/20 font-bold">
-          VICTOR PERSONAL
-        </span>
-      </div>
-    </div>
+        </Suspense>
+      )}
+    </>
   )
 }
 
