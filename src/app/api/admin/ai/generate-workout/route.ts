@@ -153,6 +153,7 @@ Feedback recente: ${recentFeedback || "nenhum"}`
 
   // Get available exercises for context
   const exerciseList = await prisma.exercise.findMany({
+    where: { isActive: true },
     select: { name: true, muscle: true, equipment: true },
     take: 200,
   })

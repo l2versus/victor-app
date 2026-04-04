@@ -26,7 +26,12 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50")
     const skip = (page - 1) * limit
 
+    const showInactive = searchParams.get("showInactive") === "true"
     const where: Record<string, unknown> = {}
+
+    if (!showInactive) {
+      where.isActive = true
+    }
 
     if (muscle) {
       where.muscle = muscle
@@ -127,6 +132,14 @@ export async function PATCH(req: NextRequest) {
         videoUrl: body.videoUrl ?? undefined,
         imageUrl: body.imageUrl ?? undefined,
         machineBrand: body.machineBrand ?? undefined,
+        machineLine: body.machineLine ?? undefined,
+        machineCode: body.machineCode ?? undefined,
+        isActive: body.isActive ?? undefined,
+        lengthCm: body.lengthCm ?? undefined,
+        widthCm: body.widthCm ?? undefined,
+        heightCm: body.heightCm ?? undefined,
+        weightKg: body.weightKg ?? undefined,
+        maxLoadKg: body.maxLoadKg ?? undefined,
       },
     })
 

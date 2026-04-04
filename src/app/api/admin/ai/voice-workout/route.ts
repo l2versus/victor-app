@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
 
     // Get exercise library for matching
     const exercises = await prisma.exercise.findMany({
+      where: { isActive: true },
       select: { id: true, name: true, muscle: true, equipment: true },
       orderBy: { name: "asc" },
     })

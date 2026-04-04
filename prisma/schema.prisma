@@ -246,17 +246,25 @@ model Student {
 // ═══════════════════════════════════════
 
 model Exercise {
-  id           String  @id @default(cuid())
-  name         String
-  muscle       String
-  equipment    String
-  gifUrl       String?
-  videoUrl     String?
-  imageUrl     String?   /// Foto da máquina (link externo: Imgur, Google Drive, etc)
-  machineBrand String?   /// Marca/modelo da máquina (ex: "Hammer Strength Iso-Lateral")
-  machine3dModel String? /// Slug do modelo 3D .glb (ex: "panatta-leg-press-45" → /models/machines/panatta-leg-press-45.glb)
-  instructions String?
-  isCustom     Boolean @default(false)
+  id             String  @id @default(cuid())
+  name           String
+  muscle         String
+  equipment      String
+  gifUrl         String?
+  videoUrl       String?
+  imageUrl       String?   /// Foto da máquina (link externo: Imgur, Google Drive, etc)
+  machineBrand   String?   /// Marca do fabricante (ex: "Panatta", "Hammer Strength")
+  machineLine    String?   /// Linha do produto (ex: "Fit Evo", "FreeWeight Special", "Monolith")
+  machineCode    String?   /// Código do fabricante (ex: "1FE557", "1MTH033")
+  machine3dModel String?   /// Slug do modelo 3D .glb
+  instructions   String?
+  isCustom       Boolean @default(false)
+  isActive       Boolean @default(true) /// Máquina disponível na academia? false = cadastrada mas não chegou ainda
+  lengthCm       Int?    /// Comprimento em cm
+  widthCm        Int?    /// Largura em cm
+  heightCm       Int?    /// Altura em cm
+  weightKg       Int?    /// Peso da máquina em kg
+  maxLoadKg      Int?    /// Carga máxima/padrão em kg
 
   workoutExercises WorkoutExercise[]
 
@@ -264,6 +272,8 @@ model Exercise {
 
   @@index([muscle])
   @@index([equipment])
+  @@index([machineBrand])
+  @@index([isActive])
 }
 
 // ═══════════════════════════════════════
