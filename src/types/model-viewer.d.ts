@@ -9,6 +9,7 @@ declare module "react" {
           ar?: boolean
           "ar-modes"?: string
           "ar-scale"?: string
+          "ar-placement"?: "floor" | "wall"
           "ios-src"?: string
           poster?: string
           loading?: "auto" | "lazy" | "eager"

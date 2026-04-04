@@ -70,8 +70,9 @@ export default function MachineARViewer({ modelUrl, machineName, onClose }: Prop
           <model-viewer
             src={modelUrl}
             ar
-            ar-modes="webxr scene-viewer quick-look"
-            ar-scale="auto"
+            ar-modes="scene-viewer quick-look webxr"
+            ar-scale="fixed"
+            ar-placement="floor"
             camera-controls
             touch-action="pan-y"
             auto-rotate
@@ -96,10 +97,15 @@ export default function MachineARViewer({ modelUrl, machineName, onClose }: Prop
             {/* AR prompt */}
             <button
               slot="ar-button"
-              className="absolute bottom-24 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 rounded-2xl bg-red-600 text-white font-bold text-sm shadow-lg shadow-red-600/30 active:scale-95 transition-transform"
+              className="absolute bottom-24 left-1/2 -translate-x-1/2 flex flex-col items-center gap-1"
             >
-              <Smartphone className="w-4 h-4" />
-              Ver na Academia
+              <span className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-red-600 text-white font-bold text-sm shadow-lg shadow-red-600/30 active:scale-95 transition-transform">
+                <Smartphone className="w-4 h-4" />
+                Ver na Academia
+              </span>
+              <span className="text-[9px] text-neutral-400">
+                Aponte para o chao e toque para posicionar
+              </span>
             </button>
           </model-viewer>
         )}
@@ -125,9 +131,14 @@ export default function MachineARViewer({ modelUrl, machineName, onClose }: Prop
         )}
 
         {arSupported === true && (
-          <p className="text-[10px] text-neutral-500 text-center">
-            Toque em &quot;Ver na Academia&quot; para posicionar a maquina no ambiente real
-          </p>
+          <div className="space-y-1">
+            <p className="text-[10px] text-neutral-400 text-center">
+              Toque em &quot;Ver na Academia&quot; e aponte para o chao
+            </p>
+            <p className="text-[9px] text-neutral-600 text-center">
+              Toque na tela para posicionar — nao precisa de marcador
+            </p>
+          </div>
         )}
 
         {arSupported === null && (
