@@ -485,8 +485,7 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
   brandName: string
 }) {
   const has3D = !!exercise.machine3dModel
-  const defaultTab = has3D && !getMachineImage(exercise) ? "3d" : "info"
-  const [tab, setTab] = useState<"info" | "3d" | "edit">(defaultTab)
+  const [tab, setTab] = useState<"info" | "3d" | "edit">("info")
   const [editData, setEditData] = useState({ name: exercise.name, instructions: exercise.instructions || "", imageUrl: exercise.imageUrl || "" })
   const [saving, setSaving] = useState(false)
   const [showAR, setShowAR] = useState(false)
@@ -525,18 +524,14 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
         style={{ maxHeight: "92dvh" }}
         onClick={e => e.stopPropagation()}
       >
-        {/* Hero Image / 3D */}
+        {/* Hero Image (foto only — 3D fica exclusivo na tab) */}
         <div className="relative w-full h-48 sm:h-64 bg-[#050505] flex items-center justify-center overflow-hidden shrink-0">
           {img ? (
             <img src={img} alt={exercise.name} className="w-full h-full object-contain p-4" />
-          ) : has3D ? (
-            <div className="w-full h-full">
-              <MachineViewer slug={exercise.machine3dModel!} machineName={exercise.name} />
-            </div>
           ) : (
             <div className="text-center">
               <Dumbbell className="w-14 h-14 text-neutral-700 mx-auto mb-2" />
-              <p className="text-[10px] text-neutral-600">Sem foto — edite para adicionar</p>
+              <p className="text-[10px] text-neutral-600">{has3D ? "Veja o modelo 3D na aba abaixo" : "Sem foto — edite para adicionar"}</p>
             </div>
           )}
           <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white">
