@@ -319,7 +319,7 @@ export default function CatalogoPage() {
         </div>
 
         {/* Machine Detail Modal */}
-        {detailExercise && <MachineDetailModal exercise={detailExercise} onClose={() => setDetailExercise(null)} onToggle={toggleActive} getMachineImage={getMachineImage} brandInfo={BRAND_INFO[selectedBrand]} brandName={selectedBrand} />}
+        {detailExercise && <MachineDetailModal exercise={detailExercise} onClose={() => setDetailExercise(null)} onToggle={toggleActive} onUpdate={(id, data) => { setExercises(prev => prev.map(ex => ex.id === id ? { ...ex, ...data } : ex)); setDetailExercise(prev => prev && prev.id === id ? { ...prev, ...data } : prev) }} getMachineImage={getMachineImage} brandInfo={BRAND_INFO[selectedBrand]} brandName={selectedBrand} />}
       </div>
     )
   }
@@ -437,56 +437,109 @@ export default function CatalogoPage() {
   )
 }
 
+// ─── MUSCLE TARGET DATA ───
+const MUSCLE_TARGETS: Record<string, { primary: string[]; secondary: string[]; tips: string[]; avoid: string[] }> = {
+  "Quadriceps": { primary: ["Vasto Lateral", "Vasto Medial", "Vasto Intermedio", "Reto Femoral"], secondary: ["Gluteos", "Core"], tips: ["Joelhos alinhados com os pes", "Descer ate 90° ou mais", "Pressao nos calcanhares", "Core ativado durante todo movimento"], avoid: ["Joelhos colapsando para dentro (valgo)", "Arredondar a lombar", "Travar joelhos na extensao completa"] },
+  "Hamstrings": { primary: ["Biceps Femoral", "Semitendioso", "Semimembranoso"], secondary: ["Gluteos", "Panturrilha"], tips: ["Contracao controlada no final", "Fase excentrica lenta (3s)", "Manter quadril estavel"], avoid: ["Usar impulso", "Hiperextensao lombar", "Velocidade excessiva"] },
+  "Glutes": { primary: ["Gluteo Maximo", "Gluteo Medio", "Gluteo Minimo"], secondary: ["Isquiotibiais", "Core", "Quadriceps"], tips: ["Squeeze no topo por 2s", "Ativar gluteo antes de empurrar", "Amplitude completa"], avoid: ["Hiperextensao lombar", "Nao completar extensao do quadril", "Compensar com lombar"] },
+  "Chest": { primary: ["Peitoral Maior", "Peitoral Menor"], secondary: ["Triceps", "Deltoide Anterior"], tips: ["Escapulas retraidas e deprimidas", "Arco toracico natural", "Cotovelos a 45-75° do tronco"], avoid: ["Bounce no peito", "Cotovelos a 90° (lesao ombro)", "Levantar gluteo do banco"] },
+  "Back": { primary: ["Grande Dorsal", "Trapezio", "Romboides"], secondary: ["Biceps", "Deltoide Posterior", "Antebraco"], tips: ["Inicie com retracao escapular", "Puxe com os cotovelos, nao maos", "Segure 1s na contracao"], avoid: ["Usar impulso do corpo", "Arredondar coluna", "Puxar so com biceps"] },
+  "Shoulders": { primary: ["Deltoide Anterior", "Deltoide Lateral", "Deltoide Posterior"], secondary: ["Triceps", "Trapezio"], tips: ["Core ativado o tempo todo", "Nao eleve alem de 90° com carga pesada", "Rotacao externa na elevacao"], avoid: ["Encolher trapezio", "Usar impulso das pernas", "Extensao cervical"] },
+  "Biceps": { primary: ["Biceps Braquial", "Braquial", "Braquiorradial"], secondary: ["Antebraco"], tips: ["Cotovelos fixos ao lado do corpo", "Supinacao completa no topo", "Fase excentrica lenta (3s)"], avoid: ["Balancar o tronco", "Extensao incompleta", "Carga excessiva com compensacao"] },
+  "Triceps": { primary: ["Cabeca Longa", "Cabeca Lateral", "Cabeca Medial"], secondary: ["Peitoral", "Deltoide Anterior"], tips: ["Extensao completa sem travar cotovelo", "Cotovelos apontando para frente", "Enfase na contracao"], avoid: ["Abrir cotovelos", "Usar ombro para compensar", "Velocidade excessiva"] },
+  "Calves": { primary: ["Gastrocnemio", "Soleo"], secondary: ["Tibial Posterior"], tips: ["Amplitude completa (alongar bem embaixo)", "Squeeze no topo por 2s", "Controle na descida"], avoid: ["Usar impulso", "Amplitude parcial", "Carga excessiva sem controle"] },
+  "Abs": { primary: ["Reto Abdominal", "Obliquos Internos", "Obliquos Externos"], secondary: ["Transverso", "Flexores do Quadril"], tips: ["Expire na contracao", "Mantenha lombar no solo", "Controle o movimento"], avoid: ["Puxar pescoco com as maos", "Usar impulso", "Prender respiracao"] },
+  "Adductors": { primary: ["Adutor Longo", "Adutor Curto", "Adutor Magno", "Gracil"], secondary: ["Quadriceps"], tips: ["Movimento controlado", "Amplitude completa", "Manter coluna neutra"], avoid: ["Usar impulso", "Carga excessiva", "Velocidade excessiva"] },
+  "Lower Back": { primary: ["Eretores da Espinha", "Multifidos"], secondary: ["Gluteos", "Core"], tips: ["Movimento controlado", "Nao hiperextender", "Core ativado"], avoid: ["Carga excessiva", "Impulso", "Arredondamento lombar"] },
+  "Full Body": { primary: ["Multiplos Grupos Musculares"], secondary: ["Core", "Estabilizadores"], tips: ["Tecnica acima de carga", "Ativar core antes do movimento"], avoid: ["Compensacoes posturais", "Carga alem da capacidade"] },
+}
+
+// ─── BRAND EXPERTISE DATA ───
+const BRAND_EXPERTISE: Record<string, { desc: string; specialty: string; founded: string; hq: string }> = {
+  "Panatta": { desc: "Referencia mundial em maquinas plate-loaded e seletorizadas. Conhecida pela curva de carga fisiologica com sistema CAM e design biomecanico italiano.", specialty: "Plate-loaded com curva fisiologica", founded: "1988", hq: "Apiro (MC), Italia" },
+  "Hammer Strength": { desc: "Referencia mundial em plate-loaded com design biomecanico convergente. Usada por atletas profissionais e academias premium.", specialty: "Plate-loaded convergente", founded: "1989", hq: "Cincinnati, OH, EUA" },
+  "Matrix": { desc: "Equipamentos premium com tecnologia integrada e design ergonomico. Forte em cardio e musculacao.", specialty: "Tecnologia integrada + ergonomia", founded: "2001", hq: "Cottage Grove, WI, EUA" },
+  "Nautilus": { desc: "Pioneira em maquinas de musculacao. Inventou o conceito de resistencia variavel com CAM.", specialty: "Resistencia variavel (CAM)", founded: "1970", hq: "Vancouver, WA, EUA" },
+  "Hoist": { desc: "Qualidade premium com foco em biomecanica. Linha ROC-IT com ajustes independentes por membro.", specialty: "Biomecanica ROC-IT", founded: "1977", hq: "San Diego, CA, EUA" },
+  "Life Fitness": { desc: "Maior fabricante mundial de equipamentos fitness. Presente em mais de 120 paises.", specialty: "Cardio + Musculacao global", founded: "1977", hq: "Rosemont, IL, EUA" },
+  "Cybex Prestige": { desc: "Equipamentos de reabilitacao e performance. Foco em seguranca e biomecanica.", specialty: "Reabilitacao + Performance", founded: "1970", hq: "Medway, MA, EUA" },
+  "Stark Strong": { desc: "Fabricante brasileira de equipamentos profissionais. Custo-beneficio com qualidade nacional.", specialty: "Maquinas profissionais BR", founded: "2015", hq: "Brasil" },
+}
+
 // ─── MACHINE DETAIL MODAL ───
-function MachineDetailModal({ exercise, onClose, onToggle, getMachineImage, brandInfo, brandName }: {
+function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineImage, brandInfo, brandName }: {
   exercise: CatalogExercise
   onClose: () => void
   onToggle: (id: string, current: boolean) => void
+  onUpdate: (id: string, data: Partial<CatalogExercise>) => void
   getMachineImage: (ex: CatalogExercise) => string | null
   brandInfo?: { flag: string; origin: string; color: string }
   brandName: string
 }) {
+  const [tab, setTab] = useState<"info" | "edit">("info")
+  const [editData, setEditData] = useState({ name: exercise.name, instructions: exercise.instructions || "", imageUrl: exercise.imageUrl || "" })
+  const [saving, setSaving] = useState(false)
+
   const img = getMachineImage(exercise)
+  const muscleData = MUSCLE_TARGETS[exercise.muscle]
+  const brandExpertise = BRAND_EXPERTISE[brandName]
   const specs = [
-    exercise.lengthCm && { label: "Comprimento", value: `${exercise.lengthCm} cm` },
-    exercise.widthCm && { label: "Largura", value: `${exercise.widthCm} cm` },
-    exercise.heightCm && { label: "Altura", value: `${exercise.heightCm} cm` },
-    exercise.weightKg && { label: "Peso", value: `${exercise.weightKg} kg` },
-    exercise.maxLoadKg && { label: "Carga Max", value: `${exercise.maxLoadKg} kg` },
-  ].filter(Boolean) as { label: string; value: string }[]
+    exercise.lengthCm && { label: "Comprimento", value: `${exercise.lengthCm} cm`, icon: "📏" },
+    exercise.widthCm && { label: "Largura", value: `${exercise.widthCm} cm`, icon: "↔️" },
+    exercise.heightCm && { label: "Altura", value: `${exercise.heightCm} cm`, icon: "↕️" },
+    exercise.weightKg && { label: "Peso Maquina", value: `${exercise.weightKg} kg`, icon: "⚖️" },
+    exercise.maxLoadKg && { label: "Carga Maxima", value: `${exercise.maxLoadKg} kg`, icon: "🏋️" },
+  ].filter(Boolean) as { label: string; value: string; icon: string }[]
+
+  async function handleSave() {
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/admin/exercises?id=${exercise.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editData.name, instructions: editData.instructions || null, imageUrl: editData.imageUrl || null }),
+      })
+      if (res.ok) {
+        onUpdate(exercise.id, { name: editData.name, instructions: editData.instructions || null, imageUrl: editData.imageUrl || null })
+        setTab("info")
+      }
+    } finally { setSaving(false) }
+  }
 
   return (
     <div className="fixed inset-0 z-[70] flex items-end sm:items-center justify-center" onClick={onClose}>
       <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
       <div
         className="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl bg-[#0a0a0a] border border-white/[0.08] overflow-hidden flex flex-col"
-        style={{ maxHeight: "90dvh" }}
+        style={{ maxHeight: "92dvh" }}
         onClick={e => e.stopPropagation()}
       >
         {/* Hero Image */}
-        <div className="relative w-full h-56 sm:h-72 bg-[#050505] flex items-center justify-center overflow-hidden shrink-0">
+        <div className="relative w-full h-48 sm:h-64 bg-[#050505] flex items-center justify-center overflow-hidden shrink-0">
           {img ? (
-            <img src={img} alt={exercise.name} className="w-full h-full object-contain p-6" />
+            <img src={img} alt={exercise.name} className="w-full h-full object-contain p-4" />
           ) : (
-            <Dumbbell className="w-16 h-16 text-neutral-800" />
+            <div className="text-center">
+              <Dumbbell className="w-14 h-14 text-neutral-700 mx-auto mb-2" />
+              <p className="text-[10px] text-neutral-600">Sem foto — edite para adicionar</p>
+            </div>
           )}
           <button onClick={onClose} className="absolute top-3 right-3 w-9 h-9 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center text-white/70 hover:text-white">
             <X className="w-5 h-5" />
           </button>
-          {/* Brand badge */}
           <div className="absolute top-3 left-3 flex items-center gap-2">
             <span className="px-2.5 py-1 rounded-full bg-black/50 backdrop-blur-sm text-xs font-semibold text-white border border-white/10">
               {brandInfo?.flag} {brandName}
             </span>
+            {exercise.machine3dModel && (
+              <span className="px-2 py-1 rounded-full bg-purple-500/20 backdrop-blur-sm text-[10px] font-bold text-purple-400 border border-purple-500/30">3D</span>
+            )}
           </div>
-          {/* Active status */}
           <div className="absolute bottom-3 right-3">
             <button
               onClick={() => onToggle(exercise.id, exercise.isActive)}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-semibold transition-all ${
-                exercise.isActive
-                  ? "bg-green-500/20 border-green-500/30 text-green-400"
-                  : "bg-neutral-800/80 border-neutral-700/30 text-neutral-400"
+                exercise.isActive ? "bg-green-500/20 border-green-500/30 text-green-400" : "bg-neutral-800/80 border-neutral-700/30 text-neutral-400"
               }`}
             >
               <Power className="w-3.5 h-3.5" />
@@ -495,61 +548,196 @@ function MachineDetailModal({ exercise, onClose, onToggle, getMachineImage, bran
           </div>
         </div>
 
+        {/* Tabs */}
+        <div className="flex border-b border-white/[0.06] shrink-0">
+          {[
+            { key: "info" as const, label: "Detalhes" },
+            { key: "edit" as const, label: "Editar" },
+          ].map(t => (
+            <button key={t.key} onClick={() => setTab(t.key)} className={`flex-1 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all ${tab === t.key ? "text-white border-b-2 border-red-500" : "text-neutral-600 hover:text-neutral-400"}`}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+
         {/* Content */}
-        <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-5">
-          {/* Title + Tags */}
-          <div>
-            <h2 className="text-xl font-bold text-white">{exercise.name}</h2>
-            <div className="flex items-center gap-2 mt-2 flex-wrap">
-              {exercise.machineCode && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/[0.06] font-mono">{exercise.machineCode}</span>
-              )}
-              {exercise.machineLine && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/[0.06]">{exercise.machineLine}</span>
-              )}
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/15">{exercise.muscle}</span>
-            </div>
-          </div>
-
-          {/* Instructions */}
-          {exercise.instructions && (
-            <div>
-              <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Target className="w-3.5 h-3.5 text-amber-400" />
-                Descricao e Instrucoes
-              </h3>
-              <p className="text-sm text-neutral-300 leading-relaxed">{exercise.instructions}</p>
-            </div>
-          )}
-
-          {/* Specs Grid */}
-          {specs.length > 0 && (
-            <div>
-              <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
-                <Ruler className="w-3.5 h-3.5 text-blue-400" />
-                Especificacoes Tecnicas
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {specs.map(s => (
-                  <div key={s.label} className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-center">
-                    <p className="text-lg font-bold text-white">{s.value}</p>
-                    <p className="text-[10px] text-neutral-500 mt-0.5">{s.label}</p>
-                  </div>
-                ))}
+        <div className="flex-1 overflow-y-auto overscroll-contain p-5 space-y-5 pb-10">
+          {tab === "info" ? (
+            <>
+              {/* Title + Tags */}
+              <div>
+                <h2 className="text-xl font-bold text-white">{exercise.name}</h2>
+                <div className="flex items-center gap-2 mt-2 flex-wrap">
+                  {exercise.machineCode && <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/[0.06] font-mono">{exercise.machineCode}</span>}
+                  {exercise.machineLine && <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-neutral-400 border border-white/[0.06]">{exercise.machineLine}</span>}
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/15">{exercise.muscle}</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-neutral-500 border border-white/[0.06]">{exercise.equipment}</span>
+                </div>
               </div>
+
+              {/* Muscle Targets */}
+              {muscleData && (
+                <div>
+                  <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Target className="w-3.5 h-3.5 text-red-400" />
+                    Musculos Alvo
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="rounded-xl bg-red-500/5 border border-red-500/10 p-3">
+                      <p className="text-[10px] text-red-400 font-semibold uppercase tracking-wider mb-1">Primarios</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {muscleData.primary.map(m => (
+                          <span key={m} className="text-xs px-2 py-0.5 rounded-full bg-red-500/10 text-red-300 border border-red-500/15">{m}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="rounded-xl bg-amber-500/5 border border-amber-500/10 p-3">
+                      <p className="text-[10px] text-amber-400 font-semibold uppercase tracking-wider mb-1">Secundarios / Sinergistas</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {muscleData.secondary.map(m => (
+                          <span key={m} className="text-xs px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/15">{m}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Instructions */}
+              {exercise.instructions && (
+                <div>
+                  <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Package className="w-3.5 h-3.5 text-amber-400" />
+                    Descricao e Recursos
+                  </h3>
+                  <p className="text-sm text-neutral-300 leading-relaxed">{exercise.instructions}</p>
+                </div>
+              )}
+
+              {/* Execution Tips */}
+              {muscleData && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <span className="text-emerald-400">✓</span> Dicas de Execucao
+                    </h3>
+                    <div className="space-y-1.5">
+                      {muscleData.tips.map((tip, i) => (
+                        <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-lg bg-emerald-500/5 border border-emerald-500/10">
+                          <span className="text-emerald-400 text-xs mt-0.5 shrink-0">✓</span>
+                          <p className="text-[11px] text-emerald-300/80 leading-relaxed">{tip}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                      <span className="text-red-400">✕</span> O Que Evitar
+                    </h3>
+                    <div className="space-y-1.5">
+                      {muscleData.avoid.map((item, i) => (
+                        <div key={i} className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-500/5 border border-red-500/10">
+                          <span className="text-red-400 text-xs mt-0.5 shrink-0">✕</span>
+                          <p className="text-[11px] text-red-300/80 leading-relaxed">{item}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Technical Specs */}
+              {specs.length > 0 && (
+                <div>
+                  <h3 className="text-xs font-semibold text-neutral-400 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                    <Ruler className="w-3.5 h-3.5 text-blue-400" />
+                    Especificacoes Tecnicas
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {specs.map(s => (
+                      <div key={s.label} className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-3 text-center">
+                        <p className="text-xs mb-0.5">{s.icon}</p>
+                        <p className="text-base font-bold text-white">{s.value}</p>
+                        <p className="text-[9px] text-neutral-500 mt-0.5">{s.label}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Brand Expertise Card */}
+              <div className="rounded-xl bg-gradient-to-br from-white/[0.04] to-transparent border border-white/[0.08] p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center shrink-0">
+                    <span className="text-2xl">{brandInfo?.flag || "📦"}</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-white">{brandName}</p>
+                    <p className="text-[10px] text-neutral-500">{brandInfo?.origin || ""} — {exercise.equipment}</p>
+                  </div>
+                </div>
+                {brandExpertise && (
+                  <div className="space-y-2 pt-1">
+                    <p className="text-[11px] text-neutral-400 leading-relaxed">{brandExpertise.desc}</p>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <div className="text-center">
+                        <p className="text-[10px] text-neutral-600 uppercase tracking-wider">Fundada</p>
+                        <p className="text-xs font-bold text-white">{brandExpertise.founded}</p>
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[10px] text-neutral-600 uppercase tracking-wider">Sede</p>
+                        <p className="text-xs font-bold text-white">{brandExpertise.hq}</p>
+                      </div>
+                    </div>
+                    <div className="px-3 py-2 rounded-lg bg-white/[0.03] border border-white/[0.04]">
+                      <p className="text-[10px] text-neutral-600 uppercase tracking-wider">Especialidade</p>
+                      <p className="text-xs text-amber-400 font-semibold">{brandExpertise.specialty}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </>
+          ) : (
+            /* ─── EDIT TAB ─── */
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Nome do exercicio</label>
+                <input value={editData.name} onChange={e => setEditData({ ...editData, name: e.target.value })} className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white outline-none focus:border-red-500/30" />
+              </div>
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">Instrucoes de execucao</label>
+                <textarea value={editData.instructions} onChange={e => setEditData({ ...editData, instructions: e.target.value })} rows={5} className="w-full rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30 resize-none" />
+              </div>
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">URL da foto</label>
+                <div className="flex gap-2">
+                  <input value={editData.imageUrl} onChange={e => setEditData({ ...editData, imageUrl: e.target.value })} placeholder="/machines/panatta/1fw087.png" className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30" />
+                  <label className="shrink-0 px-3 py-2.5 rounded-xl bg-red-600/20 border border-red-500/20 text-xs text-red-400 cursor-pointer hover:bg-red-600/30 transition-colors flex items-center gap-1.5 font-semibold">
+                    Upload
+                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      try {
+                        const { upload } = await import("@vercel/blob/client")
+                        const blob = await upload(`machines/${Date.now()}-${file.name}`, file, { access: "public", handleUploadUrl: "/api/upload" })
+                        setEditData({ ...editData, imageUrl: blob.url })
+                      } catch {
+                        const reader = new FileReader()
+                        reader.onload = () => setEditData({ ...editData, imageUrl: reader.result as string })
+                        reader.readAsDataURL(file)
+                      }
+                    }} />
+                  </label>
+                </div>
+                {editData.imageUrl && editData.imageUrl.startsWith("http") && (
+                  <img src={editData.imageUrl} alt="Preview" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-white/[0.06]" />
+                )}
+              </div>
+              <button onClick={handleSave} disabled={saving} className="w-full py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 transition-all disabled:opacity-50">
+                {saving ? "Salvando..." : "Salvar Alteracoes"}
+              </button>
             </div>
           )}
-
-          {/* Equipment type */}
-          <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/15 flex items-center justify-center shrink-0">
-              <span className="text-lg">{brandInfo?.flag || "📦"}</span>
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-bold text-white">{brandName}</p>
-              <p className="text-[11px] text-neutral-500">{brandInfo?.origin || ""} — {exercise.equipment}</p>
-            </div>
-          </div>
         </div>
       </div>
     </div>
