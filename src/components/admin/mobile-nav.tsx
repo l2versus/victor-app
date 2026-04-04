@@ -30,6 +30,7 @@ import {
   Zap,
   GraduationCap,
   Heart,
+  Package,
 } from "lucide-react"
 
 const mainItems = [
@@ -57,6 +58,7 @@ const moreItems = [
   { href: "/admin/assessments", label: "Avaliações", icon: ClipboardList },
   { href: "/admin/finance", label: "Financeiro", icon: DollarSign },
   { href: "/admin/exercises", label: "Exercícios", icon: Dumbbell },
+  { href: "/admin/catalogo", label: "Catálogo", icon: Package },
   { href: "/admin/machines", label: "Equip. 3D", icon: Dumbbell },
   { href: "/admin/import", label: "Importar MFIT", icon: Upload },
   { href: "/admin/settings", label: "Configurações", icon: Settings },

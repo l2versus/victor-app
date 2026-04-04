@@ -33,8 +33,17 @@ export async function GET(req: NextRequest) {
       where.isActive = true
     }
 
+    const brand = searchParams.get("brand") || ""
+    const hasMachine = searchParams.get("hasMachine") === "true"
+
     if (muscle) {
       where.muscle = muscle
+    }
+
+    if (brand) {
+      where.machineBrand = brand
+    } else if (hasMachine) {
+      where.machineBrand = { not: null }
     }
 
     if (search) {

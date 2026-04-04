@@ -28,6 +28,7 @@ import {
   Send,
   Zap,
   GraduationCap,
+  Package,
 } from "lucide-react"
 
 const navGroups = [
@@ -46,6 +47,7 @@ const navGroups = [
       { href: "/admin/workouts", label: "Treinos", icon: Dumbbell },
       { href: "/admin/template-library", label: "Templates", icon: BookOpen },
       { href: "/admin/exercises", label: "Exercícios", icon: Library },
+      { href: "/admin/catalogo", label: "Catálogo", icon: Package },
       { href: "/admin/machines", label: "Equip. 3D", icon: Dumbbell },
       { href: "/admin/bi-treino", label: "BI Treino", icon: BarChart3 },
     ],
