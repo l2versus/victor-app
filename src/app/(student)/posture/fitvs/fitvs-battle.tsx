@@ -30,15 +30,41 @@ import Link from "next/link"
 
 // ─── Exercise picker (simplified for battles) ──────────────────────────────
 
-const BATTLE_EXERCISES = [
-  { id: "squat", name: "Agachamento", icon: "🦵" },
-  { id: "push_up", name: "Flexão", icon: "💪" },
-  { id: "bicep_curl_dumbbell", name: "Rosca Bíceps", icon: "💪" },
-  { id: "shoulder_press_dumbbell", name: "Desenvolvimento", icon: "🏋️" },
-  { id: "deadlift_conventional", name: "Levantamento Terra", icon: "🏋️" },
-  { id: "lunge_forward", name: "Avanço", icon: "🦵" },
-  { id: "lateral_raise_dumbbell", name: "Elevação Lateral", icon: "💪" },
-  { id: "tricep_pushdown_cable", name: "Tríceps Pulley", icon: "💪" },
+// ─── Exercise catalog grouped by muscle ──────────────────────────────────
+
+interface BattleExercise { id: string; name: string; icon: string; group: string }
+
+const MUSCLE_GROUPS = [
+  { id: "all", label: "Todos", icon: "⚡" },
+  { id: "pernas", label: "Pernas", icon: "🦵" },
+  { id: "peito", label: "Peito", icon: "💪" },
+  { id: "costas", label: "Costas", icon: "🔙" },
+  { id: "ombros", label: "Ombros", icon: "🏋️" },
+  { id: "bracos", label: "Braços", icon: "💪" },
+  { id: "core", label: "Core", icon: "🔥" },
+]
+
+const BATTLE_EXERCISES: BattleExercise[] = [
+  // Pernas
+  { id: "squat", name: "Agachamento", icon: "🦵", group: "pernas" },
+  { id: "lunge_forward", name: "Avanço", icon: "🦵", group: "pernas" },
+  { id: "deadlift_conventional", name: "Lev. Terra", icon: "🦵", group: "pernas" },
+  { id: "leg_extension", name: "Extensora", icon: "🦵", group: "pernas" },
+  // Peito
+  { id: "push_up", name: "Flexão", icon: "💪", group: "peito" },
+  { id: "bench_press", name: "Supino", icon: "💪", group: "peito" },
+  // Costas
+  { id: "bent_over_row", name: "Remada", icon: "🔙", group: "costas" },
+  { id: "lat_pulldown", name: "Puxada", icon: "🔙", group: "costas" },
+  // Ombros
+  { id: "shoulder_press_dumbbell", name: "Desenvolvimento", icon: "🏋️", group: "ombros" },
+  { id: "lateral_raise_dumbbell", name: "Elev. Lateral", icon: "🏋️", group: "ombros" },
+  // Braços
+  { id: "bicep_curl_dumbbell", name: "Rosca Bíceps", icon: "💪", group: "bracos" },
+  { id: "tricep_pushdown_cable", name: "Tríceps Pulley", icon: "💪", group: "bracos" },
+  // Core
+  { id: "crunch", name: "Abdominal", icon: "🔥", group: "core" },
+  { id: "plank", name: "Prancha", icon: "🔥", group: "core" },
 ]
 
 export function FitVSBattle({ initialRoomId, userName }: { initialRoomId: string | null; userName: string }) {
@@ -46,6 +72,9 @@ export function FitVSBattle({ initialRoomId, userName }: { initialRoomId: string
   const [copied, setCopied] = useState(false)
   const [selectedExerciseId, setSelectedExerciseId] = useState("squat")
   const [targetReps, setTargetReps] = useState(5)
+  const [muscleFilter, setMuscleFilter] = useState("all")
+  const [members, setMembers] = useState<Array<{ id: string; name: string; avatar: string | null; online: boolean }>>([])
+  const [loadingMembers, setLoadingMembers] = useState(true)
 
   // Refs for video/canvas
   const myVideoRef = useRef<HTMLVideoElement>(null)
@@ -79,6 +108,27 @@ export function FitVSBattle({ initialRoomId, userName }: { initialRoomId: string
   useEffect(() => {
     battleRef.current = battle
   }, [battle])
+
+  // Fetch community members
+  useEffect(() => {
+    async function loadMembers() {
+      try {
+        const res = await fetch("/api/community/ranking?limit=20")
+        if (res.ok) {
+          const data = await res.json()
+          const list = (data.ranking || data || []).map((m: { id?: string; studentId?: string; name?: string; userName?: string; avatar?: string; profilePhoto?: string; lastSeenAt?: string }) => ({
+            id: m.id || m.studentId || "",
+            name: m.name || m.userName || "Atleta",
+            avatar: m.avatar || m.profilePhoto || null,
+            online: m.lastSeenAt ? (Date.now() - new Date(m.lastSeenAt).getTime()) < 15 * 60 * 1000 : false,
+          }))
+          setMembers(list)
+        }
+      } catch { /* ignore */ }
+      setLoadingMembers(false)
+    }
+    loadMembers()
+  }, [])
 
   // Social manager update callback
   useEffect(() => {
@@ -525,135 +575,215 @@ export function FitVSBattle({ initialRoomId, userName }: { initialRoomId: string
 
   // ═══ RENDER ═══════════════════════════════════════════════════════════
 
-  // ─── No battle yet — TikTok-style lobby ────────────────────────────────
+  // ─── No battle yet — Instagram-style lobby ──────────────────────────────
   if (!battle) {
+    const filteredExercises = muscleFilter === "all"
+      ? BATTLE_EXERCISES
+      : BATTLE_EXERCISES.filter(e => e.group === muscleFilter)
     const selectedEx = BATTLE_EXERCISES.find(e => e.id === selectedExerciseId) || BATTLE_EXERCISES[0]
+
     return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col">
+      <div className="space-y-4 pb-4">
         {/* Header */}
-        <div className="flex items-center justify-between px-4 pt-3 pb-2">
-          <Link href="/posture" className="p-2 -ml-2">
-            <X className="w-5 h-5 text-white" />
+        <div className="flex items-center gap-2">
+          <Link href="/posture" className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+            <ArrowLeft className="w-4 h-4 text-neutral-400" />
           </Link>
-          <h1 className="text-sm font-bold text-white">FitVS</h1>
-          <div className="w-9" />
-        </div>
-
-        {/* Main visual — exercise card */}
-        <div className="flex-1 flex flex-col items-center justify-center px-6 gap-6">
-          <div className="text-6xl">{selectedEx.icon}</div>
-          <div className="text-center">
-            <h2 className="text-2xl font-black text-white">{selectedEx.name}</h2>
-            <p className="text-neutral-500 text-sm mt-1">{targetReps} repetições • quem faz melhor ganha</p>
-          </div>
-
-          {/* Exercise swiper (horizontal scroll) */}
-          <div className="flex gap-2 overflow-x-auto pb-2 max-w-full px-2 scrollbar-hide">
-            {BATTLE_EXERCISES.map(ex => (
-              <button
-                key={ex.id}
-                onClick={() => setSelectedExerciseId(ex.id)}
-                className={cn(
-                  "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-full text-xs font-semibold transition-all",
-                  selectedExerciseId === ex.id
-                    ? "bg-white text-black"
-                    : "bg-white/10 text-white/70",
-                )}
-              >
-                <span>{ex.icon}</span>
-                <span>{ex.name}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Reps selector (simple pills) */}
-          <div className="flex gap-3">
-            {[3, 5, 8, 10].map(n => (
-              <button
-                key={n}
-                onClick={() => setTargetReps(n)}
-                className={cn(
-                  "w-11 h-11 rounded-full text-sm font-black transition-all",
-                  targetReps === n
-                    ? "bg-emerald-500 text-white scale-110"
-                    : "bg-white/10 text-white/50",
-                )}
-              >
-                {n}
-              </button>
-            ))}
+          <div>
+            <h1 className="text-lg font-bold text-white flex items-center gap-2">
+              <Swords className="w-5 h-5 text-emerald-400" />
+              FitVS Battle
+            </h1>
+            <p className="text-[11px] text-neutral-500">Desafie alguém em tempo real</p>
           </div>
         </div>
 
-        {/* Bottom CTA — one big button like TikTok "Go Live" */}
-        <div className="px-6 pb-8 space-y-3">
-          <button
-            onClick={async () => {
-              await createRoom()
-              // Auto-share immediately after creating
-              setTimeout(() => shareLink(), 500)
-            }}
-            className="w-full py-4 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-black text-base active:scale-[0.96] transition-all shadow-2xl shadow-emerald-500/30 flex items-center justify-center gap-2"
-          >
-            <Swords className="w-5 h-5" />
-            Convidar Amigo
-          </button>
-          <p className="text-[10px] text-neutral-600 text-center">O convite será enviado por WhatsApp, Instagram ou link</p>
+        {/* Muscle group filter (horizontal scroll) */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+          {MUSCLE_GROUPS.map(g => (
+            <button
+              key={g.id}
+              onClick={() => setMuscleFilter(g.id)}
+              className={cn(
+                "shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all",
+                muscleFilter === g.id
+                  ? "bg-emerald-500 text-white"
+                  : "bg-white/[0.06] text-neutral-400 hover:text-white",
+              )}
+            >
+              <span>{g.icon}</span>
+              <span>{g.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Exercise grid */}
+        <div className="grid grid-cols-4 gap-1.5">
+          {filteredExercises.map(ex => (
+            <button
+              key={ex.id}
+              onClick={() => setSelectedExerciseId(ex.id)}
+              className={cn(
+                "flex flex-col items-center gap-1 py-3 px-1 rounded-xl text-center transition-all",
+                selectedExerciseId === ex.id
+                  ? "bg-emerald-600/20 border border-emerald-500/40"
+                  : "bg-white/[0.03] border border-white/[0.06]",
+              )}
+            >
+              <span className="text-xl">{ex.icon}</span>
+              <span className={cn(
+                "text-[9px] font-semibold leading-tight",
+                selectedExerciseId === ex.id ? "text-emerald-300" : "text-neutral-500",
+              )}>{ex.name}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Reps selector */}
+        <div className="flex items-center gap-3">
+          <span className="text-[11px] text-neutral-500 font-medium">Reps:</span>
+          {[3, 5, 8, 10, 15].map(n => (
+            <button
+              key={n}
+              onClick={() => setTargetReps(n)}
+              className={cn(
+                "w-9 h-9 rounded-full text-xs font-black transition-all",
+                targetReps === n
+                  ? "bg-emerald-500 text-white"
+                  : "bg-white/[0.06] text-neutral-500",
+              )}
+            >
+              {n}
+            </button>
+          ))}
+        </div>
+
+        {/* CTA — Share to invite */}
+        <button
+          onClick={async () => {
+            await createRoom()
+            setTimeout(() => shareLink(), 500)
+          }}
+          className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-black text-sm active:scale-[0.96] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+        >
+          <Share2 className="w-4 h-4" />
+          Enviar Desafio
+        </button>
+
+        {/* Community members — who to challenge */}
+        <div className="space-y-2">
+          <p className="text-xs text-neutral-400 font-semibold flex items-center gap-1.5">
+            <Flame className="w-3.5 h-3.5 text-emerald-400" />
+            Desafiar alguém da comunidade
+          </p>
+
+          {loadingMembers ? (
+            <div className="flex gap-3 py-4 justify-center">
+              {[1,2,3].map(i => (
+                <div key={i} className="w-14 h-14 rounded-full bg-white/[0.05] animate-pulse" />
+              ))}
+            </div>
+          ) : members.length === 0 ? (
+            <p className="text-[11px] text-neutral-600 text-center py-4">
+              Nenhum membro encontrado. Use o botão acima pra convidar via WhatsApp!
+            </p>
+          ) : (
+            <div className="grid grid-cols-4 gap-3">
+              {members.slice(0, 8).map(m => (
+                <button
+                  key={m.id}
+                  onClick={async () => {
+                    await createRoom()
+                    setTimeout(() => shareLink(), 500)
+                  }}
+                  className="flex flex-col items-center gap-1.5 py-2 group"
+                >
+                  <div className="relative">
+                    <div className={cn(
+                      "w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold border-2 transition-all group-hover:scale-105",
+                      m.online
+                        ? "border-emerald-500 bg-emerald-600/20 text-emerald-300"
+                        : "border-white/10 bg-white/[0.05] text-neutral-500",
+                    )}>
+                      {m.avatar ? (
+                        <img src={m.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                      ) : (
+                        m.name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    {/* Online indicator */}
+                    {m.online && (
+                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-black" />
+                    )}
+                  </div>
+                  <span className="text-[9px] text-neutral-400 truncate w-full text-center">{m.name.split(" ")[0]}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Selected exercise preview */}
+        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <span className="text-2xl">{selectedEx.icon}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-bold text-white">{selectedEx.name}</p>
+            <p className="text-[10px] text-neutral-500">{targetReps} repetições • quem faz melhor ganha</p>
+          </div>
+          <Swords className="w-4 h-4 text-emerald-400 shrink-0" />
         </div>
       </div>
     )
   }
 
-  // ─── Waiting for opponent — TikTok style (full screen with camera) ─────
+  // ─── Waiting for opponent ──────────────────────────────────────────────
   if (battle.status === "waiting") {
     return (
-      <div className="fixed inset-0 bg-black z-50 flex flex-col">
-        {/* Full screen camera preview */}
-        <div className="flex-1 relative">
-          <video ref={myVideoRef} autoPlay playsInline muted className="absolute inset-0 w-full h-full object-cover" />
-
-          {/* Gradient overlay */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-black/80" />
-
-          {/* Top bar */}
-          <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 pt-3">
-            <button onClick={() => { cleanup(); setBattle(null) }} className="p-2 -ml-2">
-              <X className="w-5 h-5 text-white" />
-            </button>
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-600/90">
-              <div className="w-2 h-2 rounded-full bg-white animate-pulse" />
-              <span className="text-[11px] text-white font-bold">AGUARDANDO</span>
-            </div>
-            <div className="w-9" />
+      <div className="space-y-4 pb-4">
+        <div className="flex items-center gap-2">
+          <button onClick={() => { cleanup(); setBattle(null) }} className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
+            <ArrowLeft className="w-4 h-4 text-neutral-400" />
+          </button>
+          <div className="flex-1">
+            <h1 className="text-sm font-bold text-white">Aguardando oponente</h1>
+            <p className="text-[10px] text-neutral-500">{battle.exerciseName} • {battle.targetReps} reps</p>
           </div>
-
-          {/* Center — waiting message */}
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-            <div className="w-20 h-20 rounded-full border-3 border-white/30 border-t-emerald-400 animate-spin" />
-            <div className="text-center">
-              <p className="text-white font-bold text-lg">Esperando oponente...</p>
-              <p className="text-white/50 text-xs mt-1">{battle.exerciseName} • {battle.targetReps} reps</p>
-            </div>
-          </div>
-
-          {/* Bottom — share again */}
-          <div className="absolute bottom-0 left-0 right-0 px-6 pb-8 space-y-3">
-            <button
-              onClick={shareLink}
-              className="w-full py-3.5 rounded-2xl bg-white text-black font-bold text-sm active:scale-[0.96] transition-all flex items-center justify-center gap-2"
-            >
-              <Share2 className="w-4 h-4" />
-              Enviar convite novamente
-            </button>
-            <button
-              onClick={copyLink}
-              className="w-full py-2.5 rounded-xl text-white/60 text-xs font-medium flex items-center justify-center gap-1.5"
-            >
-              {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
-              {copied ? "Link copiado!" : "Copiar link"}
-            </button>
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-red-600/80">
+            <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            <span className="text-[9px] text-white font-bold">AO VIVO</span>
           </div>
         </div>
+
+        {/* Camera preview */}
+        <div className="relative rounded-2xl overflow-hidden aspect-[4/3] bg-black">
+          <video ref={myVideoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="text-center space-y-3">
+              <div className="w-14 h-14 rounded-full border-2 border-white/20 border-t-emerald-400 animate-spin mx-auto" />
+              <p className="text-white/80 text-sm font-semibold">Esperando...</p>
+            </div>
+          </div>
+          <div className="absolute bottom-2 left-2 px-2 py-1 rounded-lg bg-black/60 text-[10px] text-white font-semibold">
+            {userName} (você)
+          </div>
+        </div>
+
+        {/* Share buttons */}
+        <button
+          onClick={shareLink}
+          className="w-full py-3 rounded-xl bg-emerald-600 text-white font-bold text-sm active:scale-[0.97] transition-all flex items-center justify-center gap-2"
+        >
+          <Share2 className="w-4 h-4" />
+          Enviar convite
+        </button>
+
+        <button
+          onClick={copyLink}
+          className="w-full py-2.5 rounded-xl bg-white/[0.06] text-neutral-400 text-xs font-medium flex items-center justify-center gap-1.5"
+        >
+          {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+          {copied ? "Link copiado!" : "Copiar link do desafio"}
+        </button>
       </div>
     )
   }
