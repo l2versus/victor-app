@@ -51,11 +51,6 @@ export async function GET(req: NextRequest) {
       })
       if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 })
 
-      // Authorization: check trainer isolation
-      if (trainerId && post.student && (post.student as { trainerId?: string }).trainerId !== trainerId) {
-        return NextResponse.json({ error: "Post not found" }, { status: 404 })
-      }
-
       // Transform to same shape as feed posts
       const reactionCounts: Record<string, number> = { CLAP: 0, FIRE: 0, MUSCLE: 0 }
       const userReactions: string[] = []
