@@ -20,6 +20,7 @@ interface Exercise {
   muscle: string
   equipment: string
   instructions: string | null
+  gifUrl: string | null
   videoUrl: string | null
   imageUrl: string | null
   machineBrand: string | null
@@ -235,10 +236,10 @@ export function ExerciseLibrary({ exercises, muscleGroups }: ExerciseLibraryProp
                     {/* Expanded content */}
                     {isExpanded && (
                       <div className="px-3 pb-3 space-y-3 border-t border-white/[0.04] pt-3">
-                        {/* Machine photo */}
-                        {ex.imageUrl && (
+                        {/* Machine photo / GIF */}
+                        {(ex.gifUrl || ex.imageUrl) && (
                           <img
-                            src={ex.imageUrl}
+                            src={ex.gifUrl || ex.imageUrl!}
                             alt={ex.machineBrand || ex.name}
                             className="w-full rounded-xl object-cover max-h-48 bg-neutral-900"
                             loading="lazy"
