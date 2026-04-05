@@ -1,0 +1,28 @@
+name: Daily Engagement Push
+
+on:
+  schedule:
+    # 6x/dia BRT (UTC-3)
+    - cron: '0 11 * * *'  # 08:00 BRT — café da manhã
+    - cron: '0 13 * * *'  # 10:00 BRT — água
+    - cron: '0 15 * * *'  # 12:00 BRT — almoço
+    - cron: '0 18 * * *'  # 15:00 BRT — água
+    - cron: '0 21 * * *'  # 18:00 BRT — pré-ceia
+    - cron: '0 0 * * *'   # 21:00 BRT — jantar
+  workflow_dispatch:       # Manual trigger
+    inputs:
+      slot:
+        description: 'Time slot (morning, water_am, lunch, water_pm, pre_dinner, dinner)'
+        required: false
+        default: 'morning'
+
+jobs:
+  send-push:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger daily engagement
+        run: |
+          curl -sf -X GET \
+            "${{ secrets.APP_URL }}/api/cron/daily-engagement" \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            --max-time 30
