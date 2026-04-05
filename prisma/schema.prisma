@@ -183,6 +183,7 @@ model Student {
   restrictions Json?
   notes        String?
   status       StudentStatus @default(ACTIVE)
+  onboardingComplete Boolean @default(false) /// Fluxo de anamnese/perfil completo
 
   // ── Social Profile ──
   bio          String?   /// Bio pública do perfil (max 150 chars)
@@ -230,6 +231,8 @@ model Student {
   spotifyRefreshToken String?
   spotifyExpiresAt    DateTime?
   spotifyName         String?
+
+  healthScreening    HealthScreening?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1921,4 +1924,66 @@ model BlogPost {
   @@index([trainerId])
   @@index([status, publishedAt])
   @@index([slug])
+}
+
+// ═══════════════════════════════════════
+// HEALTH SCREENING — Onboarding obrigatório
+// ═══════════════════════════════════════
+
+enum FitnessLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+}
+
+enum FitnessGoal {
+  HYPERTROPHY
+  FAT_LOSS
+  HEALTH
+  PERFORMANCE
+  REHABILITATION
+}
+
+enum EquipmentAccess {
+  FULL_GYM
+  HOME_GYM
+  BODYWEIGHT
+}
+
+model HealthScreening {
+  id            String   @id @default(cuid())
+  studentId     String   @unique
+  student       Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  // ── PAR-Q (Physical Activity Readiness) ──
+  parqHeartCondition  Boolean @default(false) /// Médico disse que tem problema cardíaco?
+  parqChestPain       Boolean @default(false) /// Sente dor no peito durante atividade?
+  parqDizziness       Boolean @default(false) /// Perdeu equilíbrio/tontura nos últimos 12 meses?
+  parqBoneJoint       Boolean @default(false) /// Problema ósseo/articular que piora com exercício?
+  parqMedication      Boolean @default(false) /// Toma medicamento para pressão/coração?
+  parqOtherReason     Boolean @default(false) /// Outro motivo para não fazer exercício?
+  parqCleared         Boolean @default(true)  /// Se todas false → true, senão false (precisa médico)
+
+  // ── Lesões e Restrições ──
+  injuries     Json?    /// [{region: "knee_left", type: "meniscus", severity: "moderate", status: "current"}]
+  surgeries    Json?    /// [{type: "ACL reconstruction", year: 2022, region: "knee_right"}]
+  restrictions Json?    /// ["no_deep_squat", "no_overhead_press", "no_heavy_axial_load"]
+  medicalNotes String?  /// Observações médicas livres
+
+  // ── Perfil de Treino ──
+  level          FitnessLevel    @default(BEGINNER)
+  goal           FitnessGoal     @default(HEALTH)
+  frequency      Int             @default(3)    /// Dias por semana
+  equipment      EquipmentAccess @default(FULL_GYM)
+  sessionMinutes Int             @default(60)   /// Tempo disponível por sessão
+  experienceMonths Int           @default(0)    /// Meses de experiência com musculação
+
+  // ── Termo de Responsabilidade ──
+  liabilityAccepted Boolean   @default(false)
+  liabilitySignedAt DateTime?
+  lgpdConsentAt     DateTime?
+
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 }

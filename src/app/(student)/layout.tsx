@@ -7,6 +7,7 @@ import { getStudentFeatures } from "@/lib/subscription"
 import { ImpersonateHandler } from "@/components/admin/impersonate-handler"
 import { ImpersonateBanner } from "@/components/admin/impersonate-banner"
 import { AiChatFab } from "@/components/student/ai-chat-fab"
+import { WaterReminder } from "@/components/student/water-reminder"
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
   const session = await getSession()
@@ -23,6 +24,14 @@ export default async function StudentLayout({ children }: { children: React.Reac
     include: { user: { select: { name: true, avatar: true } } },
   })
 
+  // Guard: no student record → login
+  if (!student) redirect("/login")
+
+  // Onboarding guard — force new AND existing students through health screening
+  if (!student.onboardingComplete) {
+    redirect("/onboarding")
+  }
+
   // Update online presence (fire-and-forget)
   if (student) {
     prisma.student.update({
@@ -36,7 +45,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
   weekStart.setDate(weekStart.getDate() - weekStart.getDay() + (weekStart.getDay() === 0 ? -6 : 1))
   weekStart.setHours(0, 0, 0, 0)
 
-  const [weekSessions, streak, weekPlansCount, features] = await Promise.all([
+  const [weekSessions, streak, weekPlansCount, features, healthScreening] = await Promise.all([
     student ? prisma.workoutSession.count({
       where: { studentId: student.id, startedAt: { gte: weekStart }, completedAt: { not: null } },
     }) : 0,
@@ -65,6 +74,10 @@ export default async function StudentLayout({ children }: { children: React.Reac
       where: { studentId: student.id, active: true },
     }) : 0,
     student ? getStudentFeatures(student.id) : null,
+    prisma.healthScreening.findUnique({
+      where: { studentId: student.id },
+      select: { goal: true, frequency: true, sessionMinutes: true },
+    }),
   ])
 
   const userName = student?.user.name || session.email.split("@")[0]
@@ -117,6 +130,13 @@ export default async function StudentLayout({ children }: { children: React.Reac
 
       {/* ═══ Content ═══ */}
       <main className="relative max-w-lg mx-auto px-4 pb-24">
+        {/* Water reminder — based on weight + health screening */}
+        <WaterReminder
+          weightKg={student.weight}
+          goal={healthScreening?.goal}
+          frequency={healthScreening?.frequency}
+          sessionMinutes={healthScreening?.sessionMinutes}
+        />
         {children}
       </main>
 
