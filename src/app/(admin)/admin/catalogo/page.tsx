@@ -486,7 +486,7 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
 }) {
   const has3D = !!exercise.machine3dModel
   const [tab, setTab] = useState<"info" | "3d" | "edit">("info")
-  const [editData, setEditData] = useState({ name: exercise.name, instructions: exercise.instructions || "", imageUrl: exercise.imageUrl || "" })
+  const [editData, setEditData] = useState({ name: exercise.name, instructions: exercise.instructions || "", imageUrl: exercise.imageUrl || "", gifUrl: (exercise as Record<string, unknown>).gifUrl as string || "" })
   const [saving, setSaving] = useState(false)
   const [showAR, setShowAR] = useState(false)
 
@@ -507,7 +507,7 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
       const res = await fetch(`/api/admin/exercises?id=${exercise.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: editData.name, instructions: editData.instructions || null, imageUrl: editData.imageUrl || null }),
+        body: JSON.stringify({ name: editData.name, instructions: editData.instructions || null, imageUrl: editData.imageUrl || null, gifUrl: editData.gifUrl || null }),
       })
       if (res.ok) {
         onUpdate(exercise.id, { name: editData.name, instructions: editData.instructions || null, imageUrl: editData.imageUrl || null })
@@ -770,6 +770,34 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
                   <img src={editData.imageUrl} alt="Preview" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-white/[0.06]" />
                 )}
               </div>
+              {/* GIF animado */}
+              <div>
+                <label className="text-xs text-neutral-500 mb-1 block">GIF animado (execucao do exercicio)</label>
+                <div className="flex gap-2">
+                  <input value={editData.gifUrl} onChange={e => setEditData({ ...editData, gifUrl: e.target.value })} placeholder="https://link-do-gif.com/exercicio.gif" className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30" />
+                  <label className="shrink-0 px-3 py-2.5 rounded-xl bg-amber-600/20 border border-amber-500/20 text-xs text-amber-400 cursor-pointer hover:bg-amber-600/30 transition-colors flex items-center gap-1.5 font-semibold">
+                    Upload
+                    <input type="file" accept="image/gif,video/*" className="hidden" onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      try {
+                        const { upload } = await import("@vercel/blob/client")
+                        const blob = await upload(`exercises/gif/${Date.now()}-${file.name}`, file, { access: "public", handleUploadUrl: "/api/upload" })
+                        setEditData({ ...editData, gifUrl: blob.url })
+                      } catch {
+                        const reader = new FileReader()
+                        reader.onload = () => setEditData({ ...editData, gifUrl: reader.result as string })
+                        reader.readAsDataURL(file)
+                      }
+                    }} />
+                  </label>
+                </div>
+                {editData.gifUrl && (
+                  <img src={editData.gifUrl} alt="GIF Preview" className="mt-2 w-full max-h-40 object-contain rounded-lg border border-white/[0.06] bg-black" />
+                )}
+                <p className="text-[9px] text-neutral-600 mt-1">GIF mostra a execucao animada pro aluno no treino</p>
+              </div>
+
               <button onClick={handleSave} disabled={saving} className="w-full py-3 rounded-xl bg-red-600 text-white text-sm font-semibold hover:bg-red-500 transition-all disabled:opacity-50">
                 {saving ? "Salvando..." : "Salvar Alteracoes"}
               </button>
