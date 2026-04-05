@@ -30,8 +30,68 @@ export async function GET(req: NextRequest) {
     }
 
     const { searchParams } = new URL(req.url)
+    const singlePostId = searchParams.get("postId")
     const cursor = searchParams.get("cursor")
     const limit = Math.min(Number(searchParams.get("limit")) || 20, 50)
+
+    // Single post fetch for deep-linking from notifications
+    if (singlePostId) {
+      const post = await prisma.communityPost.findUnique({
+        where: { id: singlePostId },
+        include: {
+          student: { include: { user: { select: { name: true, avatar: true } } } },
+          reactions: { select: { type: true, studentId: true } },
+          likes: { select: { studentId: true }, take: 5 },
+          comments: {
+            include: { student: { include: { user: { select: { name: true, avatar: true } } } } },
+            orderBy: { createdAt: "asc" as const },
+          },
+          _count: { select: { likes: true, comments: true, views: true } },
+        },
+      })
+      if (!post) return NextResponse.json({ error: "Post not found" }, { status: 404 })
+
+      // Authorization: check trainer isolation
+      if (trainerId && post.student && (post.student as { trainerId?: string }).trainerId !== trainerId) {
+        return NextResponse.json({ error: "Post not found" }, { status: 404 })
+      }
+
+      // Transform to same shape as feed posts
+      const reactionCounts: Record<string, number> = { CLAP: 0, FIRE: 0, MUSCLE: 0 }
+      const userReactions: string[] = []
+      for (const r of post.reactions) {
+        reactionCounts[r.type] = (reactionCounts[r.type] || 0) + 1
+        if (r.studentId === currentStudentId) userReactions.push(r.type)
+      }
+
+      return NextResponse.json({
+        post: {
+          id: post.id,
+          type: post.type,
+          content: post.content,
+          imageUrl: post.imageUrl,
+          metadata: post.metadata,
+          studentId: post.studentId,
+          studentName: post.student?.user.name ?? "Personal",
+          studentAvatar: post.student?.user.avatar ?? null,
+          reactionCounts,
+          userReactions,
+          likesCount: post._count.likes,
+          commentsCount: post._count.comments,
+          viewsCount: post._count.views,
+          isLiked: post.likes.some(l => l.studentId === currentStudentId),
+          likedBy: [],
+          comments: post.comments.map(c => ({
+            id: c.id,
+            content: c.content,
+            studentName: c.student?.user.name ?? "Anonimo",
+            studentAvatar: c.student?.user.avatar ?? null,
+            createdAt: c.createdAt,
+          })),
+          createdAt: post.createdAt,
+        },
+      })
+    }
 
     // Smart feed: get who I follow
     const following = currentStudentId

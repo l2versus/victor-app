@@ -373,9 +373,12 @@ export default function CommunityPage() {
 
   // Deep link: scroll to post from ?post= param (e.g. from notifications)
   useEffect(() => {
-    if (!deepLinkPostId || deepLinkScrolled.current || feed.length === 0) return
+    if (!deepLinkPostId || deepLinkScrolled.current) return
+    if (feed.length === 0) return
+
     const el = document.getElementById(`post-${deepLinkPostId}`)
     if (el) {
+      // Post already in feed — scroll to it
       deepLinkScrolled.current = true
       setTab("feed")
       setTimeout(() => {
@@ -383,6 +386,28 @@ export default function CommunityPage() {
         setHighlightPostId(deepLinkPostId)
         setTimeout(() => setHighlightPostId(null), 2500)
       }, 300)
+    } else {
+      // Post not in feed — fetch it and prepend
+      deepLinkScrolled.current = true
+      setTab("feed")
+      fetch(`/api/community/feed?postId=${deepLinkPostId}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (!data?.post) return
+          setFeed(prev => {
+            if (prev.some(p => p.id === data.post.id)) return prev
+            return [data.post, ...prev]
+          })
+          setTimeout(() => {
+            const postEl = document.getElementById(`post-${deepLinkPostId}`)
+            if (postEl) {
+              postEl.scrollIntoView({ behavior: "smooth", block: "center" })
+              setHighlightPostId(deepLinkPostId)
+              setTimeout(() => setHighlightPostId(null), 2500)
+            }
+          }, 500)
+        })
+        .catch(() => {})
     }
   }, [deepLinkPostId, feed])
 
