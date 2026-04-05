@@ -224,7 +224,7 @@ export function ProgressClient({ photos: initialPhotos }: { photos: Photo[] }) {
               <input type="file" ref={fileRef} accept="image/*" capture="environment" onChange={handleFileChange} className="hidden" />
               {preview ? (
                 <div className="relative">
-                  <img src={preview} alt="Preview" className="w-full aspect-[3/4] object-cover rounded-xl" />
+                  <img src={preview} alt="Prévia" className="w-full aspect-[3/4] object-cover rounded-xl" />
                   <button onClick={() => setPreview(null)} className="absolute top-2 right-2 p-2 rounded-full bg-black/50">
                     <X className="w-4 h-4 text-white" />
                   </button>

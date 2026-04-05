@@ -348,7 +348,7 @@ export default function WelcomeWizardPage() {
                         className="w-16 h-16 rounded-2xl border-2 border-dashed border-white/[0.12] bg-white/[0.04] flex items-center justify-center hover:border-white/20 transition-colors overflow-hidden shrink-0"
                       >
                         {logoPreview ? (
-                          <img src={logoPreview} alt="Logo" className="w-full h-full object-cover rounded-xl" />
+                          <img src={logoPreview} alt="Logotipo" className="w-full h-full object-cover rounded-xl" />
                         ) : uploading ? (
                           <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                         ) : (

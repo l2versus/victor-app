@@ -768,7 +768,7 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
                   </label>
                 </div>
                 {editData.imageUrl && editData.imageUrl.startsWith("http") && (
-                  <img src={editData.imageUrl} alt="Preview" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-white/[0.06]" />
+                  <img src={editData.imageUrl} alt="Prévia" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-white/[0.06]" />
                 )}
               </div>
               {/* GIF animado */}

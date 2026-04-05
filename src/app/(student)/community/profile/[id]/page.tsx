@@ -614,7 +614,7 @@ export default function SocialProfilePage() {
               </label>
             ) : (
               <div className="relative rounded-xl overflow-hidden border border-white/[0.08]">
-                <SafeImage src={newHighlightPreview} alt="Preview" className="w-full max-h-[30dvh] object-cover" />
+                <SafeImage src={newHighlightPreview} alt="Prévia" className="w-full max-h-[30dvh] object-cover" />
                 <button
                   onClick={() => { setNewHighlightFile(null); setNewHighlightPreview(null) }}
                   className="absolute top-2 right-2 w-8 h-8 rounded-full bg-black/70 flex items-center justify-center"

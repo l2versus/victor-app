@@ -402,7 +402,7 @@ export function CrmClient() {
           {[
             { key: "pipeline" as const, label: "Pipeline", icon: Target },
             { key: "dashboard" as const, label: "Dashboard", icon: BarChart3 },
-            { key: "inbox" as const, label: "Inbox", icon: MessageCircle },
+            { key: "inbox" as const, label: "Caixa de Entrada", icon: MessageCircle },
             { key: "broadcasts" as const, label: "Envios", icon: Send },
             { key: "templates" as const, label: "Templates", icon: FileText },
             { key: "webhooks" as const, label: "Webhooks", icon: Webhook },

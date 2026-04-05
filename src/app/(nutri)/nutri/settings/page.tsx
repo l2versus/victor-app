@@ -258,7 +258,7 @@ export default function NutriSettingsPage() {
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-2xl border border-white/[0.06] bg-white/[0.02] flex items-center justify-center overflow-hidden shrink-0">
                 {logoPreview ? (
-                  <img src={logoPreview} alt="Logo" className="w-full h-full object-cover" />
+                  <img src={logoPreview} alt="Logotipo" className="w-full h-full object-cover" />
                 ) : (
                   <Upload className="w-5 h-5 text-neutral-700" />
                 )}

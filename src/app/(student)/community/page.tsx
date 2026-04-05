@@ -810,7 +810,7 @@ export default function CommunityPage() {
                   {storyFile?.type.startsWith("video/") ? (
                     <video src={storyPreview} className="w-full max-h-[40dvh] object-contain" autoPlay muted loop playsInline />
                   ) : (
-                    <SafeImage src={storyPreview} alt="Preview" className="w-full max-h-[40dvh] object-contain" />
+                    <SafeImage src={storyPreview} alt="Prévia" className="w-full max-h-[40dvh] object-contain" />
                   )}
                   <button
                     onClick={() => { setStoryPreview(null); setStoryFile(null); setStoryProgress("") }}
@@ -2383,7 +2383,7 @@ function PostComposer({ onClose, onPost }: { onClose: () => void; onPost: () => 
               {isVideo ? (
                 <video src={mediaPreview} className="w-full max-h-[400px] object-contain" autoPlay muted loop playsInline />
               ) : (
-                <SafeImage src={mediaPreview} alt="Preview" className="w-full max-h-[400px] object-contain" />
+                <SafeImage src={mediaPreview} alt="Prévia" className="w-full max-h-[400px] object-contain" />
               )}
               <button
                 onClick={() => { setMediaPreview(null); setMediaFile(null) }}

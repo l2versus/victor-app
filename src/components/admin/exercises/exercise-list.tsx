@@ -539,7 +539,7 @@ export function ExerciseList({ initialData }: { initialData: ExerciseData }) {
                     </label>
                   </div>
                   {editMedia.imageUrl && editMedia.imageUrl.startsWith("http") && (
-                    <img src={editMedia.imageUrl} alt="Preview" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-white/[0.06]" />
+                    <img src={editMedia.imageUrl} alt="Prévia" className="mt-2 w-full max-h-32 object-cover rounded-lg border border-white/[0.06]" />
                   )}
                   <p className="text-[9px] text-neutral-600 mt-1">Cole um link ou faça upload direto (até 100MB via Blob)</p>
                 </div>

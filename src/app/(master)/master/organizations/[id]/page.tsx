@@ -64,7 +64,7 @@ const statusConfig: Record<string, { label: string; classes: string }> = {
 }
 
 const tabs = [
-  { key: "info", label: "Info", icon: Info },
+  { key: "info", label: "Informações", icon: Info },
   { key: "professionals", label: "Profissionais", icon: UserCog },
   { key: "students", label: "Alunos", icon: Users },
   { key: "brand", label: "Marca", icon: Palette },

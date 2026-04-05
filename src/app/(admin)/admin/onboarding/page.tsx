@@ -261,7 +261,7 @@ export default function OnboardingPage() {
                       {logoPreview ? (
                         <img
                           src={logoPreview}
-                          alt="Logo"
+                          alt="Logotipo"
                           className="w-full h-full object-cover rounded-xl"
                         />
                       ) : uploading ? (
