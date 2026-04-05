@@ -2,7 +2,7 @@ import { requireAuth } from "@/lib/auth"
 import { getStudentProfile } from "@/lib/student"
 import { checkFeature } from "@/lib/subscription"
 import { redirect } from "next/navigation"
-import { Camera, Lock, Crown, Zap, Shield, Eye, Activity, Scan, PersonStanding, ChevronRight, Dumbbell } from "lucide-react"
+import { Camera, Lock, Crown, Zap, Shield, Eye, Activity, Scan, PersonStanding, ChevronRight, Dumbbell, Swords, ScanSearch } from "lucide-react"
 import { PostureLoader } from "@/components/student/posture-loader"
 import { TOTAL_EXERCISES_WITH_POSTURE, ALL_EXERCISE_GROUPS as EXERCISE_GROUPS } from "@/lib/posture-rules-all"
 import Link from "next/link"
@@ -131,6 +131,23 @@ export default async function PosturePage({ searchParams }: { searchParams: Prom
         <ChevronRight className="w-4 h-4 text-neutral-600" />
       </Link>
 
+      {/* FitVS Battle link */}
+      <Link
+        href="/posture/fitvs"
+        className="flex items-center justify-between p-3 rounded-xl bg-emerald-600/[0.06] border border-emerald-500/15 hover:bg-emerald-600/[0.10] active:scale-[0.98] transition-all"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-emerald-600/20 flex items-center justify-center">
+            <Swords className="w-4 h-4 text-emerald-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">FitVS Battle</p>
+            <p className="text-[10px] text-neutral-500">Desafie um amigo em tempo real</p>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-neutral-600" />
+      </Link>
+
       {/* Overhead Squat Assessment link */}
       <Link
         href="/posture/overhead-squat"
@@ -143,6 +160,23 @@ export default async function PosturePage({ searchParams }: { searchParams: Prom
           <div>
             <p className="text-xs font-semibold text-white">Overhead Squat (NASM)</p>
             <p className="text-[10px] text-neutral-500">5 checkpoints • análise em tempo real</p>
+          </div>
+        </div>
+        <ChevronRight className="w-4 h-4 text-neutral-600" />
+      </Link>
+
+      {/* GymVision link */}
+      <Link
+        href="/posture/gymvision"
+        className="flex items-center justify-between p-3 rounded-xl bg-cyan-600/[0.06] border border-cyan-500/15 hover:bg-cyan-600/[0.10] active:scale-[0.98] transition-all"
+      >
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-lg bg-cyan-600/20 flex items-center justify-center">
+            <ScanSearch className="w-4 h-4 text-cyan-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white">GymVision</p>
+            <p className="text-[10px] text-neutral-500">Identifique máquinas pela câmera</p>
           </div>
         </div>
         <ChevronRight className="w-4 h-4 text-neutral-600" />

@@ -40,6 +40,13 @@ import {
 import { LandmarkSmoother, WorldLandmarkSmoother } from "@/lib/landmark-smoother"
 import { PostureScorer, type MultiDimensionalScore } from "@/lib/posture-scorer"
 import {
+  type GhostConfig,
+  createGhostConfig,
+  computeIdealLandmarks,
+  calculateGhostMatch,
+  drawGhostMirror,
+} from "@/lib/ghost-mirror"
+import {
   ALL_EXERCISE_GROUPS as EXERCISE_GROUPS,
   ALL_EXERCISE_RULES as EXERCISE_RULES,
   TOTAL_EXERCISES_WITH_POSTURE,
@@ -111,6 +118,9 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
   // ═══ Video quality (user selectable) ═══
   const [videoQuality, setVideoQuality] = useState<"hd" | "fhd" | "4k">("fhd")
   const videoQualityRef = useRef<"hd" | "fhd" | "4k">("fhd")
+  // ═══ Ghost Mirror (Espelho Fantasma) ═══
+  const [ghostConfig, setGhostConfig] = useState<GhostConfig>(createGhostConfig())
+  const ghostConfigRef = useRef<GhostConfig>(createGhostConfig())
   // ═══ 3D Machine Guide — disabled until models are mapped ═══
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -139,6 +149,10 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
   useEffect(() => {
     videoQualityRef.current = videoQuality
   }, [videoQuality])
+
+  useEffect(() => {
+    ghostConfigRef.current = ghostConfig
+  }, [ghostConfig])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -450,6 +464,19 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
                 ctx.fillStyle = isGoodAngle ? "#22c55e" : "#eab308"
                 ctx.fillText(angleText, labelX, labelY)
               }
+            }
+
+            // ═══ GHOST MIRROR — draw ideal silhouette overlay ═══
+            if (ghostConfigRef.current.enabled) {
+              const exercise = selectedExerciseRef.current
+              const idealLm = computeIdealLandmarks(landmarks, exercise.muscleGroup, exercise.id)
+              const ghostResult = calculateGhostMatch(landmarks, idealLm, exercise.muscleGroup, exercise.id)
+              drawGhostMirror(
+                ctx, idealLm, ghostResult,
+                canvas.width, canvas.height,
+                ghostConfigRef.current.opacity,
+                ghostConfigRef.current.showScore,
+              )
             }
 
             // Detect camera angle from landmark patterns (validates user's choice)
@@ -959,6 +986,32 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
             </p>
           </div>
 
+          {/* Ghost Mirror toggle */}
+          <div className="flex items-center justify-between px-3 py-2 border-t border-white/[0.04]">
+            <span className="text-[10px] text-neutral-500 font-medium flex items-center gap-1.5">
+              <span>👻</span>
+              Espelho Fantasma
+            </span>
+            <button
+              onClick={() => setGhostConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
+              className={cn(
+                "relative w-9 h-5 rounded-full transition-colors",
+                ghostConfig.enabled ? "bg-emerald-600" : "bg-white/[0.08]",
+              )}
+            >
+              <span className={cn(
+                "absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform",
+                ghostConfig.enabled ? "left-[18px]" : "left-0.5",
+              )} />
+            </button>
+          </div>
+          {ghostConfig.enabled && (
+            <div className="px-3 pb-2 text-[9px] text-emerald-400/70 flex items-center gap-1">
+              <Zap className="w-3 h-3" />
+              Silhueta ideal será exibida sobre o vídeo — tente encaixar seu corpo
+            </div>
+          )}
+
           {/* Video quality selector */}
           <div className="flex items-center justify-between px-3 py-2 border-t border-white/[0.04]">
             <span className="text-[10px] text-neutral-500 font-medium flex items-center gap-1.5">
@@ -1014,6 +1067,19 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
         {state === "analyzing" && (
           <>
             <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+              {/* Ghost Mirror toggle */}
+              <button
+                onClick={() => setGhostConfig(prev => ({ ...prev, enabled: !prev.enabled }))}
+                className={cn(
+                  "px-2 py-1 rounded-lg text-[9px] font-bold transition-all active:scale-90",
+                  ghostConfig.enabled
+                    ? "bg-emerald-600/80 text-white border border-emerald-400/50"
+                    : "bg-black/60 text-neutral-400 hover:text-white hover:bg-black/80",
+                )}
+                title="Espelho Fantasma — silhueta da forma ideal"
+              >
+                👻 GHOST
+              </button>
               <button
                 onClick={switchCamera}
                 className="p-1.5 rounded-lg bg-black/60 text-neutral-300 hover:text-white hover:bg-black/80 active:scale-90 transition-all"
