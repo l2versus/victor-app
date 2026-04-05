@@ -67,8 +67,8 @@ model TrainerProfile {
   onboardingComplete Boolean @default(false)
   organizationId     String?
 
-  user      User              @relation("UserTrainer", fields: [userId], references: [id])
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  user      User              @relation("UserTrainer", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   students  Student[]
   templates WorkoutTemplate[]
   plans     Plan[]
@@ -141,8 +141,8 @@ model NutritionistProfile {
   brandColor         String  @default("#10b981")
   onboardingComplete Boolean @default(false)
 
-  user         User          @relation("UserNutritionist", fields: [userId], references: [id])
-  organization Organization? @relation(fields: [organizationId], references: [id])
+  user         User          @relation("UserNutritionist", fields: [userId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   mealPlans    MealPlan[]
   students     Student[]     @relation("StudentNutritionist")
   knowledge    KnowledgeDocument[] @relation("NutriKnowledge")
@@ -191,10 +191,10 @@ model Student {
   bioLink      String?   /// Link no perfil (ex: Instagram, LinkedIn)
   lastSeenAt   DateTime? /// Último acesso — online status
 
-  user         User                @relation("UserStudent", fields: [userId], references: [id])
-  trainer      TrainerProfile?     @relation(fields: [trainerId], references: [id])
-  organization   Organization?        @relation(fields: [organizationId], references: [id])
-  nutritionist   NutritionistProfile? @relation("StudentNutritionist", fields: [nutritionistId], references: [id])
+  user         User                @relation("UserStudent", fields: [userId], references: [id], onDelete: Cascade)
+  trainer      TrainerProfile?     @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  organization   Organization?        @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  nutritionist   NutritionistProfile? @relation("StudentNutritionist", fields: [nutritionistId], references: [id], onDelete: SetNull)
   mealPlanAssignments StudentMealPlan[]
   sessions     WorkoutSession[]
   assessments  Assessment[]
@@ -290,7 +290,7 @@ model WorkoutTemplate {
   trainerId String
   notes     String?
 
-  trainer      TrainerProfile      @relation(fields: [trainerId], references: [id])
+  trainer      TrainerProfile      @relation(fields: [trainerId], references: [id], onDelete: Cascade)
   exercises    WorkoutExercise[]
   sessions     WorkoutSession[]
   workoutPlans StudentWorkoutPlan[]
@@ -329,7 +329,7 @@ model WorkoutExercise {
   technique        ExerciseTechnique @default(NORMAL)
 
   template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
-  exercise Exercise        @relation(fields: [exerciseId], references: [id])
+  exercise Exercise        @relation(fields: [exerciseId], references: [id], onDelete: Cascade)
 
   @@index([templateId])
   @@index([exerciseId])
@@ -371,7 +371,7 @@ model WorkoutSession {
   durationMin Int?
 
   student  Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  template WorkoutTemplate @relation(fields: [templateId], references: [id])
+  template WorkoutTemplate @relation(fields: [templateId], references: [id], onDelete: Cascade)
   sets     SessionSet[]
   feedback WorkoutFeedback?
 
@@ -429,7 +429,7 @@ model WorkoutFeedback {
   summary       String?
   tokensUsed    Int           @default(0)
 
-  session  WorkoutSession    @relation(fields: [sessionId], references: [id])
+  session  WorkoutSession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   student  Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
   messages FeedbackMessage[]
 
@@ -523,7 +523,7 @@ model Plan {
 
   description String?
 
-  trainer       TrainerProfile @relation(fields: [trainerId], references: [id])
+  trainer       TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
   subscriptions Subscription[]
 
   createdAt DateTime @default(now())
@@ -544,7 +544,7 @@ model Subscription {
   trialEndsAt DateTime?          /// Data de expiração do trial gratuito (B2C)
 
   student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  plan    Plan    @relation(fields: [planId], references: [id])
+  plan    Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -631,7 +631,7 @@ model OperationalCost {
   notes       String?
   active      Boolean        @default(true)  // custos recorrentes ativos
 
-  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+  trainer TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -655,7 +655,7 @@ model Notification {
   sentVia  Json    @default("[]")
   metadata Json?
 
-  user User @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -861,8 +861,8 @@ model DirectMessage {
   /// Canal: APP (padrão), WHATSAPP (do aluno), WHATSAPP_BOT (resposta automática)
   channel    String    @default("APP")
 
-  sender   User @relation("MessageSender", fields: [senderId], references: [id])
-  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id])
+  sender   User @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver User @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -994,7 +994,7 @@ model Challenge {
   createdById String?         // Student que criou (null = admin)
 
   group     CommunityGroup? @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  createdBy Student?        @relation("ChallengeCreator", fields: [createdById], references: [id])
+  createdBy Student?        @relation("ChallengeCreator", fields: [createdById], references: [id], onDelete: SetNull)
   entries   ChallengeEntry[]
 
   createdAt DateTime @default(now())
@@ -1074,7 +1074,7 @@ model MealPlan {
   meals           Json
   active          Boolean @default(true)
 
-  nutritionist NutritionistProfile @relation(fields: [nutritionistId], references: [id])
+  nutritionist NutritionistProfile @relation(fields: [nutritionistId], references: [id], onDelete: Cascade)
   assignments  StudentMealPlan[]
 
   createdAt DateTime @default(now())
@@ -1234,8 +1234,8 @@ model ScheduleSlot {
   recurring      Boolean        @default(false) // se repete toda semana
   color          String?        // cor customizada no calendário
 
-  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id])
-  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id])
+  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id], onDelete: SetNull)
   student      Student?             @relation(fields: [studentId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
@@ -1363,7 +1363,7 @@ model CheckIn {
   notes     String?
 
   student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  trainer TrainerProfile @relation(fields: [trainerId], references: [id])
+  trainer TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
@@ -1422,8 +1422,8 @@ model Lead {
   convertedAt    DateTime?
   lostReason     String?
 
-  trainer        TrainerProfile?       @relation(fields: [trainerId], references: [id])
-  nutritionist   NutritionistProfile?  @relation(fields: [nutritionistId], references: [id])
+  trainer        TrainerProfile?       @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  nutritionist   NutritionistProfile?  @relation(fields: [nutritionistId], references: [id], onDelete: SetNull)
   followUps      LeadFollowUp[]
   activities     CrmActivity[]
   conversations  CrmConversation[]
@@ -1482,8 +1482,8 @@ model CrmTemplate {
   category       String?
   variables      String[] // detected {{var}} placeholders
 
-  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id])
-  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id])
+  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1502,8 +1502,8 @@ model CrmWebhook {
   active         Boolean @default(true)
   config         Json?   // field mapping, default values
 
-  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id])
-  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id])
+  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id], onDelete: SetNull)
   logs         CrmWebhookLog[]
 
   createdAt DateTime @default(now())
@@ -1579,8 +1579,8 @@ model CrmBroadcast {
   failedCount    Int       @default(0)
   scheduledAt    DateTime?
 
-  trainer      TrainerProfile?       @relation(fields: [trainerId], references: [id])
-  nutritionist NutritionistProfile?  @relation(fields: [nutritionistId], references: [id])
+  trainer      TrainerProfile?       @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  nutritionist NutritionistProfile?  @relation(fields: [nutritionistId], references: [id], onDelete: SetNull)
   recipients   CrmBroadcastRecipient[]
 
   createdAt DateTime @default(now())
@@ -1616,8 +1616,8 @@ model CrmBotFlow {
   edges          Json    @default("[]")
   active         Boolean @default(false)
 
-  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id])
-  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id])
+  trainer      TrainerProfile?      @relation(fields: [trainerId], references: [id], onDelete: SetNull)
+  nutritionist NutritionistProfile? @relation(fields: [nutritionistId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1686,9 +1686,9 @@ model KnowledgeDocument {
   sourceUrl   String?           // link do artigo original
   embedding   Float[]           // Google text-embedding-004 = 768 dims, stored as JSON array
 
-  trainer     TrainerProfile @relation(fields: [trainerId], references: [id])
+  trainer     TrainerProfile @relation(fields: [trainerId], references: [id], onDelete: Cascade)
   nutritionistId String?
-  nutritionist   NutritionistProfile? @relation("NutriKnowledge", fields: [nutritionistId], references: [id])
+  nutritionist   NutritionistProfile? @relation("NutriKnowledge", fields: [nutritionistId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -1808,8 +1808,8 @@ model SaasSubscription {
   trialEndsAt    DateTime?
   cancelledAt    DateTime?
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  plan         SaasPlan     @relation(fields: [planId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         SaasPlan     @relation(fields: [planId], references: [id], onDelete: Cascade)
   invoices     SaasInvoice[]
 
   createdAt DateTime @default(now())
@@ -1828,7 +1828,7 @@ model SaasInvoice {
   paidAt         DateTime?
   referenceMonth String
 
-  subscription SaasSubscription @relation(fields: [subscriptionId], references: [id])
+  subscription SaasSubscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
 
