@@ -32,14 +32,24 @@ const LUNCH_MESSAGES = [
   { title: "Não coma besteira!", body: "Aquela coxinha parece inofensiva, mas são 300kcal vazias. Troca por algo que te nutre." },
 ]
 
-const EVENING_MESSAGES = [
-  { title: "Jantar é importante!", body: "Não dormir sem comer. Seu corpo recupera durante o sono e precisa de nutrientes." },
-  { title: "Fim de dia, hora de cuidar", body: "Como foi sua alimentação hoje? Registre no app e acompanhe sua evolução." },
-  { title: "Treinou hoje?", body: "Se sim, manda ver no jantar com proteína. Se não, amanhã é dia! Descanse bem." },
-  { title: "Recuperação começa agora", body: "Sono + alimentação = crescimento muscular. Nada de dormir de barriga vazia." },
-  { title: "Evite besteira à noite", body: "Aquele doce depois do jantar? Troca por fruta com pasta de amendoim." },
+const PRE_DINNER_MESSAGES = [
+  { title: "Hora do lanche da noite!", body: "Não espere o jantar morrendo de fome. Um lanche leve agora evita exagero depois." },
+  { title: "Pré-ceia inteligente", body: "Iogurte, frutas, castanhas ou um shake leve. Segura a fome sem estragar o jantar." },
+  { title: "Treinou hoje?", body: "Se sim, é hora de repor energia. Shake, banana com pasta de amendoim, ou iogurte proteico." },
+  { title: "Não pule o lanche!", body: "Ficar muitas horas sem comer = metabolismo lento. Um snack saudável agora faz diferença." },
+  { title: "Evite besteira agora!", body: "A tentação bate forte às 18h. Troca o salgadinho por fruta com granola ou mix de nuts." },
+  { title: "Lanche pré-jantar", body: "Queijo branco, fruta, ovo cozido, homus... opções rápidas que nutrem de verdade." },
+  { title: "Fome agora?", body: "Normal! Seu corpo precisa de energia constante. Coma algo leve e nutritivo — o jantar vem depois." },
+]
+
+const DINNER_MESSAGES = [
+  { title: "Hora do jantar!", body: "Não dormir sem comer. Seu corpo recupera durante o sono e precisa de nutrientes." },
+  { title: "Jantar é recuperação", body: "Sono + alimentação = crescimento muscular. Nada de dormir de barriga vazia." },
   { title: "Não pule o jantar!", body: "Dormir sem comer = catabolismo. Proteína + carboidrato leve = recuperação ideal." },
-  { title: "Amanhã é dia de evolução", body: "Planeje seu treino de amanhã agora. Quem planeja, executa." },
+  { title: "Fim de dia, hora de cuidar", body: "Como foi sua alimentação hoje? Registre no app e acompanhe sua evolução." },
+  { title: "Evite besteira à noite", body: "Aquele doce depois do jantar? Troca por fruta com pasta de amendoim." },
+  { title: "Jantar leve, sono pesado", body: "Proteína magra + legumes + carboidrato integral. Receita pro corpo se recuperar a noite." },
+  { title: "Amanhã é dia de evolução", body: "Planeje seu treino de amanhã agora. Quem planeja, executa. Mas primeiro: jante bem!" },
 ]
 
 // ── WATER messages (10h, 15h) — personalized by weight ──
@@ -54,18 +64,19 @@ const WATER_MESSAGES = [
   { title: "Check de hidratação", body: "Meio do dia — já bebeu pelo menos {metade} copos de 250ml? Faltam {meta}L pra completar." },
 ]
 
-type TimeSlot = "morning" | "water_am" | "lunch" | "water_pm" | "evening"
+type TimeSlot = "morning" | "water_am" | "lunch" | "water_pm" | "pre_dinner" | "dinner"
 
 function getDayIndex(): number {
   return Math.floor(Date.now() / 86_400_000)
 }
 
 function getTimeSlot(hour: number): TimeSlot {
-  if (hour < 9) return "morning"     // 08h BRT
-  if (hour < 11) return "water_am"   // 10h BRT
-  if (hour < 14) return "lunch"      // 12h BRT
-  if (hour < 17) return "water_pm"   // 15h BRT
-  return "evening"                    // 18h BRT
+  if (hour < 9) return "morning"       // 08h BRT — café da manhã
+  if (hour < 11) return "water_am"     // 10h BRT — água
+  if (hour < 14) return "lunch"        // 12h BRT — almoço
+  if (hour < 17) return "water_pm"     // 15h BRT — água
+  if (hour < 20) return "pre_dinner"   // 18h BRT — pré-ceia/lanche
+  return "dinner"                       // 21h BRT — jantar
 }
 
 function isWaterSlot(slot: TimeSlot): boolean {
@@ -74,7 +85,13 @@ function isWaterSlot(slot: TimeSlot): boolean {
 
 function getMealMessage(slot: TimeSlot): { title: string; body: string } {
   const dayIndex = getDayIndex()
-  const messages = slot === "morning" ? MORNING_MESSAGES : slot === "lunch" ? LUNCH_MESSAGES : EVENING_MESSAGES
+  const map: Record<string, { title: string; body: string }[]> = {
+    morning: MORNING_MESSAGES,
+    lunch: LUNCH_MESSAGES,
+    pre_dinner: PRE_DINNER_MESSAGES,
+    dinner: DINNER_MESSAGES,
+  }
+  const messages = map[slot] || DINNER_MESSAGES
   return messages[dayIndex % messages.length]
 }
 
@@ -221,7 +238,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => ({}))
-  const validSlots: TimeSlot[] = ["morning", "water_am", "lunch", "water_pm", "evening"]
+  const validSlots: TimeSlot[] = ["morning", "water_am", "lunch", "water_pm", "pre_dinner", "dinner"]
   const slot: TimeSlot = validSlots.includes(body.slot) ? body.slot : "morning"
   const targetId = body.studentId as string | undefined
 

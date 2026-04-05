@@ -10,7 +10,7 @@
     },
     {
       "path": "/api/cron/daily-engagement",
-      "schedule": "0 11,13,15,18,21 * * *"
+      "schedule": "0 0,11,13,15,18,21 * * *"
     }
   ]
 }
