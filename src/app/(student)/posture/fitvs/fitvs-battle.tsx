@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react"
 import { cn } from "@/lib/utils"
-import { Share2, Copy, Check, X, Swords, Trophy, ArrowLeft, Flame, MessageCircle, Gift, Send } from "lucide-react"
+import { Share2, Copy, Check, X, Swords, Trophy, ArrowLeft, Flame, MessageCircle, Gift, Send, Search, Link2, Users } from "lucide-react"
 import {
   type BattleState,
   type BattleRole,
@@ -73,8 +73,11 @@ export function FitVSBattle({ initialRoomId, userName }: { initialRoomId: string
   const [selectedExerciseId, setSelectedExerciseId] = useState("squat")
   const [targetReps, setTargetReps] = useState(5)
   const [muscleFilter, setMuscleFilter] = useState("all")
-  const [members, setMembers] = useState<Array<{ id: string; name: string; avatar: string | null; online: boolean }>>([])
-  const [loadingMembers, setLoadingMembers] = useState(true)
+  const [inviteTab, setInviteTab] = useState<"comunidade" | "link">("comunidade")
+  const [contacts, setContacts] = useState<Array<{ id: string; name: string; avatar: string | null; online: boolean; isFollowing: boolean; isTeammate: boolean }>>([])
+  const [loadingContacts, setLoadingContacts] = useState(true)
+  const [searchContact, setSearchContact] = useState("")
+  const [selectedContact, setSelectedContact] = useState<string | null>(null)
 
   // Refs for video/canvas
   const myVideoRef = useRef<HTMLVideoElement>(null)
@@ -109,25 +112,19 @@ export function FitVSBattle({ initialRoomId, userName }: { initialRoomId: string
     battleRef.current = battle
   }, [battle])
 
-  // Fetch community members
+  // Fetch community contacts
   useEffect(() => {
-    async function loadMembers() {
+    async function loadContacts() {
       try {
-        const res = await fetch("/api/community/ranking?limit=20")
+        const res = await fetch("/api/student/fitvs/contacts")
         if (res.ok) {
           const data = await res.json()
-          const list = (data.ranking || data || []).map((m: { id?: string; studentId?: string; name?: string; userName?: string; avatar?: string; profilePhoto?: string; lastSeenAt?: string }) => ({
-            id: m.id || m.studentId || "",
-            name: m.name || m.userName || "Atleta",
-            avatar: m.avatar || m.profilePhoto || null,
-            online: m.lastSeenAt ? (Date.now() - new Date(m.lastSeenAt).getTime()) < 15 * 60 * 1000 : false,
-          }))
-          setMembers(list)
+          setContacts(data.contacts || [])
         }
       } catch { /* ignore */ }
-      setLoadingMembers(false)
+      setLoadingContacts(false)
     }
-    loadMembers()
+    loadContacts()
   }, [])
 
   // Social manager update callback
@@ -575,163 +572,285 @@ export function FitVSBattle({ initialRoomId, userName }: { initialRoomId: string
 
   // ═══ RENDER ═══════════════════════════════════════════════════════════
 
-  // ─── No battle yet — Instagram-style lobby ──────────────────────────────
+  // ─── No battle yet — Instagram Direct style lobby ───────────────────────
   if (!battle) {
     const filteredExercises = muscleFilter === "all"
       ? BATTLE_EXERCISES
       : BATTLE_EXERCISES.filter(e => e.group === muscleFilter)
     const selectedEx = BATTLE_EXERCISES.find(e => e.id === selectedExerciseId) || BATTLE_EXERCISES[0]
+    const filteredContacts = searchContact.trim()
+      ? contacts.filter(c => c.name.toLowerCase().includes(searchContact.toLowerCase()))
+      : contacts
+    const onlineContacts = filteredContacts.filter(c => c.online)
+    const offlineContacts = filteredContacts.filter(c => !c.online)
 
     return (
-      <div className="space-y-4 pb-4">
+      <div className="space-y-3 pb-4">
         {/* Header */}
         <div className="flex items-center gap-2">
           <Link href="/posture" className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 transition-colors">
             <ArrowLeft className="w-4 h-4 text-neutral-400" />
           </Link>
-          <div>
+          <div className="flex-1">
             <h1 className="text-lg font-bold text-white flex items-center gap-2">
               <Swords className="w-5 h-5 text-emerald-400" />
               FitVS Battle
             </h1>
-            <p className="text-[11px] text-neutral-500">Desafie alguém em tempo real</p>
           </div>
         </div>
 
-        {/* Muscle group filter (horizontal scroll) */}
-        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide -mx-1 px-1">
+        {/* Selected exercise bar (compact) */}
+        <div className="flex items-center gap-2 p-2.5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+          <span className="text-xl">{selectedEx.icon}</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-bold text-white">{selectedEx.name}</p>
+            <p className="text-[9px] text-neutral-500">{targetReps} reps</p>
+          </div>
+          {/* Reps quick selector */}
+          <div className="flex gap-1">
+            {[3, 5, 10].map(n => (
+              <button
+                key={n}
+                onClick={() => setTargetReps(n)}
+                className={cn(
+                  "w-7 h-7 rounded-full text-[10px] font-black transition-all",
+                  targetReps === n ? "bg-emerald-500 text-white" : "bg-white/[0.06] text-neutral-500",
+                )}
+              >{n}</button>
+            ))}
+          </div>
+        </div>
+
+        {/* Muscle group filter */}
+        <div className="flex gap-1 overflow-x-auto pb-0.5 scrollbar-hide">
           {MUSCLE_GROUPS.map(g => (
             <button
               key={g.id}
               onClick={() => setMuscleFilter(g.id)}
               className={cn(
-                "shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-full text-[11px] font-semibold transition-all",
+                "shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all",
                 muscleFilter === g.id
                   ? "bg-emerald-500 text-white"
-                  : "bg-white/[0.06] text-neutral-400 hover:text-white",
+                  : "bg-white/[0.06] text-neutral-500",
               )}
             >
-              <span>{g.icon}</span>
-              <span>{g.label}</span>
+              {g.icon} {g.label}
             </button>
           ))}
         </div>
 
-        {/* Exercise grid */}
-        <div className="grid grid-cols-4 gap-1.5">
+        {/* Exercise grid (compact) */}
+        <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
           {filteredExercises.map(ex => (
             <button
               key={ex.id}
               onClick={() => setSelectedExerciseId(ex.id)}
               className={cn(
-                "flex flex-col items-center gap-1 py-3 px-1 rounded-xl text-center transition-all",
+                "shrink-0 flex items-center gap-1.5 px-3 py-2 rounded-xl text-[10px] font-semibold transition-all",
                 selectedExerciseId === ex.id
-                  ? "bg-emerald-600/20 border border-emerald-500/40"
-                  : "bg-white/[0.03] border border-white/[0.06]",
+                  ? "bg-emerald-600/20 border border-emerald-500/40 text-emerald-300"
+                  : "bg-white/[0.03] border border-white/[0.06] text-neutral-400",
               )}
             >
-              <span className="text-xl">{ex.icon}</span>
-              <span className={cn(
-                "text-[9px] font-semibold leading-tight",
-                selectedExerciseId === ex.id ? "text-emerald-300" : "text-neutral-500",
-              )}>{ex.name}</span>
+              <span>{ex.icon}</span>
+              <span>{ex.name}</span>
             </button>
           ))}
         </div>
 
-        {/* Reps selector */}
-        <div className="flex items-center gap-3">
-          <span className="text-[11px] text-neutral-500 font-medium">Reps:</span>
-          {[3, 5, 8, 10, 15].map(n => (
-            <button
-              key={n}
-              onClick={() => setTargetReps(n)}
-              className={cn(
-                "w-9 h-9 rounded-full text-xs font-black transition-all",
-                targetReps === n
-                  ? "bg-emerald-500 text-white"
-                  : "bg-white/[0.06] text-neutral-500",
-              )}
-            >
-              {n}
-            </button>
-          ))}
+        {/* ═══ TABS: Comunidade | Link externo ═══ */}
+        <div className="flex border-b border-white/[0.06]">
+          <button
+            onClick={() => setInviteTab("comunidade")}
+            className={cn(
+              "flex-1 py-2.5 text-xs font-semibold text-center transition-all flex items-center justify-center gap-1.5",
+              inviteTab === "comunidade"
+                ? "text-white border-b-2 border-emerald-500"
+                : "text-neutral-500",
+            )}
+          >
+            <Users className="w-3.5 h-3.5" />
+            Comunidade
+          </button>
+          <button
+            onClick={() => setInviteTab("link")}
+            className={cn(
+              "flex-1 py-2.5 text-xs font-semibold text-center transition-all flex items-center justify-center gap-1.5",
+              inviteTab === "link"
+                ? "text-white border-b-2 border-emerald-500"
+                : "text-neutral-500",
+            )}
+          >
+            <Link2 className="w-3.5 h-3.5" />
+            Enviar Link
+          </button>
         </div>
 
-        {/* CTA — Share to invite */}
-        <button
-          onClick={async () => {
-            await createRoom()
-            setTimeout(() => shareLink(), 500)
-          }}
-          className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-black text-sm active:scale-[0.96] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
-        >
-          <Share2 className="w-4 h-4" />
-          Enviar Desafio
-        </button>
-
-        {/* Community members — who to challenge */}
-        <div className="space-y-2">
-          <p className="text-xs text-neutral-400 font-semibold flex items-center gap-1.5">
-            <Flame className="w-3.5 h-3.5 text-emerald-400" />
-            Desafiar alguém da comunidade
-          </p>
-
-          {loadingMembers ? (
-            <div className="flex gap-3 py-4 justify-center">
-              {[1,2,3].map(i => (
-                <div key={i} className="w-14 h-14 rounded-full bg-white/[0.05] animate-pulse" />
-              ))}
+        {/* ═══ TAB: Comunidade — contact list ═══ */}
+        {inviteTab === "comunidade" && (
+          <div className="space-y-2">
+            {/* Search */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-neutral-600" />
+              <input
+                type="text"
+                value={searchContact}
+                onChange={e => setSearchContact(e.target.value)}
+                placeholder="Buscar pessoa..."
+                className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/[0.04] text-xs text-white placeholder:text-neutral-600 border border-white/[0.06] outline-none focus:border-emerald-500/40"
+              />
             </div>
-          ) : members.length === 0 ? (
-            <p className="text-[11px] text-neutral-600 text-center py-4">
-              Nenhum membro encontrado. Use o botão acima pra convidar via WhatsApp!
-            </p>
-          ) : (
-            <div className="grid grid-cols-4 gap-3">
-              {members.slice(0, 8).map(m => (
-                <button
-                  key={m.id}
-                  onClick={async () => {
-                    await createRoom()
-                    setTimeout(() => shareLink(), 500)
-                  }}
-                  className="flex flex-col items-center gap-1.5 py-2 group"
-                >
-                  <div className="relative">
-                    <div className={cn(
-                      "w-14 h-14 rounded-full flex items-center justify-center text-lg font-bold border-2 transition-all group-hover:scale-105",
-                      m.online
-                        ? "border-emerald-500 bg-emerald-600/20 text-emerald-300"
-                        : "border-white/10 bg-white/[0.05] text-neutral-500",
-                    )}>
-                      {m.avatar ? (
-                        <img src={m.avatar} alt="" className="w-full h-full rounded-full object-cover" />
-                      ) : (
-                        m.name.charAt(0).toUpperCase()
-                      )}
+
+            {loadingContacts ? (
+              <div className="space-y-2 py-2">
+                {[1,2,3,4].map(i => (
+                  <div key={i} className="flex items-center gap-3 p-2">
+                    <div className="w-11 h-11 rounded-full bg-white/[0.05] animate-pulse" />
+                    <div className="flex-1 space-y-1.5">
+                      <div className="w-24 h-3 bg-white/[0.05] rounded animate-pulse" />
+                      <div className="w-16 h-2 bg-white/[0.03] rounded animate-pulse" />
                     </div>
-                    {/* Online indicator */}
-                    {m.online && (
-                      <div className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-black" />
-                    )}
                   </div>
-                  <span className="text-[9px] text-neutral-400 truncate w-full text-center">{m.name.split(" ")[0]}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+                ))}
+              </div>
+            ) : contacts.length === 0 ? (
+              <div className="text-center py-6 space-y-2">
+                <Users className="w-8 h-8 text-neutral-700 mx-auto" />
+                <p className="text-xs text-neutral-500">Nenhum contato encontrado</p>
+                <p className="text-[10px] text-neutral-600">Siga pessoas na comunidade ou use a aba "Enviar Link"</p>
+              </div>
+            ) : (
+              <div className="space-y-0.5 max-h-[45vh] overflow-y-auto overscroll-contain">
+                {/* Online section */}
+                {onlineContacts.length > 0 && (
+                  <>
+                    <p className="text-[9px] text-emerald-400/70 font-semibold uppercase tracking-wider px-1 pt-1">
+                      Online agora ({onlineContacts.length})
+                    </p>
+                    {onlineContacts.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedContact(selectedContact === c.id ? null : c.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-2.5 rounded-xl transition-all",
+                          selectedContact === c.id
+                            ? "bg-emerald-600/15 border border-emerald-500/30"
+                            : "hover:bg-white/[0.03]",
+                        )}
+                      >
+                        <div className="relative shrink-0">
+                          <div className="w-11 h-11 rounded-full bg-emerald-600/20 flex items-center justify-center text-sm font-bold text-emerald-300 border-2 border-emerald-500/50">
+                            {c.avatar ? (
+                              <img src={c.avatar} alt="" className="w-full h-full rounded-full object-cover" />
+                            ) : c.name.charAt(0).toUpperCase()}
+                          </div>
+                          <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-[#0a0a0a]" />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="text-xs font-semibold text-white truncate">{c.name}</p>
+                          <p className="text-[9px] text-emerald-400">Online agora</p>
+                        </div>
+                        {selectedContact === c.id ? (
+                          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                        ) : (
+                          <Swords className="w-3.5 h-3.5 text-neutral-600 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </>
+                )}
 
-        {/* Selected exercise preview */}
-        <div className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-          <span className="text-2xl">{selectedEx.icon}</span>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-bold text-white">{selectedEx.name}</p>
-            <p className="text-[10px] text-neutral-500">{targetReps} repetições • quem faz melhor ganha</p>
+                {/* Offline section */}
+                {offlineContacts.length > 0 && (
+                  <>
+                    <p className="text-[9px] text-neutral-600 font-semibold uppercase tracking-wider px-1 pt-2">
+                      Offline ({offlineContacts.length})
+                    </p>
+                    {offlineContacts.map(c => (
+                      <button
+                        key={c.id}
+                        onClick={() => setSelectedContact(selectedContact === c.id ? null : c.id)}
+                        className={cn(
+                          "w-full flex items-center gap-3 p-2.5 rounded-xl transition-all",
+                          selectedContact === c.id
+                            ? "bg-emerald-600/15 border border-emerald-500/30"
+                            : "hover:bg-white/[0.03]",
+                        )}
+                      >
+                        <div className="w-11 h-11 rounded-full bg-white/[0.05] flex items-center justify-center text-sm font-bold text-neutral-500 border-2 border-white/[0.08] shrink-0">
+                          {c.avatar ? (
+                            <img src={c.avatar} alt="" className="w-full h-full rounded-full object-cover opacity-60" />
+                          ) : c.name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <p className="text-xs font-semibold text-neutral-300 truncate">{c.name}</p>
+                          <p className="text-[9px] text-neutral-600">
+                            {c.isTeammate ? "Colega de treino" : c.isFollowing ? "Seguindo" : ""}
+                          </p>
+                        </div>
+                        {selectedContact === c.id ? (
+                          <Check className="w-4 h-4 text-emerald-400 shrink-0" />
+                        ) : (
+                          <Swords className="w-3.5 h-3.5 text-neutral-700 shrink-0" />
+                        )}
+                      </button>
+                    ))}
+                  </>
+                )}
+              </div>
+            )}
+
+            {/* CTA button */}
+            <button
+              onClick={async () => {
+                await createRoom()
+                // If contact selected, send via push notification (future)
+                // For now, auto-share via native share
+                setTimeout(() => shareLink(), 500)
+              }}
+              disabled={!selectedContact && contacts.length > 0}
+              className={cn(
+                "w-full py-3 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2",
+                selectedContact || contacts.length === 0
+                  ? "bg-emerald-600 text-white active:scale-[0.97]"
+                  : "bg-white/[0.06] text-neutral-600 cursor-not-allowed",
+              )}
+            >
+              <Swords className="w-4 h-4" />
+              {selectedContact
+                ? `Desafiar ${contacts.find(c => c.id === selectedContact)?.name.split(" ")[0] || ""}`
+                : "Selecione alguém"}
+            </button>
           </div>
-          <Swords className="w-4 h-4 text-emerald-400 shrink-0" />
-        </div>
+        )}
+
+        {/* ═══ TAB: Enviar Link (externo) ═══ */}
+        {inviteTab === "link" && (
+          <div className="space-y-3 py-2">
+            <div className="text-center py-4 space-y-2">
+              <div className="w-14 h-14 rounded-full bg-emerald-600/10 flex items-center justify-center mx-auto">
+                <Share2 className="w-6 h-6 text-emerald-400" />
+              </div>
+              <p className="text-sm text-white font-semibold">Envie para qualquer pessoa</p>
+              <p className="text-[10px] text-neutral-500">WhatsApp, Instagram, Telegram ou qualquer app</p>
+            </div>
+
+            <button
+              onClick={async () => {
+                await createRoom()
+                setTimeout(() => shareLink(), 500)
+              }}
+              className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 to-cyan-500 text-white font-black text-sm active:scale-[0.96] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2"
+            >
+              <Share2 className="w-4 h-4" />
+              Compartilhar Desafio
+            </button>
+
+            <p className="text-[9px] text-neutral-600 text-center">
+              Um link será gerado e enviado pelo app de sua escolha
+            </p>
+          </div>
+        )}
       </div>
     )
   }
