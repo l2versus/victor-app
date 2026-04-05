@@ -22,6 +22,7 @@ type CatalogExercise = {
   machineCode: string | null
   isActive: boolean
   instructions: string | null
+  gifUrl: string | null
   machine3dModel: string | null
   widthCm: number | null
   lengthCm: number | null
@@ -486,7 +487,7 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
 }) {
   const has3D = !!exercise.machine3dModel
   const [tab, setTab] = useState<"info" | "3d" | "edit">("info")
-  const [editData, setEditData] = useState({ name: exercise.name, instructions: exercise.instructions || "", imageUrl: exercise.imageUrl || "", gifUrl: (exercise as Record<string, unknown>).gifUrl as string || "" })
+  const [editData, setEditData] = useState({ name: exercise.name, instructions: exercise.instructions || "", imageUrl: exercise.imageUrl || "", gifUrl: exercise.gifUrl || "" })
   const [saving, setSaving] = useState(false)
   const [showAR, setShowAR] = useState(false)
 
@@ -510,7 +511,7 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
         body: JSON.stringify({ name: editData.name, instructions: editData.instructions || null, imageUrl: editData.imageUrl || null, gifUrl: editData.gifUrl || null }),
       })
       if (res.ok) {
-        onUpdate(exercise.id, { name: editData.name, instructions: editData.instructions || null, imageUrl: editData.imageUrl || null })
+        onUpdate(exercise.id, { name: editData.name, instructions: editData.instructions || null, imageUrl: editData.imageUrl || null, gifUrl: editData.gifUrl || null })
         setTab("info")
       }
     } finally { setSaving(false) }
@@ -777,7 +778,7 @@ function MachineDetailModal({ exercise, onClose, onToggle, onUpdate, getMachineI
                   <input value={editData.gifUrl} onChange={e => setEditData({ ...editData, gifUrl: e.target.value })} placeholder="https://link-do-gif.com/exercicio.gif" className="flex-1 rounded-xl border border-white/[0.06] bg-white/[0.03] px-4 py-2.5 text-sm text-white placeholder:text-neutral-600 outline-none focus:border-red-500/30" />
                   <label className="shrink-0 px-3 py-2.5 rounded-xl bg-amber-600/20 border border-amber-500/20 text-xs text-amber-400 cursor-pointer hover:bg-amber-600/30 transition-colors flex items-center gap-1.5 font-semibold">
                     Upload
-                    <input type="file" accept="image/gif,video/*" className="hidden" onChange={async (e) => {
+                    <input type="file" accept="image/gif" className="hidden" onChange={async (e) => {
                       const file = e.target.files?.[0]
                       if (!file) return
                       try {

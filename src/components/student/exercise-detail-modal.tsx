@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, Suspense } from "react"
-import { X, Play, AlertTriangle, Dumbbell, Target, ShieldAlert, ChevronDown, Box, RotateCcw, Camera } from "lucide-react"
+import { X, Play, AlertTriangle, Dumbbell, Target, ShieldAlert, ChevronDown, Box, RotateCcw, Camera, Repeat } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { ExerciseMuscleHighlight } from "@/components/ui/exercise-muscle-highlight"
 import { find3DModel, getSketchfabEmbedUrl } from "@/lib/exercise-3d-models"
@@ -138,7 +138,7 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
   const router = useRouter()
   const muscleInfo = getMuscleInfo(exercise.muscle)
   const model3D = find3DModel(exercise.name)
-  const heroImage = exercise.gifUrl || exercise.imageUrl
+  const heroImage = exercise.imageUrl || exercise.gifUrl
   const [machineBrand, setMachineBrand] = useState<string | null>(exercise.machineBrand || null)
   const brandInfo = machineBrand ? BRAND_ORIGINS[machineBrand] : null
 
@@ -169,9 +169,10 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
       .catch(() => {})
   }, [exercise.name, machine3DSlug, machineBrand])
 
-  // Default tab: machine 3D > video > info
+  // Default tab: machine 3D > video > gif > info
+  const hasGif = !!exercise.gifUrl
   const defaultTab = hasMachine3D ? "machine" : exercise.videoUrl ? "video" : "info"
-  const [tab, setTab] = useState<"info" | "video" | "3d" | "machine">(defaultTab)
+  const [tab, setTab] = useState<"info" | "video" | "gif" | "3d" | "machine">(defaultTab)
 
   // Update tab ONLY on first async resolve (not on every tab change)
   const hasAutoSwitched = useRef(false)
@@ -238,6 +239,7 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
         <div className="flex gap-1 px-4 py-2 shrink-0 border-b border-white/[0.04] sticky top-0 bg-[#0a0a0a] z-10">
           {[
             { key: "info" as const, label: "Detalhes", icon: Target },
+            ...(hasGif ? [{ key: "gif" as const, label: "Execução", icon: Repeat }] : []),
             ...(exercise.videoUrl ? [{ key: "video" as const, label: "Vídeo", icon: Play }] : []),
             ...(hasMachine3D ? [{ key: "machine" as const, label: "Máquina", icon: Dumbbell }] : []),
             ...(model3D ? [{ key: "3d" as const, label: "3D Músculos", icon: Box }] : []),
@@ -415,6 +417,28 @@ export function ExerciseDetailModal({ exercise, onClose }: ExerciseDetailModalPr
                   </div>
                 </>
               )}
+            </div>
+          )}
+
+          {/* TAB: GIF Execution */}
+          {tab === "gif" && exercise.gifUrl && (
+            <div className="p-4 space-y-3">
+              <div className="relative rounded-2xl overflow-hidden bg-black border border-white/[0.08]">
+                <img
+                  src={exercise.gifUrl}
+                  alt={`${exercise.name} — execução`}
+                  className="w-full aspect-[4/5] object-contain bg-[#050505]"
+                />
+                {/* Loop indicator */}
+                <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm border border-white/10">
+                  <Repeat className="w-3 h-3 text-emerald-400 animate-spin" style={{ animationDuration: "3s" }} />
+                  <span className="text-[10px] text-emerald-400 font-semibold">Em loop</span>
+                </div>
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-xs text-neutral-400">Observe o movimento completo</p>
+                <p className="text-[10px] text-neutral-600">Foque na amplitude e velocidade do gesto</p>
+              </div>
             </div>
           )}
 
