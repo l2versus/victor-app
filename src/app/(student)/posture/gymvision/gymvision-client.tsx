@@ -255,6 +255,26 @@ export function GymVisionClient() {
               </div>
             </div>
 
+            {/* Reference images from dataset */}
+            {result.referenceImages && result.referenceImages.length > 0 && (
+              <div>
+                <p className="text-[10px] text-neutral-500 mb-1">
+                  Referências do catálogo ({result.datasetCount || 0} imagens):
+                </p>
+                <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+                  {result.referenceImages.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img}
+                      alt={`Ref ${i + 1}`}
+                      className="w-16 h-16 rounded-lg object-cover shrink-0 border border-white/10"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = "none" }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Next machine suggestion */}
             {!result.isInWorkout && result.nextMachine && (
               <div className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-600/10 border border-amber-500/20">
@@ -283,9 +303,9 @@ export function GymVisionClient() {
             </Link>
           </div>
 
-          {/* Demo disclaimer */}
+          {/* Dataset info */}
           <p className="text-[9px] text-neutral-600 text-center">
-            ⚠️ MVP — classificação simulada. Modelo TF.js real em desenvolvimento.
+            Classificação por histograma de cores (144 imagens Panatta). Modelo TF.js em desenvolvimento.
           </p>
         </div>
       )}

@@ -1,0 +1,293 @@
+{
+  "version": "1.0.0",
+  "created": "2026-04-05T13:56:17.241Z",
+  "totalImages": 144,
+  "totalClasses": 20,
+  "source": "Panatta seed (146 machines)",
+  "classes": {
+    "bicep_curl_machine": {
+      "name": "Bicep Curl Machine",
+      "namePt": "Rosca Bíceps Máquina",
+      "imageCount": 15,
+      "images": [
+        "/machines/panatta/1fw509.png",
+        "/machines/panatta/1fw512.png",
+        "/machines/panatta/1fw054.png",
+        "/machines/panatta/1fw055.png",
+        "/machines/panatta/1fw451.png",
+        "/machines/panatta/1fw351.png",
+        "/machines/panatta/1fw251.png",
+        "/machines/panatta/1fw056.png",
+        "/machines/panatta/1fe056.png",
+        "/machines/panatta/1fe456.png",
+        "/machines/panatta/1fe556.png",
+        "/machines/panatta/1fe055a.png",
+        "/machines/panatta/1fe155.png",
+        "/machines/panatta/1fe208.png",
+        "/machines/panatta/1fe209.png"
+      ]
+    },
+    "chest_press": {
+      "name": "Chest Press",
+      "namePt": "Supino Máquina",
+      "imageCount": 15,
+      "images": [
+        "/machines/panatta/1fw045.png",
+        "/machines/panatta/1fw122.png",
+        "/machines/panatta/1fw037.png",
+        "/machines/panatta/1fw033.png",
+        "/machines/panatta/1fw035.png",
+        "/machines/panatta/1fw041.png",
+        "/machines/panatta/1fw036.png",
+        "/machines/panatta/1fw042.png",
+        "/machines/panatta/1fw140.png",
+        "/machines/panatta/1fw040.png",
+        "/machines/panatta/1fe036.png",
+        "/machines/panatta/1fe033.png",
+        "/machines/panatta/1fe037.png",
+        "/machines/panatta/1fe034.png",
+        "/machines/panatta/1fe118a.png"
+      ]
+    },
+    "ab_machine": {
+      "name": "Ab / Core Machine",
+      "namePt": "Abdominal Máquina",
+      "imageCount": 13,
+      "images": [
+        "/machines/panatta/1fw065.png",
+        "/machines/panatta/1fe005.png",
+        "/machines/panatta/1fe065.png",
+        "/machines/panatta/1fe200.png",
+        "/machines/panatta/1fe220.png",
+        "/machines/panatta/1fe221.png",
+        "/machines/panatta/1fe214.png",
+        "/machines/panatta/1fe210.png",
+        "/machines/panatta/1fe212.png",
+        "/machines/panatta/1fe213.png",
+        "/machines/panatta/1fe215.png",
+        "/machines/panatta/1fe216.png",
+        "/machines/panatta/1fe217.png"
+      ]
+    },
+    "bench_rack": {
+      "name": "Bench / Rack",
+      "namePt": "Banco / Rack",
+      "imageCount": 13,
+      "images": [
+        "/machines/panatta/1fw533.png",
+        "/machines/panatta/1fw531.png",
+        "/machines/panatta/1fw534.png",
+        "/machines/panatta/1fe202.png",
+        "/machines/panatta/1fe201.png",
+        "/machines/panatta/1fe203.png",
+        "/machines/panatta/1fe205.png",
+        "/machines/panatta/1fe206.png",
+        "/machines/panatta/1fe207.png",
+        "/machines/panatta/1fe204.png",
+        "/machines/panatta/1fe230.png",
+        "/machines/panatta/1fe260.png",
+        "/machines/panatta/1fe261.png"
+      ]
+    },
+    "seated_row": {
+      "name": "Seated Row",
+      "namePt": "Remada",
+      "imageCount": 12,
+      "images": [
+        "/machines/panatta/1fw518.png",
+        "/machines/panatta/1fw003.png",
+        "/machines/panatta/1fw002.png",
+        "/machines/panatta/1fw007.png",
+        "/machines/panatta/1fw104.png",
+        "/machines/panatta/1fw204.png",
+        "/machines/panatta/1fw102.png",
+        "/machines/panatta/1fw010.png",
+        "/machines/panatta/1fe003.png",
+        "/machines/panatta/1fe103.png",
+        "/machines/panatta/1fe004a.png",
+        "/machines/panatta/1fe006.png"
+      ]
+    },
+    "lat_pulldown": {
+      "name": "Lat Pulldown",
+      "namePt": "Puxada Frontal",
+      "imageCount": 11,
+      "images": [
+        "/machines/panatta/1fw005.png",
+        "/machines/panatta/1fw105.png",
+        "/machines/panatta/1fw101.png",
+        "/machines/panatta/1fw039.png",
+        "/machines/panatta/1fe001.png",
+        "/machines/panatta/1fe002.png",
+        "/machines/panatta/1fe007.png",
+        "/machines/panatta/1fe101.png",
+        "/machines/panatta/1fe039.png",
+        "/machines/panatta/1fe121.png",
+        "/machines/panatta/1fe211.png"
+      ]
+    },
+    "tricep_machine": {
+      "name": "Tricep Machine",
+      "namePt": "Tríceps Máquina",
+      "imageCount": 8,
+      "images": [
+        "/machines/panatta/1fw352.png",
+        "/machines/panatta/1fw252.png",
+        "/machines/panatta/1fw053.png",
+        "/machines/panatta/1fw452.png",
+        "/machines/panatta/1fe057.png",
+        "/machines/panatta/1fe357.png",
+        "/machines/panatta/1fe557.png",
+        "/machines/panatta/1fe153.png"
+      ]
+    },
+    "cable_machine": {
+      "name": "Cable Machine",
+      "namePt": "Cabos",
+      "imageCount": 8,
+      "images": [
+        "/machines/panatta/1fw520.png",
+        "/machines/panatta/1fe111.png",
+        "/machines/panatta/1fe125.png",
+        "/machines/panatta/1fe114b.png",
+        "/machines/panatta/1fe112.png",
+        "/machines/panatta/1fe115.png",
+        "/machines/panatta/1fe120.png",
+        "/machines/panatta/1fe113b.png"
+      ]
+    },
+    "leg_press": {
+      "name": "Leg Press",
+      "namePt": "Leg Press",
+      "imageCount": 7,
+      "images": [
+        "/machines/panatta/1fw093.png",
+        "/machines/panatta/1fw090.png",
+        "/machines/panatta/1fw086.png",
+        "/machines/panatta/1fw100.png",
+        "/machines/panatta/1fw085.png",
+        "/machines/panatta/1fw193.png",
+        "/machines/panatta/1fe085.png"
+      ]
+    },
+    "pec_deck": {
+      "name": "Pec Deck / Fly",
+      "namePt": "Pec Deck",
+      "imageCount": 7,
+      "images": [
+        "/machines/panatta/1fw038.png",
+        "/machines/panatta/1fw043.png",
+        "/machines/panatta/1fw044.png",
+        "/machines/panatta/1fw117.png",
+        "/machines/panatta/1fe035.png",
+        "/machines/panatta/1fe117.png",
+        "/machines/panatta/1fe028.png"
+      ]
+    },
+    "hack_squat": {
+      "name": "Hack Squat",
+      "namePt": "Hack Squat",
+      "imageCount": 7,
+      "images": [
+        "/machines/panatta/1fw095.png",
+        "/machines/panatta/1fw087.png",
+        "/machines/panatta/1fw080.png",
+        "/machines/panatta/1fw084.png",
+        "/machines/panatta/1fw091.png",
+        "/machines/panatta/1fw098.png",
+        "/machines/panatta/1fe231a.png"
+      ]
+    },
+    "abductor_adductor": {
+      "name": "Abductor / Adductor",
+      "namePt": "Abdutora / Adutora",
+      "imageCount": 5,
+      "images": [
+        "/machines/panatta/1fw199.png",
+        "/machines/panatta/1fw099.png",
+        "/machines/panatta/1fe087.png",
+        "/machines/panatta/1fe093.png",
+        "/machines/panatta/1fe096.png"
+      ]
+    },
+    "calf_raise": {
+      "name": "Calf Raise",
+      "namePt": "Panturrilha",
+      "imageCount": 5,
+      "images": [
+        "/machines/panatta/1fw029.png",
+        "/machines/panatta/1fw092.png",
+        "/machines/panatta/1fw089.png",
+        "/machines/panatta/1fw088.png",
+        "/machines/panatta/1fe089.png"
+      ]
+    },
+    "glute_machine": {
+      "name": "Glute Machine",
+      "namePt": "Glúteo Máquina",
+      "imageCount": 5,
+      "images": [
+        "/machines/panatta/1fw097.png",
+        "/machines/panatta/1fw096.png",
+        "/machines/panatta/1fe088.png",
+        "/machines/panatta/1fe094a.png",
+        "/machines/panatta/1fe090.png"
+      ]
+    },
+    "shoulder_press": {
+      "name": "Shoulder Press",
+      "namePt": "Desenvolvimento",
+      "imageCount": 4,
+      "images": [
+        "/machines/panatta/1fw025.png",
+        "/machines/panatta/1fe025.png",
+        "/machines/panatta/1fe024.png",
+        "/machines/panatta/1fe027.png"
+      ]
+    },
+    "leg_curl": {
+      "name": "Leg Curl",
+      "namePt": "Mesa Flexora",
+      "imageCount": 4,
+      "images": [
+        "/machines/panatta/1fw082.png",
+        "/machines/panatta/1fw182.png",
+        "/machines/panatta/1fw183.png",
+        "/machines/panatta/1fw094.png"
+      ]
+    },
+    "leg_extension": {
+      "name": "Leg Extension",
+      "namePt": "Cadeira Extensora",
+      "imageCount": 2,
+      "images": [
+        "/machines/panatta/1fw281.png",
+        "/machines/panatta/1fw181.png"
+      ]
+    },
+    "rear_delt": {
+      "name": "Rear Delt",
+      "namePt": "Deltoide Posterior",
+      "imageCount": 1,
+      "images": [
+        "/machines/panatta/1fw026.png"
+      ]
+    },
+    "lateral_raise": {
+      "name": "Lateral Raise",
+      "namePt": "Elevação Lateral",
+      "imageCount": 1,
+      "images": [
+        "/machines/panatta/1fw027.png"
+      ]
+    },
+    "smith_machine": {
+      "name": "Smith Machine",
+      "namePt": "Smith Machine",
+      "imageCount": 1,
+      "images": [
+        "/machines/panatta/1fw121.png"
+      ]
+    }
+  }
+}
