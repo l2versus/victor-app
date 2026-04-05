@@ -21,6 +21,7 @@ export default async function ExercisesPage() {
         muscle: true,
         equipment: true,
         instructions: true,
+        gifUrl: true,
         videoUrl: true,
         imageUrl: true,
         machineBrand: true,
