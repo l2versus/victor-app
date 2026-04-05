@@ -19,9 +19,16 @@ declare module "@mediapipe/tasks-vision" {
     visibility?: number
   }
 
+  export interface WorldLandmark {
+    x: number  // meters, relative to hip center
+    y: number
+    z: number
+    visibility?: number
+  }
+
   export interface PoseLandmarkerResult {
     landmarks: NormalizedLandmark[][]
-    worldLandmarks: NormalizedLandmark[][]
+    worldLandmarks: WorldLandmark[][]
   }
 
   export interface Connection {

@@ -35,6 +35,8 @@ import {
   getRepConfig,
   getPositioningGuide,
 } from "@/lib/posture-tracker"
+import { LandmarkSmoother, WorldLandmarkSmoother } from "@/lib/landmark-smoother"
+import { PostureScorer, type MultiDimensionalScore } from "@/lib/posture-scorer"
 import {
   ALL_EXERCISE_GROUPS as EXERCISE_GROUPS,
   ALL_EXERCISE_RULES as EXERCISE_RULES,
@@ -99,6 +101,14 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
   const [recordedVideoUrl, setRecordedVideoUrl] = useState<string | null>(null)
   const recordedBlobRef = useRef<Blob | null>(null)
   const recordedMimeRef = useRef<string>("video/mp4")
+  // ═══ Landmark smoother + multi-dimensional scorer ═══
+  const smootherRef = useRef(new LandmarkSmoother())
+  const worldSmootherRef = useRef(new WorldLandmarkSmoother())
+  const scorerRef = useRef<PostureScorer | null>(null)
+  const [multiScore, setMultiScore] = useState<MultiDimensionalScore | null>(null)
+  // ═══ Video quality (user selectable) ═══
+  const [videoQuality, setVideoQuality] = useState<"hd" | "fhd" | "4k">("fhd")
+  const videoQualityRef = useRef<"hd" | "fhd" | "4k">("fhd")
   // ═══ 3D Machine Guide — disabled until models are mapped ═══
 
   const videoRef = useRef<HTMLVideoElement>(null)
@@ -123,6 +133,10 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
   useEffect(() => {
     selectedAngleRef.current = selectedAngle
   }, [selectedAngle])
+
+  useEffect(() => {
+    videoQualityRef.current = videoQuality
+  }, [videoQuality])
 
   // Cleanup on unmount
   useEffect(() => {
@@ -175,6 +189,11 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
       if (trackerRef.current.reps > 0) {
         setSetScore(finalScore)
       }
+      // Calculate multi-dimensional score
+      if (scorerRef.current) {
+        const ms = scorerRef.current.calculate()
+        setMultiScore(ms)
+      }
       setState("idle")
       setFeedback([])
       setFps(0)
@@ -204,22 +223,38 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
     setErrorMsg("")
     // Reset tracker for new set
     trackerRef.current = createTrackerState()
+    smootherRef.current.reset()
+    worldSmootherRef.current.reset()
+    const exercise = selectedExerciseRef.current
+    const repConfig = getRepConfig(exercise.muscleGroup, exercise.id)
+    scorerRef.current = new PostureScorer(repConfig)
     setRepCount(0)
     setRepPhase("")
     setEccentricSpeed(0)
     setConcentricSpeed(0)
     setSetScore(null)
+    setMultiScore(null)
     setFeedbackHistory([])
     setShowReplay(false)
     analysisStartRef.current = Date.now()
 
+    // Video resolution based on quality selector (read from ref to avoid stale closure)
+    const quality = videoQualityRef.current
+    const qualityMap = {
+      hd:  { width: 1280, height: 720 },
+      fhd: { width: 1920, height: 1080 },
+      "4k": { width: 3840, height: 2160 },
+    }
+    const res = qualityMap[quality]
+
     try {
-      // Request camera — frontal (user) by default so the student sees the corrections live
+      // Request camera at selected quality — progressive fallback
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: { ideal: facingModeRef.current },
-          width: { ideal: 640 },
-          height: { ideal: 480 },
+          width: { ideal: res.width },
+          height: { ideal: res.height },
+          frameRate: { ideal: 30, max: 60 },
         },
         audio: false,
       })
@@ -233,6 +268,8 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
       // ═══ Start video recording for replay ═══
       // Recording is deferred until canvas is ready (see startCanvasRecording below)
       // This ensures the recorded video includes skeleton + feedback overlays
+      // Revoke previous blob URL to prevent memory leak (critical at 4K bitrates)
+      if (recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl)
       setRecordedVideoUrl(null)
       recordedBlobRef.current = null
       recordedChunksRef.current = []
@@ -299,9 +336,11 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
           ]
           const supportedMime = mimeOptions.find(m => MediaRecorder.isTypeSupported(m)) || ""
           recordedMimeRef.current = supportedMime || "video/mp4"
+          // Bitrate scales with quality: HD=4Mbps, FHD=8Mbps, 4K=20Mbps
+          const bitrateMap = { hd: 4_000_000, fhd: 8_000_000, "4k": 20_000_000 }
           const recorder = new MediaRecorder(canvasStream, {
             ...(supportedMime ? { mimeType: supportedMime } : {}),
-            videoBitsPerSecond: 1_000_000,
+            videoBitsPerSecond: bitrateMap[quality] ?? 8_000_000,
           })
           recorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunksRef.current.push(e.data) }
           recorder.start(1000)
@@ -344,7 +383,17 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
 
           if (results.landmarks && results.landmarks.length > 0) {
-            const landmarks = results.landmarks[0] as Point[]
+            const rawLandmarks = results.landmarks[0] as Point[]
+
+            // ═══ SMOOTHER — eliminates jitter, prevents ghost reps ═══
+            const landmarks = smootherRef.current.smooth(rawLandmarks)
+
+            // ═══ WORLD LANDMARKS 3D — metric coordinates in meters ═══
+            let worldLm: Point[] | undefined
+            if (results.worldLandmarks && results.worldLandmarks.length > 0) {
+              const rawWorld = results.worldLandmarks[0] as Point[]
+              worldLm = worldSmootherRef.current.smooth(rawWorld)
+            }
 
             // Draw skeleton with exercise-themed colors
             drawingUtils.drawConnectors(landmarks as never, PoseLandmarker.POSE_CONNECTIONS, {
@@ -394,6 +443,15 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
             const repConfig = getRepConfig(exercise.muscleGroup, exercise.id)
             const prevReps = trackerRef.current.reps
             updateTracker(trackerRef.current, landmarks, repConfig, exerciseFeedback)
+
+            // ═══ MULTI-DIMENSIONAL SCORER — feed per-frame data ═══
+            if (scorerRef.current) {
+              scorerRef.current.update(landmarks, exerciseFeedback, trackerRef.current, worldLm)
+              // Notify scorer on rep completion
+              if (trackerRef.current.reps !== prevReps) {
+                scorerRef.current.onRepComplete(trackerRef.current)
+              }
+            }
 
             if (mountedRef.current) {
               // Update rep count if changed
@@ -814,6 +872,34 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
                "Coloque a câmera no CHÃO, na altura do corpo"}
             </p>
           </div>
+
+          {/* Video quality selector */}
+          <div className="flex items-center justify-between px-3 py-2 border-t border-white/[0.04]">
+            <span className="text-[10px] text-neutral-500 font-medium flex items-center gap-1.5">
+              <Camera className="w-3 h-3" />
+              Qualidade do vídeo
+            </span>
+            <div className="flex gap-1">
+              {([
+                { key: "hd" as const, label: "HD", sub: "720p" },
+                { key: "fhd" as const, label: "FHD", sub: "1080p" },
+                { key: "4k" as const, label: "4K", sub: "2160p" },
+              ]).map((q) => (
+                <button
+                  key={q.key}
+                  onClick={() => setVideoQuality(q.key)}
+                  className={cn(
+                    "px-2 py-1 rounded-lg text-[9px] font-bold transition-all",
+                    videoQuality === q.key
+                      ? "bg-red-600/20 border border-red-500/40 text-red-300"
+                      : "bg-white/[0.03] border border-white/[0.06] text-neutral-500 hover:text-neutral-300",
+                  )}
+                >
+                  {q.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
 
@@ -1023,18 +1109,21 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
         </div>
       )}
 
-      {/* ─── SET SCORE — shown after analysis stops ─── */}
-      {setScore && state === "idle" && (
+      {/* ─── SET SCORE — Multi-dimensional (shown after analysis stops) ─── */}
+      {state === "idle" && (multiScore || setScore) && (
         <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] overflow-hidden">
+          {/* Header with grade + overall score */}
           <div className="flex items-center justify-between px-4 py-3">
             <div className="flex items-center gap-3">
-              <div className={cn("text-4xl font-black", setScore.gradeColor)}>{setScore.grade}</div>
+              <div className={cn("text-4xl font-black", multiScore?.gradeColor ?? setScore?.gradeColor)}>
+                {multiScore?.grade ?? setScore?.grade}
+              </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="text-lg font-bold text-white">{setScore.score}</span>
+                  <span className="text-lg font-bold text-white">{multiScore?.overall ?? setScore?.score}</span>
                   <span className="text-xs text-neutral-500">/ 100</span>
                 </div>
-                <p className="text-[10px] text-neutral-500">{setScore.details}</p>
+                <p className="text-[10px] text-neutral-500">{setScore?.details}</p>
               </div>
             </div>
             {/* Score bar */}
@@ -1042,13 +1131,40 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
               <div
                 className={cn(
                   "h-full rounded-full transition-all",
-                  setScore.score >= 80 ? "bg-emerald-500" :
-                  setScore.score >= 60 ? "bg-yellow-500" : "bg-red-500",
+                  (multiScore?.overall ?? setScore?.score ?? 0) >= 80 ? "bg-emerald-500" :
+                  (multiScore?.overall ?? setScore?.score ?? 0) >= 60 ? "bg-yellow-500" : "bg-red-500",
                 )}
-                style={{ width: `${setScore.score}%` }}
+                style={{ width: `${multiScore?.overall ?? setScore?.score ?? 0}%` }}
               />
             </div>
           </div>
+
+          {/* ═══ 5 DIMENSION BREAKDOWN ═══ */}
+          {multiScore && (
+            <div className="px-3 pb-3 space-y-1.5 border-t border-white/[0.04] pt-3">
+              {Object.values(multiScore.dimensions).map((dim) => (
+                <div key={dim.labelEn} className="flex items-center gap-2">
+                  <span className="text-sm w-5 text-center shrink-0">{dim.icon}</span>
+                  <span className="text-[10px] text-neutral-400 w-20 shrink-0">{dim.label}</span>
+                  <div className="flex-1 h-1.5 rounded-full bg-white/[0.06] overflow-hidden">
+                    <div
+                      className={cn(
+                        "h-full rounded-full transition-all duration-700",
+                        dim.value >= 80 ? "bg-emerald-500" :
+                        dim.value >= 60 ? "bg-yellow-500" :
+                        dim.value >= 40 ? "bg-orange-500" : "bg-red-500",
+                      )}
+                      style={{ width: `${dim.value}%` }}
+                    />
+                  </div>
+                  <span className={cn("text-xs font-bold w-8 text-right tabular-nums", dim.color)}>
+                    {dim.value}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Speed summary */}
           {(eccentricSpeed > 0 || concentricSpeed > 0) && (
             <div className="flex items-center gap-4 px-4 py-2 border-t border-white/[0.04] text-[10px]">
