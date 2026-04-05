@@ -26,6 +26,8 @@ import {
   type CameraPosition,
   type ViewDetectionResult,
   detectCameraView,
+  calculateAngle,
+  LANDMARKS,
 } from "@/lib/posture-rules"
 import {
   type TrackerState,
@@ -395,16 +397,60 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
               worldLm = worldSmootherRef.current.smooth(rawWorld)
             }
 
-            // Draw skeleton with exercise-themed colors
+            // Draw skeleton — GREEN lines (visible at any angle), thick for video sharing
             drawingUtils.drawConnectors(landmarks as never, PoseLandmarker.POSE_CONNECTIONS, {
-              color: "rgba(255, 255, 255, 0.35)",
-              lineWidth: 2,
+              color: "rgba(34, 197, 94, 0.8)",
+              lineWidth: 3,
             })
             drawingUtils.drawLandmarks(landmarks as never, {
-              color: "rgba(220, 38, 38, 0.85)",
+              color: "rgba(34, 197, 94, 1)",
               lineWidth: 1,
-              radius: 3,
+              radius: 4,
             })
+
+            // ═══ DRAW ANGLE MEASUREMENTS on canvas (visible in shared video) ═══
+            const exerciseForAngles = selectedExerciseRef.current
+            const repCfg = getRepConfig(exerciseForAngles.muscleGroup, exerciseForAngles.id)
+            const [ai1, ai2, ai3] = repCfg.anglePoints
+            const ap1 = landmarks[ai1], ap2 = landmarks[ai2], ap3 = landmarks[ai3]
+            if (ap1 && ap2 && ap3 &&
+                (ap1.visibility ?? 0) > 0.3 && (ap2.visibility ?? 0) > 0.3 && (ap3.visibility ?? 0) > 0.3) {
+              const currentAngle = Math.round(calculateAngle(ap1, ap2, ap3))
+              if (Number.isFinite(currentAngle)) {
+                // Draw angle arc at the joint (pivot = ap2)
+                const pivotX = ap2.x * canvas.width
+                const pivotY = ap2.y * canvas.height
+                const angleRad1 = Math.atan2((ap1.y - ap2.y) * canvas.height, (ap1.x - ap2.x) * canvas.width)
+                const angleRad3 = Math.atan2((ap3.y - ap2.y) * canvas.height, (ap3.x - ap2.x) * canvas.width)
+                const arcRadius = Math.max(20, canvas.width * 0.04)
+
+                // Green arc
+                ctx.beginPath()
+                ctx.arc(pivotX, pivotY, arcRadius, angleRad1, angleRad3, false)
+                ctx.strokeStyle = "rgba(34, 197, 94, 0.7)"
+                ctx.lineWidth = 2
+                ctx.stroke()
+
+                // Angle text with background
+                const labelX = pivotX + arcRadius * 1.3
+                const labelY = pivotY - arcRadius * 0.3
+                const angleFontSize = Math.max(16, canvas.width * 0.028)
+                ctx.font = `bold ${angleFontSize}px -apple-system, sans-serif`
+                const angleText = `${currentAngle}°`
+                const textW = ctx.measureText(angleText).width
+
+                // Background pill
+                ctx.fillStyle = "rgba(0, 0, 0, 0.7)"
+                ctx.beginPath()
+                ctx.roundRect(labelX - 4, labelY - angleFontSize * 0.85, textW + 8, angleFontSize + 4, 4)
+                ctx.fill()
+
+                // Angle number — color-coded
+                const isGoodAngle = currentAngle >= repCfg.downThreshold && currentAngle <= repCfg.upThreshold
+                ctx.fillStyle = isGoodAngle ? "#22c55e" : "#eab308"
+                ctx.fillText(angleText, labelX, labelY)
+              }
+            }
 
             // Detect camera angle from landmark patterns (validates user's choice)
             const viewResult = detectCameraView(landmarks)
@@ -541,8 +587,8 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
       ctx.font = `bold ${Math.max(28, w * 0.045)}px -apple-system, sans-serif`
       ctx.fillStyle = "#22c55e"
       ctx.fillText("✓ Postura correta", 16, 42)
-      return
-    }
+      // Don't return — fall through to draw rep counter + ROM lines below
+    } else {
 
     // Scale: 30-44px — MUCH bigger for distance readability
     const fontSize = Math.max(28, Math.min(44, w * 0.055))
@@ -591,9 +637,10 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
     grad.addColorStop(1, "rgba(0, 0, 0, 0)")
     ctx.fillStyle = grad
     ctx.fillRect(0, panelHeight - 10, w, 10)
+    } // close else (importantFb block)
 
-    // ═══ REP COUNTER — large number at bottom-right (only after first rep) ═══
-    if (tracker && tracker.reps > 0) {
+    // ═══ REP COUNTER — ALWAYS visible at bottom-right (shows in shared video) ═══
+    if (tracker) {
       const repFontSize = Math.max(48, w * 0.08)
       const repX = w - 16
       const repY = h - 16
@@ -637,28 +684,67 @@ export function PostureAnalyzer({ initialExercise }: { initialExercise?: string 
       ctx.textAlign = "left" // Reset
     }
 
-    // ═══ ROM TARGET ZONE — dashed horizontal line at joint level ═══
+    // ═══ HORIZONTAL REFERENCE LINES — shoulders + joint pivot (visible in shared video) ═══
+    if (landmarks && landmarks.length > 0) {
+      const lShoulder = landmarks[LANDMARKS.LEFT_SHOULDER]
+      const rShoulder = landmarks[LANDMARKS.RIGHT_SHOULDER]
+
+      // Line 1: Shoulder alignment (solid green)
+      if (lShoulder && rShoulder && (lShoulder.visibility ?? 0) > 0.3 && (rShoulder.visibility ?? 0) > 0.3) {
+        const shoulderY = ((lShoulder.y + rShoulder.y) / 2) * h
+        ctx.setLineDash([])
+        ctx.strokeStyle = "rgba(34, 197, 94, 0.4)"
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(lShoulder.x * w - 20, shoulderY)
+        ctx.lineTo(rShoulder.x * w + 20, shoulderY)
+        ctx.stroke()
+
+        ctx.font = `${Math.max(10, w * 0.014)}px -apple-system, sans-serif`
+        ctx.fillStyle = "rgba(34, 197, 94, 0.5)"
+        ctx.fillText("OMBROS", 8, shoulderY - 3)
+      }
+
+      // Line 2: Hip alignment
+      const lHip = landmarks[LANDMARKS.LEFT_HIP]
+      const rHip = landmarks[LANDMARKS.RIGHT_HIP]
+      if (lHip && rHip && (lHip.visibility ?? 0) > 0.3 && (rHip.visibility ?? 0) > 0.3) {
+        const hipY = ((lHip.y + rHip.y) / 2) * h
+        ctx.setLineDash([])
+        ctx.strokeStyle = "rgba(34, 197, 94, 0.35)"
+        ctx.lineWidth = 1.5
+        ctx.beginPath()
+        ctx.moveTo(lHip.x * w - 20, hipY)
+        ctx.lineTo(rHip.x * w + 20, hipY)
+        ctx.stroke()
+
+        ctx.font = `${Math.max(10, w * 0.014)}px -apple-system, sans-serif`
+        ctx.fillStyle = "rgba(34, 197, 94, 0.5)"
+        ctx.fillText("QUADRIL", 8, hipY - 3)
+      }
+    }
+
+    // ═══ ROM TARGET ZONE — dashed horizontal line at joint pivot ═══
     if (repConfig && landmarks && landmarks.length > 0) {
       const [, pivotIdx] = repConfig.anglePoints
       const pivot = landmarks[pivotIdx]
       if (pivot && (pivot.visibility ?? 0) > 0.3) {
         const lineY = pivot.y * h
         ctx.setLineDash([8, 6])
-        ctx.strokeStyle = "rgba(34, 197, 94, 0.5)"
+        ctx.strokeStyle = "rgba(34, 197, 94, 0.6)"
         ctx.lineWidth = 2
         ctx.beginPath()
         ctx.moveTo(0, lineY)
         ctx.lineTo(w, lineY)
         ctx.stroke()
-        ctx.setLineDash([]) // Reset
+        ctx.setLineDash([])
 
-        // Small label
-        ctx.font = `${Math.max(10, w * 0.016)}px -apple-system, sans-serif`
-        ctx.fillStyle = "rgba(34, 197, 94, 0.6)"
+        // Label
+        ctx.font = `bold ${Math.max(11, w * 0.018)}px -apple-system, sans-serif`
+        ctx.fillStyle = "rgba(34, 197, 94, 0.7)"
         ctx.fillText("ROM alvo", 8, lineY - 4)
       }
     }
-    // Always reset lineDash after ROM zone block
     ctx.setLineDash([])
 
     // Draw detected view badge at bottom-left of canvas (appears in recorded video)
